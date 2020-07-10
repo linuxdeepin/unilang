@@ -67,11 +67,7 @@ private:
 
 public:
 	void
-	operator()(char c)
-	{
-		buffer += c;
-		Update(UpdateBack(buffer.back(), c));
-	}
+	operator()(char);
 
 	const ParseResult&
 	GetResult() const noexcept
@@ -80,90 +76,99 @@ public:
 	}
 
 private:
-	void
-	Update(bool got_delim)
-	{
-		[&](auto add, auto append){
-			const auto len(buffer.length());
-
-			assert(!(lexemes.empty() && update_current));
-			if(len > 0)
-			{
-				if(len == 1)
-				{
-					const auto update_c([&](char c){
-						if(update_current)
-							append(c);
-						else
-							add(string({c}, lexemes.get_allocator()));
-					});
-					const char c(buffer.back());
-					const bool unquoted(Delimiter == char());
-
- 					if(got_delim)
-					{
-						update_c(c);
-						update_current = !unquoted;
-					}
-					else if(unquoted && IsDelimiter(c))
-					{
-						if(IsGraphicalDelimiter(c))
-							add(string({c}, lexemes.get_allocator()));
-						update_current = {};
-					}
-					else
-					{
-						update_c(c);
-						update_current = true;
-					}
-				}
-				else if(update_current)
-					append(buffer.substr(0, len));
-				else
-					add(std::move(buffer));
-				buffer.clear();
-			}
-		}([&](auto&& arg){
-			lexemes.push_back(std::forward<decltype(arg)>(arg));
-		}, [&](auto&& arg){
-			lexemes.back() += std::forward<decltype(arg)>(arg);
-		});
-	}
-
 	bool
-	UpdateBack(char& b, char c)
-	{
-		switch(c)
-		{
-			case '\'':
-			case '"':
-				if(Delimiter == char())
-				{
-					Delimiter = c;
-					return true;
-				}
-				else if(Delimiter == c)
-				{
-					Delimiter = char();
-					return true;
-				}
-				break;
-			case '\f':
-			case '\n':
-			case '\t':
-			case '\v':
-				if(Delimiter == char())
-				{
-					b = ' ';
-					break;
-				}
-				[[fallthrough]];
-			default:
-				break;
-		}
-		return {};
-	}
+	UpdateBack(char);
 };
+
+void
+ByteParser::operator()(char c)
+{
+	buffer += c;
+
+	bool got_delim(UpdateBack(c));
+
+	[&](auto add, auto append){
+		const auto len(buffer.length());
+
+		assert(!(lexemes.empty() && update_current));
+		if(len > 0)
+		{
+			if(len == 1)
+			{
+				const auto update_c([&](char c){
+					if(update_current)
+						append(c);
+					else
+						add(string({c}, lexemes.get_allocator()));
+				});
+				const char c(buffer.back());
+				const bool unquoted(Delimiter == char());
+
+ 				if(got_delim)
+				{
+					update_c(c);
+					update_current = !unquoted;
+				}
+				else if(unquoted && IsDelimiter(c))
+				{
+					if(IsGraphicalDelimiter(c))
+						add(string({c}, lexemes.get_allocator()));
+					update_current = {};
+				}
+				else
+				{
+					update_c(c);
+					update_current = true;
+				}
+			}
+			else if(update_current)
+				append(buffer.substr(0, len));
+			else
+				add(std::move(buffer));
+			buffer.clear();
+		}
+	}([&](auto&& arg){
+		lexemes.push_back(std::forward<decltype(arg)>(arg));
+	}, [&](auto&& arg){
+		lexemes.back() += std::forward<decltype(arg)>(arg);
+	});
+}
+
+bool
+ByteParser::UpdateBack(char c)
+{
+	auto& b(buffer.back());
+
+	switch(c)
+	{
+		case '\'':
+		case '"':
+			if(Delimiter == char())
+			{
+				Delimiter = c;
+				return true;
+			}
+			else if(Delimiter == c)
+			{
+				Delimiter = char();
+				return true;
+			}
+			break;
+		case '\f':
+		case '\n':
+		case '\t':
+		case '\v':
+			if(Delimiter == char())
+			{
+				b = ' ';
+				break;
+			}
+			[[fallthrough]];
+		default:
+			break;
+	}
+	return {};
+}
 
 
 class TermNode final
@@ -240,7 +245,7 @@ struct LexemeTokenizer final
 	{}
 
 	template<class _type>
-	[[nodiscard, gnu::pure]] TermNode
+	[[nodiscard, gnu::pure]] inline TermNode
 	operator()(const _type& val) const
 	{
 		return AsTermNode(val);
@@ -396,9 +401,8 @@ Interpreter::WaitForLine()
 	return getline(cin, line);
 }
 
-
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.6"
+#define APP_VER "0.0.7"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
