@@ -100,8 +100,17 @@ public:
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
 
+	void
+	Evaluate(TermNode&);
+
+	void
+	Print(const TermNode&);
+
 	bool
 	Process();
+
+	[[nodiscard]] TermNode
+	Read(string_view);
 
 	void
 	Run();
@@ -113,6 +122,16 @@ public:
 Interpreter::Interpreter()
 {}
 
+void
+Interpreter::Evaluate(TermNode& term)
+{
+}
+
+void
+Interpreter::Print(const TermNode&)
+{
+}
+
 bool
 Interpreter::Process()
 {
@@ -121,6 +140,14 @@ Interpreter::Process()
 	if(line == "exit")
 		return {};
 	return true;
+}
+
+TermNode
+Interpreter::Read(string_view unit)
+{
+	TermNode term{};
+
+	return term;
 }
 
 void
@@ -141,7 +168,7 @@ Interpreter::WaitForLine()
 
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.2"
+#define APP_VER "0.0.3"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
