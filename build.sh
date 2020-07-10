@@ -1,2 +1,2 @@
-g++ -std=c++17 -ointerpreter src/*.cpp
+g++ -std=c++17 -g -ounilang src/*.cpp
 
