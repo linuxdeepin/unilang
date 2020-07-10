@@ -26,17 +26,12 @@ using std::pmr::string;
 using std::string_view;
 using std::pmr::vector;
 
-} // namespace Unilang;
-
-namespace
-{
-
-using namespace Unilang;
 
 class UnilangException : public std::runtime_error
 {
 	using runtime_error::runtime_error;
 };
+
 
 
 using ValueObject = std::any;
@@ -302,6 +297,9 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 }
 
 
+namespace
+{
+
 class Interpreter final
 {
 private:
@@ -400,16 +398,19 @@ Interpreter::WaitForLine()
 
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.5"
+#define APP_VER "0.0.6"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
 
 } // unnamed namespace;
 
+} // namespace Unilang;
+
 int
 main()
 {
+	using namespace Unilang;
 	using namespace std;
 	Interpreter intp{};
 
