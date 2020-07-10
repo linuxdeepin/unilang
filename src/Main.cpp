@@ -4,8 +4,10 @@
 #include <list> // for std::pmr::list;
 #include <string> // for std::pmr::string, std::getline;
 #include <string_view> // for std::string_view;
+#include <exception> // for std::runtime_error;
 #include <any> // for std::any;
 #include <iostream>
+#include <typeinfo> // for typeid;
 
 namespace Unilang
 {
@@ -20,6 +22,12 @@ namespace
 {
 
 using namespace Unilang;
+
+class UnilangException : public std::runtime_error
+{
+	using runtime_error::runtime_error;
+};
+
 
 using ValueObject = std::any;
 
@@ -135,10 +143,23 @@ Interpreter::Print(const TermNode&)
 bool
 Interpreter::Process()
 {
-	if(line.empty())
-		return true;
 	if(line == "exit")
 		return {};
+	else if(!line.empty())
+		try
+		{
+			auto term(Read(line));
+
+			Evaluate(term);
+			Print(term);
+		}
+		catch(UnilangException& e)
+		{
+			using namespace std;
+
+			cerr << "UnilangException[" << typeid(e).name() << "]: "
+				<< e.what() << endl;
+		}
 	return true;
 }
 
@@ -168,7 +189,7 @@ Interpreter::WaitForLine()
 
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.3"
+#define APP_VER "0.0.4"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
