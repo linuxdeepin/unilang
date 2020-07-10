@@ -1,17 +1,19 @@
 ﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
 
 #include <memory_resource> // for complete std::pmr::polymorphic_allocator;
+#include <forward_list> // for std::pmr::forward_list;
+#include <functional> // for std::function;
 #include <list> // for std::pmr::list;
 #include <deque> // for std::pmr::deque;
 #include <stack> // for std::stack;
 #include <string> // for std::pmr::string, std::getline;
 #include <string_view> // for std::string_view;
 #include <vector> // for std::pmr::vector;
+#include <utility> // for std::reference_wrapper, std::ref;
 #include <exception> // for std::runtime_error;
 #include <cctype> // for std::isgraph;
 #include <cassert> // for assert;
 #include <any> // for std::any;
-#include <utility> // for std::ref;
 #include <algorithm> // for std::for_each;
 #include <iostream>
 #include <typeinfo> // for typeid;
@@ -19,12 +21,16 @@
 namespace Unilang
 {
 
+using std::pmr::forward_list;
+using std::function;
 using std::pmr::list;
 template<typename _type, class _tSeqCon = std::pmr::deque<_type>>
 using stack = std::stack<_type, _tSeqCon>;
 using std::pmr::string;
 using std::string_view;
 using std::pmr::vector;
+template<typename _type>
+using lref = std::reference_wrapper<_type>;
 
 
 class UnilangException : public std::runtime_error
@@ -33,6 +39,22 @@ class UnilangException : public std::runtime_error
 };
 
 
+enum class ReductionStatus : std::size_t
+{
+	Partial = 0x00,
+	Neutral = 0x01,
+	Clean = 0x02,
+	Retained = 0x03,
+	Regular = Retained,
+	Retrying = 0x10
+};
+
+
+class Context;
+
+using Reducer = function<ReductionStatus(Context&)>;
+
+using ReducerSequence = forward_list<Reducer>;
 
 using ValueObject = std::any;
 
@@ -302,6 +324,101 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 }
 
 
+
+ReductionStatus
+ReduceOnce(TermNode&, Context&);
+
+ReductionStatus
+ReduceOnce(TermNode&, Context&)
+{
+	return ReductionStatus::Neutral;
+}
+
+
+class Context final
+{
+private:
+	TermNode* next_term_ptr = {};
+	ReducerSequence current{};
+
+public:
+	Reducer TailAction{};
+	ReductionStatus LastStatus = ReductionStatus::Neutral;
+
+	bool
+	IsAlive() const noexcept
+	{
+		return !current.empty();
+	}
+
+	[[nodiscard, gnu::pure]] TermNode&
+	GetNextTermRef() const;
+
+	ReductionStatus
+	ApplyTail();
+
+	ReductionStatus
+	Evaluate(TermNode&);
+
+	ReductionStatus
+	Rewrite(Reducer);
+
+	template<typename... _tParams>
+	inline void
+	SetupCurrent(_tParams&&... args)
+	{
+		assert(!IsAlive());
+		return SetupFront(std::forward<_tParams>(args)...);
+	}
+
+	template<typename... _tParams>
+	inline void
+	SetupFront(_tParams&&... args)
+	{
+		current.emplace_front(std::forward<_tParams>(args)...);
+	}
+};
+
+TermNode&
+Context::GetNextTermRef() const
+{
+	if(const auto p = next_term_ptr)
+		return *p;
+	throw UnilangException("No next term found to evaluation.");
+}
+
+ReductionStatus
+Context::ApplyTail()
+{
+	assert(IsAlive());
+	TailAction = std::move(current.front());
+	current.pop_front();
+	LastStatus = TailAction(*this);
+	return LastStatus;
+}
+
+ReductionStatus
+Context::Evaluate(TermNode& term)
+{
+	next_term_ptr = &term;
+	return Rewrite([this](Context& ctx){
+		return ReduceOnce(ctx.GetNextTermRef(), ctx);
+	});
+}
+
+ReductionStatus
+Context::Rewrite(Reducer reduce)
+{
+	SetupCurrent(std::move(reduce));
+	// NOTE: Rewrite until no actions remain.
+	do
+	{
+		ApplyTail();
+	}while(IsAlive());
+	return LastStatus;
+}
+
+
 namespace
 {
 
@@ -311,6 +428,8 @@ private:
 	string line{};
 
 public:
+	Context Root{};
+
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
 
@@ -339,6 +458,7 @@ Interpreter::Interpreter()
 void
 Interpreter::Evaluate(TermNode& term)
 {
+	Root.Evaluate(term);
 }
 
 void
@@ -402,7 +522,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.7"
+#define APP_VER "0.0.8"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
