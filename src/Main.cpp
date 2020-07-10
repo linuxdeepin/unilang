@@ -1,19 +1,21 @@
 ﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
 
+#include <any> // for std::any, std::bad_any_cast, std:;any_cast;
+#include <functional> // for std::function;
+#include <string_view> // for std::string_view;
 #include <memory_resource> // for complete std::pmr::polymorphic_allocator;
 #include <forward_list> // for std::pmr::forward_list;
-#include <functional> // for std::function;
 #include <list> // for std::pmr::list;
+#include <string> // for std::pmr::string, std::getline;
+#include <vector> // for std::pmr::vector;
 #include <deque> // for std::pmr::deque;
 #include <stack> // for std::stack;
-#include <string> // for std::pmr::string, std::getline;
-#include <string_view> // for std::string_view;
-#include <vector> // for std::pmr::vector;
-#include <utility> // for std::reference_wrapper, std::ref;
+#include <sstream> // for std::basic_ostringstream, std::ostream,
+//	std::streamsize;
 #include <exception> // for std::runtime_error;
 #include <cctype> // for std::isgraph;
 #include <cassert> // for assert;
-#include <any> // for std::any;
+#include <utility> // for std::ref;
 #include <algorithm> // for std::for_each;
 #include <iostream>
 #include <typeinfo> // for typeid;
@@ -21,16 +23,22 @@
 namespace Unilang
 {
 
-using std::pmr::forward_list;
+using std::size_t;
+
+using std::any;
+using std::bad_any_cast;
 using std::function;
+using std::string_view;
+
+using std::pmr::forward_list;
 using std::pmr::list;
+using std::pmr::string;
+using std::pmr::vector;
+
 template<typename _type, class _tSeqCon = std::pmr::deque<_type>>
 using stack = std::stack<_type, _tSeqCon>;
-using std::pmr::string;
-using std::string_view;
-using std::pmr::vector;
-template<typename _type>
-using lref = std::reference_wrapper<_type>;
+using ostringstream = std::basic_ostringstream<char, std::char_traits<char>,
+	string::allocator_type>;
 
 
 class UnilangException : public std::runtime_error
@@ -39,7 +47,7 @@ class UnilangException : public std::runtime_error
 };
 
 
-enum class ReductionStatus : std::size_t
+enum class ReductionStatus : size_t
 {
 	Partial = 0x00,
 	Neutral = 0x01,
@@ -56,7 +64,7 @@ using Reducer = function<ReductionStatus(Context&)>;
 
 using ReducerSequence = forward_list<Reducer>;
 
-using ValueObject = std::any;
+using ValueObject = any;
 
 
 [[nodiscard]] constexpr bool
@@ -229,6 +237,18 @@ public:
 	TermNode&
 	operator=(TermNode&&) = default;
 
+	[[nodiscard, gnu::pure]] bool
+	operator!() const noexcept
+	{
+		return !bool(*this);
+	}
+
+	[[nodiscard, gnu::pure]] explicit
+	operator bool() const noexcept
+	{
+		return Value.has_value() || !empty();
+	}
+
 	void
 	Add(const TermNode& term)
 	{
@@ -238,6 +258,34 @@ public:
 	Add(TermNode&& term)
 	{
 		Subterms.push_back(std::move(term));
+	}
+
+	[[nodiscard, gnu::pure]] iterator
+	begin() noexcept
+	{
+		return Subterms.begin();
+	}
+	[[nodiscard, gnu::pure]] const_iterator
+	begin() const noexcept
+	{
+		return Subterms.begin();
+	}
+
+	[[nodiscard, gnu::pure]] bool
+	empty() const noexcept
+	{
+		return Subterms.empty();
+	}
+
+	[[nodiscard, gnu::pure]] iterator
+	end() noexcept
+	{
+		return Subterms.end();
+	}
+	[[nodiscard, gnu::pure]] const_iterator
+	end() const noexcept
+	{
+		return Subterms.end();
 	}
 
 	[[nodiscard, gnu::pure]]
@@ -422,6 +470,58 @@ Context::Rewrite(Reducer reduce)
 namespace
 {
 
+void
+PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
+{
+	const auto print_indent([&](size_t n){
+		if(n != 0)
+		{
+			const auto& s(string(n, '\t'));
+
+			os.write(s.data(), std::streamsize(s.size()));
+		}
+	});
+
+	print_indent(depth);
+
+	try
+	{
+		const auto& vo(term.Value);
+
+		os << [&]() -> string{
+			if(const auto p = std::any_cast<string>(&vo))
+				return *p;
+			if(const auto p = std::any_cast<bool>(&vo))
+				return *p ? "#t" : "#f";
+
+			const auto& t(vo.type());
+
+			if(t != typeid(void))
+				return "#[" + string(t.name()) + ']';
+			throw bad_any_cast();
+		}() << '\n';
+	}
+	catch(bad_any_cast&)
+	{
+		os << '\n';
+		if(term)
+			for(const auto& nd : term)
+			{
+				print_indent(depth);
+				os << '(' << '\n';
+				try
+				{
+					PrintTermNode(os, nd, depth + 1);
+				}
+				catch(std::out_of_range&)
+				{}
+				print_indent(depth);
+				os << ')' << '\n';
+			}
+	}
+}
+
+
 class Interpreter final
 {
 private:
@@ -436,7 +536,7 @@ public:
 	void
 	Evaluate(TermNode&);
 
-	void
+	static void
 	Print(const TermNode&);
 
 	bool
@@ -462,8 +562,11 @@ Interpreter::Evaluate(TermNode& term)
 }
 
 void
-Interpreter::Print(const TermNode&)
+Interpreter::Print(const TermNode& term)
 {
+	ostringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(std::cout, term);
 }
 
 bool
@@ -522,7 +625,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.8"
+#define APP_VER "0.0.9"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
