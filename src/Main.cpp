@@ -291,13 +291,111 @@ public:
 		return Subterms.end();
 	}
 
+	iterator
+	erase(const_iterator i)
+	{
+		return Subterms.erase(i);
+	}
+
 	[[nodiscard, gnu::pure]]
 	allocator_type
 	get_allocator() const noexcept
 	{
 		return Subterms.get_allocator();
 	}
+
+	[[nodiscard, gnu::pure]] size_t
+	size() const noexcept
+	{
+		return Subterms.size();
+	}
 };
+
+[[nodiscard, gnu::pure]] inline bool
+IsBranch(const TermNode& term) noexcept
+{
+	return !term.empty();
+}
+
+[[nodiscard, gnu::pure]] inline bool
+IsBranchedList(const TermNode& term) noexcept
+{
+	return !(term.empty() || term.Value.has_value());
+}
+
+[[nodiscard, gnu::pure]] inline bool
+IsEmpty(const TermNode& term) noexcept
+{
+	return !term;
+}
+
+[[nodiscard, gnu::pure]] inline bool
+IsLeaf(const TermNode& term) noexcept
+{
+	return term.empty();
+}
+
+[[nodiscard, gnu::pure]] inline TermNode&
+AccessFirstSubterm(TermNode& term) noexcept
+{
+	assert(IsBranch(term));
+	return *term.begin();
+}
+
+[[nodiscard, gnu::pure]] inline const TermNode&
+AccessFirstSubterm(const TermNode& term) noexcept
+{
+	assert(IsBranch(term));
+	return *term.begin();
+}
+
+inline void
+RemoveHead(TermNode& term) noexcept
+{
+	assert(!term.empty());
+	term.erase(term.begin());
+}
+
+
+void
+LiftOther(TermNode&, TermNode&);
+
+void
+LiftOther(TermNode& term, TermNode& tm)
+{
+	assert(&term != &tm);
+
+	const auto t(std::move(term.Subterms));
+
+	term.Subterms = std::move(tm.Subterms);
+	term.Value = std::move(tm.Value);
+}
+
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type*
+TryAccessLeaf(TermNode& term)
+{
+	return std::any_cast<_type>(&term.Value);
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type*
+TryAccessLeaf(const TermNode& term)
+{
+	return std::any_cast<_type>(&term.Value);
+}
+
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type*
+TryAccessTerm(TermNode& term)
+{
+	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type*
+TryAccessTerm(const TermNode& term)
+{
+	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
+}
 
 
 template<typename... _tParams>
@@ -706,7 +804,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.10"
+#define APP_VER "0.0.11"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
