@@ -4,7 +4,8 @@
 #include <any> // for std::any, std::bad_any_cast, std:;any_cast;
 #include <functional> // for std::function;
 #include <string_view> // for std::string_view;
-#include <memory_resource> // for complete std::pmr::polymorphic_allocator;
+#include <memory_resource> // for pmr and
+//	complete std::pmr::polymorphic_allocator;
 #include <forward_list> // for std::pmr::forward_list;
 #include <list> // for std::pmr::list;
 #include <string> // for std::pmr::string, std::getline;
@@ -33,10 +34,12 @@ using std::bad_any_cast;
 using std::function;
 using std::string_view;
 
-using std::pmr::forward_list;
-using std::pmr::list;
-using std::pmr::string;
-using std::pmr::vector;
+namespace pmr = std::pmr;
+
+using pmr::forward_list;
+using pmr::list;
+using pmr::string;
+using pmr::vector;
 
 template<typename _type, class _tSeqCon = std::pmr::deque<_type>>
 using stack = std::stack<_type, _tSeqCon>;
@@ -50,25 +53,16 @@ class UnilangException : public std::runtime_error
 };
 
 
-enum class ReductionStatus : size_t
-{
-	Partial = 0x00,
-	Neutral = 0x01,
-	Clean = 0x02,
-	Retained = 0x03,
-	Regular = Retained,
-	Retrying = 0x10
-};
-
-
+enum class ReductionStatus : size_t;
+class TermNode;
 class Context;
-
 using Reducer = function<ReductionStatus(Context&)>;
-
 using ReducerSequence = forward_list<Reducer>;
-
 using ValueObject = any;
 
+// NOTE: This is the main entry of the evaluation algorithm.
+ReductionStatus
+ReduceOnce(TermNode&, Context&);
 
 [[nodiscard]] constexpr bool
 IsGraphicalDelimiter(char c) noexcept
@@ -356,48 +350,6 @@ RemoveHead(TermNode& term) noexcept
 	term.erase(term.begin());
 }
 
-
-void
-LiftOther(TermNode&, TermNode&);
-
-void
-LiftOther(TermNode& term, TermNode& tm)
-{
-	assert(&term != &tm);
-
-	const auto t(std::move(term.Subterms));
-
-	term.Subterms = std::move(tm.Subterms);
-	term.Value = std::move(tm.Value);
-}
-
-template<typename _type>
-[[nodiscard, gnu::pure]] inline _type*
-TryAccessLeaf(TermNode& term)
-{
-	return std::any_cast<_type>(&term.Value);
-}
-template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type*
-TryAccessLeaf(const TermNode& term)
-{
-	return std::any_cast<_type>(&term.Value);
-}
-
-template<typename _type>
-[[nodiscard, gnu::pure]] inline _type*
-TryAccessTerm(TermNode& term)
-{
-	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
-}
-template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type*
-TryAccessTerm(const TermNode& term)
-{
-	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
-}
-
-
 template<typename... _tParams>
 [[nodiscard, gnu::pure]] inline TermNode
 AsTermNode(_tParams&&... args)
@@ -505,6 +457,34 @@ public:
 };
 
 
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type*
+TryAccessLeaf(TermNode& term)
+{
+	return std::any_cast<_type>(&term.Value);
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type*
+TryAccessLeaf(const TermNode& term)
+{
+	return std::any_cast<_type>(&term.Value);
+}
+
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type*
+TryAccessTerm(TermNode& term)
+{
+	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type*
+TryAccessTerm(const TermNode& term)
+{
+	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
+}
+
+
+
 // NOTE: The host type of reference values.
 class TermReference final
 {
@@ -547,9 +527,31 @@ public:
 };
 
 
-// NOTE: This is the main entry of the evaluation algorithm.
-ReductionStatus
-ReduceOnce(TermNode&, Context&);
+enum class ReductionStatus : size_t
+{
+	Partial = 0x00,
+	Neutral = 0x01,
+	Clean = 0x02,
+	Retained = 0x03,
+	Regular = Retained,
+	Retrying = 0x10
+};
+
+
+
+void
+LiftOther(TermNode&, TermNode&);
+
+void
+LiftOther(TermNode& term, TermNode& tm)
+{
+	assert(&term != &tm);
+
+	const auto t(std::move(term.Subterms));
+
+	term.Subterms = std::move(tm.Subterms);
+	term.Value = std::move(tm.Value);
+}
 
 
 class Context final
@@ -882,7 +884,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.12"
+#define APP_VER "0.0.13"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
