@@ -1019,6 +1019,74 @@ ReduceOnce(TermNode& term, Context& ctx)
 namespace
 {
 
+ReductionStatus
+DefaultEvaluateLeaf(TermNode& term, string_view id)
+{
+	assert(id.data());
+	if(!id.empty())
+	{
+		const char f(id.front());
+
+		if(Unilang::isdigit(f))
+		{
+		    int ans(0);
+
+			for(auto p(id.begin()); p != id.end(); ++p)
+				if(Unilang::isdigit(*p))
+				{
+					if(unsigned((ans << 3) + (ans << 1) + *p - '0')
+						<= unsigned(INT_MAX))
+						ans = (ans << 3) + (ans << 1) + *p - '0';
+					else
+						throw UnilangException(Unilang::sfmt<std::string>(
+							"Value of identifier '%s' is out of the range of"
+							" the supported integer.", id.data()));
+				}
+				else
+					throw UnilangException(Unilang::sfmt<std::string>("Literal"
+						" postfix is unsupported in identifier '%s'.",
+						id.data()));
+			term.Value = ans;
+		}
+		else if(id == "#t")
+			term.Value = true;
+		else if(id == "#f")
+			term.Value = false;
+		else if(id == "#inert")
+			term.Value = ValueToken::Unspecified;
+		else
+			return ReductionStatus::Retrying;
+		return ReductionStatus::Clean;
+	}
+	return ReductionStatus::Retrying;
+}
+
+TermNode
+ParseLeaf(string_view id)
+{
+	assert(id.data());
+
+	auto term(Unilang::AsTermNode());
+
+	if(!id.empty())
+		switch(CategorizeBasicLexeme(id))
+		{
+		case LexemeCategory::Code:
+			id = DeliteralizeUnchecked(id);
+			[[fallthrough]];
+		case LexemeCategory::Symbol:
+			if(CheckReducible(DefaultEvaluateLeaf(term, id)))
+				term.Value = TokenValue(id);
+			break;
+		case LexemeCategory::Data:
+			term.Value = string(Deliteralize(id));
+			[[fallthrough]];
+		default:
+			break;
+		}
+	return term;
+}
+
 void
 PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 {
@@ -1151,7 +1219,7 @@ Interpreter::Read(string_view unit)
 	const auto& parse_result(parse.GetResult());
 	TermNode term{};
 
-	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend())
+	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(), ParseLeaf)
 		!= parse_result.cend())
 		throw UnilangException("Redundant ')' found.");
 	return term;
@@ -1174,7 +1242,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.21"
+#define APP_VER "0.0.22"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
