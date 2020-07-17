@@ -17,11 +17,11 @@
 #include <sstream> // for std::basic_ostringstream, std::ostream,
 //	std::streamsize;
 #include <exception> // for std::runtime_error;
-#include <cctype> // for std::isgraph;
 #include <cassert> // for assert;
-#include <algorithm> // for std::for_each;
-#include <iostream>
+#include <cctype> // for std::isgraph;
+#include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <typeinfo> // for typeid;
+#include <algorithm> // for std::for_each;
 
 namespace Unilang
 {
@@ -51,23 +51,7 @@ using stack = std::stack<_type, _tSeqCon>;
 using ostringstream = std::basic_ostringstream<char, std::char_traits<char>,
 	string::allocator_type>;
 
-
-class UnilangException : public std::runtime_error
-{
-	using runtime_error::runtime_error;
-};
-
-
-enum class ReductionStatus : size_t;
-class TermNode;
-class Context;
-using Reducer = function<ReductionStatus(Context&)>;
-using ReducerSequence = forward_list<Reducer>;
 using ValueObject = any;
-
-// NOTE: This is the main entry of the evaluation algorithm.
-ReductionStatus
-ReduceOnce(TermNode&, Context&);
 
 
 // NOTE: This is locale-independent.
@@ -77,7 +61,38 @@ isdigit(char c) noexcept
 	return (unsigned(c) - '0') < 10U;
 }
 
-[[nodiscard]] constexpr bool
+
+[[nodiscard, gnu::pure]] char
+CheckLiteral(string_view) noexcept;
+
+char
+CheckLiteral(string_view sv) noexcept
+{
+	assert(sv.data());
+	if(sv.length() > 1)
+		if(const char c = sv.front() == sv.back() ? sv.front() : char())
+		{
+			if(c == '\'' || c == '"')
+				return c;
+		}
+	return {};
+}
+
+[[nodiscard, gnu::pure]] inline string_view
+DeliteralizeUnchecked(string_view sv) noexcept
+{
+	assert(sv.data());
+	assert(!(sv.size() < 2));
+	return sv.substr(1, sv.size() - 2);
+}
+
+[[nodiscard, gnu::pure]] inline string_view
+Deliteralize(string_view sv) noexcept
+{
+	return CheckLiteral(sv) != char() ? DeliteralizeUnchecked(sv) : sv;
+}
+
+[[nodiscard, gnu::const]] constexpr bool
 IsGraphicalDelimiter(char c) noexcept
 {
 	return c == '(' || c == ')' || c == ',' || c == ';';
@@ -208,6 +223,39 @@ ByteParser::UpdateBack(char c)
 			break;
 	}
 	return {};
+}
+
+
+class UnilangException : public std::runtime_error
+{
+	using runtime_error::runtime_error;
+};
+
+
+enum class LexemeCategory
+{
+	Symbol,
+	Code,
+	Data,
+	Extended
+};
+
+
+[[nodiscard, gnu::pure]] LexemeCategory
+CategorizeBasicLexeme(string_view) noexcept;
+
+LexemeCategory
+CategorizeBasicLexeme(string_view id) noexcept
+{
+	assert(id.data());
+
+	const auto c(CheckLiteral(id));
+
+	if(c == '\'')
+		return LexemeCategory::Code;
+	if(c != char())
+		return LexemeCategory::Data;
+	return LexemeCategory::Symbol;
 }
 
 
@@ -660,6 +708,17 @@ Environment::LookupName(string_view id) const
 }
 
 
+class Context;
+
+using Reducer = function<ReductionStatus(Context&)>;
+
+using ReducerSequence = forward_list<Reducer>;
+
+// NOTE: This is the main entry of the evaluation algorithm.
+ReductionStatus
+ReduceOnce(TermNode&, Context&);
+
+
 class Context final
 {
 private:
@@ -1052,7 +1111,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.18"
+#define APP_VER "0.0.19"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
