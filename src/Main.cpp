@@ -10,7 +10,7 @@
 #include <forward_list> // for std::pmr::forward_list;
 #include <list> // for std::pmr::list;
 #include <map> // for std::pmr::map;
-#include <string> // for std::pmr::string, std::getline;
+#include <string> // for std::pmr::string, std::string, std::getline;
 #include <vector> // for std::pmr::vector;
 #include <deque> // for std::pmr::deque;
 #include <stack> // for std::stack;
@@ -918,7 +918,9 @@ ReduceLeaf(TermNode& term, Context& ctx)
 			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
 				&& id.find_first_not_of("+-") != string_view::npos)
 				|| Unilang::isdigit(f))
-				throw UnilangException("Unsupported literal prefix found");
+				throw UnilangException(Unilang::sfmt<std::string>(id.front()
+					!= '#' ? "Unsupported literal prefix found in literal '%s'."
+					: "Invalid literal '%s' found.", id.data()));
 
 			auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
 
@@ -1172,7 +1174,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.20"
+#define APP_VER "0.0.21"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
