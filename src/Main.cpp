@@ -232,6 +232,8 @@ public:
 	{}
 	
 	TermNode&
+	operator=(const TermNode&) = default;
+	TermNode&
 	operator=(TermNode&&) = default;
 
 	[[nodiscard, gnu::pure]] bool
@@ -483,6 +485,11 @@ TryAccessTerm(const TermNode& term)
 	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
 }
 
+[[nodiscard, gnu::pure]] inline const TokenValue*
+TermToNamePtr(const TermNode& term)
+{
+	return Unilang::TryAccessTerm<TokenValue>(term);
+}
 
 
 // NOTE: The host type of reference values.
@@ -537,6 +544,12 @@ enum class ReductionStatus : size_t
 	Retrying = 0x10
 };
 
+[[nodiscard, gnu::const]] constexpr bool
+CheckReducible(ReductionStatus status) noexcept
+{
+	return status == ReductionStatus::Partial
+		|| status == ReductionStatus::Retrying;
+}
 
 
 void
@@ -889,7 +902,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.14"
+#define APP_VER "0.0.15"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
