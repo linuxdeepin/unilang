@@ -1,13 +1,15 @@
 ﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
 
-#include <utility> // for std::reference_wrapper, std::ref;
+#include <utility> // for std::pair, std::reference_wrapper, std::ref;
 #include <any> // for std::any, std::bad_any_cast, std:;any_cast;
-#include <functional> // for std::function;
+#include <functional> // for std::function, std::less;
+#include <memory> // for std::shared_ptr;
 #include <string_view> // for std::string_view;
 #include <memory_resource> // for pmr and
 //	complete std::pmr::polymorphic_allocator;
 #include <forward_list> // for std::pmr::forward_list;
 #include <list> // for std::pmr::list;
+#include <map> // for std::pmr::map;
 #include <string> // for std::pmr::string, std::getline;
 #include <vector> // for std::pmr::vector;
 #include <deque> // for std::pmr::deque;
@@ -32,12 +34,15 @@ using lref = std::reference_wrapper<_type>;
 using std::any;
 using std::bad_any_cast;
 using std::function;
+using std::pair;
+using std::shared_ptr;
 using std::string_view;
 
 namespace pmr = std::pmr;
 
 using pmr::forward_list;
 using pmr::list;
+using pmr::map;
 using pmr::string;
 using pmr::vector;
 
@@ -567,6 +572,86 @@ LiftOther(TermNode& term, TermNode& tm)
 }
 
 
+class Environment final
+{
+public:
+	using BindingMap = map<string, TermNode, std::less<>>;
+	using NameResolution
+		= pair<BindingMap::mapped_type*, shared_ptr<Environment>>;
+	using allocator_type = BindingMap::allocator_type;
+
+	mutable BindingMap Bindings;
+	ValueObject Parent{};
+
+	Environment(allocator_type a)
+		: Bindings(a)
+	{}
+	Environment(pmr::memory_resource& rsrc)
+		: Environment(allocator_type(&rsrc))
+	{}
+	explicit
+	Environment(const BindingMap& m)
+		: Bindings(m)
+	{}
+	explicit
+	Environment(BindingMap&& m)
+		: Bindings(std::move(m))
+	{}
+	Environment(const ValueObject& vo, allocator_type a)
+		: Bindings(a), Parent((CheckParent(vo), vo))
+	{}
+	Environment(ValueObject&& vo, allocator_type a)
+		: Bindings(a), Parent((CheckParent(vo), std::move(vo)))
+	{}
+	Environment(pmr::memory_resource& rsrc, const ValueObject& vo)
+		: Environment(vo, allocator_type(&rsrc))
+	{}
+	Environment(pmr::memory_resource& rsrc, ValueObject&& vo)
+		: Environment(std::move(vo), allocator_type(&rsrc))
+	{}
+	Environment(const Environment& e)
+		: Bindings(e.Bindings), Parent(e.Parent)
+	{}
+	Environment(Environment&&) = default;
+
+	Environment&
+	operator=(Environment&&) = default;
+
+	[[nodiscard, gnu::pure]] friend
+	operator==(const Environment& x, const Environment& y) noexcept
+	{
+		return &x == &y;
+	}
+	[[nodiscard, gnu::pure]] friend
+	operator!=(const Environment& x, const Environment& y) noexcept
+	{
+		return &x != &y;
+	}
+
+	static void
+	CheckParent(const ValueObject&);
+
+	[[nodiscard, gnu::pure]] NameResolution::first_type
+	LookupName(string_view) const;
+};
+
+void
+Environment::CheckParent(const ValueObject&)
+{
+	// TODO: Check parent type.
+}
+
+Environment::NameResolution::first_type
+Environment::LookupName(string_view id) const
+{
+	assert(id.data());
+
+	const auto i(Bindings.find(id));
+
+	return i != Bindings.cend() ? &i->second : nullptr;
+}
+
+
 class Context final
 {
 private:
@@ -902,7 +987,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.15"
+#define APP_VER "0.0.16"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
