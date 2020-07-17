@@ -69,6 +69,14 @@ using ValueObject = any;
 ReductionStatus
 ReduceOnce(TermNode&, Context&);
 
+
+// NOTE: This is locale-independent.
+[[nodiscard, gnu::const]] constexpr bool
+isdigit(char c) noexcept
+{
+	return (unsigned(c) - '0') < 10U;
+}
+
 [[nodiscard]] constexpr bool
 IsGraphicalDelimiter(char c) noexcept
 {
@@ -776,7 +784,45 @@ namespace
 ReductionStatus
 ReduceLeaf(TermNode& term, Context& ctx)
 {
-	return ReductionStatus::Neutral;
+	if(const auto p = TermToNamePtr(term))
+	{
+		auto res(ReductionStatus::Retained);
+		const auto id(*p);
+
+		assert(id.data());
+
+		if(!id.empty())
+		{
+			const char f(id.front());
+
+			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
+				&& id.find_first_not_of("+-") != string_view::npos)
+				|| Unilang::isdigit(f))
+				throw UnilangException("Unsupported literal prefix found");
+
+			auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
+
+			if(pr.first)
+			{
+				auto& bound(*pr.first);
+
+				if(const auto p
+					= Unilang::TryAccessLeaf<const TermReference>(bound))
+				{
+					term.Subterms = bound.Subterms;
+					term.Value = TermReference(*p);
+				}
+				else
+					term.Value = TermReference(bound);
+				res = ReductionStatus::Neutral;
+			}
+			else
+				throw UnilangException(
+					"Bad identifier '" + std::string(id) + "' found.");
+		}
+		return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
+	}
+	return ReductionStatus::Retained;
 }
 
 ReductionStatus
@@ -1006,7 +1052,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.17"
+#define APP_VER "0.0.18"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
