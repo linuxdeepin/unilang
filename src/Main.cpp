@@ -551,12 +551,6 @@ public:
 ReductionStatus
 ReduceOnce(TermNode&, Context&);
 
-ReductionStatus
-ReduceOnce(TermNode&, Context&)
-{
-	return ReductionStatus::Neutral;
-}
-
 
 class Context final
 {
@@ -576,6 +570,12 @@ public:
 
 	[[nodiscard, gnu::pure]] TermNode&
 	GetNextTermRef() const;
+
+	void
+	SetNextTermRef(TermNode& term) noexcept
+	{
+		next_term_ptr = &term;
+	}
 
 	ReductionStatus
 	ApplyTail();
@@ -644,6 +644,84 @@ Context::Rewrite(Reducer reduce)
 
 // NOTE: This is the host type for combiners.
 using ContextHandler = function<ReductionStatus(TermNode&, Context&)>;
+
+
+namespace
+{
+
+ReductionStatus
+ReduceLeaf(TermNode& term, Context& ctx)
+{
+	return ReductionStatus::Neutral;
+}
+
+ReductionStatus
+ReduceCombinedBranch(TermNode& term, Context& ctx)
+{
+	assert(IsBranchedList(term));
+
+	auto& fm(AccessFirstSubterm(term));
+	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
+
+	if(p_ref_fm)
+	{
+		if(const auto p_handler
+			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
+			return (*p_handler)(term, ctx);
+	}
+	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
+		return (*p_handler)(term, ctx);
+	throw UnilangException("Invalid object found in the combiner position.");
+}
+
+ReductionStatus
+ReduceBranch(TermNode& term, Context& ctx)
+{
+	if(IsBranch(term))
+	{
+		assert(term.size() != 0);
+		if(term.size() == 1)
+		{
+			// NOTE: The following is necessary to prevent unbounded overflow in
+			//	handling recursive subterms.
+			auto term_ref(std::ref(term));
+
+			do
+			{
+				term_ref = AccessFirstSubterm(term_ref);
+			}
+			while(term_ref.get().size() == 1);
+			LiftOther(term, term_ref);
+			return ReduceOnce(term, ctx);
+		}
+		if(IsEmpty(AccessFirstSubterm(term)))
+			RemoveHead(term);
+		assert(IsBranchedList(term));
+		ctx.SetNextTermRef(term);
+		ctx.LastStatus = ReductionStatus::Neutral;
+
+		auto& sub(AccessFirstSubterm(term));
+
+		ctx.SetupFront([&](Context& c){
+			c.SetNextTermRef(term);
+			return ReduceCombinedBranch(term, ctx);
+		});
+		ctx.SetupFront([&](Context&){
+			return ReduceBranch(sub, ctx);
+		});
+		return ReductionStatus::Partial;
+	}
+	return ReductionStatus::Retained;
+}
+
+} // unnamed namespace;
+
+ReductionStatus
+ReduceOnce(TermNode& term, Context& ctx)
+{
+	return term.Value.has_value() ? ReduceLeaf(term, ctx)
+		: ReduceBranch(term, ctx);
+}
 
 
 namespace
@@ -804,7 +882,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.11"
+#define APP_VER "0.0.12"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
