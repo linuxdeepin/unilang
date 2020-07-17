@@ -1,5 +1,6 @@
 ﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
 
+#include <utility> // for std::reference_wrapper, std::ref;
 #include <any> // for std::any, std::bad_any_cast, std:;any_cast;
 #include <functional> // for std::function;
 #include <string_view> // for std::string_view;
@@ -15,7 +16,6 @@
 #include <exception> // for std::runtime_error;
 #include <cctype> // for std::isgraph;
 #include <cassert> // for assert;
-#include <utility> // for std::ref;
 #include <algorithm> // for std::for_each;
 #include <iostream>
 #include <typeinfo> // for typeid;
@@ -24,6 +24,9 @@ namespace Unilang
 {
 
 using std::size_t;
+
+template<typename _type>
+using lref = std::reference_wrapper<_type>;
 
 using std::any;
 using std::bad_any_cast;
@@ -372,7 +375,81 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 }
 
 
+// NOTE: The collection of values of unit types.
+enum class ValueToken
+{
+	Unspecified
+};
 
+
+// NOTE: The host type of symbol.
+// XXX: The destructor is not virtual.
+class TokenValue final : public string
+{
+public:
+	using base = string;
+
+	TokenValue() = default;
+	using base::base;
+	TokenValue(const base& b)
+		: base(b)
+	{}
+	TokenValue(base&& b)
+	: base(std::move(b))
+	{}
+	TokenValue(const TokenValue&) = default;
+	TokenValue(TokenValue&&) = default;
+
+	TokenValue&
+	operator=(const TokenValue&) = default;
+	TokenValue&
+	operator=(TokenValue&&) = default;
+};
+
+
+// NOTE: The host type of reference values.
+class TermReference final
+{
+private:
+	lref<TermNode> term_ref;
+
+public:
+	inline
+	TermReference(TermNode& term) noexcept
+		: term_ref(term)
+	{}
+	TermReference(const TermReference&) = default;
+
+	TermReference&
+	operator=(const TermReference&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const TermReference& x, const TermReference& y) noexcept
+	{
+		return &x.term_ref.get() == &y.term_ref.get();
+	}
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator!=(const TermReference& x, const TermReference& y) noexcept
+	{
+		return &x.term_ref.get() != &y.term_ref.get();
+	}
+
+	[[nodiscard, gnu::pure]] explicit
+	operator TermNode&() const noexcept
+	{
+		return term_ref;
+	}
+
+	[[nodiscard, gnu::pure]] TermNode&
+	get() const noexcept
+	{
+		return term_ref.get();
+	}
+};
+
+
+// NOTE: This is the main entry of the evaluation algorithm.
 ReductionStatus
 ReduceOnce(TermNode&, Context&);
 
@@ -465,6 +542,10 @@ Context::Rewrite(Reducer reduce)
 	}while(IsAlive());
 	return LastStatus;
 }
+
+
+// NOTE: This is the host type for combiners.
+using ContextHandler = function<ReductionStatus(TermNode&, Context&)>;
 
 
 namespace
@@ -625,7 +706,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.9"
+#define APP_VER "0.0.10"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
