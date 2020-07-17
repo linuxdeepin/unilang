@@ -557,12 +557,17 @@ LiftOther(TermNode& term, TermNode& tm)
 class Context final
 {
 private:
+	lref<pmr::memory_resource> memory_rsrc;
 	TermNode* next_term_ptr = {};
 	ReducerSequence current{};
 
 public:
 	Reducer TailAction{};
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
+
+	Context(pmr::memory_resource& rsrc)
+		: memory_rsrc(rsrc)
+	{}
 
 	bool
 	IsAlive() const noexcept
@@ -787,7 +792,7 @@ private:
 	string line{};
 
 public:
-	Context Root{};
+	Context Root{*pmr::new_delete_resource()};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
@@ -884,7 +889,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.13"
+#define APP_VER "0.0.14"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
