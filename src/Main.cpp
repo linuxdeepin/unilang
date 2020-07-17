@@ -1110,6 +1110,8 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 				return *p;
 			if(const auto p = std::any_cast<bool>(&vo))
 				return *p ? "#t" : "#f";
+			if(const auto p = std::any_cast<int>(&vo))
+				return sfmt<string>("%d", *p);
 
 			const auto& t(vo.type());
 
@@ -1242,7 +1244,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.22"
+#define APP_VER "0.0.23"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
