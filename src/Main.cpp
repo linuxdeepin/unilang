@@ -18,6 +18,8 @@
 //	std::streamsize;
 #include <exception> // for std::runtime_error;
 #include <cassert> // for assert;
+#include <cstdarg> // for std::va_list, va_copy, va_end, va_start;
+#include <cstdio> // for std::vsprintf;
 #include <cctype> // for std::isgraph;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <typeinfo> // for typeid;
@@ -59,6 +61,65 @@ using ValueObject = any;
 isdigit(char c) noexcept
 {
 	return (unsigned(c) - '0') < 10U;
+}
+
+[[nodiscard, gnu::nonnull(1), gnu::pure]] size_t
+vfmtlen(const char*, std::va_list) noexcept;
+
+size_t
+vfmtlen(const char* fmt, std::va_list args) noexcept
+{
+	assert(fmt);
+
+	const int l(std::vsnprintf({}, 0, fmt, args));
+
+	return size_t(l < 0 ? -1 : l);
+}
+
+template<class _tString = string>
+[[nodiscard, gnu::nonnull(1)]] _tString
+vsfmt(const typename _tString::value_type* fmt,
+	std::va_list args)
+{
+	std::va_list ap;
+
+	va_copy(ap, args);
+
+	const auto l(Unilang::vfmtlen(fmt, ap));
+
+	va_end(ap);
+	if(l == size_t(-1))
+		throw std::runtime_error("Failed to write formatted string.");
+
+	_tString str(l, typename _tString::value_type());
+
+	if(l != 0)
+	{
+		assert(str.length() > 0 && str[0] == typename _tString::value_type());
+		std::vsprintf(&str[0], fmt, args);
+	}
+	return str;
+}
+
+template<class _tString = string>
+[[nodiscard, gnu::nonnull(1)]] _tString
+sfmt(const typename _tString::value_type* fmt, ...)
+{
+	std::va_list args;
+
+	va_start(args, fmt);
+	try
+	{
+		auto str(Unilang::vsfmt<_tString>(fmt, args));
+
+		va_end(args);
+		return str;
+	}
+	catch(...)
+	{
+		va_end(args);
+		throw;
+	}
 }
 
 
@@ -1111,7 +1172,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.19"
+#define APP_VER "0.0.20"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
