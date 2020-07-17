@@ -656,6 +656,8 @@ class Context final
 {
 private:
 	lref<pmr::memory_resource> memory_rsrc;
+	shared_ptr<Environment> p_record{std::allocate_shared<Environment>(
+		Environment::allocator_type(&memory_rsrc.get()))};
 	TermNode* next_term_ptr = {};
 	ReducerSequence current{};
 
@@ -676,6 +678,13 @@ public:
 	[[nodiscard, gnu::pure]] TermNode&
 	GetNextTermRef() const;
 
+	[[nodiscard, gnu::pure]]
+	const shared_ptr<Environment>&
+	GetRecordPtr() const noexcept
+	{
+		return p_record;
+	}
+
 	void
 	SetNextTermRef(TermNode& term) noexcept
 	{
@@ -690,6 +699,9 @@ public:
 
 	ReductionStatus
 	Rewrite(Reducer);
+
+	Environment::NameResolution
+	Resolve(shared_ptr<Environment>, string_view);
 
 	template<typename... _tParams>
 	inline void
@@ -732,6 +744,13 @@ Context::Evaluate(TermNode& term)
 	return Rewrite([this](Context& ctx){
 		return ReduceOnce(ctx.GetNextTermRef(), ctx);
 	});
+}
+
+Environment::NameResolution
+Context::Resolve(shared_ptr<Environment> p_env, string_view id)
+{
+	assert(bool(p_env));
+	return {p_env->LookupName(id), std::move(p_env)};
 }
 
 ReductionStatus
@@ -987,7 +1006,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.16"
+#define APP_VER "0.0.17"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
