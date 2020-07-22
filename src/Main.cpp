@@ -1610,13 +1610,19 @@ LoadFunctions(Interpreter& intp)
 		term.Value = ValueToken::Unspecified;
 		return ReductionStatus::Clean;
 	});
+	RegisterStrict(ctx, "newline", [&](TermNode& term, Context&){
+		RetainN(term, 0);
+		std::cout << std::endl;
+		term.Value = ValueToken::Unspecified;
+		return ReductionStatus::Clean;
+	});
 	// TODO: Re-enable the protection after the parent environment resolution is
 	//	implemented.
 //	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.38"
+#define APP_VER "0.0.39"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
