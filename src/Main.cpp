@@ -1184,13 +1184,40 @@ ReduceChildrenOrderedAsync(TNIter first, TNIter last, Context& ctx)
 		: ReductionStatus::Neutral;
 }
 
+ReductionStatus
+ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
+{
+	assert(i != term.end());
+	if(std::next(i) == term.end())
+	{
+		LiftOther(term, *i);
+		return ReduceOnce(term, ctx);
+	}
+	ctx.SetupFront([&, i](Context&){
+		return ReduceSequenceOrderedAsync(term, ctx, term.erase(i));
+	});
+	return ReduceOnce(*i, ctx);
+}
+
 } // unnamed namespace;
+
+ReductionStatus
+ReduceOrdered(TermNode&, Context&);
 
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
 {
 	return term.Value.has_value() ? ReduceLeaf(term, ctx)
 		: ReduceBranch(term, ctx);
+}
+
+ReductionStatus
+ReduceOrdered(TermNode& term, Context& ctx)
+{
+	if(IsBranch(term))
+		return ReduceSequenceOrderedAsync(term, ctx, term.begin());
+	term.Value = ValueToken::Unspecified;
+	return ReductionStatus::Retained;
 }
 
 
@@ -1431,6 +1458,9 @@ ReductionStatus
 If(TermNode&, Context&);
 
 ReductionStatus
+Sequence(TermNode&, Context&);
+
+ReductionStatus
 If(TermNode& term, Context& ctx)
 {
 	Retain(term);
@@ -1458,6 +1488,14 @@ If(TermNode& term, Context& ctx)
 	}
 	else
 		throw UnilangException("Syntax error in conditional form.");
+}
+
+ReductionStatus
+Sequence(TermNode& term, Context& ctx)
+{
+	Retain(term);
+	RemoveHead(term);
+	return ReduceOrdered(term, ctx);
 }
 
 } // namespace Forms;
@@ -1603,6 +1641,7 @@ LoadFunctions(Interpreter& intp)
 	using namespace Forms;
 
 	RegisterForm(ctx, "$if", If);
+	RegisterForm(ctx, "$sequence", Sequence);
 	RegisterStrict(ctx, "display", [&](TermNode& term, Context&){
 		RetainN(term);
 		LiftOther(term, *std::next(term.begin()));
@@ -1622,7 +1661,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.39"
+#define APP_VER "0.0.40"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
