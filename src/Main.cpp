@@ -648,6 +648,66 @@ TermToNamePtr(const TermNode& term)
 }
 
 
+class Environment;
+
+using AnchorPtr = shared_ptr<const void>;
+
+
+class EnvironmentReference
+{
+private:
+	weak_ptr<Environment> p_weak{};
+	AnchorPtr p_anchor{};
+
+public:
+	EnvironmentReference() = default;
+	EnvironmentReference(const shared_ptr<Environment>&) noexcept;
+	template<typename _tParam1, typename _tParam2>
+	EnvironmentReference(_tParam1&& arg1, _tParam2&& arg2) noexcept
+		: p_weak(std::forward<_tParam1>(arg1)),
+		p_anchor(std::forward<_tParam2>(arg2))
+	{}
+	EnvironmentReference(const EnvironmentReference&) = default;
+	EnvironmentReference(EnvironmentReference&&) = default;
+
+	EnvironmentReference&
+	operator=(const EnvironmentReference&) = default;
+	EnvironmentReference&
+	operator=(EnvironmentReference&&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const EnvironmentReference& x, const EnvironmentReference& y)
+		noexcept
+	{
+		return x.p_weak.lock() == y.p_weak.lock();
+	}
+	[[nodiscard, gnu::pure]] friend bool
+	operator!=(const EnvironmentReference& x, const EnvironmentReference& y)
+		noexcept
+	{
+		return x.p_weak.lock() != y.p_weak.lock();
+	}
+
+	[[nodiscard, gnu::pure]] const AnchorPtr&
+	GetAnchorPtr() const noexcept
+	{
+		return p_anchor;
+	}
+
+	[[nodiscard, gnu::pure]] const weak_ptr<Environment>&
+	GetPtr() const noexcept
+	{
+		return p_weak;
+	}
+
+	shared_ptr<Environment>
+	Lock() const noexcept
+	{
+		return p_weak.lock();
+	}
+};
+
+
 // NOTE: The host type of reference values.
 class TermReference final
 {
@@ -764,6 +824,9 @@ ReduceBranchToList(TermNode& term, Context&) noexcept
 }
 
 
+using EnvironmentList = vector<ValueObject>;
+
+
 class Environment final
 {
 public:
@@ -775,6 +838,10 @@ public:
 	mutable BindingMap Bindings;
 	ValueObject Parent{};
 
+private:
+	AnchorPtr p_anchor{InitAnchor()};
+
+public:
 	Environment(allocator_type a)
 		: Bindings(a)
 	{}
@@ -820,17 +887,54 @@ public:
 		return &x != &y;
 	}
 
+	[[nodiscard, gnu::pure]] const AnchorPtr&
+	GetAnchorPtr() const noexcept
+	{
+		return p_anchor;
+	}
+
 	static void
 	CheckParent(const ValueObject&);
 
+private:
+	[[nodiscard, gnu::pure]] AnchorPtr
+	InitAnchor() const;
+
+public:
 	[[nodiscard, gnu::pure]] NameResolution::first_type
 	LookupName(string_view) const;
 };
+
+EnvironmentReference::EnvironmentReference(const shared_ptr<Environment>& p_env)
+	noexcept
+	: EnvironmentReference(p_env, p_env ? p_env->GetAnchorPtr() : nullptr)
+{}
+
+namespace
+{
+
+struct AnchorData final
+{
+public:
+	AnchorData() = default;
+	AnchorData(AnchorData&&) = default;
+
+	AnchorData&
+	operator=(AnchorData&&) = default;
+};
+
+} // unnamed namespace;
 
 void
 Environment::CheckParent(const ValueObject&)
 {
 	// TODO: Check parent type.
+}
+
+AnchorPtr
+Environment::InitAnchor() const
+{
+	return std::allocate_shared<AnchorData>(Bindings.get_allocator());
 }
 
 Environment::NameResolution::first_type
@@ -936,7 +1040,7 @@ public:
 	void
 	UnwindCurrent() noexcept;
 
-	[[nodiscard, gnu::pure]] weak_ptr<Environment>
+	[[nodiscard, gnu::pure]] EnvironmentReference
 	WeakenRecord() const noexcept;
 };
 
@@ -1008,7 +1112,7 @@ Context::UnwindCurrent() noexcept
 		current.pop_front();
 }
 
-weak_ptr<Environment>
+EnvironmentReference
 Context::WeakenRecord() const noexcept
 {
 	return p_record;
@@ -1834,7 +1938,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.44"
+#define APP_VER "0.0.45"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
