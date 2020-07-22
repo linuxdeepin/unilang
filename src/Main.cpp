@@ -1142,7 +1142,7 @@ ReduceBranch(TermNode& term, Context& ctx)
 			return ReduceCombinedBranch(term, ctx);
 		});
 		ctx.SetupFront([&](Context&){
-			return ReduceBranch(sub, ctx);
+			return ReduceOnce(sub, ctx);
 		});
 		return ReductionStatus::Partial;
 	}
@@ -1404,7 +1404,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.30"
+#define APP_VER "0.0.31"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
