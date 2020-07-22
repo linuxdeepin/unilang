@@ -1261,7 +1261,7 @@ struct SeparatorTransformer
 					add(res, b);
 				else
 				{
-					auto child(Unilang::AsTermNode(res.get_allocator()));
+					auto child(Unilang::AsTermNode());
 
 					do
 					{
@@ -1834,7 +1834,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.43"
+#define APP_VER "0.0.44"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
