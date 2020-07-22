@@ -1371,8 +1371,62 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 
 } // unnamed namespace;
 
+namespace
+{
+
+[[nodiscard, gnu::pure]] bool
+ExtractBool(const TermNode& term)
+{
+	if(const auto p = Unilang::TryAccessReferencedTerm<bool>(term))
+		return *p;
+	return {};
+}
+
+} // unnamed namespace;
+
 namespace Forms
 {
+
+inline ReductionStatus
+Retain(const TermNode& term) noexcept
+{
+	assert(IsBranch(term));
+	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+If(TermNode&, Context&);
+
+ReductionStatus
+If(TermNode& term, Context& ctx)
+{
+	Retain(term);
+
+	const auto size(term.size());
+
+	if(size == 3 || size == 4)
+	{
+		auto i(std::next(term.begin()));
+
+		ctx.SetupFront([&, i](Context&) -> ReductionStatus{
+			auto j(i);
+
+			if(!ExtractBool(*j))
+				++j;
+			if(++j != term.end())
+			{
+				LiftOther(term, *j);
+				return ReduceOnce(term, ctx);
+			}
+			term.Value = ValueToken::Unspecified;
+			return ReductionStatus::Clean;
+		});
+		return ReduceOnce(*i, ctx);
+	}
+	else
+		throw UnilangException("Syntax error in conditional form.");
+}
+
 } // namespace Forms;
 
 namespace
@@ -1506,13 +1560,14 @@ LoadFunctions(Interpreter& intp)
 	auto& ctx(intp.Root);
 	using namespace Forms;
 
+	RegisterForm(ctx, "$if", If);
 	// TODO: Re-enable the protection after the parent environment resolution is
 	//	implemented.
 //	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.33"
+#define APP_VER "0.0.34"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
