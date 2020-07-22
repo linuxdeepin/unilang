@@ -1,9 +1,10 @@
 ﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
 
-#include <utility> // for std::pair, std::reference_wrapper, std::ref;
+#include <utility> // for std::pair, std::reference_wrapper, std::ref,
+//	std::exchange;
 #include <any> // for std::any, std::bad_any_cast, std:;any_cast;
 #include <functional> // for std::function, std::less;
-#include <memory> // for std::shared_ptr;
+#include <memory> // for std::shared_ptr, std::weak_ptr;
 #include <string_view> // for std::string_view;
 #include <memory_resource> // for pmr and
 //	complete std::pmr::polymorphic_allocator;
@@ -39,6 +40,7 @@ using std::function;
 using std::pair;
 using std::shared_ptr;
 using std::string_view;
+using std::weak_ptr;
 
 namespace pmr = std::pmr;
 
@@ -803,14 +805,22 @@ public:
 		return !current.empty();
 	}
 
+	[[nodiscard]] Environment::BindingMap&
+	GetBindingsRef() const noexcept
+	{
+		return p_record->Bindings;
+	}
 	[[nodiscard, gnu::pure]] TermNode&
 	GetNextTermRef() const;
-
-	[[nodiscard, gnu::pure]]
-	const shared_ptr<Environment>&
+	[[nodiscard, gnu::pure]] const shared_ptr<Environment>&
 	GetRecordPtr() const noexcept
 	{
 		return p_record;
+	}
+	[[nodiscard]] Environment&
+	GetRecordRef() const noexcept
+	{
+		return *p_record;
 	}
 
 	void
@@ -845,6 +855,15 @@ public:
 	{
 		current.emplace_front(std::forward<_tParams>(args)...);
 	}
+
+	[[nodiscard, gnu::pure]] shared_ptr<Environment>
+	ShareRecord() const noexcept;
+
+	shared_ptr<Environment>
+	SwitchEnvironmentUnchecked(const shared_ptr<Environment>&) noexcept;
+
+	[[nodiscard, gnu::pure]] weak_ptr<Environment>
+	WeakenRecord() const noexcept;
 };
 
 TermNode&
@@ -893,9 +912,63 @@ Context::Rewrite(Reducer reduce)
 	return LastStatus;
 }
 
+shared_ptr<Environment>
+Context::ShareRecord() const noexcept
+{
+	return p_record;
+}
+
+shared_ptr<Environment>
+Context::SwitchEnvironmentUnchecked(const shared_ptr<Environment>& p_env)
+	noexcept
+{
+	assert(p_env);
+	return std::exchange(p_record, p_env);
+}
+
+weak_ptr<Environment>
+Context::WeakenRecord() const noexcept
+{
+	return p_record;
+}
+
 
 // NOTE: This is the host type for combiners.
 using ContextHandler = function<ReductionStatus(TermNode&, Context&)>;
+
+
+template<typename... _tParams>
+inline shared_ptr<Environment>
+AllocateEnvironment(const Environment::allocator_type& a, _tParams&&... args)
+{
+	return std::allocate_shared<Environment>(a,
+		std::forward<_tParams>(args)...);
+}
+template<typename... _tParams>
+inline shared_ptr<Environment>
+AllocateEnvironment(Context& ctx, _tParams&&... args)
+{
+	return Unilang::AllocateEnvironment(ctx.GetBindingsRef().get_allocator(),
+		std::forward<_tParams>(args)...);
+}
+template<typename... _tParams>
+inline shared_ptr<Environment>
+AllocateEnvironment(TermNode& term, Context& ctx, _tParams&&... args)
+{
+	const auto a(ctx.GetBindingsRef().get_allocator());
+
+	static_cast<void>(term);
+	assert(a == term.get_allocator());
+	return Unilang::AllocateEnvironment(a, std::forward<_tParams>(args)...);
+}
+
+template<typename... _tParams>
+inline shared_ptr<Environment>
+SwitchToFreshEnvironment(Context& ctx, _tParams&&... args)
+{
+	return ctx.SwitchEnvironmentUnchecked(Unilang::AllocateEnvironment(ctx,
+		std::forward<_tParams>(args)...));
+}
 
 
 namespace
@@ -1230,8 +1303,9 @@ Interpreter::WaitForLine()
 	return getline(cin, line);
 }
 
+
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.24"
+#define APP_VER "0.0.25"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
