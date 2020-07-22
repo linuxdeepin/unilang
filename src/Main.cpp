@@ -1233,6 +1233,7 @@ class Interpreter final
 {
 private:
 	string line{};
+	shared_ptr<Environment> p_ground{};
 
 public:
 	Context Root{*pmr::new_delete_resource()};
@@ -1254,6 +1255,9 @@ public:
 
 	void
 	Run();
+
+	bool
+	SaveGround();
 
 	std::istream&
 	WaitForLine();
@@ -1323,6 +1327,20 @@ Interpreter::Run()
 		;
 }
 
+bool
+Interpreter::SaveGround()
+{
+	if(!p_ground)
+	{
+		auto& cs(Root);
+
+		p_ground = Unilang::SwitchToFreshEnvironment(cs,
+			ValueObject(cs.WeakenRecord()));
+		return true;
+	}
+	return {};
+}
+
 std::istream&
 Interpreter::WaitForLine()
 {
@@ -1334,7 +1352,7 @@ Interpreter::WaitForLine()
 
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.26"
+#define APP_VER "0.0.27"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
