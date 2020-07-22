@@ -22,8 +22,8 @@
 #include <cstdarg> // for std::va_list, va_copy, va_end, va_start;
 #include <cstdio> // for std::vsprintf;
 #include <cctype> // for std::isgraph;
-#include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <typeinfo> // for typeid;
+#include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
 
 namespace Unilang
@@ -999,6 +999,43 @@ SwitchToFreshEnvironment(Context& ctx, _tParams&&... args)
 		std::forward<_tParams>(args)...));
 }
 
+
+template<typename _type, typename... _tParams>
+inline bool
+EmplaceLeaf(Environment::BindingMap& m, string_view name, _tParams&&... args)
+{
+	assert(name.data());
+
+	const auto i(m.find(name));
+
+	if(i == m.end())
+	{
+		m[string(name)].Value = _type(std::forward<_tParams>(args)...);
+		return true;
+	}
+
+	auto& nd(i->second);
+
+	nd.Value = _type(std::forward<_tParams>(args)...);
+	nd.Subterms.clear();
+	return {};
+}
+template<typename _type, typename... _tParams>
+inline bool
+EmplaceLeaf(Environment& env, string_view name, _tParams&&... args)
+{
+	return Unilang::EmplaceLeaf<_type>(env.Bindings, name,
+		std::forward<_tParams>(args)...);
+}
+template<typename _type, typename... _tParams>
+inline bool
+EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
+{
+	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name,
+		std::forward<_tParams>(args)...);
+}
+
+
 namespace Forms
 {
 } // namespace Forms;
@@ -1367,7 +1404,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.29"
+#define APP_VER "0.0.30"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
