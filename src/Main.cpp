@@ -1361,11 +1361,13 @@ LoadFunctions(Interpreter& intp)
 	auto& ctx(intp.Root);
 	using namespace Forms;
 
-	intp.SaveGround();
+	// TODO: Re-enable the protection after the parent environment resolution is
+	//	implemented.
+//	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.28"
+#define APP_VER "0.0.29"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
