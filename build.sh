@@ -1,2 +1,2 @@
-g++ -std=c++17 -g -ounilang src/*.cpp
+g++ -std=c++17 -Wall -Wextra -g -ounilang src/*.cpp
 
