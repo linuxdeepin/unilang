@@ -1,7 +1,7 @@
 ﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
 
 #include <utility> // for std::pair, std::reference_wrapper, std::ref,
-//	std::exchange;
+//	std::swap, std::exchange;
 #include <any> // for std::any, std::bad_any_cast, std:;any_cast;
 #include <functional> // for std::function, std::less;
 #include <memory> // for std::shared_ptr, std::weak_ptr;
@@ -923,6 +923,24 @@ public:
 	operator=(AnchorData&&) = default;
 };
 
+using Redirector = function<const ValueObject*()>;
+
+const ValueObject*
+RedirectEnvironmentList(EnvironmentList::const_iterator first,
+	EnvironmentList::const_iterator last, string_view id, Redirector& cont)
+{
+	if(first != last)
+	{
+		cont = std::bind(
+			[=, &cont](EnvironmentList::const_iterator i, Redirector& c){
+			cont = std::move(c);
+			return RedirectEnvironmentList(i, last, id, cont);
+		}, std::next(first), std::move(cont));
+		return &*first;
+	}
+	return {};
+}
+
 } // unnamed namespace;
 
 void
@@ -1075,7 +1093,68 @@ Environment::NameResolution
 Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 {
 	assert(bool(p_env));
-	return {p_env->LookupName(id), std::move(p_env)};
+	Redirector cont;
+	// NOTE: Blocked. Use ISO C++14 deduced lambda return type (cf. CWG 975)
+	//	compatible to G++ attribute.
+	Environment::NameResolution::first_type p_obj;
+
+	do
+	{
+		p_obj = p_env->LookupName(id);
+	}while([&]() -> bool{
+		if(!p_obj)
+		{
+			lref<const ValueObject> cur(p_env->Parent);
+			shared_ptr<Environment> p_redirected{};
+			bool search_next;
+
+			do
+			{
+				const ValueObject& parent(cur);
+				const auto& tp(parent.type());
+
+				if(tp == typeid(EnvironmentReference))
+				{
+					p_redirected = std::any_cast<
+						EnvironmentReference>(&parent)->Lock();
+					assert(bool(p_redirected));
+					p_env.swap(p_redirected);
+				}
+				else if(tp == typeid(shared_ptr<Environment>))
+				{
+					p_redirected = *std::any_cast<
+						shared_ptr<Environment>>(&parent);
+					assert(bool(p_redirected));
+					p_env.swap(p_redirected);
+				}
+				else
+				{
+					const ValueObject* p_next = {};
+
+					if(tp == typeid(EnvironmentList))
+					{
+						auto& envs(*std::any_cast<EnvironmentList>(&parent));
+
+						p_next = RedirectEnvironmentList(envs.cbegin(),
+							envs.cend(), id, cont);
+					}
+					while(!p_next && bool(cont))
+						p_next = std::exchange(cont, Redirector())();
+					if(p_next)
+					{
+						// XXX: Cyclic parent found is not allowed.
+						assert(&cur.get() != p_next);
+						cur = *p_next;
+						search_next = true;
+					}
+				}
+				search_next = false;
+			}while(search_next);
+			return bool(p_redirected);
+		}
+		return false;
+	}());
+	return {p_obj, std::move(p_env)};
 }
 
 ReductionStatus
@@ -1938,7 +2017,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.45"
+#define APP_VER "0.0.46"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
