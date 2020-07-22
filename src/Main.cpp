@@ -1472,8 +1472,11 @@ ParseLeaf(string_view id)
 }
 
 void
-PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
+PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
+	size_t n = 0)
 {
+	if(depth != 0 && n != 0)
+		os << ' ';
 	try
 	{
 		const auto& vo(term.Value);
@@ -1499,17 +1502,22 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 	catch(bad_any_cast&)
 	{
 		if(term)
+		{
+			size_t n(0);
+
+			os << '(';
 			for(const auto& nd : term)
 			{
-				os << '(';
 				try
 				{
-					PrintTermNode(os, nd, depth + 1);
+					PrintTermNode(os, nd, depth + 1, n);
 				}
 				catch(std::out_of_range&)
 				{}
-				os << ')';
+				++n;
 			}
+			os << ')';
+		}
 	}
 }
 
@@ -1762,7 +1770,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.41"
+#define APP_VER "0.0.42"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
