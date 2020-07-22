@@ -1229,6 +1229,36 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 }
 
 
+enum WrappingKind : decltype(FormContextHandler::Wrapping)
+{
+	Form = 0,
+	Strict = 1
+};
+
+
+template<size_t _vWrapping = Strict, class _tTarget, typename... _tParams>
+inline void
+RegisterHandler(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::EmplaceLeaf<ContextHandler>(target, name,
+		FormContextHandler(std::forward<_tParams>(args)..., _vWrapping));
+}
+
+template<class _tTarget, typename... _tParams>
+inline void
+RegisterForm(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::RegisterHandler<Form>(target, name, std::forward<_tParams>(args)...);
+}
+
+template<class _tTarget, typename... _tParams>
+inline void
+RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::RegisterHandler<>(target, name, std::forward<_tParams>(args)...);
+}
+
+
 namespace
 {
 
@@ -1482,7 +1512,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.32"
+#define APP_VER "0.0.33"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
