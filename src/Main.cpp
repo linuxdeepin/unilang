@@ -21,13 +21,13 @@
 #include <cassert> // for assert;
 #include <cstdarg> // for std::va_list, va_copy, va_end, va_start;
 #include <cstdio> // for std::vsprintf;
+#include <algorithm> // for std::find_if_not, std::find_if, std::for_each;
 #include <cctype> // for std::isgraph;
 #include <type_traits> // for std::is_constructible_v, std::enable_if_t;
-#include <iterator> // for std::next;
+#include <iterator> // for std::next, std::make_move_iterator;
 #include <typeinfo> // for typeid;
 #include <cstdlib> // for std::getenv;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
-#include <algorithm> // for std::for_each;
 
 namespace Unilang
 {
@@ -124,6 +124,23 @@ sfmt(const typename _tString::value_type* fmt, ...)
 	{
 		va_end(args);
 		throw;
+	}
+}
+
+
+template<typename _fPred, typename _fInsert, typename _tIn>
+void
+split(_tIn b, _tIn e, _fPred is_delim, _fInsert insert)
+{
+	while(b != e)
+	{
+		_tIn i(std::find_if_not(b, e, is_delim));
+
+		b = std::find_if(i, e, is_delim);
+		if(i != b)
+			insert(i, b);
+		else
+			break;
 	}
 }
 
@@ -489,6 +506,16 @@ AsTermNode(_tParams&&... args)
 
 	term.Value = ValueObject(std::forward<_tParams>(args)...);
 	return term;
+}
+
+
+template<typename _type>
+[[nodiscard, gnu::pure]] inline bool
+HasValue(const TermNode& term, const _type& x)
+{
+	if(const auto p = std::any_cast<_type>(&term.Value))
+		return *p == x;
+	return {};
 }
 
 
@@ -1204,6 +1231,80 @@ ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 ReductionStatus
 ReduceOrdered(TermNode&, Context&);
 
+struct SeparatorTransformer
+{
+	template<typename _func, class _tTerm, class _fPred>
+	[[nodiscard]] TermNode
+	operator()(_func trans, _tTerm&& term, const ValueObject& pfx,
+		_fPred filter) const
+	{
+		using it_t = decltype(std::make_move_iterator(term.begin()));
+
+		return AddRange([&](TermNode& res, it_t b, it_t e){
+			const auto add([&](TermNode& node, it_t i){
+				node.Add(trans(*i));
+			});
+
+			if(b != e)
+			{
+				if(std::next(b) == e)
+					add(res, b);
+				else
+				{
+					auto child(Unilang::AsTermNode(res.get_allocator()));
+
+					do
+					{
+						add(child, b++);
+					}
+					while(b != e);
+					res.Add(std::move(child));
+				}
+			}
+		}, std::forward<_tTerm>(term), pfx, filter);
+	}
+
+	template<typename _func, class _tTerm, class _fPred>
+	[[nodiscard]] TermNode
+	AddRange(_func add_range, _tTerm&& term, const ValueObject& pfx,
+		_fPred filter) const
+	{
+		using it_t = decltype(std::make_move_iterator(term.begin()));
+		const auto a(term.get_allocator());
+		auto res(Unilang::AsTermNode(std::forward<_tTerm>(term).Value));
+
+		if(IsBranch(term))
+		{
+			res.Add(Unilang::AsTermNode(pfx));
+			Unilang::split(std::make_move_iterator(term.begin()),
+				std::make_move_iterator(term.end()), filter,
+				[&](it_t b, it_t e){
+				add_range(res, b, e);
+			});
+		}
+		return res;
+	}
+
+	template<class _tTerm, class _fPred>
+	[[nodiscard]] static TermNode
+	Process(_tTerm&& term, const ValueObject& pfx, _fPred filter)
+	{
+		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
+			return std::forward<_tTerm>(tm);
+		}, std::forward<_tTerm>(term), pfx, filter);
+	}
+
+	template<class _fPred>
+	static void
+	ReplaceChildren(TermNode& term, const ValueObject& pfx,
+		_fPred filter)
+	{
+		if(std::find_if(term.begin(), term.end(), filter) != term.end())
+			term = Process(std::move(term), pfx, filter);
+	}
+};
+
+
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
 {
@@ -1661,7 +1762,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.40"
+#define APP_VER "0.0.41"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
