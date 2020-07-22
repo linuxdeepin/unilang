@@ -751,6 +751,18 @@ LiftOther(TermNode& term, TermNode& tm)
 	term.Value = std::move(tm.Value);
 }
 
+class Context;
+
+ReductionStatus
+ReduceBranchToList(TermNode&, Context&) noexcept;
+
+ReductionStatus
+ReduceBranchToList(TermNode& term, Context&) noexcept
+{
+	RemoveHead(term);
+	return ReductionStatus::Retained;
+}
+
 
 class Environment final
 {
@@ -831,8 +843,6 @@ Environment::LookupName(string_view id) const
 	return i != Bindings.cend() ? &i->second : nullptr;
 }
 
-
-class Context;
 
 using Reducer = function<ReductionStatus(Context&)>;
 
@@ -1304,7 +1314,6 @@ struct SeparatorTransformer
 	}
 };
 
-
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
 {
@@ -1612,6 +1621,59 @@ Sequence(TermNode& term, Context& ctx)
 namespace
 {
 
+class SeparatorPass
+{
+private:
+	using Filter = decltype(std::bind(HasValue<TokenValue>,
+		std::placeholders::_1, std::declval<TokenValue&>()));
+	using TermStack = stack<lref<TermNode>, vector<lref<TermNode>>>;
+
+	TermNode::allocator_type alloc;
+	TokenValue delim{";"};
+	TokenValue delim2{","};
+	Filter
+		filter{std::bind(HasValue<TokenValue>, std::placeholders::_1, delim)};
+	Filter
+		filter2{std::bind(HasValue<TokenValue>, std::placeholders::_1, delim2)};
+	ValueObject pfx{ContextHandler(Forms::Sequence)};
+	ValueObject pfx2{ContextHandler(FormContextHandler(ReduceBranchToList, 1))};
+	mutable TermStack remained{alloc};
+
+public:
+	SeparatorPass(TermNode::allocator_type a)
+		: alloc(a)
+	{}
+
+	ReductionStatus
+	operator()(TermNode& term) const
+	{
+		assert(remained.empty());
+		Transform(term, remained);
+		while(!remained.empty())
+		{
+			const auto term_ref(std::move(remained.top()));
+
+			remained.pop();
+			for(auto& tm : term_ref.get())
+				Transform(tm, remained);
+		}
+		return ReductionStatus::Clean;
+	}
+
+private:
+	void
+	Transform(TermNode& term, TermStack& terms) const
+	{
+		terms.push(term);
+		if(std::find_if(term.begin(), term.end(), filter) != term.end())
+			term = SeparatorTransformer::Process(std::move(term), pfx, filter);
+		if(std::find_if(term.begin(), term.end(), filter2) != term.end())
+			term = SeparatorTransformer::Process(std::move(term), pfx2,
+				filter2);
+	}
+};
+
+
 class Interpreter final
 {
 private:
@@ -1621,6 +1683,7 @@ private:
 public:
 	bool Echo = std::getenv("ECHO");
 	Context Root{*pmr::new_delete_resource()};
+	SeparatorPass Preprocess{pmr::new_delete_resource()};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
@@ -1709,6 +1772,7 @@ Interpreter::Read(string_view unit)
 	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(), ParseLeaf)
 		!= parse_result.cend())
 		throw UnilangException("Redundant ')' found.");
+	Preprocess(term);
 	return term;
 }
 
@@ -1770,7 +1834,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.42"
+#define APP_VER "0.0.43"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
