@@ -1397,6 +1397,23 @@ Retain(const TermNode& term) noexcept
 	return ReductionStatus::Retained;
 }
 
+size_t
+RetainN(const TermNode&, size_t = 1);
+
+size_t
+RetainN(const TermNode& term, size_t m)
+{
+	assert(IsBranch(term));
+
+	const auto n(term.size() - 1);
+
+	if(n == m)
+		return n;
+	throw UnilangException(Unilang::sfmt<std::string>(
+		"Arity mismatch: expected %zu, got %zu.", m, n));
+}
+
+
 ReductionStatus
 If(TermNode&, Context&);
 
@@ -1564,13 +1581,20 @@ LoadFunctions(Interpreter& intp)
 	using namespace Forms;
 
 	RegisterForm(ctx, "$if", If);
+	RegisterStrict(ctx, "display", [&](TermNode& term, Context&){
+		RetainN(term);
+		LiftOther(term, *std::next(term.begin()));
+		PrintTermNode(std::cout, term);
+		term.Value = ValueToken::Unspecified;
+		return ReductionStatus::Clean;
+	});
 	// TODO: Re-enable the protection after the parent environment resolution is
 	//	implemented.
 //	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.35"
+#define APP_VER "0.0.36"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
