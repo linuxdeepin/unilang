@@ -999,6 +999,10 @@ SwitchToFreshEnvironment(Context& ctx, _tParams&&... args)
 		std::forward<_tParams>(args)...));
 }
 
+namespace Forms
+{
+} // namespace Forms;
+
 
 namespace
 {
@@ -1351,8 +1355,17 @@ Interpreter::WaitForLine()
 }
 
 
+void
+LoadFunctions(Interpreter& intp)
+{
+	auto& ctx(intp.Root);
+	using namespace Forms;
+
+	intp.SaveGround();
+}
+
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.27"
+#define APP_VER "0.0.28"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -1369,6 +1382,7 @@ main()
 	Interpreter intp{};
 
 	cout << title << endl << "Initializing...";
+	LoadFunctions(intp);
 	cout << "Initialization finished." << endl;
 	cout << "Type \"exit\" to exit, \"cls\" to clear screen." << endl << endl;
 	intp.Run();
