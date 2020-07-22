@@ -658,6 +658,35 @@ public:
 };
 
 
+[[nodiscard, gnu::pure]] inline TermNode&
+ReferenceTerm(TermNode& term)
+{
+	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+		return p->get();
+	return term;
+}
+[[nodiscard, gnu::pure]] inline const TermNode&
+ReferenceTerm(const TermNode& term)
+{
+	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+		return p->get();
+	return term;
+}
+
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type*
+TryAccessReferencedTerm(TermNode& term)
+{
+	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type*
+TryAccessReferencedTerm(const TermNode& term)
+{
+	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
+}
+
+
 enum class ReductionStatus : size_t
 {
 	Partial = 0x00,
@@ -1305,7 +1334,7 @@ Interpreter::WaitForLine()
 
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.25"
+#define APP_VER "0.0.26"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
