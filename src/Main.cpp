@@ -1090,17 +1090,6 @@ ParseLeaf(string_view id)
 void
 PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 {
-	const auto print_indent([&](size_t n){
-		if(n != 0)
-		{
-			const auto& s(string(n, '\t'));
-
-			os.write(s.data(), std::streamsize(s.size()));
-		}
-	});
-
-	print_indent(depth);
-
 	try
 	{
 		const auto& vo(term.Value);
@@ -1118,24 +1107,21 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 			if(t != typeid(void))
 				return "#[" + string(t.name()) + ']';
 			throw bad_any_cast();
-		}() << '\n';
+		}();
 	}
 	catch(bad_any_cast&)
 	{
-		os << '\n';
 		if(term)
 			for(const auto& nd : term)
 			{
-				print_indent(depth);
-				os << '(' << '\n';
+				os << '(';
 				try
 				{
 					PrintTermNode(os, nd, depth + 1);
 				}
 				catch(std::out_of_range&)
 				{}
-				print_indent(depth);
-				os << ')' << '\n';
+				os << ')';
 			}
 	}
 }
@@ -1186,6 +1172,7 @@ Interpreter::Print(const TermNode& term)
 	ostringstream oss(string(term.get_allocator()));
 
 	PrintTermNode(std::cout, term);
+	std::cout << std::endl;
 }
 
 bool
@@ -1244,7 +1231,7 @@ Interpreter::WaitForLine()
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.23"
+#define APP_VER "0.0.24"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
