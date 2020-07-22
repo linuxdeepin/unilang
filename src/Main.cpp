@@ -2015,7 +2015,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.47"
+#define APP_VER "0.0.48"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -2034,7 +2034,7 @@ main()
 	cout << title << endl << "Initializing...";
 	LoadFunctions(intp);
 	cout << "Initialization finished." << endl;
-	cout << "Type \"exit\" to exit, \"cls\" to clear screen." << endl << endl;
+	cout << "Type \"exit\" to exit." << endl << endl;
 	intp.Run();
 }
 
