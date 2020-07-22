@@ -1344,6 +1344,9 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 				return *p ? "#t" : "#f";
 			if(const auto p = std::any_cast<int>(&vo))
 				return sfmt<string>("%d", *p);
+			if(const auto p = std::any_cast<ValueToken>(&vo))
+				if(*p == ValueToken::Unspecified)
+					return "#inert";
 
 			const auto& t(vo.type());
 
@@ -1567,7 +1570,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.34"
+#define APP_VER "0.0.35"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
