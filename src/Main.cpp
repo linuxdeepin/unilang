@@ -22,6 +22,8 @@
 #include <cstdarg> // for std::va_list, va_copy, va_end, va_start;
 #include <cstdio> // for std::vsprintf;
 #include <cctype> // for std::isgraph;
+#include <iterator> // for std::next;
+#include <type_traits> // for std::is_constructible_v, std::enable_if_t;
 #include <typeinfo> // for typeid;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
@@ -430,6 +432,8 @@ public:
 		return Subterms.size();
 	}
 };
+
+using TNIter = TermNode::iterator;
 
 [[nodiscard, gnu::pure]] inline bool
 IsBranch(const TermNode& term) noexcept
@@ -1036,11 +1040,6 @@ EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 }
 
 
-namespace Forms
-{
-} // namespace Forms;
-
-
 namespace
 {
 
@@ -1149,6 +1148,30 @@ ReduceBranch(TermNode& term, Context& ctx)
 	return ReductionStatus::Retained;
 }
 
+
+inline ReductionStatus
+ReduceChildrenOrderedAsync(TNIter, TNIter, Context&);
+
+ReductionStatus
+ReduceChildrenOrderedAsyncUnchecked(TNIter first, TNIter last, Context& ctx)
+{
+	assert(first != last);
+
+	auto& term(*first++);
+
+	ctx.SetupFront([=](Context& c){
+		return ReduceChildrenOrderedAsync(first, last, c);
+	});
+	return ReduceOnce(term, ctx);
+}
+
+inline ReductionStatus
+ReduceChildrenOrderedAsync(TNIter first, TNIter last, Context& ctx)
+{
+	return first != last ? ReduceChildrenOrderedAsyncUnchecked(first, last, ctx)
+		: ReductionStatus::Neutral;
+}
+
 } // unnamed namespace;
 
 ReductionStatus
@@ -1156,6 +1179,53 @@ ReduceOnce(TermNode& term, Context& ctx)
 {
 	return term.Value.has_value() ? ReduceLeaf(term, ctx)
 		: ReduceBranch(term, ctx);
+}
+
+
+class FormContextHandler
+{
+public:
+	ContextHandler Handler;
+	size_t Wrapping;
+
+	template<typename _func, typename = std::enable_if_t<
+		!std::is_constructible_v<FormContextHandler, _func>>>
+	FormContextHandler(_func&& f, size_t n = 0)
+		: Handler(std::forward<_func>(f)), Wrapping(n)
+	{}
+	FormContextHandler(const FormContextHandler&) = default;
+	FormContextHandler(FormContextHandler&&) = default;
+
+	FormContextHandler&
+	operator=(const FormContextHandler&) = default;
+	FormContextHandler&
+	operator=(FormContextHandler&&) = default;
+
+	ReductionStatus
+	operator()(TermNode& term, Context& ctx) const
+	{
+		return CallN(Wrapping, term, ctx);
+	}
+
+private:
+	ReductionStatus
+	CallN(size_t, TermNode&, Context&) const;
+};
+
+ReductionStatus
+FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
+{
+	if(n == 0 || term.size() <= 1)
+		return Handler(ctx.GetNextTermRef(), ctx);
+	ctx.SetupFront([&, n](Context& c){
+		c.SetNextTermRef( term);
+		return CallN(n - 1, term, c);
+	});
+	ctx.SetNextTermRef(term);
+	assert(!term.empty());
+	ReduceChildrenOrderedAsyncUnchecked(std::next(term.begin()), term.end(),
+		ctx);
+	return ReductionStatus::Partial;
 }
 
 
@@ -1269,6 +1339,14 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0)
 	}
 }
 
+} // unnamed namespace;
+
+namespace Forms
+{
+} // namespace Forms;
+
+namespace
+{
 
 class Interpreter final
 {
@@ -1404,7 +1482,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.31"
+#define APP_VER "0.0.32"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
