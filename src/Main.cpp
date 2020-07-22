@@ -895,6 +895,9 @@ public:
 	shared_ptr<Environment>
 	SwitchEnvironmentUnchecked(const shared_ptr<Environment>&) noexcept;
 
+	void
+	UnwindCurrent() noexcept;
+
 	[[nodiscard, gnu::pure]] weak_ptr<Environment>
 	WeakenRecord() const noexcept;
 };
@@ -957,6 +960,14 @@ Context::SwitchEnvironmentUnchecked(const shared_ptr<Environment>& p_env)
 {
 	assert(p_env);
 	return std::exchange(p_record, p_env);
+}
+
+void
+Context::UnwindCurrent() noexcept
+{
+	// XXX: The order is significant.
+	while(!current.empty())
+		current.pop_front();
 }
 
 weak_ptr<Environment>
@@ -1248,7 +1259,8 @@ template<class _tTarget, typename... _tParams>
 inline void
 RegisterForm(_tTarget& target, string_view name, _tParams&&... args)
 {
-	Unilang::RegisterHandler<Form>(target, name, std::forward<_tParams>(args)...);
+	Unilang::RegisterHandler<Form>(target, name,
+		std::forward<_tParams>(args)...);
 }
 
 template<class _tTarget, typename... _tParams>
@@ -1512,6 +1524,15 @@ Interpreter::Process()
 	else if(!line.empty())
 		try
 		{
+			struct Guard final
+			{
+				Context& C;
+
+				~Guard()
+				{
+					C.UnwindCurrent();
+				}
+			} gd{Root};
 			auto term(Read(line));
 
 			Evaluate(term);
@@ -1594,7 +1615,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.36"
+#define APP_VER "0.0.37"
 #define APP_PLATFORM "[C++17]"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
