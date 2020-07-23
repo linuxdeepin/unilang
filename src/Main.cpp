@@ -9,11 +9,13 @@
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
+#include <ystdex/string.hpp> // for ystdex::basic_string, std::string,
+//	ystdex::sfmt, std::getline;
 #include <forward_list> // for std::forward_list;
 #include <list> // for std::list;
 #include <map> // for std::map;
-#include <ystdex/string.hpp> // for ystdex::basic_string, std::string,
-//	std::getline;
+#include <ystdex/cctype.h> // for ystdex::isdigit;
+#include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <vector> // for std::vector;
 #include <deque> // for std::deque;
 #include <stack> // for std::stack;
@@ -78,90 +80,6 @@ using ostringstream = std::basic_ostringstream<char, std::char_traits<char>,
 	string::allocator_type>;
 
 using ValueObject = any;
-
-
-// NOTE: This is locale-independent.
-[[nodiscard, gnu::const]] constexpr bool
-isdigit(char c) noexcept
-{
-	return (unsigned(c) - '0') < 10U;
-}
-
-[[nodiscard, gnu::nonnull(1), gnu::pure]] size_t
-vfmtlen(const char*, std::va_list) noexcept;
-
-size_t
-vfmtlen(const char* fmt, std::va_list args) noexcept
-{
-	assert(fmt);
-
-	const int l(std::vsnprintf({}, 0, fmt, args));
-
-	return size_t(l < 0 ? -1 : l);
-}
-
-template<class _tString = string>
-[[nodiscard, gnu::nonnull(1)]] _tString
-vsfmt(const typename _tString::value_type* fmt,
-	std::va_list args)
-{
-	std::va_list ap;
-
-	va_copy(ap, args);
-
-	const auto l(Unilang::vfmtlen(fmt, ap));
-
-	va_end(ap);
-	if(l == size_t(-1))
-		throw std::runtime_error("Failed to write formatted string.");
-
-	_tString str(l, typename _tString::value_type());
-
-	if(l != 0)
-	{
-		assert(str.length() > 0 && str[0] == typename _tString::value_type());
-		std::vsprintf(&str[0], fmt, args);
-	}
-	return str;
-}
-
-template<class _tString = string>
-[[nodiscard, gnu::nonnull(1)]] _tString
-sfmt(const typename _tString::value_type* fmt, ...)
-{
-	std::va_list args;
-
-	va_start(args, fmt);
-	try
-	{
-		auto str(Unilang::vsfmt<_tString>(fmt, args));
-
-		va_end(args);
-		return str;
-	}
-	catch(...)
-	{
-		va_end(args);
-		throw;
-	}
-}
-
-
-template<typename _fPred, typename _fInsert, typename _tIn>
-void
-split(_tIn b, _tIn e, _fPred is_delim, _fInsert insert)
-{
-	while(b != e)
-	{
-		_tIn i(std::find_if_not(b, e, is_delim));
-
-		b = std::find_if(i, e, is_delim);
-		if(i != b)
-			insert(i, b);
-		else
-			break;
-	}
-}
 
 
 [[nodiscard, gnu::pure]] char
@@ -1310,8 +1228,8 @@ ReduceLeaf(TermNode& term, Context& ctx)
 
 			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
 				&& id.find_first_not_of("+-") != string_view::npos)
-				|| Unilang::isdigit(f))
-				throw UnilangException(Unilang::sfmt<std::string>(id.front()
+				|| ystdex::isdigit(f))
+				throw UnilangException(ystdex::sfmt<std::string>(id.front()
 					!= '#' ? "Unsupported literal prefix found in literal '%s'."
 					: "Invalid literal '%s' found.", id.data()));
 
@@ -1488,7 +1406,7 @@ struct SeparatorTransformer
 		if(IsBranch(term))
 		{
 			res.Add(Unilang::AsTermNode(pfx));
-			Unilang::split(std::make_move_iterator(term.begin()),
+			ystdex::split(std::make_move_iterator(term.begin()),
 				std::make_move_iterator(term.end()), filter,
 				[&](it_t b, it_t e){
 				add_range(res, b, e);
@@ -1622,23 +1540,23 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 	{
 		const char f(id.front());
 
-		if(Unilang::isdigit(f))
+		if(ystdex::isdigit(f))
 		{
 		    int ans(0);
 
 			for(auto p(id.begin()); p != id.end(); ++p)
-				if(Unilang::isdigit(*p))
+				if(ystdex::isdigit(*p))
 				{
 					if(unsigned((ans << 3) + (ans << 1) + *p - '0')
 						<= unsigned(INT_MAX))
 						ans = (ans << 3) + (ans << 1) + *p - '0';
 					else
-						throw UnilangException(Unilang::sfmt<std::string>(
+						throw UnilangException(ystdex::sfmt<std::string>(
 							"Value of identifier '%s' is out of the range of"
 							" the supported integer.", id.data()));
 				}
 				else
-					throw UnilangException(Unilang::sfmt<std::string>("Literal"
+					throw UnilangException(ystdex::sfmt<std::string>("Literal"
 						" postfix is unsupported in identifier '%s'.",
 						id.data()));
 			term.Value = ans;
@@ -1698,7 +1616,7 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 			if(const auto p = ystdex::any_cast<bool>(&vo))
 				return *p ? "#t" : "#f";
 			if(const auto p = ystdex::any_cast<int>(&vo))
-				return sfmt<string>("%d", *p);
+				return ystdex::sfmt<string>("%d", *p);
 			if(const auto p = ystdex::any_cast<ValueToken>(&vo))
 				if(*p == ValueToken::Unspecified)
 					return "#inert";
@@ -1769,7 +1687,7 @@ RetainN(const TermNode& term, size_t m)
 
 	if(n == m)
 		return n;
-	throw UnilangException(Unilang::sfmt<std::string>(
+	throw UnilangException(ystdex::sfmt<std::string>(
 		"Arity mismatch: expected %zu, got %zu.", m, n));
 }
 
@@ -2034,7 +1952,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.0"
+#define APP_VER "0.1.1"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
