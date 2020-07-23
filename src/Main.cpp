@@ -1,19 +1,21 @@
-﻿// © 2020-2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include <utility> // for std::pair, std::reference_wrapper, std::ref,
-//	std::swap, std::exchange;
-#include <any> // for std::any, std::bad_any_cast, std:;any_cast;
-#include <functional> // for std::function, std::less;
+#include <ystdex/utility.hpp> // for ystdex::size_t, std::pair, ystdex::lref,
+//	ystdex::ref, std::swap, ystdex::exchange;
+#include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
+//	ystdex::any_cast;
+#include <ystdex/functional.hpp> // for ystdex::function, ystdex::less;
 #include <memory> // for std::shared_ptr, std::weak_ptr;
-#include <string_view> // for std::string_view;
-#include <memory_resource> // for pmr and
-//	complete std::pmr::polymorphic_allocator;
-#include <forward_list> // for std::pmr::forward_list;
-#include <list> // for std::pmr::list;
-#include <map> // for std::pmr::map;
-#include <string> // for std::pmr::string, std::string, std::getline;
-#include <vector> // for std::pmr::vector;
-#include <deque> // for std::pmr::deque;
+#include <ystdex/string_view.hpp> // for ystdex::string_view;
+#include <ystdex/memory_resource.h> // for ystdex::pmr and
+//	complete ystdex::pmr::polymorphic_allocator;
+#include <forward_list> // for std::forward_list;
+#include <list> // for std::list;
+#include <map> // for std::map;
+#include <ystdex/string.hpp> // for ystdex::basic_string, std::string,
+//	std::getline;
+#include <vector> // for std::vector;
+#include <deque> // for std::deque;
 #include <stack> // for std::stack;
 #include <sstream> // for std::basic_ostringstream, std::ostream,
 //	std::streamsize;
@@ -23,7 +25,7 @@
 #include <cstdio> // for std::vsprintf;
 #include <algorithm> // for std::find_if_not, std::find_if, std::for_each;
 #include <cctype> // for std::isgraph;
-#include <type_traits> // for std::is_constructible_v, std::enable_if_t;
+#include <type_traits> // for std::is_same, std::enable_if_t;
 #include <iterator> // for std::next, std::make_move_iterator;
 #include <typeinfo> // for typeid;
 #include <cstdlib> // for std::getenv;
@@ -32,29 +34,46 @@
 namespace Unilang
 {
 
-using std::size_t;
+using ystdex::size_t;
 
-template<typename _type>
-using lref = std::reference_wrapper<_type>;
+using ystdex::lref;
 
-using std::any;
-using std::bad_any_cast;
-using std::function;
+using ystdex::any;
+using ystdex::bad_any_cast;
+using ystdex::function;
 using std::pair;
 using std::shared_ptr;
-using std::string_view;
+using ystdex::string_view;
 using std::weak_ptr;
 
-namespace pmr = std::pmr;
+namespace pmr = ystdex::pmr;
 
-using pmr::forward_list;
-using pmr::list;
-using pmr::map;
-using pmr::string;
-using pmr::vector;
+template<typename _tChar, typename _tTraits = std::char_traits<_tChar>,
+	class _tAlloc = pmr::polymorphic_allocator<_tChar>>
+using basic_string = ystdex::basic_string<_tChar, _tTraits, _tAlloc>;
 
-template<typename _type, class _tSeqCon = std::pmr::deque<_type>>
+using string = basic_string<char>;
+
+template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
+using forward_list = std::forward_list<_type, _tAlloc>;
+
+template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
+using list = ystdex::list<_type, _tAlloc>;
+
+template<typename _tKey, typename _tMapped, typename _fComp
+	= ystdex::less<_tKey>, class _tAlloc
+	= pmr::polymorphic_allocator<std::pair<const _tKey, _tMapped>>>
+using map = std::map<_tKey, _tMapped, _fComp, _tAlloc>;
+
+template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
+using vector = std::vector<_type, _tAlloc>;
+
+template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
+using deque = std::deque<_type, _tAlloc>;
+
+template<typename _type, class _tSeqCon = deque<_type>>
 using stack = std::stack<_type, _tSeqCon>;
+
 using ostringstream = std::basic_ostringstream<char, std::char_traits<char>,
 	string::allocator_type>;
 
@@ -513,7 +532,7 @@ template<typename _type>
 [[nodiscard, gnu::pure]] inline bool
 HasValue(const TermNode& term, const _type& x)
 {
-	if(const auto p = std::any_cast<_type>(&term.Value))
+	if(const auto p = ystdex::any_cast<_type>(&term.Value))
 		return *p == x;
 	return {};
 }
@@ -619,13 +638,13 @@ template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
 TryAccessLeaf(TermNode& term)
 {
-	return std::any_cast<_type>(&term.Value);
+	return ystdex::any_cast<_type>(&term.Value);
 }
 template<typename _type>
 [[nodiscard, gnu::pure]] inline const _type*
 TryAccessLeaf(const TermNode& term)
 {
-	return std::any_cast<_type>(&term.Value);
+	return ystdex::any_cast<_type>(&term.Value);
 }
 
 template<typename _type>
@@ -830,7 +849,7 @@ using EnvironmentList = vector<ValueObject>;
 class Environment final
 {
 public:
-	using BindingMap = map<string, TermNode, std::less<>>;
+	using BindingMap = map<string, TermNode, ystdex::less<>>;
 	using NameResolution
 		= pair<BindingMap::mapped_type*, shared_ptr<Environment>>;
 	using allocator_type = BindingMap::allocator_type;
@@ -1115,14 +1134,14 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 
 				if(tp == typeid(EnvironmentReference))
 				{
-					p_redirected = std::any_cast<
+					p_redirected = ystdex::any_cast<
 						EnvironmentReference>(&parent)->Lock();
 					assert(bool(p_redirected));
 					p_env.swap(p_redirected);
 				}
 				else if(tp == typeid(shared_ptr<Environment>))
 				{
-					p_redirected = *std::any_cast<
+					p_redirected = *ystdex::any_cast<
 						shared_ptr<Environment>>(&parent);
 					assert(bool(p_redirected));
 					p_env.swap(p_redirected);
@@ -1133,13 +1152,13 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 
 					if(tp == typeid(EnvironmentList))
 					{
-						auto& envs(*std::any_cast<EnvironmentList>(&parent));
+						auto& envs(*ystdex::any_cast<EnvironmentList>(&parent));
 
 						p_next = RedirectEnvironmentList(envs.cbegin(),
 							envs.cend(), id, cont);
 					}
 					while(!p_next && bool(cont))
-						p_next = std::exchange(cont, Redirector())();
+						p_next = ystdex::exchange(cont, Redirector())();
 					if(p_next)
 					{
 						// XXX: Cyclic parent found is not allowed.
@@ -1180,7 +1199,7 @@ Context::SwitchEnvironmentUnchecked(const shared_ptr<Environment>& p_env)
 	noexcept
 {
 	assert(p_env);
-	return std::exchange(p_record, p_env);
+	return ystdex::exchange(p_record, p_env);
 }
 
 void
@@ -1314,7 +1333,7 @@ ReduceLeaf(TermNode& term, Context& ctx)
 			}
 			else
 				throw UnilangException(
-					"Bad identifier '" + std::string(id) + "' found.");
+					"Bad identifier '" + std::string(id.data()) + "' found.");
 		}
 		return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
 	}
@@ -1350,7 +1369,7 @@ ReduceBranch(TermNode& term, Context& ctx)
 		{
 			// NOTE: The following is necessary to prevent unbounded overflow in
 			//	handling recursive subterms.
-			auto term_ref(std::ref(term));
+			auto term_ref(ystdex::ref(term));
 
 			do
 			{
@@ -1521,7 +1540,7 @@ public:
 	size_t Wrapping;
 
 	template<typename _func, typename = std::enable_if_t<
-		!std::is_constructible_v<FormContextHandler, _func>>>
+		!std::is_same<FormContextHandler&, _func&>::value>>
 	FormContextHandler(_func&& f, size_t n = 0)
 		: Handler(std::forward<_func>(f)), Wrapping(n)
 	{}
@@ -1674,13 +1693,13 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 		const auto& vo(term.Value);
 
 		os << [&]() -> string{
-			if(const auto p = std::any_cast<string>(&vo))
+			if(const auto p = ystdex::any_cast<string>(&vo))
 				return *p;
-			if(const auto p = std::any_cast<bool>(&vo))
+			if(const auto p = ystdex::any_cast<bool>(&vo))
 				return *p ? "#t" : "#f";
-			if(const auto p = std::any_cast<int>(&vo))
+			if(const auto p = ystdex::any_cast<int>(&vo))
 				return sfmt<string>("%d", *p);
-			if(const auto p = std::any_cast<ValueToken>(&vo))
+			if(const auto p = ystdex::any_cast<ValueToken>(&vo))
 				if(*p == ValueToken::Unspecified)
 					return "#inert";
 
@@ -1947,7 +1966,7 @@ Interpreter::Read(string_view unit)
 {
 	ByteParser parse{};
 
-	std::for_each(unit.begin(), unit.end(), std::ref(parse));
+	std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
 
 	const auto& parse_result(parse.GetResult());
 	TermNode term{};
@@ -2015,8 +2034,8 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.0.48"
-#define APP_PLATFORM "[C++17]"
+#define APP_VER "0.1.0"
+#define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
 

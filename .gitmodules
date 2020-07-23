@@ -1,0 +1,3 @@
+[submodule "3rdparty/YSLib"]
+	path = 3rdparty/YSLib
+	url = https://github.com/FrankHB/YSLib.git
