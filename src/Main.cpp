@@ -24,6 +24,7 @@
 #include <exception> // for std::runtime_error;
 #include <cassert> // for assert;
 #include <iterator> // for std::next, std::prev, std::make_move_iterator;
+#include <ystdex/container.hpp> // for ystdex::insert_or_assign;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <algorithm> // for std::find_if, std::for_each;
@@ -1022,6 +1023,14 @@ public:
 		return p_anchor;
 	}
 
+	template<typename _tKey, class _tNode>
+	TermNode&
+	Bind(_tKey&& k, _tNode&& tm)
+	{
+		return ystdex::insert_or_assign(Bindings, std::forward<_tKey>(k),
+			std::forward<_tNode>(tm)).first->second;
+	}
+
 	static void
 	CheckParent(const ValueObject&);
 
@@ -1401,6 +1410,149 @@ EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 }
 
 
+[[noreturn]] void
+ThrowInsufficientTermsError();
+
+
+struct SeparatorTransformer
+{
+	template<typename _func, class _tTerm, class _fPred>
+	[[nodiscard]] TermNode
+	operator()(_func trans, _tTerm&& term, const ValueObject& pfx,
+		_fPred filter) const
+	{
+		using it_t = decltype(std::make_move_iterator(term.begin()));
+
+		return AddRange([&](TermNode& res, it_t b, it_t e){
+			const auto add([&](TermNode& node, it_t i){
+				node.Add(trans(*i));
+			});
+
+			if(b != e)
+			{
+				if(std::next(b) == e)
+					add(res, b);
+				else
+				{
+					auto child(Unilang::AsTermNode());
+
+					do
+					{
+						add(child, b++);
+					}
+					while(b != e);
+					res.Add(std::move(child));
+				}
+			}
+		}, std::forward<_tTerm>(term), pfx, filter);
+	}
+
+	template<typename _func, class _tTerm, class _fPred>
+	[[nodiscard]] TermNode
+	AddRange(_func add_range, _tTerm&& term, const ValueObject& pfx,
+		_fPred filter) const
+	{
+		using it_t = decltype(std::make_move_iterator(term.begin()));
+		const auto a(term.get_allocator());
+		auto res(Unilang::AsTermNode(std::forward<_tTerm>(term).Value));
+
+		if(IsBranch(term))
+		{
+			res.Add(Unilang::AsTermNode(pfx));
+			ystdex::split(std::make_move_iterator(term.begin()),
+				std::make_move_iterator(term.end()), filter,
+				[&](it_t b, it_t e){
+				add_range(res, b, e);
+			});
+		}
+		return res;
+	}
+
+	template<class _tTerm, class _fPred>
+	[[nodiscard]] static TermNode
+	Process(_tTerm&& term, const ValueObject& pfx, _fPred filter)
+	{
+		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
+			return std::forward<_tTerm>(tm);
+		}, std::forward<_tTerm>(term), pfx, filter);
+	}
+
+	template<class _fPred>
+	static void
+	ReplaceChildren(TermNode& term, const ValueObject& pfx,
+		_fPred filter)
+	{
+		if(std::find_if(term.begin(), term.end(), filter) != term.end())
+			term = Process(std::move(term), pfx, filter);
+	}
+};
+
+
+class FormContextHandler
+{
+public:
+	ContextHandler Handler;
+	size_t Wrapping;
+
+	template<typename _func, typename = std::enable_if_t<
+		!std::is_same<FormContextHandler&, _func&>::value>>
+	FormContextHandler(_func&& f, size_t n = 0)
+		: Handler(std::forward<_func>(f)), Wrapping(n)
+	{}
+	FormContextHandler(const FormContextHandler&) = default;
+	FormContextHandler(FormContextHandler&&) = default;
+
+	FormContextHandler&
+	operator=(const FormContextHandler&) = default;
+	FormContextHandler&
+	operator=(FormContextHandler&&) = default;
+
+	ReductionStatus
+	operator()(TermNode& term, Context& ctx) const
+	{
+		return CallN(Wrapping, term, ctx);
+	}
+
+private:
+	ReductionStatus
+	CallN(size_t, TermNode&, Context&) const;
+};
+
+
+enum WrappingKind : decltype(FormContextHandler::Wrapping)
+{
+	Form = 0,
+	Strict = 1
+};
+
+
+template<size_t _vWrapping = Strict, class _tTarget, typename... _tParams>
+inline void
+RegisterHandler(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::EmplaceLeaf<ContextHandler>(target, name,
+		FormContextHandler(std::forward<_tParams>(args)..., _vWrapping));
+}
+
+template<class _tTarget, typename... _tParams>
+inline void
+RegisterForm(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::RegisterHandler<Form>(target, name,
+		std::forward<_tParams>(args)...);
+}
+
+template<class _tTarget, typename... _tParams>
+inline void
+RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::RegisterHandler<>(target, name, std::forward<_tParams>(args)...);
+}
+
+
+ReductionStatus
+ReduceOrdered(TermNode&, Context&);
+
 namespace
 {
 
@@ -1548,181 +1700,6 @@ ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 	return ReduceOnce(*i, ctx);
 }
 
-} // unnamed namespace;
-
-ReductionStatus
-ReduceOrdered(TermNode&, Context&);
-
-struct SeparatorTransformer
-{
-	template<typename _func, class _tTerm, class _fPred>
-	[[nodiscard]] TermNode
-	operator()(_func trans, _tTerm&& term, const ValueObject& pfx,
-		_fPred filter) const
-	{
-		using it_t = decltype(std::make_move_iterator(term.begin()));
-
-		return AddRange([&](TermNode& res, it_t b, it_t e){
-			const auto add([&](TermNode& node, it_t i){
-				node.Add(trans(*i));
-			});
-
-			if(b != e)
-			{
-				if(std::next(b) == e)
-					add(res, b);
-				else
-				{
-					auto child(Unilang::AsTermNode());
-
-					do
-					{
-						add(child, b++);
-					}
-					while(b != e);
-					res.Add(std::move(child));
-				}
-			}
-		}, std::forward<_tTerm>(term), pfx, filter);
-	}
-
-	template<typename _func, class _tTerm, class _fPred>
-	[[nodiscard]] TermNode
-	AddRange(_func add_range, _tTerm&& term, const ValueObject& pfx,
-		_fPred filter) const
-	{
-		using it_t = decltype(std::make_move_iterator(term.begin()));
-		const auto a(term.get_allocator());
-		auto res(Unilang::AsTermNode(std::forward<_tTerm>(term).Value));
-
-		if(IsBranch(term))
-		{
-			res.Add(Unilang::AsTermNode(pfx));
-			ystdex::split(std::make_move_iterator(term.begin()),
-				std::make_move_iterator(term.end()), filter,
-				[&](it_t b, it_t e){
-				add_range(res, b, e);
-			});
-		}
-		return res;
-	}
-
-	template<class _tTerm, class _fPred>
-	[[nodiscard]] static TermNode
-	Process(_tTerm&& term, const ValueObject& pfx, _fPred filter)
-	{
-		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
-			return std::forward<_tTerm>(tm);
-		}, std::forward<_tTerm>(term), pfx, filter);
-	}
-
-	template<class _fPred>
-	static void
-	ReplaceChildren(TermNode& term, const ValueObject& pfx,
-		_fPred filter)
-	{
-		if(std::find_if(term.begin(), term.end(), filter) != term.end())
-			term = Process(std::move(term), pfx, filter);
-	}
-};
-
-ReductionStatus
-ReduceOnce(TermNode& term, Context& ctx)
-{
-	return term.Value.has_value() ? ReduceLeaf(term, ctx)
-		: ReduceBranch(term, ctx);
-}
-
-ReductionStatus
-ReduceOrdered(TermNode& term, Context& ctx)
-{
-	if(IsBranch(term))
-		return ReduceSequenceOrderedAsync(term, ctx, term.begin());
-	term.Value = ValueToken::Unspecified;
-	return ReductionStatus::Retained;
-}
-
-
-class FormContextHandler
-{
-public:
-	ContextHandler Handler;
-	size_t Wrapping;
-
-	template<typename _func, typename = std::enable_if_t<
-		!std::is_same<FormContextHandler&, _func&>::value>>
-	FormContextHandler(_func&& f, size_t n = 0)
-		: Handler(std::forward<_func>(f)), Wrapping(n)
-	{}
-	FormContextHandler(const FormContextHandler&) = default;
-	FormContextHandler(FormContextHandler&&) = default;
-
-	FormContextHandler&
-	operator=(const FormContextHandler&) = default;
-	FormContextHandler&
-	operator=(FormContextHandler&&) = default;
-
-	ReductionStatus
-	operator()(TermNode& term, Context& ctx) const
-	{
-		return CallN(Wrapping, term, ctx);
-	}
-
-private:
-	ReductionStatus
-	CallN(size_t, TermNode&, Context&) const;
-};
-
-ReductionStatus
-FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
-{
-	if(n == 0 || term.size() <= 1)
-		return Handler(ctx.GetNextTermRef(), ctx);
-	ctx.SetupFront([&, n](Context& c){
-		c.SetNextTermRef( term);
-		return CallN(n - 1, term, c);
-	});
-	ctx.SetNextTermRef(term);
-	assert(!term.empty());
-	ReduceChildrenOrderedAsyncUnchecked(std::next(term.begin()), term.end(),
-		ctx);
-	return ReductionStatus::Partial;
-}
-
-
-enum WrappingKind : decltype(FormContextHandler::Wrapping)
-{
-	Form = 0,
-	Strict = 1
-};
-
-
-template<size_t _vWrapping = Strict, class _tTarget, typename... _tParams>
-inline void
-RegisterHandler(_tTarget& target, string_view name, _tParams&&... args)
-{
-	Unilang::EmplaceLeaf<ContextHandler>(target, name,
-		FormContextHandler(std::forward<_tParams>(args)..., _vWrapping));
-}
-
-template<class _tTarget, typename... _tParams>
-inline void
-RegisterForm(_tTarget& target, string_view name, _tParams&&... args)
-{
-	Unilang::RegisterHandler<Form>(target, name,
-		std::forward<_tParams>(args)...);
-}
-
-template<class _tTarget, typename... _tParams>
-inline void
-RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
-{
-	Unilang::RegisterHandler<>(target, name, std::forward<_tParams>(args)...);
-}
-
-
-namespace
-{
 
 ReductionStatus
 DefaultEvaluateLeaf(TermNode& term, string_view id)
@@ -1853,6 +1830,49 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 }
 
 } // unnamed namespace;
+
+void
+ThrowInsufficientTermsError()
+{
+	throw ParameterMismatch("Insufficient terms found for list parameter.");
+}
+
+
+ReductionStatus
+ReduceOnce(TermNode& term, Context& ctx)
+{
+	return term.Value.has_value() ? ReduceLeaf(term, ctx)
+		: ReduceBranch(term, ctx);
+}
+
+ReductionStatus
+ReduceOrdered(TermNode& term, Context& ctx)
+{
+	if(IsBranch(term))
+		return ReduceSequenceOrderedAsync(term, ctx, term.begin());
+	term.Value = ValueToken::Unspecified;
+	return ReductionStatus::Retained;
+}
+
+
+ReductionStatus
+FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
+{
+	if(n == 0 || term.size() <= 1)
+		return Handler(ctx.GetNextTermRef(), ctx);
+	ctx.SetupFront([&, n](Context& c){
+		c.SetNextTermRef( term);
+		return CallN(n - 1, term, c);
+	});
+	ctx.SetNextTermRef(term);
+	assert(!term.empty());
+	ReduceChildrenOrderedAsyncUnchecked(std::next(term.begin()), term.end(),
+		ctx);
+	return ReductionStatus::Partial;
+}
+
+
+
 
 namespace
 {
@@ -2153,7 +2173,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.6"
+#define APP_VER "0.1.7"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
