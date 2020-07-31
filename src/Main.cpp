@@ -940,13 +940,12 @@ LiftOther(TermNode& term, TermNode& tm)
 	term.Value = std::move(tm.Value);
 }
 
-class Context;
 
 ReductionStatus
-ReduceBranchToList(TermNode&, Context&) noexcept;
+ReduceBranchToList(TermNode&) noexcept;
 
 ReductionStatus
-ReduceBranchToList(TermNode& term, Context&) noexcept
+ReduceBranchToList(TermNode& term) noexcept
 {
 	RemoveHead(term);
 	return ReductionStatus::Retained;
@@ -1102,6 +1101,8 @@ Environment::LookupName(string_view id) const
 	return i != Bindings.cend() ? &i->second : nullptr;
 }
 
+
+class Context;
 
 using ReducerFunctionType = ReductionStatus(Context&);
 
@@ -1338,7 +1339,8 @@ Context::WeakenRecord() const noexcept
 
 
 // NOTE: This is the host type for combiners.
-using ContextHandler = function<ReductionStatus(TermNode&, Context&)>;
+using ContextHandler
+	= ystdex::expanded_function<ReductionStatus(TermNode&, Context&)>;
 
 
 template<typename... _tParams>
@@ -2396,14 +2398,14 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$if", If);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$sequence", Sequence);
-	RegisterStrict(ctx, "display", [&](TermNode& term, Context&){
+	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
 		LiftOther(term, *std::next(term.begin()));
 		PrintTermNode(std::cout, term);
 		term.Value = ValueToken::Unspecified;
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "newline", [&](TermNode& term, Context&){
+	RegisterStrict(ctx, "newline", [&](TermNode& term){
 		RetainN(term, 0);
 		std::cout << std::endl;
 		term.Value = ValueToken::Unspecified;
@@ -2413,7 +2415,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.11"
+#define APP_VER "0.1.12"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
