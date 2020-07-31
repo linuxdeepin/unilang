@@ -24,6 +24,7 @@
 #include <ydef.h> // for yforward;
 #include <exception> // for std::runtime_error;
 #include <cassert> // for assert;
+#include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <iterator> // for std::next, std::prev, std::make_move_iterator;
 #include <ystdex/container.hpp> // for ystdex::insert_or_assign;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
@@ -749,7 +750,8 @@ class Environment;
 using AnchorPtr = shared_ptr<const void>;
 
 
-class EnvironmentReference
+class EnvironmentReference final
+	: private ystdex::equality_comparable<EnvironmentReference>
 {
 private:
 	weak_ptr<Environment> p_weak{};
@@ -776,12 +778,6 @@ public:
 	{
 		return x.p_weak.lock() == y.p_weak.lock();
 	}
-	[[nodiscard, gnu::pure]] friend bool
-	operator!=(const EnvironmentReference& x, const EnvironmentReference& y)
-		noexcept
-	{
-		return x.p_weak.lock() != y.p_weak.lock();
-	}
 
 	[[nodiscard, gnu::pure]] const AnchorPtr&
 	GetAnchorPtr() const noexcept
@@ -804,7 +800,7 @@ public:
 
 
 // NOTE: The host type of reference values.
-class TermReference final
+class TermReference final : private ystdex::equality_comparable<TermReference>
 {
 private:
 	lref<TermNode> term_ref;
@@ -825,12 +821,6 @@ public:
 	operator==(const TermReference& x, const TermReference& y) noexcept
 	{
 		return &x.term_ref.get() == &y.term_ref.get();
-	}
-
-	[[nodiscard, gnu::pure]] friend bool
-	operator!=(const TermReference& x, const TermReference& y) noexcept
-	{
-		return &x.term_ref.get() != &y.term_ref.get();
 	}
 
 	[[nodiscard, gnu::pure]] explicit
@@ -982,7 +972,7 @@ ReduceBranchToListValue(TermNode& term) noexcept
 using EnvironmentList = vector<ValueObject>;
 
 
-class Environment final
+class Environment final : private ystdex::equality_comparable<Environment>
 {
 public:
 	using BindingMap = map<string, TermNode, ystdex::less<>>;
@@ -1035,11 +1025,6 @@ public:
 	operator==(const Environment& x, const Environment& y) noexcept
 	{
 		return &x == &y;
-	}
-	[[nodiscard, gnu::pure]] friend
-	operator!=(const Environment& x, const Environment& y) noexcept
-	{
-		return &x != &y;
 	}
 
 	[[nodiscard, gnu::pure]] const AnchorPtr&
@@ -2443,7 +2428,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.13"
+#define APP_VER "0.1.14"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
