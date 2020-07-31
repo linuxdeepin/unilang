@@ -2493,6 +2493,8 @@ Eval(TermNode& term, Context& ctx)
 	auto p_env(ResolveEnvironment(*std::next(i)).first);
 
 	ResolveTerm([&](TermNode& nd){
+		auto t(std::move(term.Subterms));
+
 		term.Subterms = nd.Subterms;
 		term.Value = nd.Value;
 	}, *i);
@@ -2764,7 +2766,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.22"
+#define APP_VER "0.1.23"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
