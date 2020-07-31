@@ -5,8 +5,7 @@
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::less;
-#include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
-//	std::weak_ptr;
+#include <memory> // for std::shared_ptr, std::weak_ptr;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
@@ -25,8 +24,8 @@
 #include <cassert> // for assert;
 #include <iterator> // for std::next, std::prev, std::make_move_iterator;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
-#include <ystdex/algorithm.hpp> // for ystdex::split, std::find_if,
-//	std::for_each;
+#include <ystdex/algorithm.hpp> // for ystdex::split;
+#include <algorithm> // for std::find_if, std::for_each;
 #include <type_traits> // for std::is_same, std::enable_if_t;
 #include <typeinfo> // for typeid;
 #include <cstdlib> // for std::getenv;
@@ -78,6 +77,10 @@ using stack = std::stack<_type, _tSeqCon>;
 
 using ostringstream = std::basic_ostringstream<char, std::char_traits<char>,
 	string::allocator_type>;
+
+// NOTE: Only use the unqualified call for unqualified 'string' type.
+using ystdex::sfmt;
+
 
 using ValueObject = any;
 
@@ -371,6 +374,11 @@ CategorizeBasicLexeme(string_view id) noexcept
 
 class TermNode final
 {
+private:
+	template<typename... _tParams>
+	using enable_value_constructible_t = std::enable_if_t<
+		std::is_constructible<ValueObject, _tParams...>::value>;
+
 public:
 	using Container = list<TermNode>;
 	using allocator_type = Container::allocator_type;
@@ -392,6 +400,30 @@ public:
 	{}
 	TermNode(Container&& con)
 		: Subterms(std::move(con))
+	{}
+	template<typename... _tParams,
+		typename = enable_value_constructible_t<_tParams...>>
+	TermNode(const Container& con, _tParams&&... args)
+		: Subterms(con), Value(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		typename = enable_value_constructible_t<_tParams...>>
+	TermNode(Container&& con, _tParams&&... args)
+		: Subterms(std::move(con)), Value(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		typename = enable_value_constructible_t<_tParams...>>
+	inline
+	TermNode(std::allocator_arg_t, allocator_type a, const Container& con,
+		_tParams&&... args)
+		: Subterms(con, a), Value(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		typename = enable_value_constructible_t<_tParams...>>
+	inline
+	TermNode(std::allocator_arg_t, allocator_type a, Container&& con,
+		_tParams&&... args)
+		: Subterms(std::move(con), a), Value(yforward(args)...)
 	{}
 	TermNode(const TermNode&) = default;
 	TermNode(const TermNode& tm, allocator_type a)
@@ -517,12 +549,17 @@ AccessFirstSubterm(TermNode& term) noexcept
 	assert(IsBranch(term));
 	return *term.begin();
 }
-
 [[nodiscard, gnu::pure]] inline const TermNode&
 AccessFirstSubterm(const TermNode& term) noexcept
 {
 	assert(IsBranch(term));
 	return *term.begin();
+}
+
+[[nodiscard, gnu::pure]] inline TermNode&&
+MoveFirstSubterm(TermNode& term)
+{
+	return std::move(AccessFirstSubterm(term));
 }
 
 inline void
@@ -648,6 +685,11 @@ public:
 	operator=(TokenValue&&) = default;
 };
 
+[[nodiscard, gnu::pure]] string
+TermToString(const TermNode&);
+
+[[nodiscard, gnu::pure]] string
+TermToStringWithReferenceMark(const TermNode&, bool);
 
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
@@ -679,6 +721,23 @@ TryAccessTerm(const TermNode& term)
 TermToNamePtr(const TermNode& term)
 {
 	return Unilang::TryAccessTerm<TokenValue>(term);
+}
+
+string
+TermToString(const TermNode& term)
+{
+	if(const auto p = TermToNamePtr(term))
+		return *p;
+	return sfmt<string>("#<unknown{%zu}:%s>", term.size(),
+		term.Value.type().name());
+}
+
+string
+TermToStringWithReferenceMark(const TermNode& term, bool has_ref)
+{
+	auto term_str(TermToString(term));
+
+	return has_ref ? "[*] " + std::move(term_str) : std::move(term_str);
 }
 
 
@@ -829,6 +888,22 @@ template<typename _type>
 TryAccessReferencedTerm(const TermNode& term)
 {
 	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
+}
+
+template<typename _func, class _tTerm>
+auto
+ResolveTerm(_func do_resolve, _tTerm&& term)
+	-> decltype(ystdex::expand_proxy<yimpl(void)(_tTerm&&,
+	ResolvedTermReferencePtr)>::call(do_resolve, yforward(term),
+	ResolvedTermReferencePtr()))
+{
+	using handler_t = void(_tTerm&&, ResolvedTermReferencePtr);
+
+	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+		return ystdex::expand_proxy<handler_t>::call(do_resolve, p->get(),
+			Unilang::ResolveToTermReferencePtr(p));
+	return ystdex::expand_proxy<handler_t>::call(do_resolve,
+		yforward(term), ResolvedTermReferencePtr());
 }
 
 
@@ -1166,14 +1241,14 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 				const ValueObject& parent(cur);
 				const auto& tp(parent.type());
 
-				if(tp == typeid(EnvironmentReference))
+				if(tp == ystdex::type_id<EnvironmentReference>())
 				{
 					p_redirected = ystdex::any_cast<
 						EnvironmentReference>(&parent)->Lock();
 					assert(bool(p_redirected));
 					p_env.swap(p_redirected);
 				}
-				else if(tp == typeid(shared_ptr<Environment>))
+				else if(tp == ystdex::type_id<shared_ptr<Environment>>())
 				{
 					p_redirected = *ystdex::any_cast<
 						shared_ptr<Environment>>(&parent);
@@ -1184,7 +1259,7 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 				{
 					const ValueObject* p_next = {};
 
-					if(tp == typeid(EnvironmentList))
+					if(tp == ystdex::type_id<EnvironmentList>())
 					{
 						auto& envs(*ystdex::any_cast<EnvironmentList>(&parent));
 
@@ -2067,7 +2142,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.3"
+#define APP_VER "0.1.4"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
