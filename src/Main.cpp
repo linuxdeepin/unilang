@@ -1553,6 +1553,9 @@ RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 ReductionStatus
 ReduceOrdered(TermNode&, Context&);
 
+void
+BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
+
 namespace
 {
 
@@ -1829,6 +1832,181 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 	}
 }
 
+
+template<typename _func>
+auto
+CheckSymbol(string_view n, _func f) -> decltype(f())
+{
+	if(CategorizeBasicLexeme(n) == LexemeCategory::Symbol)
+		return f();
+	throw ParameterMismatch(ystdex::sfmt(
+		"Invalid token '%s' found for symbol parameter.", n.data()));
+}
+
+template<typename _func>
+auto
+CheckParameterLeafToken(string_view n, _func f) -> decltype(f())
+{
+	if(n != "#ignore")
+		CheckSymbol(n, f);
+}
+
+
+using Action = function<void()>;
+
+struct BindParameterObject
+{
+	lref<const EnvironmentReference> Referenced;
+
+	BindParameterObject(const EnvironmentReference& r_env)
+		: Referenced(r_env)
+	{}
+
+	template<typename _fCopy>
+	void
+	operator()(TermNode& o, _fCopy cp)
+		const
+	{
+		if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
+			cp(p->get());
+		else
+			cp(o);
+	}
+};
+
+
+template<typename _fBindTrailing, typename _fBindValue>
+class GParameterMatcher
+{
+public:
+	_fBindTrailing BindTrailing;
+	_fBindValue BindValue;
+
+private:
+	mutable Action act{};
+
+public:
+	template<class _type, class _type2>
+	GParameterMatcher(_type&& arg, _type2&& arg2)
+		: BindTrailing(std::forward<_type>(arg)),
+		BindValue(std::forward<_type2>(arg2))
+	{}
+
+	void
+	operator()(const TermNode& t, TermNode& o,
+		const EnvironmentReference& r_env) const
+	{
+		Match(t, o, r_env);
+		while(act)
+		{
+			const auto a(std::move(act));
+
+			a();
+		}
+	}
+
+private:
+	void
+	Match(const TermNode& t, TermNode& o, const EnvironmentReference& r_env)
+		const
+	{
+		if(IsList(t))
+		{
+			if(IsBranch(t))
+			{
+				const auto n_p(t.size());
+				auto last(t.end());
+
+				if(n_p > 0)
+				{
+					const auto& back(*std::prev(last));
+
+					if(IsLeaf(back))
+					{
+						if(const auto p
+							= Unilang::TryAccessLeaf<TokenValue>(back))
+						{
+							if(!p->empty() && p->front() == '.')
+								--last;
+						}
+						else if(!IsList(back))
+							throw ParameterMismatch(ystdex::sfmt(
+								"Invalid term '%s' found for symbol parameter.",
+								TermToString(back).c_str()));
+					}
+				}
+				ResolveTerm([&, n_p](TermNode& nd,
+					ResolvedTermReferencePtr p_ref){
+					const bool ellipsis(last != t.end());
+					const auto n_o(nd.size());
+
+					if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
+						MatchSubterms(t.begin(), last, nd.begin(), nd.end(),
+							p_ref ? p_ref->GetEnvironmentReference() : r_env,
+							ellipsis);
+					else if(!ellipsis)
+						throw ArityMismatch(n_p, n_o);
+					else
+						ThrowInsufficientTermsError();
+				}, o);
+			}
+			else
+				ResolveTerm([&](const TermNode& nd, bool has_ref){
+					if(nd)
+						throw ParameterMismatch(ystdex::sfmt("Invalid nonempty"
+							" operand value '%s' found for empty list"
+							" parameter.", TermToStringWithReferenceMark(nd,
+							has_ref).c_str()));
+				}, o);
+		}
+		else
+		{
+			const auto& tp(t.Value.type());
+		
+			if(tp == ystdex::type_id<TermReference>())
+				ystdex::update_thunk(act, [&]{
+					Match(ystdex::any_cast<TermReference>(t.Value).get(), o,
+						r_env);
+				});
+			else if(tp == ystdex::type_id<TokenValue>())
+				BindValue(ystdex::any_cast<TokenValue>(t.Value), o, r_env);
+			else
+				throw ParameterMismatch(ystdex::sfmt("Invalid parameter value"
+					" '%s' found.", TermToString(t).c_str()));
+		}
+	}
+
+	void
+	MatchSubterms(TNCIter i, TNCIter last, TNIter j, TNIter o_last,
+		const EnvironmentReference& r_env, bool ellipsis) const
+	{
+		if(i != last)
+		{
+			ystdex::update_thunk(act, [=, &r_env]{
+				return MatchSubterms(std::next(i), last, std::next(j), o_last,
+					r_env, ellipsis);
+			});
+			YAssert(j != o_last, "Invalid state of operand found.");
+			Match(*i, *j, r_env);
+		}
+		else if(ellipsis)
+		{
+			const auto& lastv(last->Value);
+
+			assert(lastv.type() == ystdex::type_id<TokenValue>());
+			BindTrailing(j, o_last, ystdex::any_cast<TokenValue>(lastv), r_env);
+		}
+	}
+};
+
+template<typename _fBindTrailing, typename _fBindValue>
+[[nodiscard]] inline GParameterMatcher<_fBindTrailing, _fBindValue>
+MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
+{
+	return GParameterMatcher<_fBindTrailing, _fBindValue>(
+		std::move(bind_trailing_seq), std::move(bind_value));
+}
+
 } // unnamed namespace;
 
 void
@@ -1872,6 +2050,44 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 }
 
 
+void
+BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
+	TermNode& o)
+{
+	auto& env(*p_env);
+
+	MakeParameterMatcher([&](TNIter first, TNIter last, string_view id,
+		const EnvironmentReference& r_env){
+		assert(ystdex::begins_with(id, "."));
+		id.remove_prefix(1);
+		if(!id.empty())
+		{
+			if(!id.empty())
+			{
+				TermNode::Container con(t.get_allocator());
+
+				for(; first != last; ++first)
+					BindParameterObject{r_env}(*first,
+						[&](const TermNode& tm){
+						con.emplace_back(tm.Subterms, tm.Value);
+					});
+			}
+		}
+	}, [&](const TokenValue& n, TermNode& b, const EnvironmentReference& r_env){
+		CheckParameterLeafToken(n, [&]{
+			if(!n.empty())
+			{
+				string_view id(n);
+
+				if(!id.empty())
+					BindParameterObject{r_env}(b,
+						[&](const TermNode& tm){
+						env.Bind(id, tm);
+					});
+			}
+		});
+	})(t, o, p_env);
+}
 
 
 namespace
@@ -1915,6 +2131,9 @@ RetainN(const TermNode& term, size_t m)
 
 ReductionStatus
 If(TermNode&, Context&);
+
+ReductionStatus
+Define(TermNode&, Context&);
 
 ReductionStatus
 Sequence(TermNode&, Context&);
@@ -2173,7 +2392,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.7"
+#define APP_VER "0.1.8"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
