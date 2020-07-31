@@ -4,8 +4,8 @@
 //	ystdex::ref, std::swap, ystdex::exchange;
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
-#include <ystdex/functional.hpp> // for ystdex::function,
-//	ystdex::expand_proxy, ystdex::less, ystdex::expanded_function;
+#include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
+//	ystdex::compose_n, ystdex::less, ystdex::expanded_function;
 #include <memory> // for std::shared_ptr, std::weak_ptr;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
@@ -29,10 +29,11 @@
 #include <ystdex/container.hpp> // for ystdex::insert_or_assign;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
-#include <algorithm> // for std::find_if, std::for_each;
+#include <algorithm> // for std::for_each, std::find_if;
+#include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <type_traits> // for std::is_same, std::enable_if_t;
-#include <typeinfo> // for typeid;
 #include <cstdlib> // for std::getenv;
+#include <ystdex/examiner.hpp> // for ystdex::examiners;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 
 namespace Unilang
@@ -884,7 +885,7 @@ TryAccessReferencedTerm(const TermNode& term)
 template<typename _func, class _tTerm>
 auto
 ResolveTerm(_func do_resolve, _tTerm&& term)
-	-> decltype(ystdex::expand_proxy<yimpl(void)(_tTerm&&,
+	-> decltype(ystdex::expand_proxy<void(_tTerm&&,
 	ResolvedTermReferencePtr)>::call(do_resolve, yforward(term),
 	ResolvedTermReferencePtr()))
 {
@@ -895,6 +896,27 @@ ResolveTerm(_func do_resolve, _tTerm&& term)
 			Unilang::ResolveToTermReferencePtr(p));
 	return ystdex::expand_proxy<handler_t>::call(do_resolve,
 		yforward(term), ResolvedTermReferencePtr());
+}
+
+
+struct ReferenceTermOp
+{
+	template<typename _type>
+	auto
+	operator()(_type&& term) const
+		ynoexcept_spec(Unilang::ReferenceTerm(yforward(term)))
+		-> decltype(Unilang::ReferenceTerm(yforward(term)))
+	{
+		return Unilang::ReferenceTerm(yforward(term));
+	}
+};
+
+template<typename _func>
+[[gnu::const]] auto
+ComposeReferencedTermOp(_func f)
+	-> decltype(ystdex::compose_n(f, ReferenceTermOp()))
+{
+	return ystdex::compose_n(f, ReferenceTermOp());
 }
 
 
@@ -1808,7 +1830,7 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 
 					const auto& t(vo.type());
 
-					if(t != typeid(void))
+					if(t != ystdex::type_id<void>())
 						return "#[" + string(t.name()) + ']';
 					throw bad_any_cast();
 				}();
@@ -2128,6 +2150,45 @@ Retain(const TermNode& term) noexcept
 size_t
 RetainN(const TermNode&, size_t = 1);
 
+
+template<typename _func>
+struct UnaryExpansion
+	: private ystdex::equality_comparable<UnaryExpansion<_func>>
+{
+	_func Function;
+
+	UnaryExpansion(_func f)
+		: Function(std::move(f))
+	{}
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const UnaryExpansion& x, const UnaryExpansion& y)
+	{
+		return ystdex::examiners::equal_examiner::are_equal(x.Function,
+			y.Function);
+	}
+
+	template<typename... _tParams>
+	inline ReductionStatus
+	operator()(TermNode& term,_tParams&&... args) const
+	{
+		RetainN(term);
+		term.Value = ystdex::expand_proxy<void(TermNode&, _tParams&&...)>::call(
+			Function, *std::next(term.begin()), yforward(args)...);
+		return ReductionStatus::Clean;
+	}
+};
+
+
+template<size_t _vWrapping = Strict, typename _func, class _tTarget>
+inline void
+RegisterUnary(_tTarget& target, string_view name, _func f)
+{
+	Unilang::RegisterHandler<_vWrapping>(target, name,
+		UnaryExpansion<_func>(std::move(f)));
+}
+
+
 size_t
 RetainN(const TermNode& term, size_t m)
 {
@@ -2408,6 +2469,7 @@ LoadFunctions(Interpreter& intp)
 	using namespace Forms;
 
 	RegisterForm(ctx, "$if", If);
+	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterForm(ctx, "$def!", Define);
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
@@ -2428,7 +2490,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.14"
+#define APP_VER "0.1.15"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
