@@ -41,4 +41,5 @@ test 'display "Hello, world!";'
 test '$sequence display "Hello, world!"'
 test 'display "Hello, "; display "world!"'
 test '$sequence (display "Hello, ") (display "world!")'
+test '$def! x "hello"'
 
