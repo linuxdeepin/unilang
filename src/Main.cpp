@@ -10,12 +10,11 @@
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
 #include <ystdex/string.hpp> // for ystdex::basic_string, std::string,
-//	ystdex::sfmt, std::getline;
+//	ystdex::sfmt, std::getline, ystdex::begins_with;
 #include <forward_list> // for std::forward_list;
 #include <list> // for std::list;
 #include <map> // for std::map;
-#include <ystdex/cctype.h> // for ystdex::isdigit;
-#include <ystdex/algorithm.hpp> // for ystdex::split;
+#include <cctype> // for std::isgraph;
 #include <vector> // for std::vector;
 #include <deque> // for std::deque;
 #include <stack> // for std::stack;
@@ -23,12 +22,11 @@
 //	std::streamsize;
 #include <exception> // for std::runtime_error;
 #include <cassert> // for assert;
-#include <cstdarg> // for std::va_list, va_copy, va_end, va_start;
-#include <cstdio> // for std::vsprintf;
-#include <algorithm> // for std::find_if_not, std::find_if, std::for_each;
-#include <cctype> // for std::isgraph;
+#include <iterator> // for std::next, std::prev, std::make_move_iterator;
+#include <ystdex/cctype.h> // for ystdex::isdigit;
+#include <ystdex/algorithm.hpp> // for ystdex::split, std::find_if,
+//	std::for_each;
 #include <type_traits> // for std::is_same, std::enable_if_t;
-#include <iterator> // for std::next, std::make_move_iterator;
 #include <typeinfo> // for typeid;
 #include <cstdlib> // for std::getenv;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
@@ -389,6 +387,7 @@ public:
 };
 
 using TNIter = TermNode::iterator;
+using TNCIter = TermNode::const_iterator;
 
 [[nodiscard, gnu::pure]] inline bool
 IsBranch(const TermNode& term) noexcept
@@ -412,6 +411,12 @@ IsEmpty(const TermNode& term) noexcept
 IsLeaf(const TermNode& term) noexcept
 {
 	return term.empty();
+}
+
+[[nodiscard, gnu::pure]] inline bool
+IsList(const TermNode& term) noexcept
+{
+	return !term.Value.has_value();
 }
 
 [[nodiscard, gnu::pure]] inline TermNode&
@@ -650,11 +655,14 @@ class TermReference final
 {
 private:
 	lref<TermNode> term_ref;
+	EnvironmentReference r_env;
 
 public:
+	template<typename _tParam, typename... _tParams>
 	inline
-	TermReference(TermNode& term) noexcept
-		: term_ref(term)
+	TermReference(TermNode& term, _tParam&& arg, _tParams&&... args) noexcept
+		: term_ref(term),
+		r_env(std::forward<_tParam>(arg), std::forward<_tParams>(args)...)
 	{}
 	TermReference(const TermReference&) = default;
 
@@ -679,6 +687,12 @@ public:
 		return term_ref;
 	}
 
+	[[nodiscard, gnu::pure]] const EnvironmentReference&
+	GetEnvironmentReference() const noexcept
+	{
+		return r_env;
+	}
+
 	[[nodiscard, gnu::pure]] TermNode&
 	get() const noexcept
 	{
@@ -701,6 +715,16 @@ ReferenceTerm(const TermNode& term)
 		return p->get();
 	return term;
 }
+
+
+using ResolvedTermReferencePtr = const TermReference*;
+
+[[nodiscard, gnu::pure]] constexpr ResolvedTermReferencePtr
+ResolveToTermReferencePtr(const TermReference* p) noexcept
+{
+	return p;
+}
+
 
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
@@ -1246,7 +1270,7 @@ ReduceLeaf(TermNode& term, Context& ctx)
 					term.Value = TermReference(*p);
 				}
 				else
-					term.Value = TermReference(bound);
+					term.Value = TermReference(bound, std::move(pr.second));
 				res = ReductionStatus::Neutral;
 			}
 			else
@@ -1952,7 +1976,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.1"
+#define APP_VER "0.1.2"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
