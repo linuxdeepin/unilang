@@ -4,7 +4,8 @@
 //	ystdex::ref, std::swap, ystdex::exchange;
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
-#include <ystdex/functional.hpp> // for ystdex::function, ystdex::less;
+#include <ystdex/functional.hpp> // for ystdex::function, ystdex::less,
+//	ystdex::expand_proxy;
 #include <memory> // for std::shared_ptr, std::weak_ptr;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
@@ -1795,36 +1796,49 @@ void
 PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 	size_t n = 0)
 {
+	const auto print_node_str([&](const TermNode& subterm){
+		return ResolveTerm(
+			[&](const TermNode& tm) -> pair<lref<const TermNode>, bool>{
+			try
+			{
+				const auto& vo(tm.Value);
+
+				os << [&]() -> string{
+					if(const auto p = ystdex::any_cast<string>(&vo))
+						return *p;
+					if(const auto p = ystdex::any_cast<bool>(&vo))
+						return *p ? "#t" : "#f";
+					if(const auto p = ystdex::any_cast<int>(&vo))
+						return ystdex::sfmt<string>("%d", *p);
+					if(const auto p = ystdex::any_cast<ValueToken>(&vo))
+						if(*p == ValueToken::Unspecified)
+							return "#inert";
+
+					const auto& t(vo.type());
+
+					if(t != typeid(void))
+						return "#[" + string(t.name()) + ']';
+					throw bad_any_cast();
+				}();
+				return {tm, true};
+			}
+			catch(bad_any_cast&)
+			{}
+			return {tm, false};
+		}, subterm);
+	});
+
 	if(depth != 0 && n != 0)
 		os << ' ';
-	try
-	{
-		const auto& vo(term.Value);
 
-		os << [&]() -> string{
-			if(const auto p = ystdex::any_cast<string>(&vo))
-				return *p;
-			if(const auto p = ystdex::any_cast<bool>(&vo))
-				return *p ? "#t" : "#f";
-			if(const auto p = ystdex::any_cast<int>(&vo))
-				return ystdex::sfmt<string>("%d", *p);
-			if(const auto p = ystdex::any_cast<ValueToken>(&vo))
-				if(*p == ValueToken::Unspecified)
-					return "#inert";
+	const auto pr(print_node_str(term));
 
-			const auto& t(vo.type());
-
-			if(t != typeid(void))
-				return "#[" + string(t.name()) + ']';
-			throw bad_any_cast();
-		}();
-	}
-	catch(bad_any_cast&)
+	if(!pr.second)
 	{
 		size_t n(0);
 
 		os << '(';
-		for(const auto& nd : term)
+		for(const auto& nd : pr.first.get())
 		{
 			try
 			{
@@ -2139,7 +2153,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.5"
+#define APP_VER "0.1.6"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
