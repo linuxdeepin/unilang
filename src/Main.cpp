@@ -266,6 +266,13 @@ class TypeError : public UnilangException
 };
 
 
+class ListTypeError : public TypeError
+{
+public:
+	using TypeError::TypeError;
+};
+
+
 class ListReductionFailure : public TypeError
 {
 	using TypeError::TypeError;
@@ -2205,11 +2212,18 @@ RetainN(const TermNode& term, size_t m)
 ReductionStatus
 If(TermNode&, Context&);
 
+
+ReductionStatus
+Cons(TermNode&);
+
+
 ReductionStatus
 Define(TermNode&, Context&);
 
+
 ReductionStatus
 Sequence(TermNode&, Context&);
+
 
 ReductionStatus
 If(TermNode& term, Context& ctx)
@@ -2241,6 +2255,29 @@ If(TermNode& term, Context& ctx)
 		throw InvalidSyntax("Syntax error in conditional form.");
 }
 
+
+ReductionStatus
+Cons(TermNode& term)
+{
+	RetainN(term, 2);
+
+	const auto i(std::next(term.begin(), 2));
+
+	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
+		if(IsList(nd_y))
+			term.Subterms.splice(term.end(), std::move(nd_y.Subterms));
+		else
+			throw ListTypeError(ystdex::sfmt(
+				"Expected a list for the 2nd argument, got '%s'.",
+				TermToStringWithReferenceMark(nd_y, p_ref).c_str()));
+	}, *i);
+	term.erase(i);
+	RemoveHead(term);
+	LiftSubtermsToReturn(term);
+	return ReductionStatus::Retained;
+}
+
+
 ReductionStatus
 Define(TermNode& term, Context& ctx)
 {
@@ -2262,6 +2299,7 @@ Define(TermNode& term, Context& ctx)
 	}
 	throw InvalidSyntax("Invalid syntax found in definition.");
 }
+
 
 ReductionStatus
 Sequence(TermNode& term, Context& ctx)
@@ -2470,6 +2508,7 @@ LoadFunctions(Interpreter& intp)
 
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
+	RegisterStrict(ctx, "cons", Cons);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
@@ -2490,7 +2529,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.15"
+#define APP_VER "0.1.16"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
