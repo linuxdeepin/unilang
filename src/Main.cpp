@@ -978,6 +978,13 @@ ReduceBranchToList(TermNode&) noexcept;
 ReductionStatus
 ReduceBranchToListValue(TermNode& term) noexcept;
 
+inline ReductionStatus
+ReduceForLiftedResult(TermNode& term)
+{
+	LiftToReturn(term);
+	return ReductionStatus::Retained;
+}
+
 void
 LiftToReturn(TermNode& term)
 {
@@ -1237,6 +1244,9 @@ public:
 	ShareRecord() const noexcept;
 
 	shared_ptr<Environment>
+	SwitchEnvironment(const shared_ptr<Environment>&);
+
+	shared_ptr<Environment>
 	SwitchEnvironmentUnchecked(const shared_ptr<Environment>&) noexcept;
 
 	void
@@ -1363,6 +1373,14 @@ shared_ptr<Environment>
 Context::ShareRecord() const noexcept
 {
 	return p_record;
+}
+
+shared_ptr<Environment>
+Context::SwitchEnvironment(const shared_ptr<Environment>& p_env)
+{
+	if(p_env)
+		return SwitchEnvironmentUnchecked(p_env);
+	throw std::invalid_argument("Invalid environment record pointer found.");
 }
 
 shared_ptr<Environment>
@@ -1958,7 +1976,7 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 
 					const auto& t(vo.type());
 
-					if(t != ystdex::type_id<void>())
+					if(t != typeid(void))
 						return "#[" + string(t.name()) + ']';
 					throw bad_any_cast();
 				}();
@@ -2263,6 +2281,32 @@ ExtractBool(const TermNode& term)
 	return {};
 }
 
+
+inline ReductionStatus
+MoveGuard(EnvironmentGuard& gd, Context& ctx) ynothrow
+{
+	const auto egd(std::move(gd));
+
+	return ctx.LastStatus;
+}
+
+template<typename _fNext>
+ReductionStatus
+RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
+	_fNext&& next)
+{
+	// TODO: Implement TCO.
+	auto act(std::bind(MoveGuard, std::move(gd), std::placeholders::_1));
+
+	Continuation cont([&]{
+		return ReduceForLiftedResult(term);
+	}, ctx);
+
+	ctx.SetupFront(std::move(act));
+	ctx.SetupFront(yforward(next));
+	return ReduceOnce(term, ctx);
+}
+
 } // unnamed namespace;
 
 namespace Forms
@@ -2400,6 +2444,24 @@ Cons(TermNode& term)
 	RemoveHead(term);
 	LiftSubtermsToReturn(term);
 	return ReductionStatus::Retained;
+}
+
+
+ReductionStatus
+Eval(TermNode& term, Context& ctx)
+{
+	RetainN(term, 2);
+
+	const auto i(std::next(term.begin()));
+	auto p_env(ResolveEnvironment(*std::next(i)).first);
+
+	ResolveTerm([&](TermNode& nd){
+		term.Subterms = nd.Subterms;
+		term.Value = nd.Value;
+	}, *i);
+	return RelayForEvalOrDirect(ctx, term,
+		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))),
+		Continuation(ReduceOnce, ctx));
 }
 
 
@@ -2634,6 +2696,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterStrict(ctx, "cons", Cons);
+	RegisterStrict(ctx, "eval", Eval);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
@@ -2654,7 +2717,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.19"
+#define APP_VER "0.1.20"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
