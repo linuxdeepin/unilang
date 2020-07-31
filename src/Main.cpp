@@ -4,8 +4,8 @@
 //	ystdex::ref, std::swap, ystdex::exchange;
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
-#include <ystdex/functional.hpp> // for ystdex::function, ystdex::less,
-//	ystdex::expand_proxy;
+#include <ystdex/functional.hpp> // for ystdex::function,
+//	ystdex::expand_proxy, ystdex::less, ystdex::expanded_function;
 #include <memory> // for std::shared_ptr, std::weak_ptr;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
@@ -1103,7 +1103,9 @@ Environment::LookupName(string_view id) const
 }
 
 
-using Reducer = function<ReductionStatus(Context&)>;
+using ReducerFunctionType = ReductionStatus(Context&);
+
+using Reducer = ystdex::expanded_function<ReducerFunctionType>;
 
 using ReducerSequence = forward_list<Reducer>;
 
@@ -1652,7 +1654,7 @@ ReduceBranch(TermNode& term, Context& ctx)
 			c.SetNextTermRef(term);
 			return ReduceCombinedBranch(term, ctx);
 		});
-		ctx.SetupFront([&](Context&){
+		ctx.SetupFront([&]{
 			return ReduceOnce(sub, ctx);
 		});
 		return ReductionStatus::Partial;
@@ -1693,7 +1695,7 @@ ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 		LiftOther(term, *i);
 		return ReduceOnce(term, ctx);
 	}
-	ctx.SetupFront([&, i](Context&){
+	ctx.SetupFront([&, i]{
 		return ReduceSequenceOrderedAsync(term, ctx, term.erase(i));
 	});
 	return ReduceOnce(*i, ctx);
@@ -2145,7 +2147,7 @@ If(TermNode& term, Context& ctx)
 	{
 		auto i(std::next(term.begin()));
 
-		ctx.SetupFront([&, i](Context&) -> ReductionStatus{
+		ctx.SetupFront([&, i]() -> ReductionStatus{
 			auto j(i);
 
 			if(!ExtractBool(*j))
@@ -2411,7 +2413,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.10"
+#define APP_VER "0.1.11"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
