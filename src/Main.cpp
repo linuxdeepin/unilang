@@ -2169,6 +2169,28 @@ If(TermNode& term, Context& ctx)
 }
 
 ReductionStatus
+Define(TermNode& term, Context& ctx)
+{
+	Retain(term);
+	if(term.size() > 2)
+	{
+		RemoveHead(term);
+
+		auto formals(MoveFirstSubterm(term));
+
+		RemoveHead(term);
+		ctx.SetupFront(std::bind([&](Context&, const TermNode& saved,
+			const shared_ptr<Environment>& p_e){
+			BindParameter(p_e, saved, term);
+			term.Value = ValueToken::Unspecified;
+			return ReductionStatus::Clean;
+		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()));
+		return ReduceOnce(term, ctx);
+	}
+	throw InvalidSyntax("Invalid syntax found in definition.");
+}
+
+ReductionStatus
 Sequence(TermNode& term, Context& ctx)
 {
 	Retain(term);
@@ -2374,6 +2396,7 @@ LoadFunctions(Interpreter& intp)
 	using namespace Forms;
 
 	RegisterForm(ctx, "$if", If);
+	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$sequence", Sequence);
 	RegisterStrict(ctx, "display", [&](TermNode& term, Context&){
 		RetainN(term);
@@ -2392,7 +2415,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.8"
+#define APP_VER "0.1.9"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
