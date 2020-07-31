@@ -9,7 +9,7 @@
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
 //	ystdex::compose_n, ystdex::less, ystdex::expanded_function;
 #include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
-//	std::weak_ptr, ystdex::make_obj_using_allocator;
+//	std::weak_ptr, ystdex::share_move, ystdex::make_obj_using_allocator;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
@@ -948,6 +948,18 @@ CheckReducible(ReductionStatus status) noexcept
 }
 
 
+ReductionStatus
+RegularizeTerm(TermNode&, ReductionStatus) noexcept;
+
+ReductionStatus
+RegularizeTerm(TermNode& term, ReductionStatus status) noexcept
+{
+	if(status == ReductionStatus::Clean)
+		term.Subterms.clear();
+	return status;
+}
+
+
 void
 LiftOther(TermNode&, TermNode&);
 
@@ -1784,6 +1796,22 @@ ReduceLeaf(TermNode& term, Context& ctx)
 	return ReductionStatus::Retained;
 }
 
+template<typename... _tParams>
+ReductionStatus
+CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
+	_tParams&&... args)
+{
+	static_assert(sizeof...(args) < 2, "Unsupported owner arguments found.");
+
+	// TODO: Implement TCO.
+	ctx.SetNextTermRef(term);
+	ctx.SetupFront(std::bind([&](const _tParams&...){
+		return RegularizeTerm(term, ctx.LastStatus);
+	}, std::move(args)...));
+	ctx.SetupFront(Continuation(std::ref(h), ctx));
+	return ReductionStatus::Partial;
+}
+
 ReductionStatus
 ReduceCombinedBranch(TermNode& term, Context& ctx)
 {
@@ -1796,10 +1824,15 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	{
 		if(const auto p_handler
 			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
-			return (*p_handler)(term, ctx);
+			return CombinerReturnThunk(*p_handler, term, ctx);
 	}
 	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
-		return (*p_handler)(term, ctx);
+	{
+		// TODO: Implement TCO.
+		auto p(ystdex::share_move(ctx.get_allocator(), *p_handler));
+
+		return CombinerReturnThunk(*p, term, ctx, std::move(p));
+	}
 	throw
 		ListReductionFailure("Invalid object found in the combiner position.");
 }
@@ -2731,7 +2764,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.21"
+#define APP_VER "0.1.22"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
