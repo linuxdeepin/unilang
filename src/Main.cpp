@@ -2387,6 +2387,10 @@ Eval(TermNode&, Context&);
 
 
 ReductionStatus
+GetCurrentEnvironment(TermNode&, Context&);
+
+
+ReductionStatus
 Define(TermNode&, Context&);
 
 
@@ -2462,6 +2466,15 @@ Eval(TermNode& term, Context& ctx)
 	return RelayForEvalOrDirect(ctx, term,
 		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))),
 		Continuation(ReduceOnce, ctx));
+}
+
+
+ReductionStatus
+GetCurrentEnvironment(TermNode& term, Context& ctx)
+{
+	RetainN(term, 0);
+	term.Value = ValueObject(ctx.WeakenRecord());
+	return ReductionStatus::Clean;
 }
 
 
@@ -2698,6 +2711,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "eval", Eval);
 	RegisterForm(ctx, "$def!", Define);
+	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
 	RegisterStrict(ctx, "display", [&](TermNode& term){
@@ -2717,7 +2731,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.20"
+#define APP_VER "0.1.21"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
