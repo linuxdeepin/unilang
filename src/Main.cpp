@@ -941,13 +941,40 @@ LiftOther(TermNode& term, TermNode& tm)
 }
 
 
+void
+LiftToReturn(TermNode&);
+
+inline void
+LiftSubtermsToReturn(TermNode& term)
+{
+	std::for_each(term.begin(), term.end(), LiftToReturn);
+}
+
 ReductionStatus
 ReduceBranchToList(TermNode&) noexcept;
+
+ReductionStatus
+ReduceBranchToListValue(TermNode& term) noexcept;
+
+void
+LiftToReturn(TermNode& term)
+{
+	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+		term = p->get();
+}
 
 ReductionStatus
 ReduceBranchToList(TermNode& term) noexcept
 {
 	RemoveHead(term);
+	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+ReduceBranchToListValue(TermNode& term) noexcept
+{
+	RemoveHead(term);
+	LiftSubtermsToReturn(term);
 	return ReductionStatus::Retained;
 }
 
@@ -2397,6 +2424,7 @@ LoadFunctions(Interpreter& intp)
 
 	RegisterForm(ctx, "$if", If);
 	RegisterForm(ctx, "$def!", Define);
+	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
@@ -2415,7 +2443,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.12"
+#define APP_VER "0.1.13"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
