@@ -43,4 +43,8 @@ test 'display "Hello, "; display "world!"'
 test '$sequence (display "Hello, ") (display "world!")'
 test '$def! x "hello"'
 test 'list "hello" "world"'
+test 'cons "x" ()'
+test 'list "x"'
+test 'cons "x" (cons "y" ())'
+test 'list "x" "y"'
 
