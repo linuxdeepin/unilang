@@ -5,7 +5,8 @@
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::less;
-#include <memory> // for std::shared_ptr, std::weak_ptr;
+#include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
+//	std::weak_ptr;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
@@ -41,6 +42,7 @@ using ystdex::lref;
 using ystdex::any;
 using ystdex::bad_any_cast;
 using ystdex::function;
+using ystdex::make_shared;
 using std::pair;
 using std::shared_ptr;
 using ystdex::string_view;
@@ -248,6 +250,96 @@ class UnilangException : public std::runtime_error
 {
 	using runtime_error::runtime_error;
 };
+
+
+class TypeError : public UnilangException
+{
+	using UnilangException::UnilangException;
+};
+
+
+class ListReductionFailure : public TypeError
+{
+	using TypeError::TypeError;
+};
+
+
+class InvalidSyntax : public UnilangException
+{
+	using UnilangException::UnilangException;
+};
+
+
+class ParameterMismatch : public InvalidSyntax
+{
+	using InvalidSyntax::InvalidSyntax;
+};
+
+
+class ArityMismatch : public ParameterMismatch
+{
+private:
+	size_t expected;
+	size_t received;
+
+public:
+	ArityMismatch(size_t, size_t);
+
+	[[nodiscard, gnu::pure]] size_t
+	GetExpected() const noexcept
+	{
+		return expected;
+	}
+
+	[[nodiscard, gnu::pure]] size_t
+	GetReceived() const noexcept
+	{
+		return received;
+	}
+};
+
+ArityMismatch::ArityMismatch(size_t e, size_t r)
+	: ParameterMismatch(
+	ystdex::sfmt("Arity mismatch: expected %zu, received %zu.", e, r)),
+	expected(e), received(r)
+{}
+
+
+class BadIdentifier : public InvalidSyntax
+{
+private:
+	shared_ptr<string> p_identifier;
+
+public:
+	[[gnu::nonnull(2)]]
+	BadIdentifier(const char*, size_t = 0);
+	BadIdentifier(string_view, size_t = 0);
+
+	[[nodiscard, gnu::pure]] const string&
+	GetIdentifier() const noexcept
+	{
+		assert(p_identifier);
+		return *p_identifier;
+	}
+
+private:
+	std::string
+	InitBadIdentifierExceptionString(std::string&& id, size_t n)
+	{
+		return (n != 0 ? (n == 1 ? "Bad identifier: '" 
+			: "Duplicate identifier: '")
+			: "Unknown identifier: '") + std::move(id) + "'.";
+	}
+};
+
+BadIdentifier::BadIdentifier(const char* id, size_t n)
+	: InvalidSyntax(InitBadIdentifierExceptionString(id, n)),
+	p_identifier(make_shared<string>(id))
+{}
+BadIdentifier::BadIdentifier(string_view id, size_t n)
+	: InvalidSyntax(InitBadIdentifierExceptionString(std::string(id.data(),
+	id.data() + id.size()), n)), p_identifier(make_shared<string>(id))
+{}
 
 
 enum class LexemeCategory
@@ -1253,7 +1345,7 @@ ReduceLeaf(TermNode& term, Context& ctx)
 			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
 				&& id.find_first_not_of("+-") != string_view::npos)
 				|| ystdex::isdigit(f))
-				throw UnilangException(ystdex::sfmt<std::string>(id.front()
+				throw InvalidSyntax(ystdex::sfmt<std::string>(id.front()
 					!= '#' ? "Unsupported literal prefix found in literal '%s'."
 					: "Invalid literal '%s' found.", id.data()));
 
@@ -1274,8 +1366,7 @@ ReduceLeaf(TermNode& term, Context& ctx)
 				res = ReductionStatus::Neutral;
 			}
 			else
-				throw UnilangException(
-					"Bad identifier '" + std::string(id.data()) + "' found.");
+				throw BadIdentifier(id);
 		}
 		return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
 	}
@@ -1298,7 +1389,8 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	}
 	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
 		return (*p_handler)(term, ctx);
-	throw UnilangException("Invalid object found in the combiner position.");
+	throw
+		ListReductionFailure("Invalid object found in the combiner position.");
 }
 
 ReductionStatus
@@ -1575,12 +1667,12 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 						<= unsigned(INT_MAX))
 						ans = (ans << 3) + (ans << 1) + *p - '0';
 					else
-						throw UnilangException(ystdex::sfmt<std::string>(
+						throw InvalidSyntax(ystdex::sfmt<std::string>(
 							"Value of identifier '%s' is out of the range of"
 							" the supported integer.", id.data()));
 				}
 				else
-					throw UnilangException(ystdex::sfmt<std::string>("Literal"
+					throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
 						" postfix is unsupported in identifier '%s'.",
 						id.data()));
 			term.Value = ans;
@@ -1711,8 +1803,7 @@ RetainN(const TermNode& term, size_t m)
 
 	if(n == m)
 		return n;
-	throw UnilangException(ystdex::sfmt<std::string>(
-		"Arity mismatch: expected %zu, got %zu.", m, n));
+	throw ArityMismatch(m, n);
 }
 
 
@@ -1749,7 +1840,7 @@ If(TermNode& term, Context& ctx)
 		return ReduceOnce(*i, ctx);
 	}
 	else
-		throw UnilangException("Syntax error in conditional form.");
+		throw InvalidSyntax("Syntax error in conditional form.");
 }
 
 ReductionStatus
@@ -1976,7 +2067,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.2"
+#define APP_VER "0.1.3"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
