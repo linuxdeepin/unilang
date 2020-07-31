@@ -1,12 +1,15 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include <ystdex/utility.hpp> // for ystdex::size_t, std::pair, ystdex::lref,
-//	ystdex::ref, std::swap, ystdex::exchange;
+#include <ydef.h> // for byte, ystdex::size_t, std::pair, yforward,
+//	std::declval, std::swap;
+#include <ystdex/utility.hpp> // for ystdex::lref, ystdex::ref,
+//	ystdex::exchange;
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
 //	ystdex::compose_n, ystdex::less, ystdex::expanded_function;
-#include <memory> // for std::shared_ptr, std::weak_ptr;
+#include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
+//	std::weak_ptr, ystdex::make_obj_using_allocator;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
@@ -21,9 +24,9 @@
 #include <stack> // for std::stack;
 #include <sstream> // for std::basic_ostringstream, std::ostream,
 //	std::streamsize;
-#include <ydef.h> // for yforward;
-#include <exception> // for std::runtime_error;
 #include <cassert> // for assert;
+#include <exception> // for std::runtime_error;
+#include <type_traits> // for std::enable_if_t, std::is_same;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <iterator> // for std::next, std::prev, std::make_move_iterator;
 #include <ystdex/container.hpp> // for ystdex::insert_or_assign;
@@ -31,7 +34,7 @@
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <algorithm> // for std::for_each, std::find_if;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
-#include <type_traits> // for std::is_same, std::enable_if_t;
+#include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <cstdlib> // for std::getenv;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
@@ -39,6 +42,7 @@
 namespace Unilang
 {
 
+using ystdex::byte;
 using ystdex::size_t;
 
 using ystdex::lref;
@@ -672,13 +676,6 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 }
 
 
-// NOTE: The collection of values of unit types.
-enum class ValueToken
-{
-	Unspecified
-};
-
-
 // NOTE: The host type of symbol.
 // XXX: The destructor is not virtual.
 class TokenValue final : public string
@@ -1247,6 +1244,12 @@ public:
 
 	[[nodiscard, gnu::pure]] EnvironmentReference
 	WeakenRecord() const noexcept;
+
+	[[nodiscard, gnu::pure]] pmr::polymorphic_allocator<byte>
+	get_allocator() const noexcept
+	{
+		return pmr::polymorphic_allocator<byte>(&memory_rsrc.get());
+	}
 };
 
 TermNode&
@@ -1485,6 +1488,36 @@ ResolveEnvironment(const TermNode& term)
 }
 
 
+struct EnvironmentSwitcher
+{
+	lref<Context> ContextRef;
+	mutable shared_ptr<Environment> SavedPtr;
+
+	EnvironmentSwitcher(Context& ctx,
+		shared_ptr<Environment>&& p_saved = {})
+		: ContextRef(ctx), SavedPtr(std::move(p_saved))
+	{}
+	EnvironmentSwitcher(EnvironmentSwitcher&&) = default;
+
+	EnvironmentSwitcher&
+	operator=(EnvironmentSwitcher&&) = default;
+
+	void
+	operator()() const noexcept
+	{
+		if(SavedPtr)
+			ContextRef.get().SwitchEnvironmentUnchecked(std::move(SavedPtr));
+	}
+};
+
+
+// NOTE: The collection of values of unit types.
+enum class ValueToken
+{
+	Unspecified
+};
+
+
 [[noreturn]] void
 ThrowInsufficientTermsError();
 
@@ -1623,6 +1656,9 @@ RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 {
 	Unilang::RegisterHandler<>(target, name, yforward(args)...);
 }
+
+
+using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
 
 
 ReductionStatus
@@ -2252,6 +2288,10 @@ Cons(TermNode&);
 
 
 ReductionStatus
+Eval(TermNode&, Context&);
+
+
+ReductionStatus
 Define(TermNode&, Context&);
 
 
@@ -2563,7 +2603,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.17"
+#define APP_VER "0.1.18"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
