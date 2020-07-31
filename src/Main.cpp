@@ -1821,23 +1821,20 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 	}
 	catch(bad_any_cast&)
 	{
-		if(term)
-		{
-			size_t n(0);
+		size_t n(0);
 
-			os << '(';
-			for(const auto& nd : term)
+		os << '(';
+		for(const auto& nd : term)
+		{
+			try
 			{
-				try
-				{
-					PrintTermNode(os, nd, depth + 1, n);
-				}
-				catch(std::out_of_range&)
-				{}
-				++n;
+				PrintTermNode(os, nd, depth + 1, n);
 			}
-			os << ')';
+			catch(std::out_of_range&)
+			{}
+			++n;
 		}
+		os << ')';
 	}
 }
 
@@ -2142,7 +2139,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.4"
+#define APP_VER "0.1.5"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
