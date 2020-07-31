@@ -21,6 +21,7 @@
 #include <stack> // for std::stack;
 #include <sstream> // for std::basic_ostringstream, std::ostream,
 //	std::streamsize;
+#include <ydef.h> // for yforward;
 #include <exception> // for std::runtime_error;
 #include <cassert> // for assert;
 #include <iterator> // for std::next, std::prev, std::make_move_iterator;
@@ -208,9 +209,9 @@ ByteParser::operator()(char c)
 			buffer.clear();
 		}
 	}([&](auto&& arg){
-		lexemes.push_back(std::forward<decltype(arg)>(arg));
+		lexemes.push_back(yforward(arg));
 	}, [&](auto&& arg){
-		lexemes.back() += std::forward<decltype(arg)>(arg);
+		lexemes.back() += yforward(arg);
 	});
 }
 
@@ -577,7 +578,7 @@ AsTermNode(_tParams&&... args)
 {
 	TermNode term;
 
-	term.Value = ValueObject(std::forward<_tParams>(args)...);
+	term.Value = ValueObject(yforward(args)...);
 	return term;
 }
 
@@ -759,8 +760,7 @@ public:
 	EnvironmentReference(const shared_ptr<Environment>&) noexcept;
 	template<typename _tParam1, typename _tParam2>
 	EnvironmentReference(_tParam1&& arg1, _tParam2&& arg2) noexcept
-		: p_weak(std::forward<_tParam1>(arg1)),
-		p_anchor(std::forward<_tParam2>(arg2))
+		: p_weak(yforward(arg1)), p_anchor(yforward(arg2))
 	{}
 	EnvironmentReference(const EnvironmentReference&) = default;
 	EnvironmentReference(EnvironmentReference&&) = default;
@@ -814,8 +814,7 @@ public:
 	template<typename _tParam, typename... _tParams>
 	inline
 	TermReference(TermNode& term, _tParam&& arg, _tParams&&... args) noexcept
-		: term_ref(term),
-		r_env(std::forward<_tParam>(arg), std::forward<_tParams>(args)...)
+		: term_ref(term), r_env(yforward(arg), yforward(args)...)
 	{}
 	TermReference(const TermReference&) = default;
 
@@ -1027,8 +1026,8 @@ public:
 	TermNode&
 	Bind(_tKey&& k, _tNode&& tm)
 	{
-		return ystdex::insert_or_assign(Bindings, std::forward<_tKey>(k),
-			std::forward<_tNode>(tm)).first->second;
+		return ystdex::insert_or_assign(Bindings, yforward(k),
+			yforward(tm)).first->second;
 	}
 
 	static void
@@ -1177,14 +1176,14 @@ public:
 	SetupCurrent(_tParams&&... args)
 	{
 		assert(!IsAlive());
-		return SetupFront(std::forward<_tParams>(args)...);
+		return SetupFront(yforward(args)...);
 	}
 
 	template<typename... _tParams>
 	inline void
 	SetupFront(_tParams&&... args)
 	{
-		current.emplace_front(std::forward<_tParams>(args)...);
+		current.emplace_front(yforward(args)...);
 	}
 
 	[[nodiscard, gnu::pure]] shared_ptr<Environment>
@@ -1344,15 +1343,14 @@ template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(const Environment::allocator_type& a, _tParams&&... args)
 {
-	return std::allocate_shared<Environment>(a,
-		std::forward<_tParams>(args)...);
+	return std::allocate_shared<Environment>(a, yforward(args)...);
 }
 template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(Context& ctx, _tParams&&... args)
 {
 	return Unilang::AllocateEnvironment(ctx.GetBindingsRef().get_allocator(),
-		std::forward<_tParams>(args)...);
+		yforward(args)...);
 }
 template<typename... _tParams>
 inline shared_ptr<Environment>
@@ -1362,7 +1360,7 @@ AllocateEnvironment(TermNode& term, Context& ctx, _tParams&&... args)
 
 	static_cast<void>(term);
 	assert(a == term.get_allocator());
-	return Unilang::AllocateEnvironment(a, std::forward<_tParams>(args)...);
+	return Unilang::AllocateEnvironment(a, yforward(args)...);
 }
 
 template<typename... _tParams>
@@ -1370,7 +1368,7 @@ inline shared_ptr<Environment>
 SwitchToFreshEnvironment(Context& ctx, _tParams&&... args)
 {
 	return ctx.SwitchEnvironmentUnchecked(Unilang::AllocateEnvironment(ctx,
-		std::forward<_tParams>(args)...));
+		yforward(args)...));
 }
 
 
@@ -1384,13 +1382,13 @@ EmplaceLeaf(Environment::BindingMap& m, string_view name, _tParams&&... args)
 
 	if(i == m.end())
 	{
-		m[string(name)].Value = _type(std::forward<_tParams>(args)...);
+		m[string(name)].Value = _type(yforward(args)...);
 		return true;
 	}
 
 	auto& nd(i->second);
 
-	nd.Value = _type(std::forward<_tParams>(args)...);
+	nd.Value = _type(yforward(args)...);
 	nd.Subterms.clear();
 	return {};
 }
@@ -1398,15 +1396,13 @@ template<typename _type, typename... _tParams>
 inline bool
 EmplaceLeaf(Environment& env, string_view name, _tParams&&... args)
 {
-	return Unilang::EmplaceLeaf<_type>(env.Bindings, name,
-		std::forward<_tParams>(args)...);
+	return Unilang::EmplaceLeaf<_type>(env.Bindings, name, yforward(args)...);
 }
 template<typename _type, typename... _tParams>
 inline bool
 EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 {
-	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name,
-		std::forward<_tParams>(args)...);
+	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
 }
 
 
@@ -1444,7 +1440,7 @@ struct SeparatorTransformer
 					res.Add(std::move(child));
 				}
 			}
-		}, std::forward<_tTerm>(term), pfx, filter);
+		}, yforward(term), pfx, filter);
 	}
 
 	template<typename _func, class _tTerm, class _fPred>
@@ -1454,7 +1450,7 @@ struct SeparatorTransformer
 	{
 		using it_t = decltype(std::make_move_iterator(term.begin()));
 		const auto a(term.get_allocator());
-		auto res(Unilang::AsTermNode(std::forward<_tTerm>(term).Value));
+		auto res(Unilang::AsTermNode(yforward(term).Value));
 
 		if(IsBranch(term))
 		{
@@ -1473,8 +1469,8 @@ struct SeparatorTransformer
 	Process(_tTerm&& term, const ValueObject& pfx, _fPred filter)
 	{
 		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
-			return std::forward<_tTerm>(tm);
-		}, std::forward<_tTerm>(term), pfx, filter);
+			return yforward(tm);
+		}, yforward(term), pfx, filter);
 	}
 
 	template<class _fPred>
@@ -1497,7 +1493,7 @@ public:
 	template<typename _func, typename = std::enable_if_t<
 		!std::is_same<FormContextHandler&, _func&>::value>>
 	FormContextHandler(_func&& f, size_t n = 0)
-		: Handler(std::forward<_func>(f)), Wrapping(n)
+		: Handler(yforward(f)), Wrapping(n)
 	{}
 	FormContextHandler(const FormContextHandler&) = default;
 	FormContextHandler(FormContextHandler&&) = default;
@@ -1531,7 +1527,7 @@ inline void
 RegisterHandler(_tTarget& target, string_view name, _tParams&&... args)
 {
 	Unilang::EmplaceLeaf<ContextHandler>(target, name,
-		FormContextHandler(std::forward<_tParams>(args)..., _vWrapping));
+		FormContextHandler(yforward(args)..., _vWrapping));
 }
 
 template<class _tTarget, typename... _tParams>
@@ -1539,14 +1535,14 @@ inline void
 RegisterForm(_tTarget& target, string_view name, _tParams&&... args)
 {
 	Unilang::RegisterHandler<Form>(target, name,
-		std::forward<_tParams>(args)...);
+		yforward(args)...);
 }
 
 template<class _tTarget, typename... _tParams>
 inline void
 RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 {
-	Unilang::RegisterHandler<>(target, name, std::forward<_tParams>(args)...);
+	Unilang::RegisterHandler<>(target, name, yforward(args)...);
 }
 
 
@@ -1888,8 +1884,8 @@ private:
 public:
 	template<class _type, class _type2>
 	GParameterMatcher(_type&& arg, _type2&& arg2)
-		: BindTrailing(std::forward<_type>(arg)),
-		BindValue(std::forward<_type2>(arg2))
+		: BindTrailing(yforward(arg)),
+		BindValue(yforward(arg2))
 	{}
 
 	void
@@ -2415,7 +2411,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.9"
+#define APP_VER "0.1.10"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
