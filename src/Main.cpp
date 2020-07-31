@@ -544,6 +544,12 @@ IsEmpty(const TermNode& term) noexcept
 }
 
 [[nodiscard, gnu::pure]] inline bool
+IsExtendedList(const TermNode& term) noexcept
+{
+	return !(term.empty() && term.Value.has_value());
+}
+
+[[nodiscard, gnu::pure]] inline bool
 IsLeaf(const TermNode& term) noexcept
 {
 	return term.empty();
@@ -1448,6 +1454,34 @@ inline bool
 EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 {
 	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
+}
+
+
+[[nodiscard]] pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(const ValueObject&);
+[[nodiscard]] pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(const TermNode&);
+
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(const ValueObject& vo)
+{
+	if(const auto p = ystdex::any_cast<EnvironmentReference>(&vo))
+		return {p->Lock(), {}};
+	if(const auto p = ystdex::any_cast<shared_ptr<Environment>>(&vo))
+		return {*p, true};
+	throw TypeError(
+		ystdex::sfmt("Invalid environment type '%s' found.", vo.type().name()));
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(const TermNode& term)
+{
+	return ResolveTerm([&](const TermNode& nd, bool has_ref){
+		if(!IsExtendedList(nd))
+			return ResolveEnvironment(nd.Value);
+		throw ListTypeError(
+			ystdex::sfmt("Invalid environment formed from list '%s' found.",
+			TermToStringWithReferenceMark(nd, has_ref).c_str()));
+	}, term);
 }
 
 
@@ -2529,7 +2563,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.16"
+#define APP_VER "0.1.17"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
