@@ -1518,6 +1518,57 @@ enum class ValueToken
 };
 
 
+class Continuation
+{
+public:
+	using allocator_type
+		= decltype(std::declval<const Context&>().get_allocator());
+
+	ContextHandler Handler;
+
+	template<typename _func, typename
+		= ystdex::exclude_self_t<Continuation, _func>>
+	inline
+	Continuation(_func&& handler, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		yforward(handler)))
+	{}
+	template<typename _func, typename
+		= ystdex::exclude_self_t<Continuation, _func>>
+	inline
+	Continuation(_func&& handler, const Context& ctx)
+		: Continuation(yforward(handler), ctx.get_allocator())
+	{}
+	Continuation(const Continuation& cont, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		cont.Handler))
+	{}
+	Continuation(Continuation&& cont, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		std::move(cont.Handler)))
+	{}
+	Continuation(const Continuation&) = default;
+	Continuation(Continuation&&) = default;
+
+	Continuation&
+	operator=(const Continuation&) = default;
+	Continuation&
+	operator=(Continuation&&) = default;
+
+	[[nodiscard, gnu::const]] friend bool
+	operator==(const Continuation& x, const Continuation& y) noexcept
+	{
+		return ystdex::ref_eq<>()(x, y);
+	}
+
+	ReductionStatus
+	operator()(Context& ctx) const
+	{
+		return Handler(ctx.GetNextTermRef(), ctx);
+	}
+};
+
+
 [[noreturn]] void
 ThrowInsufficientTermsError();
 
@@ -2603,7 +2654,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.18"
+#define APP_VER "0.1.19"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
