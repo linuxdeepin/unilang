@@ -2426,10 +2426,31 @@ MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
 	return ctx.LastStatus;
 }
 
+
+[[noreturn]] inline void
+ThrowInsufficientTermsErrorFor(InvalidSyntax&& e)
+{
+	try
+	{
+		ThrowInsufficientTermsError();
+	}
+	catch(...)
+	{
+		std::throw_with_nested(std::move(e));
+	}
+}
+
+
+[[nodiscard, gnu::pure]] inline bool
+IsIgnore(const TokenValue& s) noexcept
+{
+	return s == "#ignore";
+}
+
 template<typename _fNext>
 ReductionStatus
 RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
-	_fNext&& next)
+	bool, _fNext&& next)
 {
 	// TODO: Implement TCO.
 	auto act(std::bind(MoveGuard, std::move(gd), std::placeholders::_1));
@@ -2598,7 +2619,7 @@ Eval(TermNode& term, Context& ctx)
 		term.Value = nd.Value;
 	}, *i);
 	return RelayForEvalOrDirect(ctx, term,
-		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))),
+		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), {},
 		Continuation(ReduceOnce, ctx));
 }
 
@@ -2889,7 +2910,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.27"
+#define APP_VER "0.1.28"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
