@@ -2447,6 +2447,41 @@ IsIgnore(const TokenValue& s) noexcept
 	return s == "#ignore";
 }
 
+[[gnu::nonnull(2)]] void
+CheckVauSymbol(const TokenValue& s, const char* target, bool is_valid)
+{
+	if(!is_valid)
+		throw InvalidSyntax(ystdex::sfmt("Token '%s' is not a symbol or"
+			" '#ignore' expected for %s.", s.data(), target));
+}
+
+[[noreturn, gnu::nonnull(2)]] void
+ThrowInvalidSymbolType(const TermNode& term, const char* n)
+{
+	throw InvalidSyntax(ystdex::sfmt("Invalid %s type '%s' found.", n,
+		term.Value.type().name()));
+}
+
+[[nodiscard, gnu::pure]] string
+CheckEnvFormal(const TermNode& eterm)
+{
+	const auto& term(ReferenceTerm(eterm));
+
+	if(const auto p = TermToNamePtr(term))
+	{
+		if(!IsIgnore(*p))
+		{
+			CheckVauSymbol(*p, "environment formal parameter",
+				CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
+			return *p;
+		}
+	}
+	else
+		ThrowInvalidSymbolType(term, "environment formal parameter");
+	return {};
+}
+
+
 template<typename _fNext>
 ReductionStatus
 RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
@@ -2461,6 +2496,14 @@ RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 
 	ctx.SetupFront(std::move(act));
 	return ReduceSubsequent(term, ctx, yforward(next));
+}
+
+ReductionStatus
+RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
+	bool no_lift)
+{
+	return RelayForEvalOrDirect(ctx, term, std::move(gd), no_lift,
+		Continuation(ReduceOnce, ctx));
 }
 
 } // unnamed namespace;
@@ -2478,6 +2521,158 @@ Retain(const TermNode& term) noexcept
 size_t
 RetainN(const TermNode&, size_t = 1);
 
+} // namespace Forms;
+
+namespace
+{
+
+[[nodiscard, gnu::pure]] inline InvalidSyntax
+MakeFunctionAbstractionError() noexcept
+{
+	return InvalidSyntax("Invalid syntax found in function abstraction.");
+}
+
+
+class VauHandler final : private ystdex::equality_comparable<VauHandler>
+{
+private:
+	string eformal{};
+	shared_ptr<TermNode> p_formals;
+	EnvironmentReference parent;
+	mutable shared_ptr<Environment> p_static;
+	mutable shared_ptr<TermNode> p_eval_struct;
+	ReductionStatus(VauHandler::*p_call)(TermNode&, Context&) const;
+
+public:
+	bool NoLifting = {};
+
+	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
+		shared_ptr<Environment>&& p_env, bool owning, TermNode& term, bool nl)
+		: eformal(std::move(ename)), p_formals((CheckParameterTree(*p_fm),
+		std::move(p_fm))), parent((Environment::EnsureValid(p_env), p_env)),
+		p_static(owning ? std::move(p_env) : nullptr),
+		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
+		Unilang::AsTermNode(term.get_allocator())))), p_call(eformal.empty()
+		? &VauHandler::CallStatic : &VauHandler::CallDynamic), NoLifting(nl)
+	{}
+
+	friend bool
+	operator==(const VauHandler& x, const VauHandler& y)
+	{
+		return x.eformal == y.eformal && x.p_formals == y.p_formals
+			&& x.parent == y.parent && x.p_static == y.p_static
+			&& x.NoLifting == y.NoLifting;
+	}
+
+	ReductionStatus
+	operator()(TermNode& term, Context& ctx) const
+	{
+		if(IsBranchedList(term))
+		{
+			if(p_eval_struct)
+				return (this->*p_call)(term, ctx);
+			throw UnilangException("Invalid handler of call found.");
+		}
+		throw UnilangException("Invalid composition found.");
+	}
+
+	static void
+	CheckParameterTree(const TermNode& term)
+	{
+		for(const auto& child : term)
+			CheckParameterTree(child);
+		if(term.Value.has_value())
+		{
+			if(const auto p = TermToNamePtr(term))
+				CheckVauSymbol(*p, "parameter in a parameter tree",
+					IsIgnore(*p)
+						|| CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
+			else
+				ThrowInvalidSymbolType(term, "parameter tree node");
+		}
+	}
+
+private:
+	void
+	BindEnvironment(Context& ctx, ValueObject&& vo) const
+	{
+		assert(!eformal.empty());
+		ctx.GetRecordRef().AddValue(eformal, std::move(vo));
+	}
+
+	ReductionStatus
+	CallDynamic(TermNode& term, Context& ctx) const
+	{
+		auto wenv(ctx.WeakenRecord());
+		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
+
+		BindEnvironment(ctx, std::move(wenv));
+		return DoCall(term, ctx, gd);
+	}
+
+	ReductionStatus
+	CallStatic(TermNode& term, Context& ctx) const
+	{
+		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
+
+		return DoCall(term, ctx, gd);
+	}
+
+	ReductionStatus
+	DoCall(TermNode& term, Context& ctx, EnvironmentGuard& gd) const
+	{
+		assert(p_eval_struct);
+
+		RemoveHead(term);
+		BindParameter(ctx.GetRecordPtr(), *p_formals, term);
+		ctx.GetRecordRef().Parent = parent;
+		// TODO: Implement TCO.
+		LiftOtherOrCopy(term, *p_eval_struct, {});
+		return RelayForCall(ctx, term, std::move(gd), NoLifting);
+	}
+};
+
+
+template<typename _func>
+ReductionStatus
+CreateFunction(TermNode& term, _func f, size_t n)
+{
+	Forms::Retain(term);
+	if(term.size() > n)
+		return f();
+	ThrowInsufficientTermsErrorFor(MakeFunctionAbstractionError());
+}
+
+template<typename _func>
+inline auto
+CheckFunctionCreation(_func f) -> decltype(f())
+{
+	try
+	{
+		return f();
+	}
+	catch(...)
+	{
+		std::throw_with_nested(MakeFunctionAbstractionError());
+	}
+}
+
+ContextHandler
+CreateVau(TermNode& term, bool no_lift, TNIter i,
+	shared_ptr<Environment>&& p_env, bool owning)
+{
+	auto formals(ShareMoveTerm(*++i));
+	auto eformal(CheckEnvFormal(*++i));
+
+	term.erase(term.begin(), ++i);
+	return FormContextHandler(VauHandler(std::move(eformal), std::move(formals),
+		std::move(p_env), owning, term, no_lift));
+}
+
+} // unnamed namespace;
+
+namespace Forms
+{
 
 template<typename _func>
 struct UnaryExpansion
@@ -2910,7 +3105,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.28"
+#define APP_VER "0.1.29"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
