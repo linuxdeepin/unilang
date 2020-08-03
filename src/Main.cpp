@@ -1373,7 +1373,14 @@ Context::ApplyTail()
 	assert(IsAlive());
 	TailAction = std::move(current.front());
 	current.pop_front();
-	LastStatus = TailAction(*this);
+	try
+	{
+		LastStatus = TailAction(*this);
+	}
+	catch(bad_any_cast&)
+	{
+		std::throw_with_nested(TypeError("Mismatched type found."));
+	}
 	return LastStatus;
 }
 
@@ -3147,7 +3154,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.33"
+#define APP_VER "0.1.34"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
