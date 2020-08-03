@@ -3126,6 +3126,10 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
+	intp.Perform(R"Unilang(
+		$def! $vau $vau/e (() get-current-environment) (formals ef .body) d
+			eval (cons $vau/e (cons d (cons formals (cons ef body)))) d;
+	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
 	RegisterStrict(ctx, "display", [&](TermNode& term){
@@ -3143,7 +3147,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.32"
+#define APP_VER "0.1.33"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
