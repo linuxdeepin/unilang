@@ -9,7 +9,8 @@
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
 //	ystdex::compose_n, ystdex::less, ystdex::expanded_function;
 #include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
-//	std::weak_ptr, ystdex::share_move, ystdex::make_obj_using_allocator;
+//	std::weak_ptr, ystdex::share_move, std::allocator_arg_t,
+//	ystdex::make_obj_using_allocator;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
@@ -25,11 +26,15 @@
 #include <sstream> // for std::basic_ostringstream, std::ostream,
 //	std::streamsize;
 #include <cassert> // for assert;
-#include <exception> // for std::runtime_error;
-#include <type_traits> // for std::enable_if_t, std::is_same;
+#include <exception> // for std::runtime_error, std::throw_with_nested;
+#include <type_traits> // for std::enable_if_t, std::is_same,
+//	std::is_convertible;
+#include <ystdex/type_op.hpp> // for ystdex::cond_or_t, ystdex::false_,
+//	ystdex::not_;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <iterator> // for std::next, std::prev, std::make_move_iterator;
-#include <ystdex/container.hpp> // for ystdex::insert_or_assign;
+#include <ystdex/container.hpp> // for ystdex::try_emplace,
+//	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <algorithm> // for std::for_each, std::find_if;
@@ -388,6 +393,9 @@ CategorizeBasicLexeme(string_view id) noexcept
 }
 
 
+constexpr const struct NoContainerTag{} NoContainer{};
+
+
 class TermNode final
 {
 private:
@@ -419,6 +427,12 @@ public:
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
+	inline
+	TermNode(NoContainerTag, _tParams&&... args)
+		: Value(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		typename = enable_value_constructible_t<_tParams...>>
 	TermNode(const Container& con, _tParams&&... args)
 		: Subterms(con), Value(yforward(args)...)
 	{}
@@ -426,6 +440,13 @@ public:
 		typename = enable_value_constructible_t<_tParams...>>
 	TermNode(Container&& con, _tParams&&... args)
 		: Subterms(std::move(con)), Value(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		typename = enable_value_constructible_t<_tParams...>>
+	inline
+	TermNode(std::allocator_arg_t, allocator_type a, NoContainerTag,
+		_tParams&&... args)
+		: Subterms(a), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
@@ -511,6 +532,11 @@ public:
 	{
 		return Subterms.erase(i);
 	}
+	iterator
+	erase(const_iterator first, const_iterator last)
+	{
+		return Subterms.erase(first, last);
+	}
 
 	[[nodiscard, gnu::pure]]
 	allocator_type
@@ -584,6 +610,17 @@ MoveFirstSubterm(TermNode& term)
 	return std::move(AccessFirstSubterm(term));
 }
 
+[[nodiscard]] inline shared_ptr<TermNode>
+ShareMoveTerm(TermNode& term)
+{
+	return ystdex::share_move(term.get_allocator(), term);
+}
+[[nodiscard]] inline shared_ptr<TermNode>
+ShareMoveTerm(TermNode&& term)
+{
+	return ystdex::share_move(term.get_allocator(), term);
+}
+
 inline void
 RemoveHead(TermNode& term) noexcept
 {
@@ -591,14 +628,20 @@ RemoveHead(TermNode& term) noexcept
 	term.erase(term.begin());
 }
 
-template<typename... _tParams>
-[[nodiscard, gnu::pure]] inline TermNode
+template<typename... _tParam, typename... _tParams>
+[[nodiscard, gnu::pure]] inline
+ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
+	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
+	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
 AsTermNode(_tParams&&... args)
 {
-	TermNode term;
-
-	term.Value = ValueObject(yforward(args)...);
-	return term;
+	return TermNode(NoContainer, yforward(args)...);
+}
+template<typename... _tParams>
+[[nodiscard, gnu::pure]] YB_PURE inline TermNode
+AsTermNode(TermNode::allocator_type a, _tParams&&... args)
+{
+	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
 }
 
 
@@ -964,6 +1007,9 @@ void
 LiftOther(TermNode&, TermNode&);
 
 void
+LiftOtherOrCopy(TermNode&, TermNode&, bool);
+
+void
 LiftOther(TermNode& term, TermNode& tm)
 {
 	assert(&term != &tm);
@@ -972,6 +1018,18 @@ LiftOther(TermNode& term, TermNode& tm)
 
 	term.Subterms = std::move(tm.Subterms);
 	term.Value = std::move(tm.Value);
+}
+
+void
+LiftOtherOrCopy(TermNode& term, TermNode& tm, bool move)
+{
+	if(move)
+		LiftOther(term, tm);
+	else
+	{
+		term.Subterms = tm.Subterms;
+		term.Value = tm.Value;
+	}
 }
 
 
@@ -2804,7 +2862,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.25"
+#define APP_VER "0.1.26"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
