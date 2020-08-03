@@ -2761,6 +2761,10 @@ VauWithEnvironment(TermNode&, Context&);
 
 
 ReductionStatus
+Wrap(TermNode&);
+
+
+ReductionStatus
 Sequence(TermNode&, Context&);
 
 
@@ -2905,6 +2909,42 @@ VauWithEnvironment(TermNode& term, Context& ctx)
 			return ReductionStatus::Clean;
 		});
 	}, 3);
+}
+
+
+ReductionStatus
+Wrap(TermNode& term)
+{
+	RetainN(term);
+
+	auto& tm(*std::next(term.begin()));
+
+	ResolveTerm([&](TermNode& nd, bool has_ref){
+		auto& h(ystdex::any_cast<ContextHandler&>(nd.Value));
+
+		if(const auto p = h.target<FormContextHandler>())
+		{
+			auto& fch(*p);
+
+			if(has_ref)
+				term.Value = ContextHandler(FormContextHandler(fch.Handler,
+					fch.Wrapping + 1));
+			else
+			{
+				++fch.Wrapping;
+				LiftOther(term, nd);
+			}
+		}
+		else
+		{
+			if(has_ref)
+				term.Value = ContextHandler(FormContextHandler(h, 1));
+			else
+				term.Value
+					= ContextHandler(FormContextHandler(std::move(h), 1));
+		}
+	}, tm);
+	return ReductionStatus::Clean;
 }
 
 
@@ -3132,6 +3172,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
+	RegisterStrict(ctx, "wrap", Wrap);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	intp.Perform(R"Unilang(
 		$def! $vau $vau/e (() get-current-environment) (formals ef .body) d
@@ -3154,7 +3195,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.34"
+#define APP_VER "0.1.35"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
