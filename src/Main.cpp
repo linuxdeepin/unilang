@@ -2387,6 +2387,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 						[&](const TermNode& tm){
 						con.emplace_back(tm.Subterms, tm.Value);
 					});
+				env.Bind(id, TermNode(std::move(con)));
 			}
 		}
 	}, [&](const TokenValue& n, TermNode& b, const EnvironmentReference& r_env){
@@ -3142,7 +3143,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.31"
+#define APP_VER "0.1.32"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
