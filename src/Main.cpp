@@ -2749,6 +2749,10 @@ Define(TermNode&, Context&);
 
 
 ReductionStatus
+VauWithEnvironment(TermNode&, Context&);
+
+
+ReductionStatus
 Sequence(TermNode&, Context&);
 
 
@@ -2873,6 +2877,26 @@ Define(TermNode& term, Context& ctx)
 		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()));
 	}
 	throw InvalidSyntax("Invalid syntax found in definition.");
+}
+
+
+ReductionStatus
+VauWithEnvironment(TermNode& term, Context& ctx)
+{
+	return CreateFunction(term, [&]{
+		auto i(term.begin());
+		auto& tm(*++i);
+
+		return ReduceSubsequent(tm, ctx, [&, i]{
+			term.Value = CheckFunctionCreation([&]{
+				auto p_env_pr(ResolveEnvironment(tm));
+
+				return CreateVau(term, {}, i, std::move(p_env_pr.first),
+					p_env_pr.second);
+			});
+			return ReductionStatus::Clean;
+		});
+	}, 3);
 }
 
 
@@ -3087,6 +3111,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(ctx, "eval", Eval);
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterForm(ctx, "$def!", Define);
+	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterForm(ctx, "$sequence", Sequence);
@@ -3105,7 +3130,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.29"
+#define APP_VER "0.1.30"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
