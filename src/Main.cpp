@@ -1142,6 +1142,22 @@ public:
 		return p_anchor;
 	}
 
+	template<typename _tKey, typename... _tParams>
+	inline ystdex::enable_if_inconvertible_t<_tKey&&,
+		BindingMap::const_iterator, bool>
+	AddValue(_tKey&& k, _tParams&&... args)
+	{
+		return ystdex::try_emplace(Bindings, yforward(k), NoContainer,
+			yforward(args)...).second;
+	}
+	template<typename _tKey, typename... _tParams>
+	inline bool
+	AddValue(BindingMap::const_iterator hint, _tKey&& k, _tParams&&... args)
+	{
+		return ystdex::try_emplace_hint(Bindings, hint, yforward(k),
+			NoContainer, yforward(args)...).second;
+	}
+
 	template<typename _tKey, class _tNode>
 	TermNode&
 	Bind(_tKey&& k, _tNode&& tm)
@@ -1152,6 +1168,9 @@ public:
 
 	static void
 	CheckParent(const ValueObject&);
+
+	static Environment&
+	EnsureValid(const shared_ptr<Environment>&);
 
 private:
 	[[nodiscard, gnu::pure]] AnchorPtr
@@ -1204,6 +1223,14 @@ void
 Environment::CheckParent(const ValueObject&)
 {
 	// TODO: Check parent type.
+}
+
+Environment&
+Environment::EnsureValid(const shared_ptr<Environment>& p_env)
+{
+	if(p_env)
+		return *p_env;
+	throw std::invalid_argument("Invalid environment found.");
 }
 
 AnchorPtr
@@ -2275,7 +2302,7 @@ private:
 				return MatchSubterms(std::next(i), last, std::next(j), o_last,
 					r_env, ellipsis);
 			});
-			YAssert(j != o_last, "Invalid state of operand found.");
+			assert(j != o_last);
 			Match(*i, *j, r_env);
 		}
 		else if(ellipsis)
@@ -2862,7 +2889,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.26"
+#define APP_VER "0.1.27"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
