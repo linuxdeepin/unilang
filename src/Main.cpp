@@ -2983,6 +2983,9 @@ public:
 	void
 	Evaluate(TermNode&);
 
+	TermNode
+	Perform(string_view);
+
 	static void
 	Print(const TermNode&);
 
@@ -3016,6 +3019,15 @@ Interpreter::Print(const TermNode& term)
 {
 	PrintTermNode(std::cout, term);
 	std::cout << std::endl;
+}
+
+TermNode
+Interpreter::Perform(string_view unit)
+{
+	auto term(Read(unit));
+
+	Evaluate(term);
+	return term;
 }
 
 bool
@@ -3130,7 +3142,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.30"
+#define APP_VER "0.1.31"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
