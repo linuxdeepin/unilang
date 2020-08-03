@@ -1742,8 +1742,22 @@ RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
 
 
+inline ReductionStatus
+ReduceOnceLifted(TermNode& term, Context& ctx, TermNode& tm)
+{
+	LiftOther(term, tm);
+	return ReduceOnce(term, ctx);
+}
+
 ReductionStatus
 ReduceOrdered(TermNode&, Context&);
+
+inline ReductionStatus
+ReduceReturnUnspecified(TermNode& term) noexcept
+{
+	term.Value = ValueToken::Unspecified;
+	return ReductionStatus::Clean;
+}
 
 void
 BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
@@ -1854,8 +1868,7 @@ ReduceBranch(TermNode& term, Context& ctx)
 				term_ref = AccessFirstSubterm(term_ref);
 			}
 			while(term_ref.get().size() == 1);
-			LiftOther(term, term_ref);
-			return ReduceOnce(term, ctx);
+			return ReduceOnceLifted(term, ctx, term_ref);
 		}
 		if(IsEmpty(AccessFirstSubterm(term)))
 			RemoveHead(term);
@@ -1878,6 +1891,15 @@ ReduceBranch(TermNode& term, Context& ctx)
 }
 
 
+template<typename _fNext>
+inline ReductionStatus
+ReduceSubsequent(TermNode& term, Context& ctx, _fNext&& next)
+{
+	ctx.SetupFront(yforward(next));
+	return ReduceOnce(term, ctx);
+}
+
+
 inline ReductionStatus
 ReduceChildrenOrderedAsync(TNIter, TNIter, Context&);
 
@@ -1888,10 +1910,9 @@ ReduceChildrenOrderedAsyncUnchecked(TNIter first, TNIter last, Context& ctx)
 
 	auto& term(*first++);
 
-	ctx.SetupFront([=](Context& c){
+	return ReduceSubsequent(term, ctx, [=](Context& c){
 		return ReduceChildrenOrderedAsync(first, last, c);
 	});
-	return ReduceOnce(term, ctx);
 }
 
 inline ReductionStatus
@@ -1906,10 +1927,7 @@ ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 {
 	assert(i != term.end());
 	if(std::next(i) == term.end())
-	{
-		LiftOther(term, *i);
-		return ReduceOnce(term, ctx);
-	}
+		return ReduceOnceLifted(term, ctx, *i);
 	ctx.SetupFront([&, i]{
 		return ReduceSequenceOrderedAsync(term, ctx, term.erase(i));
 	});
@@ -2336,8 +2354,7 @@ RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 	}, ctx);
 
 	ctx.SetupFront(std::move(act));
-	ctx.SetupFront(yforward(next));
-	return ReduceOnce(term, ctx);
+	return ReduceSubsequent(term, ctx, yforward(next));
 }
 
 } // unnamed namespace;
@@ -2445,20 +2462,14 @@ If(TermNode& term, Context& ctx)
 	{
 		auto i(std::next(term.begin()));
 
-		ctx.SetupFront([&, i]() -> ReductionStatus{
+		return ReduceSubsequent(*i, ctx, [&, i]() -> ReductionStatus{
 			auto j(i);
 
 			if(!ExtractBool(*j))
 				++j;
-			if(++j != term.end())
-			{
-				LiftOther(term, *j);
-				return ReduceOnce(term, ctx);
-			}
-			term.Value = ValueToken::Unspecified;
-			return ReductionStatus::Clean;
+			return ++j != term.end() ? ReduceOnceLifted(term, ctx, *j)
+				: ReduceReturnUnspecified(term);
 		});
-		return ReduceOnce(*i, ctx);
 	}
 	else
 		throw InvalidSyntax("Syntax error in conditional form.");
@@ -2552,13 +2563,13 @@ Define(TermNode& term, Context& ctx)
 		auto formals(MoveFirstSubterm(term));
 
 		RemoveHead(term);
-		ctx.SetupFront(std::bind([&](Context&, const TermNode& saved,
+		return ReduceSubsequent(term, ctx,
+			std::bind([&](Context&, const TermNode& saved,
 			const shared_ptr<Environment>& p_e){
 			BindParameter(p_e, saved, term);
 			term.Value = ValueToken::Unspecified;
 			return ReductionStatus::Clean;
 		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()));
-		return ReduceOnce(term, ctx);
 	}
 	throw InvalidSyntax("Invalid syntax found in definition.");
 }
@@ -2782,20 +2793,18 @@ LoadFunctions(Interpreter& intp)
 		RetainN(term);
 		LiftOther(term, *std::next(term.begin()));
 		PrintTermNode(std::cout, term);
-		term.Value = ValueToken::Unspecified;
-		return ReductionStatus::Clean;
+		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(ctx, "newline", [&](TermNode& term){
 		RetainN(term, 0);
 		std::cout << std::endl;
-		term.Value = ValueToken::Unspecified;
-		return ReductionStatus::Clean;
+		return ReduceReturnUnspecified(term);
 	});
 	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.24"
+#define APP_VER "0.1.25"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
