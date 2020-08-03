@@ -2420,6 +2420,9 @@ Eval(TermNode&, Context&);
 
 
 ReductionStatus
+MakeEnvironment(TermNode&);
+
+ReductionStatus
 GetCurrentEnvironment(TermNode&, Context&);
 
 
@@ -2503,6 +2506,31 @@ Eval(TermNode& term, Context& ctx)
 		Continuation(ReduceOnce, ctx));
 }
 
+
+ReductionStatus
+MakeEnvironment(TermNode& term)
+{
+	Retain(term);
+
+	const auto a(term.get_allocator());
+
+	if(term.size() > 1)
+	{
+		ValueObject parent;
+		const auto tr([&](TNCIter iter){
+			return ystdex::make_transform(iter, [&](TNCIter i){
+				return ReferenceTerm(*i).Value;
+			});
+		});
+
+		parent = ValueObject(EnvironmentList(tr(std::next(term.begin())),
+			tr(term.end()), a));
+		term.Value = Unilang::AllocateEnvironment(a, std::move(parent));
+	}
+	else
+		term.Value = Unilang::AllocateEnvironment(a);
+	return ReductionStatus::Clean;
+}
 
 ReductionStatus
 GetCurrentEnvironment(TermNode& term, Context& ctx)
@@ -2745,6 +2773,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "eval", Eval);
+	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
@@ -2766,7 +2795,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.23"
+#define APP_VER "0.1.24"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
