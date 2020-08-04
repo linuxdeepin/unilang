@@ -1130,7 +1130,7 @@ public:
 	Environment&
 	operator=(Environment&&) = default;
 
-	[[nodiscard, gnu::pure]] friend
+	[[nodiscard, gnu::pure]] friend bool
 	operator==(const Environment& x, const Environment& y) noexcept
 	{
 		return &x == &y;
@@ -2503,7 +2503,9 @@ RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 	}, ctx);
 
 	ctx.SetupFront(std::move(act));
-	return ReduceSubsequent(term, ctx, yforward(next));
+	ctx.SetNextTermRef(term);
+	ctx.SetupFront(std::move(cont));
+	return next(ctx);
 }
 
 ReductionStatus
@@ -3198,7 +3200,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.37"
+#define APP_VER "0.1.38"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
