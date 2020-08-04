@@ -10,16 +10,17 @@ touch "$ERR"
 
 run()
 {
+	set +e
 	echo > "$ERR"
 	echo "$1" | ./unilang 1> "$OUT" 2> "$ERR"
+	set -e
 }
 
 # NOTE: Test cases should print no errors.
 test()
 {
 	echo "Running case:" "$1"
-	run "$1"
-	if [ -s "$ERR" ]; then
+	if ! (run "$1") || [ -s "$ERR" ]; then
 		echo "FAIL."
 		echo "Error:"
 		cat "$ERR"
