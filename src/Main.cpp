@@ -2108,6 +2108,8 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 
 				os << [&]() -> string{
 					if(const auto p = ystdex::any_cast<string>(&vo))
+						return ystdex::quote(*p);
+					if(const auto p = ystdex::any_cast<TokenValue>(&vo))
 						return *p;
 					if(const auto p = ystdex::any_cast<bool>(&vo))
 						return *p ? "#t" : "#f";
@@ -3200,7 +3202,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.38"
+#define APP_VER "0.1.39"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
