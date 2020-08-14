@@ -49,9 +49,24 @@ git submodule update --init
 	* 函数应用。
 * 函数：
 	* `$if`
+	* `$def!`
+	* `$defl!`
+	* `$defv!`
+	* `$lambda`
 	* `$sequence`
+	* `$set!`
+	* `$vau`
+	* `$vau/e`
+	* `cons`
+	* `eval`
 	* `display`
+	* `get-current-environment`
+	* `list`
+	* `make-environment`
 	* `newline`
+	* `null?`
+	* `unwrap`
+	* `wrap`
 
 ## 版本历史
 
@@ -60,7 +75,7 @@ git submodule update --init
 	* 实现解释器 REPL 框架。
 * **V0.1**
 	* 支持特性：
-		* 基本语法和求值算法。
+		* 基本语法和求值算法：
 			* 环境和变量解析。
 			* 函数应用。
 		* 函数：
@@ -70,4 +85,29 @@ git submodule update --init
 			* `newline`
 	* 添加外部依赖项 [YSLib](https://gitee.com/FrankHB/YSLib) 。
 	* 降低构建环境要求，依赖 ISO C++14 。
+* **V0.2**
+	* 新增支持特性：
+		* 基本语法和求值算法：
+			* 环境引用。
+		* 各种不同的异常类。
+		* 变量绑定。
+		* 函数：
+			* `$def!`
+			* `list`
+			* `null?`
+			* `cons`
+			* `eval`
+			* `get-current-environment`
+			* `make-environment`
+			* `$vau/e`
+			* `$vau`
+			* `wrap`
+			* `$lambda`
+			* `unwrap`
+			* `$set!`
+			* `$defv!`
+			* `$defl!`
+		* 对象 `ignore`
+	* 输出格式调整。
+	* 使用外部依赖简化部分实现。
 
