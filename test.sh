@@ -58,5 +58,7 @@ test 'display (($lambda ((x y)) x) (list "hello" "world"))'
 test '$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;'
 test 'eval (list display "Hello, world!") (() get-current-environment)'
 test '$def! (x y) list "hello" "world"; display x; display y;'
+test '$def! id $lambda (x) x;'
+test '$defl! id (x) x;'
 test '$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
 
