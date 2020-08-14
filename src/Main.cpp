@@ -2681,6 +2681,13 @@ CreateVau(TermNode& term, bool no_lift, TNIter i,
 		std::move(p_env), owning, term, no_lift));
 }
 
+[[noreturn]] ReductionStatus
+ThrowForUnwrappingFailure(const ContextHandler& h)
+{
+	throw TypeError(ystdex::sfmt("Unwrapping failed with type '%s'.",
+		h.target_type().name()));
+}
+
 } // unnamed namespace;
 
 namespace Forms
@@ -2766,6 +2773,9 @@ VauWithEnvironment(TermNode&, Context&);
 
 ReductionStatus
 Wrap(TermNode&);
+
+ReductionStatus
+Unwrap(TermNode&);
 
 
 ReductionStatus
@@ -2947,6 +2957,37 @@ Wrap(TermNode& term)
 				term.Value
 					= ContextHandler(FormContextHandler(std::move(h), 1));
 		}
+	}, tm);
+	return ReductionStatus::Clean;
+}
+
+ReductionStatus
+Unwrap(TermNode& term)
+{
+	RetainN(term);
+
+	auto& tm(*std::next(term.begin()));
+
+	ResolveTerm([&](TermNode& nd, bool has_ref){
+		auto& h(ystdex::any_cast<ContextHandler&>(nd.Value));
+
+		if(const auto p = h.target<FormContextHandler>())
+		{
+			auto& fch(*p);
+
+			if(has_ref)
+				term.Value = ContextHandler(FormContextHandler(fch.Handler,
+					fch.Wrapping - 1));
+			else if(fch.Wrapping != 0)
+			{
+				--fch.Wrapping;
+				LiftOther(term, nd);
+			}
+			else
+				throw TypeError("Unwrapping failed on an operative argument.");
+		}
+		else
+			ThrowForUnwrappingFailure(h);
 	}, tm);
 	return ReductionStatus::Clean;
 }
@@ -3178,6 +3219,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterStrict(ctx, "wrap", Wrap);
+	RegisterStrict(ctx, "unwrap", Unwrap);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	intp.Perform(R"Unilang(
 		$def! $vau $vau/e (() get-current-environment) (formals ef .body) d
@@ -3202,7 +3244,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.1.39"
+#define APP_VER "0.1.40"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
