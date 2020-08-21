@@ -3384,6 +3384,11 @@ LoadFunctions(Interpreter& intp)
 			$if (null? tail) head (cons head (apply list* tail));
 		$defv! $defw! (f formals ef .body) d
 			eval (list $set! d f wrap (list* $vau formals ef body)) d;
+		$defw! accr (l pred? base head tail sum) d
+			$if (apply pred? (list l) d) base
+				(apply sum (list (apply head (list l) d)
+					(apply accr (list (apply tail (list l) d)
+					pred? base head tail sum) d)) d);
 	)Unilang");
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
@@ -3400,7 +3405,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.9"
+#define APP_VER "0.2.10"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
