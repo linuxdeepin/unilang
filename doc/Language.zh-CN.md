@@ -559,6 +559,16 @@ $lambda <formals> <body>`
 
 　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
 
+`accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
+
+　　在抽象列表的元素上应用右结合的二元操作。
+
+　　对 <object1> 指定的抽象列表进行处理，取得部分和。
+
+　　当谓词 <predicate> 成立时结果为参数指定的对象，否则继续处理抽象列表中余下的元素。
+
+　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
