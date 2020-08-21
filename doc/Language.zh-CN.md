@@ -579,6 +579,10 @@ $lambda <formals> <body>`
 
 　　任意两个调用之间的相对求值顺序未指定。
 
+`$let <bindings> <body>`
+
+　　局部绑定求值。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
