@@ -2812,12 +2812,51 @@ struct UnaryExpansion
 };
 
 
+template<typename _type, typename _func>
+struct UnaryAsExpansion
+	: private ystdex::equality_comparable<UnaryAsExpansion<_type, _func>>
+{
+	_func Function;
+
+	UnaryAsExpansion(_func f)
+		: Function(std::move(f))
+	{}
+
+	[[nodiscard, gnu::pure]] friend
+	operator==(const UnaryAsExpansion& x, const UnaryAsExpansion& y)
+	{
+		return ystdex::examiners::equal_examiner::are_equal(x.Function,
+			y.Function);
+	}
+
+	template<typename... _tParams>
+	inline ReductionStatus
+	operator()(TermNode& term, _tParams&&... args) const
+	{
+		RetainN(term);
+		Unilang::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+			ystdex::make_expanded<void(_type&, _tParams&&...)>(
+			std::ref(Function)), Unilang::ResolveRegular<_type>(
+			*std::next(term.begin())), yforward(args)...));
+		return ReductionStatus::Clean;
+	}
+};
+
+
 template<size_t _vWrapping = Strict, typename _func, class _tTarget>
 inline void
 RegisterUnary(_tTarget& target, string_view name, _func f)
 {
 	Unilang::RegisterHandler<_vWrapping>(target, name,
 		UnaryExpansion<_func>(std::move(f)));
+}
+template<size_t _vWrapping = Strict, typename _type, typename _func,
+	class _tTarget>
+inline void
+RegisterUnary(_tTarget& target, string_view name, _func f)
+{
+	Unilang::RegisterHandler<_vWrapping>(target, name,
+		UnaryAsExpansion<_type, _func>(std::move(f)));
 }
 
 
@@ -3342,7 +3381,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.2"
+#define APP_VER "0.2.3"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
