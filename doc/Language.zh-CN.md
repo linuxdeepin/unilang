@@ -529,6 +529,10 @@ $lambda <formals> <body>`
 
 　　取列表第一个元素的值。
 
+`rest <list>`
+
+　　取列表第一个元素以外的元素值构成的列表。
+
 `apply <applicative> <object> <environment>`
 
 　　在指定环境中应用。
