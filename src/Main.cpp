@@ -3372,6 +3372,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
 		$defl! first ((x .)) x;
+		$defl! rest ((#ignore .x)) x;
 		$defl! apply (appv arg .opt)
 			eval (cons () (cons (unwrap appv) arg))
 				($if (null? opt) (() make-environment)
@@ -3399,7 +3400,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.8"
+#define APP_VER "0.2.9"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
