@@ -545,6 +545,10 @@ $lambda <formals> <body>`
 
 　　对一个操作数的情形返回原值，否则类似 `cons` ，检查最后一个实际参数是 <list> 。
 
+`$defw! <variable> <formals> <eformal> <body>`
+
+　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
