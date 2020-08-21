@@ -477,6 +477,10 @@
 
 　　解包装应用子为底层的合并子。
 
+`raise-invalid-syntax-error` <string>
+
+　　引起包含参数指定的字符串内容的语法错误。
+
 `() get-current-environment`
 
 　　取当前环境。
