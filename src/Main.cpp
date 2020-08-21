@@ -3391,6 +3391,8 @@ LoadFunctions(Interpreter& intp)
 					pred? base head tail sum) d)) d);
 		$defw! foldr1 (kons knil l) d
 			apply accr (list l null? knil first rest kons) d;
+		$defw! map1 (appv l) d
+			foldr1 ($lambda (x xs) cons (apply appv (list x) d) xs) () l;
 	)Unilang");
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
@@ -3407,7 +3409,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.11"
+#define APP_VER "0.2.12"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

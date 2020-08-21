@@ -573,6 +573,12 @@ $lambda <formals> <body>`
 
 　　同 `accr` ，但指定谓词为 `null?` ，应用子分别为 `first` 和 `rest` 。
 
+`map1 <applicative> <list>`
+
+　　单列表映射操作，使用指定应用子对列表中每个参数进行调用，结果为调用结果的列表。
+
+　　任意两个调用之间的相对求值顺序未指定。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
