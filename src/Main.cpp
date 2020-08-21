@@ -2745,6 +2745,40 @@ ThrowForUnwrappingFailure(const ContextHandler& h)
 
 } // unnamed namespace;
 
+
+template<typename _type, typename... _tParams>
+void
+EmplaceCallResult(ValueObject&, _type&&, ystdex::false_, _tParams&&...) ynothrow
+{}
+template<typename _type>
+inline void
+EmplaceCallResult(ValueObject& vo, _type&& res, ystdex::true_, ystdex::true_)
+	ynoexcept_spec(vo = yforward(res))
+{
+	vo = yforward(res);
+}
+template<typename _type>
+inline void
+EmplaceCallResult(ValueObject& vo, _type&& res, ystdex::true_, ystdex::false_)
+{
+	vo = ystdex::decay_t<_type>(yforward(res));
+}
+template<typename _type>
+inline void
+EmplaceCallResult(ValueObject& vo, _type&& res, ystdex::true_)
+{
+	Unilang::EmplaceCallResult(vo, yforward(res), ystdex::true_(),
+		std::is_same<ystdex::decay_t<_type>, ValueObject>());
+}
+template<typename _type>
+inline void
+EmplaceCallResult(ValueObject& vo, _type&& res)
+{
+	Unilang::EmplaceCallResult(vo, yforward(res), ystdex::not_<
+		std::is_same<ystdex::decay_t<_type>, ystdex::pseudo_output>>());
+}
+
+
 namespace Forms
 {
 
@@ -2767,11 +2801,12 @@ struct UnaryExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term,_tParams&&... args) const
+	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term);
-		term.Value = ystdex::expand_proxy<void(TermNode&, _tParams&&...)>::call(
-			Function, *std::next(term.begin()), yforward(args)...);
+		Unilang::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(
+			std::ref(Function)), *std::next(term.begin()), yforward(args)...));
 		return ReductionStatus::Clean;
 	}
 };
@@ -3307,7 +3342,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.1"
+#define APP_VER "0.2.2"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
