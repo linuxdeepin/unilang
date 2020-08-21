@@ -3370,6 +3370,15 @@ LoadFunctions(Interpreter& intp)
 			eval (list $set! d f $lambda formals body) d;
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
+	intp.Perform(R"Unilang(
+		$defl! apply (appv arg .opt)
+			eval (cons () (cons (unwrap appv) arg))
+				($if (null? opt) (() make-environment)
+					(($lambda ((e .eopt))
+						$if (null? eopt) e
+							(raise-invalid-syntax-error
+								"Syntax error in applying form.")) opt));
+	)Unilang");
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
 		LiftOther(term, *std::next(term.begin()));
@@ -3385,7 +3394,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.4"
+#define APP_VER "0.2.5"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
