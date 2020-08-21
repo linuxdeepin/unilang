@@ -3349,6 +3349,10 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterStrict(ctx, "wrap", Wrap);
 	RegisterStrict(ctx, "unwrap", Unwrap);
+	RegisterUnary<Strict, const string>(ctx, "raise-invalid-syntax-error",
+		[](const string& str){
+		throw InvalidSyntax(str.c_str());
+	});
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	intp.Perform(R"Unilang(
 		$def! $vau $vau/e (() get-current-environment) (formals ef .body) d
@@ -3381,7 +3385,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.3"
+#define APP_VER "0.2.4"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
