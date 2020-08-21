@@ -537,6 +537,14 @@ $lambda <formals> <body>`
 
 　　以上 apply 的函数值保留引用值。
 
+`list* <object>+`
+
+　　在列表前附加元素创建列表。
+
+　　类似 `cons` ，但支持一个和多个操作数。
+
+　　对一个操作数的情形返回原值，否则类似 `cons` ，检查最后一个实际参数是 <list> 。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
