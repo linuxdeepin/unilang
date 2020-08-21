@@ -6,8 +6,9 @@
 //	ystdex::exchange;
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
 //	ystdex::any_cast;
+#include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
-//	ystdex::compose_n, ystdex::less, ystdex::expanded_function;
+//	ystdex::compose_n, ystdex::less, ystdex::expanded_function, ystdex::invoke_nonvoid;
 #include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
 //	std::weak_ptr, ystdex::share_move, std::allocator_arg_t,
 //	ystdex::make_obj_using_allocator;
@@ -27,8 +28,8 @@
 //	std::streamsize;
 #include <cassert> // for assert;
 #include <exception> // for std::runtime_error, std::throw_with_nested;
-#include <type_traits> // for std::enable_if_t, std::is_same,
-//	std::is_convertible;
+#include <ystdex/type_traits.hpp> // for std::enable_if_t, ystdex::decay_t,
+//	std::is_same, std::is_convertible;
 #include <ystdex/type_op.hpp> // for ystdex::cond_or_t, ystdex::false_,
 //	ystdex::not_;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -591,6 +592,19 @@ IsList(const TermNode& term) noexcept
 	return !term.Value.has_value();
 }
 
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type&
+Access(TermNode& term)
+{
+	return ystdex::any_cast<_type&>(term.Value);
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type&
+Access(const TermNode& term)
+{
+	return ystdex::any_cast<const _type&>(term.Value);
+}
+
 [[nodiscard, gnu::pure]] inline TermNode&
 AccessFirstSubterm(TermNode& term) noexcept
 {
@@ -749,6 +763,10 @@ TermToString(const TermNode&);
 [[nodiscard, gnu::pure]] string
 TermToStringWithReferenceMark(const TermNode&, bool);
 
+[[noreturn]] void
+ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
+	bool);
+
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
 TryAccessLeaf(TermNode& term)
@@ -796,6 +814,15 @@ TermToStringWithReferenceMark(const TermNode& term, bool has_ref)
 	auto term_str(TermToString(term));
 
 	return has_ref ? "[*] " + std::move(term_str) : std::move(term_str);
+}
+
+void
+ThrowListTypeErrorForInvalidType(const ystdex::type_info& tp,
+	const TermNode& term, bool is_ref)
+{
+	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got a list"
+		" '%s'.", tp.name(),
+		TermToStringWithReferenceMark(term, is_ref).c_str()));
 }
 
 
@@ -949,6 +976,34 @@ ResolveTerm(_func do_resolve, _tTerm&& term)
 			Unilang::ResolveToTermReferencePtr(p));
 	return ystdex::expand_proxy<handler_t>::call(do_resolve,
 		yforward(term), ResolvedTermReferencePtr());
+}
+
+template<typename _type, class _tTerm>
+void
+CheckRegular(_tTerm& term, bool has_ref)
+{
+	if(YB_UNLIKELY(IsList(term)))
+		ThrowListTypeErrorForInvalidType(ystdex::type_id<_type>(), term,
+			has_ref);
+}
+
+template<typename _type, class _tTerm>
+[[nodiscard, gnu::pure]] inline auto
+AccessRegular(_tTerm& term, bool has_ref)
+	-> decltype(Unilang::Access<_type>(term))
+{
+	Unilang::CheckRegular<_type>(term, has_ref);
+	return Unilang::Access<_type>(term);
+}
+
+template<typename _type, class _tTerm>
+[[nodiscard, gnu::pure]] inline auto
+ResolveRegular(_tTerm& term) -> decltype(Unilang::Access<_type>(term))
+{
+	return Unilang::ResolveTerm([&](_tTerm& nd, bool has_ref)
+		-> yimpl(decltype(Unilang::Access<_type>(term))){
+		return Unilang::AccessRegular<_type>(nd, has_ref);
+	}, term);
 }
 
 
@@ -3252,7 +3307,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.0"
+#define APP_VER "0.2.1"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
