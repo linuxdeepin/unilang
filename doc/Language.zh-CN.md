@@ -368,6 +368,8 @@
 * `<predicate>` 谓词，是应用操作数的求值结果的值为 `<bool>` 的 `<applicative>` 。
 * `<environment>` 一等环境。
 
+　　操作数名称后可添加整数以区分不同的实际参数。
+
 ## 操作名称约定
 
 　　对应合并子是操作子的函数以 `$` 起始。
@@ -522,6 +524,10 @@ $lambda <formals> <body>`
 　　顺序求值。操作数非空时结果是最后的参数，可能是引用值；否则结果是 `#inert` 。
 
 　　求值每个 <object> 的副作用包括其中临时对象的销毁都被顺序限制。
+
+`first <list>`
+
+　　取列表第一个元素的值。
 
 `apply <applicative> <object> <environment>`
 
