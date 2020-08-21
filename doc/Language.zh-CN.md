@@ -523,6 +523,20 @@ $lambda <formals> <body>`
 
 　　求值每个 <object> 的副作用包括其中临时对象的销毁都被顺序限制。
 
+`apply <applicative> <object> <environment>`
+
+　　在指定环境中应用。
+
+　　同求值 `eval (cons () (cons (unwrap <applicative>) <object>)) <environment>` 。
+
+`apply <applicative> <object>`
+
+　　在新建的空环境中应用。
+
+　　同求值 `eval (cons () (cons (unwrap <applicative>) <object>)) (() make-environment)` 。
+
+　　以上 apply 的函数值保留引用值。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
