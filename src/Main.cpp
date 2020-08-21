@@ -3393,6 +3393,9 @@ LoadFunctions(Interpreter& intp)
 			apply accr (list l null? knil first rest kons) d;
 		$defw! map1 (appv l) d
 			foldr1 ($lambda (x xs) cons (apply appv (list x) d) xs) () l;
+		$defv! $let (bindings .body) d
+			eval (list* () (list* $lambda (map1 first bindings)
+				(list body)) (map1 ($lambda (x) list (rest x)) bindings)) d;
 	)Unilang");
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
@@ -3409,7 +3412,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.12"
+#define APP_VER "0.2.13"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
