@@ -569,6 +569,10 @@ $lambda <formals> <body>`
 
 　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
 
+`foldr1 <applicative> <object> <list>`
+
+　　同 `accr` ，但指定谓词为 `null?` ，应用子分别为 `first` 和 `rest` 。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
