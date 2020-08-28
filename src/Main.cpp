@@ -3369,6 +3369,8 @@ LoadFunctions(Interpreter& intp)
 			eval (list $set! d $f $vau formals ef body) d;
 		$defv! $defl! (f formals .body) d
 			eval (list $set! d f $lambda formals body) d;
+		$def! make-standard-environment
+			$lambda () () lock-current-environment;
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
@@ -3418,7 +3420,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.5"
+#define APP_VER "0.3.6"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

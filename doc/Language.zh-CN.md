@@ -535,6 +535,12 @@ $lambda <formals> <body>`
 
 　　绑定 λ 抽象，等价 `$def! <variable> $lambda <formals> <body>` 。
 
+`() make-standard-environment`
+
+　　创建标准环境：创建基础环境绑定外没有其它绑定的环境。
+
+　　基础环境是新创建环境的唯一父环境。
+
 `$sequence <expression-sequence>`
 
 　　顺序求值。操作数非空时结果是最后的参数，可能是引用值；否则结果是 `#inert` 。
