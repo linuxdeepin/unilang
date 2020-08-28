@@ -633,6 +633,10 @@ $lambda <formals> <body>`
 
 　　转换绑定列表为以指定的环境列表为父环境的环境。
 
+`$bindings->environment <binding>...`
+
+　　转换绑定列表为以标准环境为父环境的环境。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
