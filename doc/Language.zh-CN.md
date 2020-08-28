@@ -579,6 +579,10 @@ $lambda <formals> <body>`
 
 　　任意两个调用之间的相对求值顺序未指定。
 
+`list-concat <list1> <list2>`
+
+　　取顺序连接的列表。
+
 `$let <bindings> <body>`
 
 　　局部绑定求值。
