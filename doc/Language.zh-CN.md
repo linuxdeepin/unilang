@@ -344,6 +344,7 @@
 　　未求值的操作数：
 
 * `<symbol>` 符号。
+* `<symbols>` 元素为 <symbol> 的列表，形式为 (<symbol>...) 。
 * `<eformal>` 表示可选提供的环境名称或 `#ignore` 的符号。使用和 <symbol> 相同的表示。通常为动态环境。
 * `<expression>` 待求值的表达式。
 * `<expressions>` 形式为 `<expression>...` 的待求值形式。
@@ -648,6 +649,10 @@ $lambda <formals> <body>`
 　　同 `$provide!` ，但在 <body> 的求值前引入绑定到动态环境的变量 <eformal> 。
 
 　　若 <eformal> 为 `#ignore` ，作用同 `$provide!` 。
+
+`$import! <environment> <symbols>`
+
+　　从第一参数指定的环境导入第二参数指定的符号。
 
 `display <object>`
 
