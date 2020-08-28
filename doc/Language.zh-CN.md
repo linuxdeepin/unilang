@@ -625,6 +625,10 @@ $lambda <formals> <body>`
 
 　　同 `$let` ，但 <bindings> 中的被用于绑定的表达式从左到右顺序求值，被用于初始化变量的表达式在求值时可访问 <bindings> 中之前绑定的符号。
 
+`$letrec <bindings> <body>`
+
+　　顺序局部绑定求值，允许递归引用绑定。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
