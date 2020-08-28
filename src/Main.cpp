@@ -3340,6 +3340,10 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "eval", Eval);
+	RegisterUnary<Strict, const EnvironmentReference>(ctx, "lock-environment",
+		[](const EnvironmentReference& wenv) noexcept{
+		return wenv.Lock();
+	});
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
@@ -3413,7 +3417,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.3"
+#define APP_VER "0.3.4"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
