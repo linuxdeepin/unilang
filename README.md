@@ -47,26 +47,7 @@ git submodule update --init
 * 基本语法和求值算法：
 	* 环境和变量解析。
 	* 函数应用。
-* 函数：
-	* `$if`
-	* `$def!`
-	* `$defl!`
-	* `$defv!`
-	* `$lambda`
-	* `$sequence`
-	* `$set!`
-	* `$vau`
-	* `$vau/e`
-	* `cons`
-	* `eval`
-	* `display`
-	* `get-current-environment`
-	* `list`
-	* `make-environment`
-	* `newline`
-	* `null?`
-	* `unwrap`
-	* `wrap`
+* 函数：详见[语言规范文档](doc/Language.zh-CN.md)。
 
 ## 版本历史
 
@@ -110,4 +91,21 @@ git submodule update --init
 		* 对象 `ignore`
 	* 输出格式调整。
 	* 使用外部依赖简化部分实现。
+* **V0.3**
+	* 新增支持特性：
+		* 函数：
+			* `raise-invalid-syntax-error`
+			* `apply`
+			* `list*`
+			* `$defw!`
+			* `first`
+			* `rest`
+			* `accr`
+			* `foldr1`
+			* `map1`
+			* `$let`
+	* 添加文档：
+		* [语言规范文档](doc/Language.zh-CN.md)。
+		* [解释器实现文档](doc/Interpreter.zh-CN.md)。
+	* 降低构建环境要求，依赖 ISO C++11 。
 
