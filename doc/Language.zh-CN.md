@@ -637,6 +637,12 @@ $lambda <formals> <body>`
 
 　　转换绑定列表为以标准环境为父环境的环境。
 
+`$provide! <symbols> <body>`
+
+　　求值第二参数并在当前环境绑定结果到第一参数指定的符号。
+
+　　结果是对这些绑定具有所有权的环境。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
