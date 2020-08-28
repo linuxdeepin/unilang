@@ -583,6 +583,10 @@ $lambda <formals> <body>`
 
 　　取顺序连接的列表。
 
+`append <list>...`
+
+　　顺序拼接列表。
+
 `$let <bindings> <body>`
 
 　　局部绑定求值。
