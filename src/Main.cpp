@@ -3425,6 +3425,11 @@ LoadFunctions(Interpreter& intp)
 				(list ($vau (e) d $set! e res (lock-environment d))
 				(() get-current-environment)) body
 				(list* () list symbols))) d) res;
+		$defv! $provide/d! (symbols ef .body) d
+			$sequence (eval (list $def! symbols (list $let/d () ef $sequence
+				(list ($vau (e) d $set! e res (lock-environment d))
+				(() get-current-environment)) body
+				(list* () list symbols))) d) res;
 	)Unilang");
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
@@ -3441,7 +3446,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.11"
+#define APP_VER "0.3.12"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
