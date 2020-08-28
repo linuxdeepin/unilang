@@ -3357,6 +3357,7 @@ LoadFunctions(Interpreter& intp)
 	intp.Perform(R"Unilang(
 		$def! $vau $vau/e (() get-current-environment) (formals ef .body) d
 			eval (cons $vau/e (cons d (cons formals (cons ef body)))) d;
+		$def! lock-current-environment (wrap ($vau () d lock-environment d));
 		$def! $lambda $vau (formals .body) d wrap
 			(eval (cons $vau (cons formals (cons ignore body))) d);
 	)Unilang");
@@ -3417,7 +3418,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.4"
+#define APP_VER "0.3.5"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
