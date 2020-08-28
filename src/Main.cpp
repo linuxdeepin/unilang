@@ -19,7 +19,7 @@
 //	ystdex::sfmt, std::getline, ystdex::begins_with;
 #include <forward_list> // for std::forward_list;
 #include <list> // for std::list;
-#include <map> // for std::map;
+#include <ystdex/map.hpp> // for ystdex::map;
 #include <cctype> // for std::isgraph;
 #include <vector> // for std::vector;
 #include <deque> // for std::deque;
@@ -28,7 +28,7 @@
 //	std::streamsize;
 #include <cassert> // for assert;
 #include <exception> // for std::runtime_error, std::throw_with_nested;
-#include <ystdex/type_traits.hpp> // for std::enable_if_t, ystdex::decay_t,
+#include <ystdex/type_traits.hpp> // for ystdex::enable_if_t, ystdex::decay_t,
 //	std::is_same, std::is_convertible;
 #include <ystdex/type_op.hpp> // for ystdex::cond_or_t, ystdex::false_,
 //	ystdex::not_;
@@ -79,7 +79,7 @@ using list = ystdex::list<_type, _tAlloc>;
 template<typename _tKey, typename _tMapped, typename _fComp
 	= ystdex::less<_tKey>, class _tAlloc
 	= pmr::polymorphic_allocator<std::pair<const _tKey, _tMapped>>>
-using map = std::map<_tKey, _tMapped, _fComp, _tAlloc>;
+using map = ystdex::map<_tKey, _tMapped, _fComp, _tAlloc>;
 
 template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
 using vector = std::vector<_type, _tAlloc>;
@@ -178,53 +178,49 @@ ByteParser::operator()(char c)
 {
 	buffer += c;
 
-	bool got_delim(UpdateBack(c));
-
-	[&](auto add, auto append){
-		const auto len(buffer.length());
-
-		assert(!(lexemes.empty() && update_current));
-		if(len > 0)
-		{
-			if(len == 1)
-			{
-				const auto update_c([&](char c){
-					if(update_current)
-						append(c);
-					else
-						add(string({c}, lexemes.get_allocator()));
-				});
-				const char c(buffer.back());
-				const bool unquoted(Delimiter == char());
-
- 				if(got_delim)
-				{
-					update_c(c);
-					update_current = !unquoted;
-				}
-				else if(unquoted && IsDelimiter(c))
-				{
-					if(IsGraphicalDelimiter(c))
-						add(string({c}, lexemes.get_allocator()));
-					update_current = {};
-				}
-				else
-				{
-					update_c(c);
-					update_current = true;
-				}
-			}
-			else if(update_current)
-				append(buffer.substr(0, len));
-			else
-				add(std::move(buffer));
-			buffer.clear();
-		}
-	}([&](auto&& arg){
+	const auto add = [&](string&& arg){
 		lexemes.push_back(yforward(arg));
-	}, [&](auto&& arg){
-		lexemes.back() += yforward(arg);
-	});
+	};
+	bool got_delim(UpdateBack(c));
+	const auto len(buffer.length());
+
+	assert(!(lexemes.empty() && update_current));
+	if(len > 0)
+	{
+		if(len == 1)
+		{
+			const auto update_c([&](char c){
+				if(update_current)
+					lexemes.back() += c;
+				else
+					add(string({c}, lexemes.get_allocator()));
+			});
+			const char c(buffer.back());
+			const bool unquoted(Delimiter == char());
+
+ 			if(got_delim)
+			{
+				update_c(c);
+				update_current = !unquoted;
+			}
+			else if(unquoted && IsDelimiter(c))
+			{
+				if(IsGraphicalDelimiter(c))
+					add(string({c}, lexemes.get_allocator()));
+				update_current = {};
+			}
+			else
+			{
+				update_c(c);
+				update_current = true;
+			}
+		}
+		else if(update_current)
+			lexemes.back() += buffer.substr(0, len);
+		else
+			add(std::move(buffer));
+		buffer.clear();
+	}
 }
 
 bool
@@ -401,7 +397,7 @@ class TermNode final
 {
 private:
 	template<typename... _tParams>
-	using enable_value_constructible_t = std::enable_if_t<
+	using enable_value_constructible_t = ystdex::enable_if_t<
 		std::is_constructible<ValueObject, _tParams...>::value>;
 
 public:
@@ -1830,7 +1826,7 @@ public:
 	ContextHandler Handler;
 	size_t Wrapping;
 
-	template<typename _func, typename = std::enable_if_t<
+	template<typename _func, typename = ystdex::enable_if_t<
 		!std::is_same<FormContextHandler&, _func&>::value>>
 	FormContextHandler(_func&& f, size_t n = 0)
 		: Handler(yforward(f)), Wrapping(n)
@@ -3412,7 +3408,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.2.13"
+#define APP_VER "0.3.0"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
