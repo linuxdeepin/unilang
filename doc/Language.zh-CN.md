@@ -591,6 +591,12 @@ $lambda <formals> <body>`
 
 　　局部绑定求值。
 
+`$let/d <bindings> <eformal> <body>`
+
+　　同 `$let` ，但在 <body> 的求值前引入绑定到动态环境的变量 <eformal> 。
+
+　　若 <eformal> 为 `#ignore` ，作用同 `$let` 。
+
 `display <object>`
 
 　　输出对象的*外部表示(external represetntation)* 。
