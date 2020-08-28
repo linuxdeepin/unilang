@@ -3390,6 +3390,7 @@ LoadFunctions(Interpreter& intp)
 		$defw! map1 (appv l) d
 			foldr1 ($lambda (x xs) cons (apply appv (list x) d) xs) () l;
 		$defl! list-concat (x y) foldr1 cons y x;
+		$defl! append (.ls) foldr1 list-concat () ls;
 		$defv! $let (bindings .body) d
 			eval (list* () (list* $lambda (map1 first bindings)
 				(list body)) (map1 ($lambda (x) list (rest x)) bindings)) d;
@@ -3409,7 +3410,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.1"
+#define APP_VER "0.3.2"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
