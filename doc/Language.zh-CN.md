@@ -641,7 +641,13 @@ $lambda <formals> <body>`
 
 　　求值第二参数并在当前环境绑定结果到第一参数指定的符号。
 
-　　结果是对这些绑定具有所有权的环境。
+　　结果是带有这些绑定的环境。
+
+`$provide/d! <symbols> <eformal> <body>`
+
+　　同 `$provide!` ，但在 <body> 的求值前引入绑定到动态环境的变量 <eformal> 。
+
+　　若 <eformal> 为 `#ignore` ，作用同 `$provide!` 。
 
 `display <object>`
 
