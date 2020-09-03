@@ -3387,6 +3387,11 @@ LoadFunctions(Interpreter& intp)
 			$if (null? tail) head (cons head (apply list* tail));
 		$defv! $defw! (f formals ef .body) d
 			eval (list $set! d f wrap (list* $vau formals ef body)) d;
+		$defv! $cond clauses d
+			$if (null? clauses) #inert
+				(apply ($lambda ((test .body) .clauses)
+					$if (eval test d) (eval body d)
+						(apply (wrap $cond) clauses d)) clauses);
 		$defw! accr (l pred? base head tail sum) d
 			$if (apply pred? (list l) d) base
 				(apply sum (list (apply head (list l) d)
@@ -3448,7 +3453,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.13"
+#define APP_VER "0.3.14"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

@@ -367,7 +367,7 @@
 * `<list>` 列表。
 * `<lists>` 元素都是列表的列表。
 * `<bool>` 布尔值，值为 `#t` 或 `#f` 的集合。
-* `<test>` 类似 `<object>` ，通常预期为 `<bool>` ，作为条件。
+* `<test>` 类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
 * `<combiner>` 合并子。
 * `<applicative>` 应用子。
 * `<predicate>` 谓词，是应用操作数的求值结果的值为 `<bool>` 的 `<applicative>` 。
@@ -388,6 +388,10 @@
 ## 操作数约定
 
 　　若函数是构造器，则操作数中的参数求值后发生左值到右值转换。这减少悬空引用的可能性。
+
+## 操作结果约定
+
+　　若以下关于操作的描述中未指定调用的求值结果，则结果为右值 `#inert` 。
 
 ## 基本操作和核心库
 
@@ -581,6 +585,12 @@ $lambda <formals> <body>`
 `$defw! <variable> <formals> <eformal> <body>`
 
 　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
+
+`$cond <clauses>...`
+
+　　条件选择。
+
+　　顺序求值 `<clause>` 中每个子项的 `<test>` ，以 `<test>` 求值结果作为条件，当条件成立时求值再求值对应的 `<body>` ，结果为求值 `<body>` 的结果。
 
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
