@@ -353,6 +353,7 @@
 * `<bindings>` 元素为 <binding> 的列表，形式为 (<binding>...) 。
 * `<body>` 出现在元素的末尾 `<expressions>?` 形式，用于函数体等替换求值的目标。
 * `<expression-sequence>` ：同 `<body>` 但蕴含顺序求值。
+	* 求值 `<expression-sequence>` 的结果被定义为求值其最后一个子表达式（若存在）的结果，或当不存在子表达式时为 `#inert` 。
 * `<consequent>` 同 `<expression>` 仅用于 `<test>` 求值为 `#t` 时。
 * `<alternate>` 同 `<expression>` ，仅用于 `<test>` 求值不为 `#t` 时。
 * `<definiend>` 被绑定项的目标，是包含符号的有向无环图表达式。
@@ -591,6 +592,12 @@ $lambda <formals> <body>`
 　　条件选择。
 
 　　顺序求值 `<clause>` 中每个子项的 `<test>` ，以 `<test>` 求值结果作为条件，当条件成立时求值再求值对应的 `<body>` ，结果为求值 `<body>` 的结果。
+
+`$when <test> <expression-sequence>`
+
+　　条件成立时顺序求值。
+
+　　求值 <test> ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
 
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
