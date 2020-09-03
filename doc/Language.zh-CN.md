@@ -599,6 +599,12 @@ $lambda <formals> <body>`
 
 　　求值 <test> ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
 
+`$unless <test> <expression-sequence>`
+
+　　条件不成立时顺序求值。
+
+　　求值 <test> ，结果作为条件，当条件不成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
+
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
 　　在抽象列表的元素上应用右结合的二元操作。
