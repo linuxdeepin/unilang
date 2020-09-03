@@ -3392,6 +3392,8 @@ LoadFunctions(Interpreter& intp)
 				(apply ($lambda ((test .body) .clauses)
 					$if (eval test d) (eval body d)
 						(apply (wrap $cond) clauses d)) clauses);
+		$defv! $when (test .exprseq) d
+			$if (eval test d) (eval (list* () $sequence exprseq) d);
 		$defw! accr (l pred? base head tail sum) d
 			$if (apply pred? (list l) d) base
 				(apply sum (list (apply head (list l) d)
@@ -3453,7 +3455,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.3.14"
+#define APP_VER "0.3.15"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
