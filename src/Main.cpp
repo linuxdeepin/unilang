@@ -2896,6 +2896,9 @@ RetainN(const TermNode& term, size_t m)
 ReductionStatus
 Equal(TermNode&);
 
+ReductionStatus
+EqualValue(TermNode&);
+
 
 ReductionStatus
 If(TermNode&, Context&);
@@ -2939,6 +2942,13 @@ ReductionStatus
 Equal(TermNode& term)
 {
 	EqualTermReference(term, YSLib::HoldSame);
+	return ReductionStatus::Clean;
+}
+
+ReductionStatus
+EqualValue(TermNode& term)
+{
+	EqualTermReference(term, ystdex::equal_to<>());
 	return ReductionStatus::Clean;
 }
 
@@ -3373,6 +3383,7 @@ LoadFunctions(Interpreter& intp)
 
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Equal);
+	RegisterStrict(ctx, "eqv?", EqualValue);
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterStrict(ctx, "cons", Cons);
@@ -3494,7 +3505,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.3"
+#define APP_VER "0.4.4"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
