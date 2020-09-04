@@ -2818,7 +2818,7 @@ struct UnaryAsExpansion
 		: Function(std::move(f))
 	{}
 
-	[[nodiscard, gnu::pure]] friend
+	[[nodiscard, gnu::pure]] friend bool
 	operator==(const UnaryAsExpansion& x, const UnaryAsExpansion& y)
 	{
 		return ystdex::examiners::equal_examiner::are_equal(x.Function,
@@ -3457,7 +3457,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.0"
+#define APP_VER "0.4.1"
 #define APP_PLATFORM "[C++11] + YBase"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
