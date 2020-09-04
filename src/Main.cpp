@@ -3,7 +3,7 @@
 #include <ydef.h> // for byte, ystdex::size_t, std::pair, yforward,
 //	std::declval, std::swap;
 #include <ystdex/utility.hpp> // for ystdex::lref, ystdex::ref,
-//	ystdex::exchange;
+//	ystdex::exchange, ystdex::as_const;
 #include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast;
 #include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
@@ -44,7 +44,7 @@
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <YSLib/Core/YModules.h>
-#include YFM_YSLib_Core_YObject // for YSLib::ValueObject;
+#include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::HoldSame;
 
 namespace Unilang
 {
@@ -2740,6 +2740,29 @@ ThrowForUnwrappingFailure(const ContextHandler& h)
 		h.target_type().name()));
 }
 
+
+template<typename _fComp, typename _func>
+void
+EqualTerm(TermNode& term, _fComp f, _func g)
+{
+	Forms::RetainN(term, 2);
+
+	auto i(term.begin());
+	const auto& x(*++i);
+
+	term.Value = f(g(x), g(ystdex::as_const(*++i)));
+}
+
+template<typename _func>
+void
+EqualTermReference(TermNode& term, _func f)
+{
+	EqualTerm(term, [f](const TermNode& x, const TermNode& y){
+		return IsLeaf(x) && IsLeaf(y) ? f(x.Value, y.Value)
+			: ystdex::ref_eq<>()(x, y);
+	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
+}
+
 } // unnamed namespace;
 
 
@@ -2871,6 +2894,10 @@ RetainN(const TermNode& term, size_t m)
 
 
 ReductionStatus
+Equal(TermNode&);
+
+
+ReductionStatus
 If(TermNode&, Context&);
 
 
@@ -2906,6 +2933,14 @@ Unwrap(TermNode&);
 
 ReductionStatus
 Sequence(TermNode&, Context&);
+
+
+ReductionStatus
+Equal(TermNode& term)
+{
+	EqualTermReference(term, YSLib::HoldSame);
+	return ReductionStatus::Clean;
+}
 
 
 ReductionStatus
@@ -3337,6 +3372,7 @@ LoadFunctions(Interpreter& intp)
 	using namespace Forms;
 
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
+	RegisterStrict(ctx, "eq?", Equal);
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterStrict(ctx, "cons", Cons);
@@ -3458,7 +3494,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.2"
+#define APP_VER "0.4.3"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
