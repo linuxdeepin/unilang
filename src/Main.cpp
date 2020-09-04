@@ -4,8 +4,7 @@
 //	std::declval, std::swap;
 #include <ystdex/utility.hpp> // for ystdex::lref, ystdex::ref,
 //	ystdex::exchange;
-#include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast,
-//	ystdex::any_cast;
+#include <ystdex/any.h> // for ystdex::any, ystdex::bad_any_cast;
 #include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include <ystdex/functional.hpp> // for ystdex::function, ystdex::expand_proxy,
 //	ystdex::compose_n, ystdex::less, ystdex::expanded_function, ystdex::invoke_nonvoid;
@@ -44,6 +43,8 @@
 #include <cstdlib> // for std::getenv;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
+#include <YSLib/Core/YModules.h>
+#include YFM_YSLib_Core_YObject // for YSLib::ValueObject;
 
 namespace Unilang
 {
@@ -53,8 +54,6 @@ using ystdex::size_t;
 
 using ystdex::lref;
 
-using ystdex::any;
-using ystdex::bad_any_cast;
 using ystdex::function;
 using ystdex::make_shared;
 using std::pair;
@@ -97,7 +96,11 @@ using ostringstream = std::basic_ostringstream<char, std::char_traits<char>,
 using ystdex::sfmt;
 
 
-using ValueObject = any;
+using YSLib::ValueObject;
+namespace any_ops = YSLib::any_ops;
+using YSLib::any;
+using YSLib::bad_any_cast;
+using YSLib::in_place_type;
 
 
 [[nodiscard, gnu::pure]] char
@@ -482,7 +485,7 @@ public:
 	[[nodiscard, gnu::pure]] explicit
 	operator bool() const noexcept
 	{
-		return Value.has_value() || !empty();
+		return Value || !empty();
 	}
 
 	void
@@ -561,7 +564,7 @@ IsBranch(const TermNode& term) noexcept
 [[nodiscard, gnu::pure]] inline bool
 IsBranchedList(const TermNode& term) noexcept
 {
-	return !(term.empty() || term.Value.has_value());
+	return !(term.empty() || term.Value);
 }
 
 [[nodiscard, gnu::pure]] inline bool
@@ -573,7 +576,7 @@ IsEmpty(const TermNode& term) noexcept
 [[nodiscard, gnu::pure]] inline bool
 IsExtendedList(const TermNode& term) noexcept
 {
-	return !(term.empty() && term.Value.has_value());
+	return !(term.empty() && term.Value);
 }
 
 [[nodiscard, gnu::pure]] inline bool
@@ -585,20 +588,20 @@ IsLeaf(const TermNode& term) noexcept
 [[nodiscard, gnu::pure]] inline bool
 IsList(const TermNode& term) noexcept
 {
-	return !term.Value.has_value();
+	return !term.Value;
 }
 
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type&
 Access(TermNode& term)
 {
-	return ystdex::any_cast<_type&>(term.Value);
+	return term.Value.Access<_type&>();
 }
 template<typename _type>
 [[nodiscard, gnu::pure]] inline const _type&
 Access(const TermNode& term)
 {
-	return ystdex::any_cast<const _type&>(term.Value);
+	return term.Value.Access<const _type&>();
 }
 
 [[nodiscard, gnu::pure]] inline TermNode&
@@ -659,9 +662,7 @@ template<typename _type>
 [[nodiscard, gnu::pure]] inline bool
 HasValue(const TermNode& term, const _type& x)
 {
-	if(const auto p = ystdex::any_cast<_type>(&term.Value))
-		return *p == x;
-	return {};
+	return term.Value == x;
 }
 
 
@@ -767,13 +768,15 @@ template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
 TryAccessLeaf(TermNode& term)
 {
-	return ystdex::any_cast<_type>(&term.Value);
+	return term.Value.type() == ystdex::type_id<_type>()
+		? std::addressof(term.Value.GetObject<_type>()) : nullptr; 
 }
 template<typename _type>
 [[nodiscard, gnu::pure]] inline const _type*
 TryAccessLeaf(const TermNode& term)
 {
-	return ystdex::any_cast<_type>(&term.Value);
+	return term.Value.type() == ystdex::type_id<_type>()
+		? std::addressof(term.Value.GetObject<_type>()) : nullptr; 
 }
 
 template<typename _type>
@@ -1470,15 +1473,14 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 
 				if(tp == ystdex::type_id<EnvironmentReference>())
 				{
-					p_redirected = ystdex::any_cast<
-						EnvironmentReference>(&parent)->Lock();
+					p_redirected
+						= parent.GetObject<EnvironmentReference>().Lock();
 					assert(bool(p_redirected));
 					p_env.swap(p_redirected);
 				}
 				else if(tp == ystdex::type_id<shared_ptr<Environment>>())
 				{
-					p_redirected = *ystdex::any_cast<
-						shared_ptr<Environment>>(&parent);
+					p_redirected = parent.GetObject<shared_ptr<Environment>>();
 					assert(bool(p_redirected));
 					p_env.swap(p_redirected);
 				}
@@ -1488,7 +1490,7 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 
 					if(tp == ystdex::type_id<EnvironmentList>())
 					{
-						auto& envs(*ystdex::any_cast<EnvironmentList>(&parent));
+						auto& envs(parent.GetObject<EnvironmentList>());
 
 						p_next = RedirectEnvironmentList(envs.cbegin(),
 							envs.cend(), id, cont);
@@ -1641,9 +1643,9 @@ ResolveEnvironment(const TermNode&);
 pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject& vo)
 {
-	if(const auto p = ystdex::any_cast<EnvironmentReference>(&vo))
+	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
 		return {p->Lock(), {}};
-	if(const auto p = ystdex::any_cast<shared_ptr<Environment>>(&vo))
+	if(const auto p = vo.AccessPtr<const shared_ptr<Environment>>())
 		return {*p, true};
 	throw TypeError(
 		ystdex::sfmt("Invalid environment type '%s' found.", vo.type().name()));
@@ -2158,15 +2160,15 @@ PrintTermNode(std::ostream& os, const TermNode& term, size_t depth = 0,
 				const auto& vo(tm.Value);
 
 				os << [&]() -> string{
-					if(const auto p = ystdex::any_cast<string>(&vo))
+					if(const auto p = vo.AccessPtr<string>())
 						return ystdex::quote(*p);
-					if(const auto p = ystdex::any_cast<TokenValue>(&vo))
+					if(const auto p = vo.AccessPtr<TokenValue>())
 						return *p;
-					if(const auto p = ystdex::any_cast<bool>(&vo))
+					if(const auto p = vo.AccessPtr<bool>())
 						return *p ? "#t" : "#f";
-					if(const auto p = ystdex::any_cast<int>(&vo))
+					if(const auto p = vo.AccessPtr<int>())
 						return ystdex::sfmt<string>("%d", *p);
-					if(const auto p = ystdex::any_cast<ValueToken>(&vo))
+					if(const auto p = vo.AccessPtr<ValueToken>())
 						if(*p == ValueToken::Unspecified)
 							return "#inert";
 
@@ -2341,11 +2343,10 @@ private:
 		
 			if(tp == ystdex::type_id<TermReference>())
 				ystdex::update_thunk(act, [&]{
-					Match(ystdex::any_cast<TermReference>(t.Value).get(), o,
-						r_env);
+					Match(t.Value.GetObject<TermReference>().get(), o, r_env);
 				});
 			else if(tp == ystdex::type_id<TokenValue>())
-				BindValue(ystdex::any_cast<TokenValue>(t.Value), o, r_env);
+				BindValue(t.Value.GetObject<TokenValue>(), o, r_env);
 			else
 				throw ParameterMismatch(ystdex::sfmt("Invalid parameter value"
 					" '%s' found.", TermToString(t).c_str()));
@@ -2370,7 +2371,7 @@ private:
 			const auto& lastv(last->Value);
 
 			assert(lastv.type() == ystdex::type_id<TokenValue>());
-			BindTrailing(j, o_last, ystdex::any_cast<TokenValue>(lastv), r_env);
+			BindTrailing(j, o_last, lastv.GetObject<TokenValue>(), r_env);
 		}
 	}
 };
@@ -2395,7 +2396,7 @@ ThrowInsufficientTermsError()
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
 {
-	return term.Value.has_value() ? ReduceLeaf(term, ctx)
+	return term.Value ? ReduceLeaf(term, ctx)
 		: ReduceBranch(term, ctx);
 }
 
@@ -2644,7 +2645,7 @@ public:
 	{
 		for(const auto& child : term)
 			CheckParameterTree(child);
-		if(term.Value.has_value())
+		if(term.Value)
 		{
 			if(const auto p = TermToNamePtr(term))
 				CheckVauSymbol(*p, "parameter in a parameter tree",
@@ -3059,7 +3060,7 @@ Wrap(TermNode& term)
 	auto& tm(*std::next(term.begin()));
 
 	ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(ystdex::any_cast<ContextHandler&>(nd.Value));
+		auto& h(nd.Value.Access<ContextHandler>());
 
 		if(const auto p = h.target<FormContextHandler>())
 		{
@@ -3094,7 +3095,7 @@ Unwrap(TermNode& term)
 	auto& tm(*std::next(term.begin()));
 
 	ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(ystdex::any_cast<ContextHandler&>(nd.Value));
+		auto& h(nd.Value.Access<ContextHandler>());
 
 		if(const auto p = h.target<FormContextHandler>())
 		{
@@ -3457,8 +3458,8 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.1"
-#define APP_PLATFORM "[C++11] + YBase"
+#define APP_VER "0.4.2"
+#define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
 
