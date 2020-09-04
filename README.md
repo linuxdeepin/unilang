@@ -108,4 +108,25 @@ git submodule update --init
 		* [语言规范文档](doc/Language.zh-CN.md)。
 		* [解释器实现文档](doc/Interpreter.zh-CN.md)。
 	* 降低构建环境要求，依赖 ISO C++11 。
+* **V0.4**
+	* 新增支持特性：
+		* 函数：
+			* `list-concat`
+			* `append`
+			* `$let/d`
+			* `lock-environment`
+			* `lock-current-environment`
+			* `make-standard-environment`
+			* `$let*`
+			* `$letrec`
+			* `$bindings/p->environment`
+			* `$bindings->environment`
+			* `$provide!`
+			* `$provide/d!`
+			* `$import!`
+			* `$cond`
+			* `$when`
+			* `$unless`
+	* 修复求值中非布尔值不被作为 `#t` 处理。
+	* 解释器文档添加详细设计。
 
