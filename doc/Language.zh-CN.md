@@ -430,6 +430,10 @@
 
 　　标准库基本操作在基础环境中直接提供绑定。
 
+`eq? <object1> <object2>`
+
+　　判断引用相等关系。当且仅当对象同一时引用相等。
+
 `$if <test> <consequent> <alternate>`
 
 　　条件分支，按条件成立与否返回 `<consequent>` 或 `<alternative>` 之一，可能是引用值。
