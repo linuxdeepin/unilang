@@ -645,6 +645,12 @@ $lambda <formals> <body>`
 
 　　求值 <test> ，结果作为条件，当条件不成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
 
+$and? <test>...
+
+　　逻辑与。
+
+　　顺序短路求值。操作数为空时结果为 `#t` ；参数求值存在 `#f` 时结果为 `#f` ；否则结果为最后一个参数的值。
+
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
 　　在抽象列表的元素上应用右结合的二元操作。
