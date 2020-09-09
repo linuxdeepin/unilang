@@ -3444,6 +3444,11 @@ LoadFunctions(Interpreter& intp)
 			$if (eval test d) (eval (list* () $sequence exprseq) d);
 		$defv! $unless (test .exprseq) d
 			$if (eval test d) #inert (eval (list* () $sequence exprseq) d);
+		$defv! $and? x d $cond
+			((null? x) #t)
+			((null? (rest x)) eval (first x) d)
+			((eval (first x) d) apply (wrap $and?) (rest x) d)
+			(#t #f);
 		$defw! accr (l pred? base head tail sum) d
 			$if (apply pred? (list l) d) base
 				(apply sum (list (apply head (list l) d)
@@ -3505,7 +3510,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.4"
+#define APP_VER "0.4.5"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
