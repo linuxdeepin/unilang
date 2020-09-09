@@ -645,6 +645,12 @@ $lambda <formals> <body>`
 
 　　求值 <test> ，结果作为条件，当条件不成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
 
+not? <object>
+
+　　逻辑非。
+
+　　若参数非 `#f` 时结果为 `#f` ，否则结果为 `#t` 。
+
 $and? <test>...
 
 　　逻辑与。
