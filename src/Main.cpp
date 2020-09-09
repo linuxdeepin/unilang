@@ -3449,6 +3449,11 @@ LoadFunctions(Interpreter& intp)
 			((null? (rest x)) eval (first x) d)
 			((eval (first x) d) apply (wrap $and?) (rest x) d)
 			(#t #f);
+		$defv! $or? x d $cond
+			((null? x) #f)
+			((null? (rest x)) eval (first x) d)
+			(#t ($lambda (r) $if r r
+				(apply (wrap $or?) (rest x) d)) (eval (first x) d));
 		$defw! accr (l pred? base head tail sum) d
 			$if (apply pred? (list l) d) base
 				(apply sum (list (apply head (list l) d)
@@ -3510,7 +3515,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.5"
+#define APP_VER "0.4.6"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
