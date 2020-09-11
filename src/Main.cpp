@@ -37,8 +37,9 @@
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
-#include <algorithm> // for std::for_each, std::find_if;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
+#include <ystdex/functional.hpp> // for ystdex::ref_eq, ystdex::update_thunk;
+#include <algorithm> // for std::for_each, std::find_if;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <cstdlib> // for std::getenv;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
@@ -910,6 +911,13 @@ public:
 		return term_ref;
 	}
 
+	bool
+	IsMovable() const noexcept
+	{
+		// TODO: Support unique reference.
+		return false;
+	}
+
 	[[nodiscard, gnu::pure]] const EnvironmentReference&
 	GetEnvironmentReference() const noexcept
 	{
@@ -946,6 +954,34 @@ using ResolvedTermReferencePtr = const TermReference*;
 ResolveToTermReferencePtr(const TermReference* p) noexcept
 {
 	return p;
+}
+
+
+[[nodiscard, gnu::pure]] inline bool
+IsMovable(const TermReference& ref) noexcept
+{
+	return ref.IsMovable();
+}
+template<typename _tPointer>
+[[nodiscard, gnu::pure]] inline auto
+IsMovable(_tPointer p) noexcept
+	-> decltype(!bool(p) || Unilang::IsMovable(*p))
+{
+	return !bool(p) || Unilang::IsMovable(*p);
+}
+
+
+template<typename _type>
+[[nodiscard, gnu::pure]] inline _type*
+TryAccessReferencedLeaf(TermNode& term)
+{
+	return Unilang::TryAccessLeaf<_type>(ReferenceTerm(term));
+}
+template<typename _type>
+[[nodiscard, gnu::pure]] inline const _type*
+TryAccessReferencedLeaf(const TermNode& term)
+{
+	return Unilang::TryAccessLeaf<_type>(ReferenceTerm(term));
 }
 
 
@@ -1001,7 +1037,7 @@ template<typename _type, class _tTerm>
 ResolveRegular(_tTerm& term) -> decltype(Unilang::Access<_type>(term))
 {
 	return Unilang::ResolveTerm([&](_tTerm& nd, bool has_ref)
-		-> yimpl(decltype(Unilang::Access<_type>(term))){
+		-> decltype(Unilang::Access<_type>(term)){
 		return Unilang::AccessRegular<_type>(nd, has_ref);
 	}, term);
 }
@@ -1060,6 +1096,13 @@ RegularizeTerm(TermNode& term, ReductionStatus status) noexcept
 
 void
 LiftOther(TermNode&, TermNode&);
+
+inline void
+LiftTerm(TermNode& term, TermNode& tm)
+{
+	if(!ystdex::ref_eq<>()(term, tm))
+		LiftOther(term, tm);
+}
 
 void
 LiftOtherOrCopy(TermNode&, TermNode&, bool);
@@ -1679,7 +1722,7 @@ struct EnvironmentSwitcher
 	operator=(EnvironmentSwitcher&&) = default;
 
 	void
-	operator()() const ynothrowv
+	operator()() const noexcept
 	{
 		if(SavedPtr)
 			ContextRef.get().SwitchEnvironmentUnchecked(std::move(SavedPtr));
@@ -2482,7 +2525,7 @@ ExtractBool(const TermNode& term)
 
 
 inline ReductionStatus
-MoveGuard(EnvironmentGuard& gd, Context& ctx) ynothrow
+MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
 {
 	const auto egd(std::move(gd));
 
@@ -3484,7 +3527,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.8"
+#define APP_VER "0.4.9"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
