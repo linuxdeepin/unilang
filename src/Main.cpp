@@ -40,6 +40,8 @@
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/functional.hpp> // for ystdex::ref_eq, ystdex::update_thunk;
 #include <algorithm> // for std::for_each, std::find_if;
+#include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
+//	ystdex::call_value_or;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <cstdlib> // for std::getenv;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
@@ -2634,10 +2636,27 @@ RetainN(const TermNode&, size_t = 1);
 namespace
 {
 
+template<typename _fCopy, typename _fMove>
+[[nodiscard]] auto
+MakeValueOrMove(ResolvedTermReferencePtr p_ref, _fCopy cp, _fMove mv)
+	-> decltype(Unilang::IsMovable(p_ref) ? mv() : cp())
+{
+	return Unilang::IsMovable(p_ref) ? mv() : cp();
+}
+
 [[nodiscard, gnu::pure]] inline InvalidSyntax
 MakeFunctionAbstractionError() noexcept
 {
 	return InvalidSyntax("Invalid syntax found in function abstraction.");
+}
+
+EnvironmentReference
+FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
+{
+	auto r_env(ref.GetEnvironmentReference());
+
+	return
+		r_env.GetAnchorPtr() ? r_env : EnvironmentReference(ctx.GetRecordPtr());
 }
 
 
@@ -2807,6 +2826,201 @@ EqualTermReference(TermNode& term, _func f)
 	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
 }
 
+
+class EncapsulationBase
+{
+private:
+	shared_ptr<void> p_type;
+
+public:
+	EncapsulationBase(shared_ptr<void> p) noexcept
+		: p_type(std::move(p))
+	{}
+	EncapsulationBase(const EncapsulationBase&) = default;
+	EncapsulationBase(EncapsulationBase&&) = default;
+
+	EncapsulationBase&
+	operator=(const EncapsulationBase&) = default;
+	EncapsulationBase&
+	operator=(EncapsulationBase&&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const EncapsulationBase& x, const EncapsulationBase& y) noexcept
+	{
+		return x.p_type == y.p_type;
+	}
+
+	const EncapsulationBase&
+	Get() const noexcept
+	{
+		return *this;
+	}
+	EncapsulationBase&
+	GetEncapsulationBaseRef() noexcept
+	{
+		return *this;
+	}
+	const shared_ptr<void>&
+	GetType() const noexcept
+	{
+		return p_type;
+	}
+};
+
+
+class Encapsulation final : private EncapsulationBase
+{
+public:
+	mutable TermNode TermRef;
+
+	Encapsulation(shared_ptr<void> p, TermNode term)
+		: EncapsulationBase(std::move(p)), TermRef(std::move(term))
+	{}
+	Encapsulation(const Encapsulation&) = default;
+	Encapsulation(Encapsulation&&) = default;
+
+	Encapsulation&
+	operator=(const Encapsulation&) = default;
+	Encapsulation&
+	operator=(Encapsulation&&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	using EncapsulationBase::Get;
+	using EncapsulationBase::GetType;
+};
+
+
+class Encapsulate final : private EncapsulationBase
+{
+public:
+	Encapsulate(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Encapsulate(const Encapsulate&) = default;
+	Encapsulate(Encapsulate&&) = default;
+
+	Encapsulate&
+	operator=(const Encapsulate&) = default;
+	Encapsulate&
+	operator=(Encapsulate&&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const Encapsulate& x, const Encapsulate& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode& term) const
+	{
+		Forms::RetainN(term);
+
+		auto& tm(*std::next(term.begin()));
+
+		YSLib::EmplaceCallResult(term.Value, Encapsulation(GetType(),
+			ystdex::invoke_value_or(&TermReference::get,
+			Unilang::TryAccessReferencedLeaf<const TermReference>(tm),
+			std::move(tm))));
+		return ReductionStatus::Clean;
+	}
+};
+
+
+class Encapsulated final : private EncapsulationBase
+{
+public:
+	Encapsulated(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Encapsulated(const Encapsulated&) = default;
+	Encapsulated(Encapsulated&&) = default;
+
+	Encapsulated&
+	operator=(const Encapsulated&) = default;
+	Encapsulated&
+	operator=(Encapsulated&&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const Encapsulated& x, const Encapsulated& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode& term) const
+	{
+		Forms::RetainN(term);
+
+		auto& tm(*std::next(term.begin()));
+
+		YSLib::EmplaceCallResult(term.Value,
+			ystdex::call_value_or([this](const Encapsulation& enc) noexcept{
+				return Get() == enc.Get();
+			}, Unilang::TryAccessReferencedTerm<Encapsulation>(tm)));
+		return ReductionStatus::Clean;
+	}
+};
+
+
+class Decapsulate final : private EncapsulationBase
+{
+public:
+	Decapsulate(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Decapsulate(const Decapsulate&) = default;
+	Decapsulate(Decapsulate&&) = default;
+
+	Decapsulate&
+	operator=(const Decapsulate&) = default;
+	Decapsulate&
+	operator=(Decapsulate&&) = default;
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const Decapsulate& x, const Decapsulate& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode& term, Context& ctx) const
+	{
+		Forms::RetainN(term);
+
+		return Unilang::ResolveTerm(
+			[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			const auto&
+				enc(Unilang::AccessRegular<const Encapsulation>(nd, p_ref));
+
+			auto& tm(enc.TermRef);
+
+			return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
+				if(const auto p
+					= Unilang::TryAccessLeaf<const TermReference>(tm))
+				{
+					term.Subterms = tm.Subterms;
+					term.Value = *p;
+				}
+				else
+				{
+					term.Value = TermReference(tm,
+						FetchTailEnvironmentReference(*p_ref, ctx));
+					return ReductionStatus::Clean;
+				}
+				return ReductionStatus::Retained;
+			}, [&]{
+				LiftTerm(term, tm);		
+				return ReductionStatus::Retained;
+			});
+		}, *std::next(term.begin()));
+	}
+};
+
 } // unnamed namespace;
 
 
@@ -2943,6 +3157,10 @@ Wrap(TermNode&);
 
 ReductionStatus
 Unwrap(TermNode&);
+
+
+ReductionStatus
+MakeEncapsulationType(TermNode& term);
 
 
 ReductionStatus
@@ -3172,6 +3390,23 @@ Unwrap(TermNode& term)
 			ThrowForUnwrappingFailure(h);
 	}, tm);
 	return ReductionStatus::Clean;
+}
+
+
+ReductionStatus
+MakeEncapsulationType(TermNode& term)
+{
+	const auto tag(in_place_type<ContextHandler>);
+	const auto a(term.get_allocator());
+	shared_ptr<void> p_type(new byte);
+
+	term.Subterms = {Unilang::AsTermNode(a, tag, std::allocator_arg, a,
+		FormContextHandler(Encapsulate(p_type), 1)),
+		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
+		FormContextHandler(Encapsulated(p_type), 1)),
+		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
+		FormContextHandler(Decapsulate(p_type), 1))};
+	return ReductionStatus::Retained;
 }
 
 
@@ -3412,6 +3647,7 @@ LoadFunctions(Interpreter& intp)
 		[](const string& str){
 		throw InvalidSyntax(str.c_str());
 	});
+	RegisterStrict(ctx, "make-encapsulation-type", MakeEncapsulationType);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	intp.Perform(R"Unilang(
 		$def! $vau $vau/e (() get-current-environment) (formals ef .body) d
@@ -3527,7 +3763,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.9"
+#define APP_VER "0.4.10"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
