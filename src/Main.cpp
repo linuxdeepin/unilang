@@ -44,7 +44,8 @@
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <YSLib/Core/YModules.h>
-#include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::HoldSame;
+#include YFM_YSLib_Core_YObject // for YSLib::ValueObject,
+//	YSLib::EmplaceCallResult, YSLib::HoldSame;
 
 namespace Unilang
 {
@@ -2766,39 +2767,6 @@ EqualTermReference(TermNode& term, _func f)
 } // unnamed namespace;
 
 
-template<typename _type, typename... _tParams>
-void
-EmplaceCallResult(ValueObject&, _type&&, ystdex::false_, _tParams&&...) ynothrow
-{}
-template<typename _type>
-inline void
-EmplaceCallResult(ValueObject& vo, _type&& res, ystdex::true_, ystdex::true_)
-	ynoexcept_spec(vo = yforward(res))
-{
-	vo = yforward(res);
-}
-template<typename _type>
-inline void
-EmplaceCallResult(ValueObject& vo, _type&& res, ystdex::true_, ystdex::false_)
-{
-	vo = ystdex::decay_t<_type>(yforward(res));
-}
-template<typename _type>
-inline void
-EmplaceCallResult(ValueObject& vo, _type&& res, ystdex::true_)
-{
-	Unilang::EmplaceCallResult(vo, yforward(res), ystdex::true_(),
-		std::is_same<ystdex::decay_t<_type>, ValueObject>());
-}
-template<typename _type>
-inline void
-EmplaceCallResult(ValueObject& vo, _type&& res)
-{
-	Unilang::EmplaceCallResult(vo, yforward(res), ystdex::not_<
-		std::is_same<ystdex::decay_t<_type>, ystdex::pseudo_output>>());
-}
-
-
 namespace Forms
 {
 
@@ -2824,7 +2792,7 @@ struct UnaryExpansion
 	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term);
-		Unilang::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(
 			std::ref(Function)), *std::next(term.begin()), yforward(args)...));
 		return ReductionStatus::Clean;
@@ -2854,7 +2822,7 @@ struct UnaryAsExpansion
 	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term);
-		Unilang::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(_type&, _tParams&&...)>(
 			std::ref(Function)), Unilang::ResolveRegular<_type>(
 			*std::next(term.begin())), yforward(args)...));
@@ -3516,7 +3484,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.7"
+#define APP_VER "0.4.8"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
