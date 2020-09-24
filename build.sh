@@ -5,11 +5,7 @@ YSLib_BaseDir=3rdparty/YSLib
 case $(uname) in
 *MSYS* | *MINGW*)
 	EXTRA_OPT="-I$YSLib_BaseDir/YFramework/Win32/include \
-		$YSLib_BaseDir/YFramework/source/YCLib/FileIO.cpp \
 		$YSLib_BaseDir/YFramework/source/YCLib/Host.cpp \
-		$YSLib_BaseDir/YFramework/source/YCLib/MemoryMapping.cpp \
-		$YSLib_BaseDir/YFramework/source/YCLib/NativeAPI.cpp \
-		$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp \
 		$YSLib_BaseDir/YFramework/Win32/source/YCLib/MinGW32.cpp \
 		$YSLib_BaseDir/YFramework/Win32/source/YCLib/NLS.cpp \
 		$YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp \
@@ -17,8 +13,7 @@ case $(uname) in
 	;;
 *)
 	EXTRA_OPT="-pthread \
-		$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp \
-		$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp"
+		$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp"
 esac
 
 g++ -std=c++11 -Wall -Wextra -g -ounilang src/*.cpp \
@@ -32,7 +27,15 @@ g++ -std=c++11 -Wall -Wextra -g -ounilang src/*.cpp \
 	$YSLib_BaseDir/YBase/source/ystdex/node_base.cpp \
 	$YSLib_BaseDir/YBase/source/ystdex/tree.cpp \
 	-I$YSLib_BaseDir/YFramework/include \
+	$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp \
+	$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp \
+	$YSLib_BaseDir/YFramework/source/YCLib/FileIO.cpp \
+	$YSLib_BaseDir/YFramework/source/YCLib/MemoryMapping.cpp \
 	$YSLib_BaseDir/YFramework/source/YCLib/Debug.cpp \
+	$YSLib_BaseDir/YFramework/source/YCLib/NativeAPI.cpp \
+	$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp \
 	$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp \
+	$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp \
+	$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp \
 	$EXTRA_OPT
 
