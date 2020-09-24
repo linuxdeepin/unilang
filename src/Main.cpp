@@ -49,6 +49,9 @@
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Core_YObject // for YSLib::ValueObject,
 //	YSLib::EmplaceCallResult, YSLib::HoldSame;
+#include <YSLib/Service/YModules.h>
+#include YFM_YSLib_Service_TextFile // for IO::SharedInputMappedFileStream,
+//	Text::OpenSkippedBOMtream;
 
 namespace Unilang
 {
@@ -3483,6 +3486,7 @@ private:
 	shared_ptr<Environment> p_ground{};
 
 public:
+	shared_ptr<string> CurrentSource{};
 	bool Echo = std::getenv("ECHO");
 	Context Root{*pmr::new_delete_resource()};
 	SeparatorPass Preprocess{pmr::new_delete_resource()};
@@ -3492,6 +3496,9 @@ public:
 
 	void
 	Evaluate(TermNode&);
+
+	YSLib::unique_ptr<std::istream>
+	OpenUnique(string);
 
 	TermNode
 	Perform(string_view);
@@ -3504,6 +3511,14 @@ public:
 
 	[[nodiscard]] TermNode
 	Read(string_view);
+
+	[[nodiscard]] TermNode
+	ReadFrom(std::streambuf&, Context&) const;
+	[[nodiscard]] TermNode
+	ReadFrom(std::istream&, Context&) const;
+
+	[[nodiscard]] TermNode
+	ReadParserResult(const ByteParser&) const;
 
 	void
 	Run();
@@ -3522,6 +3537,17 @@ void
 Interpreter::Evaluate(TermNode& term)
 {
 	Root.Evaluate(term);
+}
+
+YSLib::unique_ptr<std::istream>
+Interpreter::OpenUnique(string filename)
+{
+	using namespace YSLib;
+	auto p_is(Text::OpenSkippedBOMtream<IO::SharedInputMappedFileStream>(
+		Text::BOM_UTF_8, filename.c_str()));
+
+	CurrentSource = ystdex::share_move(filename);
+	return p_is;
 }
 
 void
@@ -3580,8 +3606,37 @@ Interpreter::Read(string_view unit)
 
 	std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
 
-	const auto& parse_result(parse.GetResult());
+	return ReadParserResult(parse);
+}
+
+TermNode
+Interpreter::ReadFrom(std::streambuf& buf, Context&) const
+{
+	using s_it_t = std::istreambuf_iterator<char>;
+	ByteParser parse{};
+
+	std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
+
+	return ReadParserResult(parse);
+}
+TermNode
+Interpreter::ReadFrom(std::istream& is, Context& ctx) const
+{
+	if(is)
+	{
+		if(const auto p = is.rdbuf())
+			return ReadFrom(*p, ctx);
+		throw std::invalid_argument("Invalid stream buffer found.");
+	}
+	else
+		throw std::invalid_argument("Invalid stream found.");
+}
+
+TermNode
+Interpreter::ReadParserResult(const ByteParser& parse) const
+{
 	TermNode term{};
+	const auto& parse_result(parse.GetResult());
 
 	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(), ParseLeaf)
 		!= parse_result.cend())
@@ -3748,6 +3803,16 @@ LoadFunctions(Interpreter& intp)
 		$defv! $import! (e .symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
 	)Unilang");
+	RegisterStrict(ctx, "load", [&](TermNode& term, Context& ctx){
+		RetainN(term);
+		ctx.SetupFront([&]{
+			term = intp.ReadFrom(*intp.OpenUnique(std::move(
+				Unilang::ResolveRegular<string>(*std::next(term.begin())))),
+				ctx);
+			return ReduceOnce(term, ctx);
+		});
+		return ReductionStatus::Clean;
+	});
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
 		LiftOther(term, *std::next(term.begin()));
@@ -3763,7 +3828,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.10"
+#define APP_VER "0.4.11"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
