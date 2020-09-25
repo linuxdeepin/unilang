@@ -51,7 +51,8 @@
 //	YSLib::EmplaceCallResult, YSLib::HoldSame;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Service_TextFile // for IO::SharedInputMappedFileStream,
-//	Text::OpenSkippedBOMtream;
+//	Text::BOM_UTF_8, Text::CheckBOM;
+#include <ios> // for std::ios_base::eofbit;
 
 namespace Unilang
 {
@@ -3543,9 +3544,19 @@ YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(string filename)
 {
 	using namespace YSLib;
-	auto p_is(Text::OpenSkippedBOMtream<IO::SharedInputMappedFileStream>(
-		Text::BOM_UTF_8, filename.c_str()));
+	auto p_is(make_unique<IO::SharedInputMappedFileStream>(filename.c_str()));
+	auto& is(*p_is);
 
+	if(bool(is))
+	{
+		if(!Text::CheckBOM(is, Text::BOM_UTF_8))
+		{
+			is.clear(std::ios_base::eofbit);
+			is.seekg(0);
+		}
+		else
+			is.clear();
+	}
 	CurrentSource = ystdex::share_move(filename);
 	return p_is;
 }
@@ -3828,7 +3839,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.11"
+#define APP_VER "0.4.12"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
