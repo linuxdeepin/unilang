@@ -3001,26 +3001,30 @@ public:
 			const auto&
 				enc(Unilang::AccessRegular<const Encapsulation>(nd, p_ref));
 
-			auto& tm(enc.TermRef);
+			if(enc.Get() == Get())
+			{
+				auto& tm(enc.TermRef);
 
-			return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
-				if(const auto p
-					= Unilang::TryAccessLeaf<const TermReference>(tm))
-				{
-					term.Subterms = tm.Subterms;
-					term.Value = *p;
-				}
-				else
-				{
-					term.Value = TermReference(tm,
-						FetchTailEnvironmentReference(*p_ref, ctx));
-					return ReductionStatus::Clean;
-				}
-				return ReductionStatus::Retained;
-			}, [&]{
-				LiftTerm(term, tm);		
-				return ReductionStatus::Retained;
-			});
+				return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
+					if(const auto p
+						= Unilang::TryAccessLeaf<const TermReference>(tm))
+					{
+						term.Subterms = tm.Subterms;
+						term.Value = *p;
+					}
+					else
+					{
+						term.Value = TermReference(tm,
+							FetchTailEnvironmentReference(*p_ref, ctx));
+						return ReductionStatus::Clean;
+					}
+					return ReductionStatus::Retained;
+				}, [&]{
+					LiftTerm(term, tm);		
+					return ReductionStatus::Retained;
+				});
+			}
+			throw TypeError("Mismatched encapsulation type found.");
 		}, *std::next(term.begin()));
 	}
 };
@@ -3839,7 +3843,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.4.12"
+#define APP_VER "0.4.13"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
