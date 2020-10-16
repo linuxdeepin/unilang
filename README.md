@@ -129,4 +129,15 @@ git submodule update --init
 			* `$unless`
 	* 修复求值中非布尔值不被作为 `#t` 处理。
 	* 解释器文档添加详细设计。
+* **V0.5**
+	* 修改内部对象模型。
+	* 新增支持特性：
+		* 函数：
+			* `eq?`
+			* `eqv?`
+			* `$and?`
+			* `$or?`
+			* `not?`
+			* `make-encapsulation-type`
+			* `load`
 
