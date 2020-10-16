@@ -242,6 +242,8 @@
 
 　　一个环境是*空环境(empty environment)* ，当且仅当其中的绑定是空集。
 
+　　*新环境(fresh environment)* 是新创建的环境。除非另行指定，新环境是不存在能引起程序行为改变的父环境的空环境。
+
 　　环境可以具有零个或有限多个父环境。环境的父环境在创建时指定，之后不可变。
 
 　　给定一个名称，在环境中确定被名称指称的对象，称为*名称解析(name resolution)* 。
@@ -640,7 +642,7 @@ $lambda <formals> <body>`
 
 `apply <applicative> <object>`
 
-　　在新建的空环境中应用。
+　　在新环境中应用。
 
 　　同求值 `eval (cons () (cons (unwrap <applicative>) <object>)) (() make-environment)` 。
 
