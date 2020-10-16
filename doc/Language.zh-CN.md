@@ -790,3 +790,93 @@ $or? <test>...
 
 　　输出换行。
 
+## 系统互操作
+
+　　系统互操作包含和外部实现环境交互的操作，当前包括外部库的加载和使用。
+
+　　系统互操作支持以下求值得到的操作数：
+
+* `<library>` 库对象，表示一个适用库操作的对象。
+
+　　系统互操作在基础环境中直接提供绑定。
+
+`library? <object>`
+
+　　判断对象是否为库对象。
+
+`make-library <object>...`
+
+　　通过绑定参数构造一个库对象。
+
+　　每个参数应求值为 <binding> 类型的列表。
+
+`get-library-export-list <library>`
+
+　　取父环境中包含参数指定的库的导出列表的新环境。
+
+　　导出列表是库对象决定的符号列表。这个函数返回的环境是新环境中添加包含所有导出符号作为绑定的父环境后的环境对象。一般地，其中绑定的对象是应用子和非合并子的可在外部库中访问的其它对象。
+
+`$registered-library? <symbol>`
+
+　　判断参数是否指定已注册的库。
+
+　　关于注册，参见 `$register-library!` 。
+
+`$get-registered-library <symbol>`
+
+　　取参数指定的已注册的库对象。
+
+　　若被注册的库对象不存在，则引起错误。
+
+`$register-library! <symbol> <library>`
+
+　　以第一参数指定的名称注册第二参数指定的库对象。
+
+　　一个名称只能注册一个对象。若被注册的库对象已存在，则引起错误。
+
+`$unregister-library! <symbol>`
+
+　　取消参数指定的名称对应的已注册的库。
+
+　　若被注册的库对象不存在，则引起错误。
+
+`$provied-library! <symbol> <symbols> <body>`
+
+　　提供库。
+
+　　第三参数在以当前环境为父环境的新环境中求值。求值后，按第二参数决定的方式导出这个环境的符号，创建库并注册到第一参数指定名称。
+
+　　第一参数指定库名称，应表示没有被注册的库。
+
+　　第二参数指定导出的符号列表，形式为 `(#:export <export-spec>...)` 。其中，`<export-spec>` 应符合以下形式之一：
+
+* `<symbol>`
+* `(#:rename <symbol1> <symbol2>)`
+
+　　对没有 `#:rename` 指定的 `<export-spec>` ，作用相当于 `(#:rename <symbol> <symbol>)` 。对 `#:rename` 指定的 `<export-spec>` ，`<symbol1>` 和 `<symbol2>` 分别表示内部符号和外部符号。内部符号是用于导出的符号，被重命名为导出的外部符号。
+
+`$import-library! <symbol> <symbols>`
+
+　　导入库。
+
+　　按第二参数决定的方式从第一参数决定的库对象中当前环境导入符号。
+
+　　第一参数指定库名称，应表示没有被注册的库。
+
+　　第二参数指定导入的符号列表，形式为 `(#:import <import-spec>...)` 。其中，`<import-spec>` 应符合以下形式之一：
+
+* `<symbol>` ：指定库的名称，导入所有库中的绑定。
+* `(#:only <import-spec> <symbols>)` ：只有在 `<import-spec>` 中且名称在 `<symbols>` 中的符号对应的绑定被导入。
+* `(#:except <import-spec> <symbols>)` ：除了在 `<import-spec>` 中且名称在 `<symbols>` 中的符号对应的绑定被导入。
+* `(#:prefix <import-spec> <symbol>)` ：在 `<import-spec>` 中的符号对应的绑定被导入，但导入的符号添加 `<symbol>` 指定的前缀。
+* `(#:rename <import-spec> (<symbol1> <symbol2>)...)` ：在 `<import-spec>` 中的符号对应的绑定被导入，但导入的符号中，每个在 `(<symbol1> <symbol2>)` 中作为 `<symbol1>` 出现的符号被重命名为 `<symbol2>` 。
+
+　　第二参数中 `<import-spec>` 对应的含义如下：
+
+* `<symbol>` ：函数名
+　　对没有 `#:rename` 指定的 `<export-spec>` ，作用相当于 `(#:rename <symbol> <symbol>)` 。对 `#:rename` 指定的 `<export-spec>` ，`<symbol1>` 和 `<symbol2>` 分别表示内部符号和外部符号。内部符号是用于导出的符号，对应外部库中的外部符号。
+
+　　若两个对象被相等的符号导入，则它们以 `eq?` 比较同一性。若结果相同，则成功导入，否则引发错误。
+
+**注释** 这在允许重新导出已使用的库中的绑定时有利于查找名称冲突。
+
