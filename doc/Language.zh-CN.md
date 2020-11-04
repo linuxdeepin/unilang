@@ -840,7 +840,7 @@ $or? <test>...
 
 　　若被注册的库对象不存在，则引起错误。
 
-`$provied-library! <symbol> <symbols> <body>`
+`$provide-library! <symbol> <symbols> <body>`
 
 　　提供库。
 
