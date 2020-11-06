@@ -48,15 +48,17 @@
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Core_YObject // for YSLib::ValueObject,
-//	YSLib::EmplaceCallResult, YSLib::HoldSame;
+//	YSLib::EmplaceCallResult, YSLib::HoldSame, YSLib::unique_ptr_from;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Service_TextFile // for IO::SharedInputMappedFileStream,
 //	Text::BOM_UTF_8, Text::CheckBOM;
 #include <ios> // for std::ios_base::eofbit;
 #if YCL_Win32
+#	include YFM_Win32_YCLib_MinGW32 // for ::HMODULE;
 #else
 // XXX: Must use dlfcn. Add check?
-#	include <dlfcn.h>
+#	include <dlfcn.h> // for::dlclose;
+#	include YFM_YCLib_NativeAPI // for YCL_CallGlobal;
 #endif
 #include <ffi.h>
 
@@ -665,7 +667,7 @@ AsTermNode(_tParams&&... args)
 	return TermNode(NoContainer, yforward(args)...);
 }
 template<typename... _tParams>
-[[nodiscard, gnu::pure]] YB_PURE inline TermNode
+[[nodiscard, gnu::pure]] inline TermNode
 AsTermNode(TermNode::allocator_type a, _tParams&&... args)
 {
 	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
@@ -1030,7 +1032,7 @@ template<typename _type, class _tTerm>
 void
 CheckRegular(_tTerm& term, bool has_ref)
 {
-	if(YB_UNLIKELY(IsList(term)))
+	if(IsList(term))
 		ThrowListTypeErrorForInvalidType(ystdex::type_id<_type>(), term,
 			has_ref);
 }
@@ -3697,9 +3699,54 @@ Interpreter::WaitForLine()
 }
 
 
+struct LibraryHandleDelete final
+{
+#if YCL_Win32
+	using pointer = ::HMODULE;
+#else
+	using pointer = void*;
+#endif
+
+	void
+	operator()(pointer h) const noexcept
+	{
+#if YCL_Win32
+		if(h)
+			YCL_TraceCallF_Win32(FreeModule, h);
+#else
+		if(h && YCL_CallGlobal(dlclose, h) != 0)
+		{
+			// TODO: Report error.
+		}
+#endif
+	}
+};
+
+using UniqueLibraryHandle = YSLib::unique_ptr_from<LibraryHandleDelete>;
+
+class DynamicLibrary final
+{
+public:
+	using FPtr = void(*)();
+
+	string Name;
+
+private:
+	UniqueLibraryHandle h_library;
+};
+
+
 void
-InitializeFFI(Interpreter&)
-{}
+InitializeFFI(Interpreter& intp)
+{
+	auto& ctx(intp.Root);
+	using namespace Forms;
+
+	RegisterUnary<>(ctx, "ffi-library?",
+		ComposeReferencedTermOp([](const TermNode& term) noexcept{
+		return term.Value.type() == ystdex::type_id<DynamicLibrary>();
+	}));
+}
 
 
 void
@@ -3856,7 +3903,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.2"
+#define APP_VER "0.5.3"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
