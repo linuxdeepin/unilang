@@ -59,10 +59,10 @@
 #else
 // XXX: Must use dlfcn. Add check?
 #	include <dlfcn.h> // for ::dlerror, RTLD_LAZY, RTLD_GLOBAL, ::dlopen,
-//	::dlclose;
+//	::dlclose, ::dlsym;
 #	include YFM_YCLib_NativeAPI // for YCL_CallGlobal;
 #endif
-#include <ffi.h>
+#include <ffi.h> // for ::ffi_type;
 
 namespace Unilang
 {
@@ -3762,6 +3762,29 @@ DynamicLibrary::DynamicLibrary(const char* filename)
 #endif
 
 
+struct FFICodec final
+{
+	::ffi_type libffi_type;
+
+	ReductionStatus(*decode)(TermNode&, const void*);
+	void(*encode)(const TermNode&, void*);
+};
+
+
+class CallInterface final
+{
+private:
+	size_t n_params;
+
+public:
+	vector<FFICodec> param_codecs;
+	vector<::ffi_type*> param_types;
+	FFICodec ret_codec;
+	size_t buffer_size;
+	::ffi_cif cif;
+};
+
+
 void
 InitializeFFI(Interpreter& intp)
 {
@@ -3776,6 +3799,11 @@ InitializeFFI(Interpreter& intp)
 		[](const string& filename){
 		return DynamicLibrary(filename.c_str());
 	});
+	RegisterUnary<>(ctx, "ffi-call-interface?",
+		ComposeReferencedTermOp([](const TermNode& term) noexcept{
+		return term.Value.type()
+			== ystdex::type_id<shared_ptr<CallInterface>>();
+	}));
 }
 
 
@@ -3933,7 +3961,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.4"
+#define APP_VER "0.5.5"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
