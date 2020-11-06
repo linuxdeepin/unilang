@@ -55,9 +55,11 @@
 #include <ios> // for std::ios_base::eofbit;
 #if YCL_Win32
 #	include YFM_Win32_YCLib_MinGW32 // for ::HMODULE;
+#	include YFM_Win32_YCLib_NLS // for platform_ex::UTF8ToWCS;
 #else
 // XXX: Must use dlfcn. Add check?
-#	include <dlfcn.h> // for::dlclose;
+#	include <dlfcn.h> // for ::dlerror, RTLD_LAZY, RTLD_GLOBAL, ::dlopen,
+//	::dlclose;
 #	include YFM_YCLib_NativeAPI // for YCL_CallGlobal;
 #endif
 #include <ffi.h>
@@ -3733,7 +3735,31 @@ public:
 
 private:
 	UniqueLibraryHandle h_library;
+
+public:
+	[[gnu::nonnull(2)]]
+	DynamicLibrary(const char*);
 };
+
+
+DynamicLibrary::DynamicLibrary(const char* filename)
+	: Name(filename),
+#if YCL_Win32
+	h_library(::LoadLibraryW(platform_ex::UTF8ToWCS(filename).c_str()))
+{
+	if(!h_library)
+		throw UnilangException(ystdex::sfmt(
+			"Failed loading dynamic library named '%s'.", filename));
+}
+#else
+	h_library(::dlopen((yunused(::dlerror()), filename),
+	RTLD_LAZY | RTLD_GLOBAL))
+{
+	if(const auto p_err = ::dlerror())
+		throw UnilangException(ystdex::sfmt("Failed loading dynamic library"
+			" named '%s' with error '%s'.", filename, p_err));
+}
+#endif
 
 
 void
@@ -3746,6 +3772,10 @@ InitializeFFI(Interpreter& intp)
 		ComposeReferencedTermOp([](const TermNode& term) noexcept{
 		return term.Value.type() == ystdex::type_id<DynamicLibrary>();
 	}));
+	RegisterUnary<Strict, const string>(ctx, "ffi-load-library",
+		[](const string& filename){
+		return DynamicLibrary(filename.c_str());
+	});
 }
 
 
@@ -3903,7 +3933,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.3"
+#define APP_VER "0.5.4"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
