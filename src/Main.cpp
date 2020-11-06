@@ -53,6 +53,12 @@
 #include YFM_YSLib_Service_TextFile // for IO::SharedInputMappedFileStream,
 //	Text::BOM_UTF_8, Text::CheckBOM;
 #include <ios> // for std::ios_base::eofbit;
+#if YCL_Win32
+#else
+// XXX: Must use dlfcn. Add check?
+#	include <dlfcn.h>
+#endif
+#include <ffi.h>
 
 namespace Unilang
 {
@@ -3850,7 +3856,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.1"
+#define APP_VER "0.5.2"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
