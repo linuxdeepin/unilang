@@ -13,7 +13,7 @@ case $(uname) in
 	;;
 *)
 	EXTRA_OPT="-pthread \
-		$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp"
+		$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
 esac
 
 g++ -std=c++11 -Wall -Wextra -g -ounilang src/*.cpp \
