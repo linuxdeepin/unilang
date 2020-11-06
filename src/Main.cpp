@@ -10,7 +10,7 @@
 //	ystdex::compose_n, ystdex::less, ystdex::expanded_function, ystdex::invoke_nonvoid;
 #include <ystdex/memory.hpp> // for ystdex::make_shared, std::shared_ptr,
 //	std::weak_ptr, ystdex::share_move, std::allocator_arg_t,
-//	ystdex::make_obj_using_allocator;
+//	std::allocate_shared, ystdex::make_obj_using_allocator;
 #include <ystdex/string_view.hpp> // for ystdex::string_view;
 #include <ystdex/memory_resource.h> // for ystdex::pmr and
 //	complete ystdex::pmr::polymorphic_allocator;
@@ -782,6 +782,9 @@ TermToStringWithReferenceMark(const TermNode&, bool);
 ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
 	bool);
 
+[[noreturn]] void
+ThrowListTypeErrorForNonlist(const TermNode&, bool);
+
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
 TryAccessLeaf(TermNode& term)
@@ -840,6 +843,13 @@ ThrowListTypeErrorForInvalidType(const ystdex::type_info& tp,
 	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got a list"
 		" '%s'.", tp.name(),
 		TermToStringWithReferenceMark(term, is_ref).c_str()));
+}
+
+void
+ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
+{
+	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
+		TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 
 
@@ -3771,6 +3781,144 @@ struct FFICodec final
 };
 
 
+[[nodiscard, gnu::nonnull(2)]] ReductionStatus
+FFI_Decode_string(TermNode& term, const void* buf)
+{
+	if(const auto s = *static_cast<const char* const*>(buf))
+		term.Value = string(s, term.get_allocator());
+	term.Value = string(term.get_allocator());
+	return ReductionStatus::Clean;
+}
+
+[[gnu::nonnull(2)]] void
+FFI_Encode_string(const TermNode& term, void* buf)
+{
+	*static_cast<const void**>(buf)
+		= &Unilang::ResolveRegular<const string>(term)[0];
+}
+
+[[nodiscard, gnu::nonnull(2)]] ReductionStatus
+FFI_Decode_void(TermNode& term, const void*)
+{
+	return ReduceReturnUnspecified(term);
+}
+
+[[gnu::nonnull(2)]] void
+FFI_Encode_void(const TermNode& term, void*)
+{
+	if(!(Unilang::ResolveRegular<const ValueToken>(term)
+		== ValueToken::Unspecified))
+		throw TypeError("Only inert can be cast to C void.");
+}
+
+template<typename _type>
+struct FFI_Codec_Direct final
+{
+	[[nodiscard, gnu::nonnull(2)]] static ReductionStatus
+	Decode(TermNode& term, const void* buf)
+	{
+		term.Value = *static_cast<const _type*>(buf);
+		return ReductionStatus::Clean;
+	}
+
+	[[gnu::nonnull(2)]] static void
+	Encode(const TermNode& term, void* buf)
+	{
+		*static_cast<_type*>(buf) = Unilang::ResolveRegular<const _type>(term);
+	}
+};
+
+[[nodiscard, gnu::nonnull(2)]] ReductionStatus
+FFI_Decode_pointer(TermNode& term, const void* buf)
+{
+	if(const auto p = *static_cast<const void* const*>(buf))
+		term.Value = p;
+	else
+		term.Value.Clear();
+	return ReductionStatus::Clean;
+}
+
+[[gnu::nonnull(2)]] void
+FFI_Encode_pointer(const TermNode& term, void* buf)
+{
+	Unilang::ResolveTerm([&](const TermNode& nd, bool has_ref){
+		if(IsEmpty(nd))
+			*static_cast<const void**>(buf) = {};
+		else if(!IsList(nd))
+		{
+			if(const auto p = nd.Value.AccessPtr<const string>())
+				*static_cast<const void**>(buf) = &(*p)[0];
+			else
+				throw TypeError(ystdex::sfmt("Unsupported type '%s' to encode"
+					" pointer found.", nd.Value.type().name()));
+		}
+		else
+			ThrowListTypeErrorForNonlist(nd, has_ref);
+	}, term);
+}
+
+
+using codecs_type = map<string, FFICodec>;
+
+codecs_type&
+get_codecs_ref(codecs_type::allocator_type a)
+{
+	static map<string, FFICodec> m{{
+		{"string", FFICodec{::ffi_type_pointer, FFI_Decode_string,
+			FFI_Encode_string}},
+	#define NPL_Impl_FFI_SType_(t) \
+		{#t, FFICodec{::ffi_type_##t, FFI_Decode_##t, FFI_Encode_##t}}
+	#define NPL_Impl_FFI_DType_(t, _tp) \
+		{#t, FFICodec{::ffi_type_##t, FFI_Codec_Direct<_tp>::Decode, \
+			FFI_Codec_Direct<_tp>::Encode}}
+		NPL_Impl_FFI_SType_(void),
+		NPL_Impl_FFI_DType_(sint, int),
+		NPL_Impl_FFI_SType_(pointer),
+		NPL_Impl_FFI_DType_(uint8, std::uint8_t),
+		NPL_Impl_FFI_DType_(sint8, std::int8_t),
+		NPL_Impl_FFI_DType_(uint16, std::uint16_t),
+		NPL_Impl_FFI_DType_(sint16, std::int16_t),
+		NPL_Impl_FFI_DType_(uint32, std::uint32_t),
+		NPL_Impl_FFI_DType_(sint32, std::int32_t),
+		NPL_Impl_FFI_DType_(uint64, std::uint64_t),
+		NPL_Impl_FFI_DType_(float, float),
+		NPL_Impl_FFI_DType_(double, double)
+	#undef NPL_Impl_FFI_DType_
+	#undef NPL_Impl_FFI_SType_
+	}, a};
+
+	return m;
+}
+
+FFICodec&
+get_codec(const string& t)
+{
+	auto& codecs(get_codecs_ref(t.get_allocator()));
+	const auto i(codecs.find(t));
+
+	if(i != codecs.cend())
+		return i->second;
+	throw UnilangException(ystdex::sfmt("Unsupported FFI type '%s' found.",
+		t.c_str()));
+}
+
+::ffi_abi
+get_abi(string abi)
+{
+	if(abi == "FFI_DEFAULT_ABI")
+		return FFI_DEFAULT_ABI;
+	throw UnilangException(
+		ystdex::sfmt("Unsupported FFI ABI '%s' found.", abi.c_str()));
+}
+
+size_t
+align_offset(size_t offset, size_t alignment) noexcept
+{
+	assert(alignment > 0);
+	return offset + (alignment - offset % alignment) % alignment;
+}
+
+
 class CallInterface final
 {
 private:
@@ -3782,6 +3930,45 @@ public:
 	FFICodec ret_codec;
 	size_t buffer_size;
 	::ffi_cif cif;
+
+	CallInterface(const string& abi, const string& s_rtype,
+		const vector<string>& s_ptypes)
+		: n_params(s_ptypes.size()), param_codecs(s_ptypes.get_allocator()),
+		param_types(s_ptypes.get_allocator()), ret_codec(get_codec(s_rtype)),
+		buffer_size(ret_codec.libffi_type.size)
+	{
+		if(!ret_codec.decode)
+			throw UnilangException(ystdex::sfmt("The type '%s' is not allowed"
+				" as a return type.", s_rtype.c_str()));
+		param_codecs.reserve(n_params),
+		param_types.reserve(n_params);
+		for(const auto& s_ptype : s_ptypes)
+		{
+			auto& codec(get_codec(s_ptype));
+
+			param_codecs.push_back(codec);
+			if(!codec.encode)
+				throw UnilangException(ystdex::sfmt("The type '%s' is not"
+					" allowed in the parameter list.", s_ptype.c_str()));
+
+			auto& t(codec.libffi_type);
+
+			param_types.push_back(&t);
+			buffer_size = align_offset(buffer_size, t.alignment) + t.size;
+		}
+		switch(::ffi_prep_cif(&cif, get_abi(abi), n_params,
+			&ret_codec.libffi_type, param_types.data()))
+		{
+		case FFI_OK:
+			break;
+		case FFI_BAD_ABI:
+			throw UnilangException("FFI_BAD_ABI");
+		case FFI_BAD_TYPEDEF:
+			throw UnilangException("FFI_BAD_TYPEDEF");
+		default:
+			throw UnilangException("Unknown error in '::ffi_prep_cif' found.");
+		}
+	}
 };
 
 
@@ -3804,6 +3991,26 @@ InitializeFFI(Interpreter& intp)
 		return term.Value.type()
 			== ystdex::type_id<shared_ptr<CallInterface>>();
 	}));
+	RegisterStrict(ctx, "ffi-make-call-interface", [](TermNode& term){
+		RetainN(term, 3);
+
+		auto i(std::next(term.begin()));
+		const auto& abi(Unilang::ResolveRegular<const string>(*i));
+		const auto&
+			s_ret_type(Unilang::ResolveRegular<const string>(*++i));
+		const auto& s_param_types_term(*++i);
+
+		if(IsList(s_param_types_term))
+		{
+			vector<string> s_param_types(term.get_allocator());
+
+			s_param_types.reserve(s_param_types_term.size());
+			term.Value = std::allocate_shared<CallInterface>(
+				term.get_allocator(), abi, s_ret_type, s_param_types);
+			return ReductionStatus::Clean;
+		}
+		throw ListTypeError("Expected a list for the 3rd parameter.");
+	});
 }
 
 
@@ -3961,7 +4168,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.5"
+#define APP_VER "0.5.6"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
