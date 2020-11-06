@@ -3749,6 +3749,9 @@ private:
 public:
 	[[gnu::nonnull(2)]]
 	DynamicLibrary(const char*);
+
+	[[nodiscard, gnu::returns_nonnull]] FPtr
+	LookupFunctionPtr(const string&) const;
 };
 
 
@@ -3770,6 +3773,38 @@ DynamicLibrary::DynamicLibrary(const char* filename)
 			" named '%s' with error '%s'.", filename, p_err));
 }
 #endif
+
+DynamicLibrary::FPtr
+DynamicLibrary::LookupFunctionPtr(const string& fn) const
+{
+	if(const auto h = h_library.get())
+	{
+#if YCL_Win32
+		if(const auto p_fn = ::GetProcAddress(h, fn.c_str()))
+			return FPtr(p_fn);
+		throw UnilangException(ystdex::sfmt("Failed looking up symbol '%s' in the"
+			" library '%s'.", fn.c_str(), Name.c_str()));
+#else
+		yunused(::dlerror());
+
+		const auto p_fn(::dlsym(h, fn.c_str()));
+		if(const auto p_err = dlerror())
+			throw UnilangException(ystdex::sfmt("Failed looking up symbol '%s'"
+				" in the library '%s': %s.", fn.c_str(), Name.c_str(), p_err));
+		if(p_fn)
+		{
+			FPtr v;
+			static_assert(sizeof(v) == sizeof(p_fn), "Invalid platform found.");
+
+			std::memcpy(&v, &p_fn, sizeof(void*));
+			return v;
+		}
+		throw UnilangException(ystdex::sfmt("Null value of symbol '%s' found in"
+			" the library '%s'.", fn.c_str(), Name.c_str()));
+#endif
+	}
+	throw UnilangException("Invalid library handle found.");
+}
 
 
 struct FFICodec final
@@ -3969,7 +4004,19 @@ public:
 			throw UnilangException("Unknown error in '::ffi_prep_cif' found.");
 		}
 	}
+
+	DefGetter(const noexcept, size_t, BufferSize, buffer_size)
+	DefGetter(const noexcept, size_t, ParameterCount, n_params)
 };
+
+CallInterface&
+EnsureValidCIF(const shared_ptr<CallInterface>& p_cif)
+{
+	if(p_cif)
+		return *p_cif;
+	// NOTE: This should normall not happen.
+	throw std::invalid_argument("Invalid call interface record pointer found.");
+}
 
 
 void
@@ -4010,6 +4057,55 @@ InitializeFFI(Interpreter& intp)
 			return ReductionStatus::Clean;
 		}
 		throw ListTypeError("Expected a list for the 3rd parameter.");
+	});
+	RegisterStrict(ctx, "ffi-make-applicative", [](TermNode& term){
+		RetainN(term, 3);
+
+		auto i(std::next(term.begin()));
+		const auto&
+			lib(Unilang::ResolveRegular<const DynamicLibrary>(*i));
+		const auto& fn(Unilang::ResolveRegular<const string>(*++i));
+		auto& cif(EnsureValidCIF(Unilang::ResolveRegular<const shared_ptr<
+			CallInterface>>(*++i)));
+		const auto p_fn(lib.LookupFunctionPtr(fn));
+
+		term.Value = ContextHandler(FormContextHandler([&, p_fn](TermNode& tm){
+			if(IsBranch(tm))
+			{
+				const auto n_params(cif.GetParameterCount());
+
+				RetainN(tm, n_params);
+
+				const auto buffer_size(cif.GetBufferSize());
+				const auto p_buf(
+					ystdex::make_unique_default_init<std::int64_t[]>(
+					(buffer_size + sizeof(std::int64_t) - 1)
+					/ sizeof(std::int64_t)));
+				const auto p_param_ptrs(
+					ystdex::make_unique_default_init<void*[]>(n_params));
+				void* rptr(
+					ystdex::aligned_store_cast<unsigned char*>(p_buf.get()));
+				size_t offset(cif.ret_codec.libffi_type.size);
+
+				for(size_t i(0); i < n_params; ++i)
+				{
+					auto& codec(cif.param_codecs[i]);
+					const auto& t(codec.libffi_type);
+
+					offset = align_offset(offset, t.alignment);
+					p_param_ptrs[i] = ystdex::aligned_store_cast<
+						unsigned char*>(p_buf.get()) + offset;
+					cif.param_codecs[i].encode(tm, p_param_ptrs[i]);
+					offset += t.size;
+				}
+				assert(offset == buffer_size);
+				::ffi_call(&cif.cif, p_fn, rptr, p_param_ptrs.get());
+				return cif.ret_codec.decode(tm, rptr);
+			}
+			else
+				throw InvalidSyntax("Invalid function application found.");
+		}, 1));
+		return ReductionStatus::Clean;
 	});
 }
 
@@ -4168,7 +4264,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.6"
+#define APP_VER "0.5.7"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
