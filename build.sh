@@ -37,5 +37,5 @@ g++ -std=c++11 -Wall -Wextra -g -ounilang src/*.cpp \
 	$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp \
 	$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp \
 	$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp \
-	$EXTRA_OPT
+	$EXTRA_OPT -lffi
 
