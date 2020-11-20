@@ -935,3 +935,7 @@ $or? <test>...
 
 　　不支持 C 函数的可变参数。
 
+`ffi-make-callback <applicative> <ffi-call-interface>`
+
+　　创建 FFI 回调函数对象。
+
