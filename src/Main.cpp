@@ -1443,6 +1443,9 @@ public:
 	ReductionStatus
 	Rewrite(Reducer);
 
+	ReductionStatus
+	RewriteTerm(TermNode&);
+
 	Environment::NameResolution
 	Resolve(shared_ptr<Environment>, string_view);
 
@@ -4019,6 +4022,103 @@ EnsureValidCIF(const shared_ptr<CallInterface>& p_cif)
 }
 
 
+struct FFIClosureDelete final
+{
+	void
+	operator()(void* h) const noexcept
+	{
+		::ffi_closure_free(h);
+	}
+};
+
+
+class Callback;
+
+struct FFICallback final
+{
+	::ffi_closure Closure;
+	Context* ContextPtr;
+	const ContextHandler* HandlerPtr;
+	Callback* InfoPtr;
+};
+
+static_assert(std::is_standard_layout<FFICallback>(),
+	"Invalid FFI closure found.");
+
+void
+FFICallbackEntry(::ffi_cif*, void*, void**, void*);
+
+class Callback final
+{
+private:
+	shared_ptr<CallInterface> cif_ptr;
+	void* code;
+	YSLib::unique_ptr<FFICallback, FFIClosureDelete> cb_ptr;
+
+public:
+	Callback(Context& ctx, const ContextHandler& h,
+		const shared_ptr<CallInterface>& p_cif)
+		: cif_ptr(p_cif), cb_ptr(static_cast<FFICallback*>(
+		::ffi_closure_alloc(sizeof(FFICallback), &code)))
+	{
+		if(cb_ptr)
+		{
+			auto& cif(EnsureValidCIF(p_cif));
+			yunseq(cb_ptr->ContextPtr = &ctx, cb_ptr->HandlerPtr = &h,
+				cb_ptr->InfoPtr = this);
+
+			const auto status(::ffi_prep_closure_loc(&cb_ptr->Closure, &cif.cif,
+				FFICallbackEntry, cb_ptr.get(), code));
+
+			if(status != ::FFI_OK)
+				throw UnilangException(ystdex::sfmt("Unkown error '%zu' in"
+					" 'ffi_prep_closure_loc' found.", size_t(status)));
+		}
+		else
+			throw std::bad_alloc();
+	}
+
+	[[nodiscard, gnu::pure]] const CallInterface&
+	GetCallInterface() const noexcept
+	{
+		return *cif_ptr;
+	}
+};
+
+
+void
+FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
+{
+	const auto& cb(*static_cast<FFICallback*>(user_data));
+	auto& ctx(*cb.ContextPtr);
+	const auto a(ctx.get_allocator());
+	auto p_term(YSLib::allocate_shared<TermNode>(a));
+	auto& term(*p_term);
+
+	ctx.SetupFront([&, args, ret, p_term](Context& c){
+		const auto& h(*cb.HandlerPtr);
+		auto& cif(cb.InfoPtr->GetCallInterface());
+		const auto n_params(cif.GetParameterCount());
+
+		for(size_t idx(0); idx < n_params; ++idx)
+		{
+			TermNode tm(a);
+
+			cif.param_codecs[idx].decode(tm, args[idx]);
+			term.Subterms.emplace_back(std::move(tm));
+		}
+		c.SetupFront([&, ret, p_term]{
+			cif.ret_codec.encode(term, ret);
+			return ReductionStatus::Partial;
+		});
+		return h(term, c);
+	});
+	EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
+
+	ctx.Evaluate(term);
+}
+
+
 void
 InitializeFFI(Interpreter& intp)
 {
@@ -4264,7 +4364,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.7"
+#define APP_VER "0.5.8"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
