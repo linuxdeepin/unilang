@@ -790,3 +790,66 @@ $or? <test>...
 
 　　输出换行。
 
+## 系统互操作
+
+　　系统互操作包含和外部实现环境交互的操作。
+
+## 外部语言交互接口
+
+　　外部语言交互接口是支持系统交互的底层 API ，主要以外部函数接口(FFI, foreign function interface) 的形式体现，支持调用 C 语言和兼容二进制实现的动态库中的函数。
+
+　　外部语言交互支持以下求值得到的操作数：
+
+* `<ffi-library>` FFI 库对象，表示一个适用外部语言交互的动态库的对象。
+* `<ffi-call-interface>` FFI 调用接口对象，描述使用 FFI 调用函数需要的参数和返回类型信息。
+
+　　系统互操作在基础环境中直接提供绑定。
+
+`ffi-library? <object>`
+
+　　判断参数是否为 `<ffi-library>` 对象的类型谓词。
+
+`ffi-load-library <string>`
+
+　　从参数指定的外部位置加载动态库。求值的结果是表示加载的动态库的 `<ffi-library>` 对象。
+
+`ffi-call-interface? <object>`
+
+　　判断参数是否为 `<ffi-call-interface>` 对象的类型谓词。
+
+`ffi-make-call-interface <string1> <string2> <list>`
+
+　　创建 FFI 调用接口。
+
+　　参数分别为表示 ABI 的字符串、表示返回类型的字符串和一个表示函数参数类型的字符串的列表。
+
+　　当前支持的 ABI 应为 `"FFI_DEFAULT_ABI"` 。
+
+　　支持的类型表示如下：
+
+* `"string"` 以指针编码的 C 字符串。对应语言内的 `string` 类型。
+* `"void"` 仅用于返回值类型 `void` 。
+* `"sint"` 类型 `int` 。
+* `"sint"` 类型 `int` 。
+* `"pointer"` 以 `void*` 编码的对象指针类型。
+* `"uint8"` 类型 `uint8_t` 。
+* `"sint8"` 类型 `int8_t` 。
+* `"uint16"` 类型 `uint16_t` 。
+* `"sint16"` 类型 `int16_t` 。
+* `"uint32"` 类型 `uint32_t` 。
+* `"sint32"` 类型 `int32_t` 。
+* `"float"` 类型 `float` 。
+* `"double"` 类型 `double` 。
+
+`ffi-make-applicative <ffi-library> <string> <ffi-call-interface>`
+
+　　创建以 FFI 调用 C 函数的应用子。
+
+　　参数指定 FFI 库、函数名称和 FFI 调用接口。
+
+　　不支持 C 函数的可变参数。
+
+`ffi-make-callback <applicative> <ffi-call-interface>`
+
+　　创建 FFI 回调函数对象。
+
