@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 YSLib_BaseDir=3rdparty/YSLib
 
 case $(uname) in
