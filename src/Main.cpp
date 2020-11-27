@@ -1,12 +1,15 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter;
-#include "Evaluation.h" // for RegisterStrict;
+#include "Evaluation.h" // for RegisterStrict, ThrowInsufficientTermsError;
 #include "TermAccess.h" // for EnvironmentReference, TermNode;
 #include "BasicReduction.h" // for ReductionStatus;
 #include "Forms.h"
 #include "UnilangFFI.h"
 #include <iostream> // for std::cout, std::endl;
+#include <random> // for std::random_device, std::mt19937,
+//	std::uniform_int_distribution;
+#include <iterator> // for std::iterator_traits;
 #include <cstdlib> // for std::exit;
 
 namespace Unilang
@@ -142,6 +145,23 @@ LoadFunctions(Interpreter& intp)
 		$defv! $import! (e .symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
 	)Unilang");
+	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
+		RetainN(term);
+
+		auto& tm(*std::next(term.begin()));
+
+		if(!tm.empty())
+		{
+			static std::random_device rd;
+			static std::mt19937 mt(rd());
+
+			LiftOther(term, *std::next(tm.begin(),
+				std::iterator_traits<TermNode::iterator>::difference_type(
+				std::uniform_int_distribution<size_t>(0, tm.size() - 1)(mt))));
+			return ReductionStatus::Retained;
+		}
+		ThrowInsufficientTermsError();
+	});
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
 		ctx.SetupFront([&]{
@@ -172,7 +192,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.11"
+#define APP_VER "0.5.12"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
