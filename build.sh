@@ -15,7 +15,7 @@ $YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
 	;;
 *)
 	EXTRA_OPT="-pthread \
-$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp"
+$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
 esac
 
 # shellcheck disable=2086
@@ -40,5 +40,5 @@ g++ -std=c++11 -Wall -Wextra -g -ounilang "$Unilang_BaseDir/src/Main.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
-$EXTRA_OPT
+$EXTRA_OPT -lffi
 
