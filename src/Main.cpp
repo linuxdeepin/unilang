@@ -7,6 +7,7 @@
 #include "Forms.h"
 #include "UnilangFFI.h"
 #include <iostream> // for std::cout, std::endl;
+#include <cstdlib> // for std::exit;
 
 namespace Unilang
 {
@@ -162,13 +163,16 @@ LoadFunctions(Interpreter& intp)
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterUnary<Strict, const int>(ctx, "sys.exit", [&](int status){
+		std::exit(status);
+	});
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
 	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.10"
+#define APP_VER "0.5.11"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
