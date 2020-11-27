@@ -19,8 +19,8 @@ $YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
 esac
 
 # shellcheck disable=2086
-g++ -std=c++11 -Wall -Wextra -g -ounilang "$Unilang_BaseDir/src/Main.cpp" \
--I$YSLib_BaseDir/YBase/include \
+g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
+-Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/cassert.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/concurrency.cpp" \
