@@ -1,3 +1,5 @@
 *.o
-interpreter*
+*.d
+build/*
+unilang*
 
