@@ -7,8 +7,8 @@
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
-#include YFM_YSLib_Service_TextFile // for IO::SharedInputMappedFileStream,
-//	Text::BOM_UTF_8, Text::CheckBOM;
+#include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
+//	Text::BOM_UTF_8, YSLib::share_move;
 #include <ios> // for std::ios_base::eofbit;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
@@ -165,20 +165,10 @@ YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(string filename)
 {
 	using namespace YSLib;
-	auto p_is(make_unique<IO::SharedInputMappedFileStream>(filename.c_str()));
-	auto& is(*p_is);
+	auto p_is(Text::OpenSkippedBOMtream<IO::SharedInputMappedFileStream>(
+		Text::BOM_UTF_8, filename.c_str()));
 
-	if(bool(is))
-	{
-		if(!Text::CheckBOM(is, Text::BOM_UTF_8))
-		{
-			is.clear(std::ios_base::eofbit);
-			is.seekg(0);
-		}
-		else
-			is.clear();
-	}
-	CurrentSource = ystdex::share_move(filename);
+	CurrentSource = YSLib::share_move(filename);
 	return p_is;
 }
 
