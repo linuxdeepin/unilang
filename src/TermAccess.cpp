@@ -24,6 +24,14 @@ TermToStringWithReferenceMark(const TermNode& term, bool has_ref)
 }
 
 void
+ThrowInsufficientTermsError(const TermNode& term, bool has_ref)
+{
+	throw ParameterMismatch(ystdex::sfmt(
+		"Insufficient subterms found in '%s' for the list parameter.",
+		TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
+void
 ThrowListTypeErrorForInvalidType(const ystdex::type_info& tp,
 	const TermNode& term, bool is_ref)
 {
