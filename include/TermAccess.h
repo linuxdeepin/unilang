@@ -42,6 +42,9 @@ TermToString(const TermNode&);
 TermToStringWithReferenceMark(const TermNode&, bool);
 
 [[noreturn]] void
+ThrowInsufficientTermsError(const TermNode&, bool);
+
+[[noreturn]] void
 ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
 	bool);
 
