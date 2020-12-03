@@ -2,7 +2,8 @@
 
 #include "Evaluation.h" // for ReductionStatus, TermNode, Context,
 //	TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf,
-//	TermReference, ContextHandler, std::prev, ystdex::begins_with;
+//	TermReference, ContextHandler, std::prev, ThrowInsufficientTermsError,
+//	ystdex::begins_with;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, BadIdentifier,
@@ -293,7 +294,7 @@ private:
 					else if(!ellipsis)
 						throw ArityMismatch(n_p, n_o);
 					else
-						ThrowInsufficientTermsError();
+						ThrowInsufficientTermsError(nd, p_ref);
 				}, o);
 			}
 			else
@@ -353,13 +354,6 @@ MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 }
 
 } // unnamed namespace;
-
-void
-ThrowInsufficientTermsError()
-{
-	throw ParameterMismatch("Insufficient terms found for list parameter.");
-}
-
 
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
