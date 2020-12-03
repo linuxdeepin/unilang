@@ -90,7 +90,7 @@ ParseLeaf(string_view id)
 
 void
 PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
-	size_t n = 0)
+	size_t i = 0)
 {
 	const auto print_node_str([&](const TermNode& subterm){
 		return ResolveTerm(
@@ -126,7 +126,7 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 		}, subterm);
 	});
 
-	if(depth != 0 && n != 0)
+	if(depth != 0 && i != 0)
 		os << ' ';
 
 	const auto pr(print_node_str(term));

@@ -46,11 +46,11 @@ ReduceLeaf(TermNode& term, Context& ctx)
 			{
 				auto& bound(*pr.first);
 
-				if(const auto p
+				if(const auto p_ref
 					= Unilang::TryAccessLeaf<const TermReference>(bound))
 				{
 					term.Subterms = bound.Subterms;
-					term.Value = TermReference(*p);
+					term.Value = TermReference(*p_ref);
 				}
 				else
 					term.Value = TermReference(bound, std::move(pr.second));

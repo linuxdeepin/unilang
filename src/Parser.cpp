@@ -23,29 +23,29 @@ ByteParser::operator()(char c)
 	{
 		if(len == 1)
 		{
-			const auto update_c([&](char c){
+			const auto update_c([&](char b){
 				if(update_current)
-					lexemes.back() += c;
+					lexemes.back() += b;
 				else
-					add(string({c}, lexemes.get_allocator()));
+					add(string({b}, lexemes.get_allocator()));
 			});
-			const char c(buffer.back());
+			const char b(buffer.back());
 			const bool unquoted(Delimiter == char());
 
  			if(got_delim)
 			{
-				update_c(c);
+				update_c(b);
 				update_current = !unquoted;
 			}
-			else if(unquoted && IsDelimiter(c))
+			else if(unquoted && IsDelimiter(b))
 			{
-				if(IsGraphicalDelimiter(c))
-					add(string({c}, lexemes.get_allocator()));
+				if(IsGraphicalDelimiter(b))
+					add(string({b}, lexemes.get_allocator()));
 				update_current = {};
 			}
 			else
 			{
-				update_c(c);
+				update_c(b);
 				update_current = true;
 			}
 		}
