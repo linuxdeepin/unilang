@@ -23,6 +23,7 @@ namespace Forms
 inline ReductionStatus
 Retain(const TermNode& term) noexcept
 {
+	static_cast<void>(term);
 	assert(IsBranch(term));
 	return ReductionStatus::Retained;
 }

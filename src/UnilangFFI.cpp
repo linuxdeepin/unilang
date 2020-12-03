@@ -1,6 +1,13 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
+#if __GNUC__
+#	pragma GCC diagnostic push
+#	pragma GCC diagnostic ignored "-Wfloat-equal"
+#endif
 #include "UnilangFFI.h" // for YSLib::unique_ptr_from;
+#if __GNUC__
+#	pragma GCC diagnostic pop
+#endif
 #if YCL_Win32
 #	include YFM_Win32_YCLib_MinGW32 // for ::HMODULE;
 #	include YFM_Win32_YCLib_NLS // for platform_ex::UTF8ToWCS;
@@ -495,15 +502,15 @@ InitializeFFI(Interpreter& intp)
 					ystdex::aligned_store_cast<unsigned char*>(p_buf.get()));
 				size_t offset(cif.ret_codec.libffi_type.size);
 
-				for(size_t i(0); i < n_params; ++i)
+				for(size_t idx(0); idx < n_params; ++idx)
 				{
-					auto& codec(cif.param_codecs[i]);
+					auto& codec(cif.param_codecs[idx]);
 					const auto& t(codec.libffi_type);
 
 					offset = align_offset(offset, t.alignment);
-					p_param_ptrs[i] = ystdex::aligned_store_cast<
+					p_param_ptrs[idx] = ystdex::aligned_store_cast<
 						unsigned char*>(p_buf.get()) + offset;
-					cif.param_codecs[i].encode(tm, p_param_ptrs[i]);
+					cif.param_codecs[idx].encode(tm, p_param_ptrs[idx]);
 					offset += t.size;
 				}
 				assert(offset == buffer_size);
@@ -515,11 +522,11 @@ InitializeFFI(Interpreter& intp)
 		}, 1));
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "ffi-make-callback", [](TermNode& term, Context& ctx){
+	RegisterStrict(ctx, "ffi-make-callback", [](TermNode& term, Context& c){
 		auto i(std::next(term.begin()));
 		const auto& h(Unilang::ResolveRegular<const ContextHandler>(*i));
 
-		term.Value = YSLib::allocate_shared<Callback>(term.get_allocator(), ctx,
+		term.Value = YSLib::allocate_shared<Callback>(term.get_allocator(), c,
 			h, Unilang::ResolveRegular<const shared_ptr<CallInterface>>(
 			*++i));
 		return ReductionStatus::Clean;
