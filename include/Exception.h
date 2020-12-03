@@ -21,6 +21,12 @@ class TypeError : public UnilangException
 };
 
 
+class ListReductionFailure : public TypeError
+{
+	using TypeError::TypeError;
+};
+
+
 class ListTypeError : public TypeError
 {
 public:
@@ -28,21 +34,9 @@ public:
 };
 
 
-class ListReductionFailure : public TypeError
+class ParameterMismatch : public ListTypeError
 {
-	using TypeError::TypeError;
-};
-
-
-class InvalidSyntax : public UnilangException
-{
-	using UnilangException::UnilangException;
-};
-
-
-class ParameterMismatch : public InvalidSyntax
-{
-	using InvalidSyntax::InvalidSyntax;
+	using ListTypeError::ListTypeError;
 };
 
 
@@ -66,6 +60,12 @@ public:
 	{
 		return received;
 	}
+};
+
+
+class InvalidSyntax : public UnilangException
+{
+	using UnilangException::UnilangException;
 };
 
 
