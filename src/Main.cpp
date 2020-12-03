@@ -148,6 +148,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
 
+		// TODO: Support term lvalues.
 		auto& tm(*std::next(term.begin()));
 
 		if(!tm.empty())
@@ -160,7 +161,7 @@ LoadFunctions(Interpreter& intp)
 				std::uniform_int_distribution<size_t>(0, tm.size() - 1)(mt))));
 			return ReductionStatus::Retained;
 		}
-		ThrowInsufficientTermsError();
+		ThrowInsufficientTermsError(term, {});
 	});
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
@@ -192,7 +193,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.12"
+#define APP_VER "0.5.13"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

@@ -86,10 +86,6 @@ public:
 };
 
 
-[[noreturn]] void
-ThrowInsufficientTermsError();
-
-
 struct SeparatorTransformer
 {
 	template<typename _func, class _tTerm, class _fPred>

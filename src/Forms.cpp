@@ -34,11 +34,11 @@ MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
 
 
 [[noreturn]] inline void
-ThrowInsufficientTermsErrorFor(InvalidSyntax&& e)
+ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 {
 	try
 	{
-		ThrowInsufficientTermsError();
+		ThrowInsufficientTermsError(term, {});
 	}
 	catch(...)
 	{
@@ -246,7 +246,7 @@ CreateFunction(TermNode& term, _func f, size_t n)
 	Forms::Retain(term);
 	if(term.size() > n)
 		return f();
-	ThrowInsufficientTermsErrorFor(MakeFunctionAbstractionError());
+	ThrowInsufficientTermsErrorFor(MakeFunctionAbstractionError(), term);
 }
 
 template<typename _func>
