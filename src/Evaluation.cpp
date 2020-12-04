@@ -288,7 +288,7 @@ private:
 					const auto n_o(nd.size());
 
 					if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
-						MatchSubterms(t.begin(), last, nd.begin(), nd.end(),
+						MatchSubterms(t.begin(), last, nd, nd.begin(),
 							p_ref ? p_ref->GetEnvironmentReference() : r_env,
 							ellipsis);
 					else if(!ellipsis)
@@ -323,16 +323,16 @@ private:
 	}
 
 	void
-	MatchSubterms(TNCIter i, TNCIter last, TNIter j, TNIter o_last,
+	MatchSubterms(TNCIter i, TNCIter last, TermNode& o_tm, TNIter j,
 		const EnvironmentReference& r_env, bool ellipsis) const
 	{
 		if(i != last)
 		{
-			ystdex::update_thunk(act, [=, &r_env]{
-				return MatchSubterms(std::next(i), last, std::next(j), o_last,
+			ystdex::update_thunk(act, [=, &o_tm, &r_env]{
+				return MatchSubterms(std::next(i), last, o_tm, std::next(j),
 					r_env, ellipsis);
 			});
-			assert(j != o_last);
+			assert(j != o_tm.end());
 			Match(*i, *j, r_env);
 		}
 		else if(ellipsis)
@@ -340,7 +340,7 @@ private:
 			const auto& lastv(last->Value);
 
 			assert(lastv.type() == ystdex::type_id<TokenValue>());
-			BindTrailing(j, o_last, lastv.GetObject<TokenValue>(), r_env);
+			BindTrailing(o_tm, j, lastv.GetObject<TokenValue>(), r_env);
 		}
 	}
 };
@@ -395,7 +395,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 {
 	auto& env(*p_env);
 
-	MakeParameterMatcher([&](TNIter first, TNIter last, string_view id,
+	MakeParameterMatcher([&](TermNode& o_tm, TNIter first, string_view id,
 		const EnvironmentReference& r_env){
 		assert(ystdex::begins_with(id, "."));
 		id.remove_prefix(1);
@@ -403,6 +403,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 		{
 			if(!id.empty())
 			{
+				const auto last(o_tm.end());
 				TermNode::Container con(t.get_allocator());
 
 				for(; first != last; ++first)
