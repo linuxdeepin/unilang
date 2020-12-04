@@ -209,15 +209,15 @@ struct BindParameterObject
 		: Referenced(r_env)
 	{}
 
-	template<typename _fCopy>
+	template<typename _fCopy, typename _fMove>
 	void
-	operator()(TermNode& o, _fCopy cp)
+	operator()(TermNode& o, _fCopy cp, _fMove mv)
 		const
 	{
 		if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
 			cp(p->get());
 		else
-			cp(o);
+			mv(std::move(o.Subterms), std::move(o.Value));
 	}
 };
 
@@ -409,6 +409,10 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 					BindParameterObject{r_env}(*first,
 						[&](const TermNode& tm){
 						con.emplace_back(tm.Subterms, tm.Value);
+					}, [&](TermNode::Container&& c, ValueObject&& vo)
+						-> TermNode&{
+						con.emplace_back(std::move(c), std::move(vo));
+						return con.back();
 					});
 				env.Bind(id, TermNode(std::move(con)));
 			}
@@ -423,6 +427,10 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 					BindParameterObject{r_env}(b,
 						[&](const TermNode& tm){
 						env.Bind(id, tm);
+					}, [&](TermNode::Container&& c, ValueObject&& vo)
+						-> TermNode&{
+						return env.Bind(id,
+							TermNode(std::move(c), std::move(vo)));
 					});
 			}
 		});
