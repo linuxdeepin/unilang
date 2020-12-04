@@ -6,6 +6,7 @@
 #include "BasicReduction.h" // for ReductionStatus;
 #include "Forms.h"
 #include "UnilangFFI.h"
+#include "UnilangQt.h"
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -19,7 +20,7 @@ namespace
 {
 
 void
-LoadFunctions(Interpreter& intp)
+LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 {
 	auto& ctx(intp.Root);
 	using namespace Forms;
@@ -189,11 +190,13 @@ LoadFunctions(Interpreter& intp)
 	});
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
+	// NOTE: Qt support.
+	InitializeQt(intp, argc, argv);
 	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.16"
+#define APP_VER "0.5.17"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -203,14 +206,14 @@ constexpr auto
 } // namespace Unilang;
 
 int
-main()
+main(int argc, char* argv[])
 {
 	using namespace Unilang;
 	using namespace std;
 	Interpreter intp{};
 
 	cout << title << endl << "Initializing...";
-	LoadFunctions(intp);
+	LoadFunctions(intp, argc, argv);
 	cout << "Initialization finished." << endl;
 	cout << "Type \"exit\" to exit." << endl << endl;
 	intp.Run();
