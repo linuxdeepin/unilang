@@ -1,0 +1,11 @@
+() newline;
+
+$defl! log (x) (display x; () newline);
+
+log "DEBUG: Loading script ...";
+
+$def! app () make-QApplication;
+$def! wgt () make-QWidget;
+QWidget-show wgt;
+sys.exit (() QApplication-exec);
+
