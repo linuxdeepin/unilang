@@ -284,17 +284,22 @@ private:
 				}
 				ResolveTerm([&, n_p](TermNode& nd,
 					ResolvedTermReferencePtr p_ref){
-					const bool ellipsis(last != t.end());
-					const auto n_o(nd.size());
+					if(IsList(nd))
+					{
+						const bool ellipsis(last != t.end());
+						const auto n_o(nd.size());
 
-					if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
-						MatchSubterms(t.begin(), last, nd, nd.begin(),
-							p_ref ? p_ref->GetEnvironmentReference() : r_env,
-							ellipsis);
-					else if(!ellipsis)
-						throw ArityMismatch(n_p, n_o);
+						if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
+							MatchSubterms(t.begin(), last, nd, nd.begin(),
+								p_ref ? p_ref->GetEnvironmentReference()
+								: r_env, ellipsis);
+						else if(!ellipsis)
+							throw ArityMismatch(n_p, n_o);
+						else
+							ThrowInsufficientTermsError(nd, p_ref);
+					}
 					else
-						ThrowInsufficientTermsError(nd, p_ref);
+						ThrowListTypeErrorForNonlist(nd, p_ref);
 				}, o);
 			}
 			else
