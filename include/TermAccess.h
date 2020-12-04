@@ -277,7 +277,7 @@ template<typename _type, class _tTerm>
 void
 CheckRegular(_tTerm& term, bool has_ref)
 {
-	if(IsList(term))
+	if(IsBranch(term))
 		ThrowListTypeErrorForInvalidType(ystdex::type_id<_type>(), term,
 			has_ref);
 }
