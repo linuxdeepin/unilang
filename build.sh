@@ -4,6 +4,9 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
+CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
+LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
+
 case $(uname) in
 *MSYS* | *MINGW*)
 	EXTRA_OPT="-I$YSLib_BaseDir/YFramework/Win32/include \
@@ -41,5 +44,5 @@ g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
-$EXTRA_OPT -lffi
+$CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT -lffi
 
