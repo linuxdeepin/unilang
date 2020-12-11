@@ -6,6 +6,7 @@ log "DEBUG: Loading script ...";
 
 $def! app () make-QApplication;
 $def! wgt () make-QWidget;
+QWidget-resize wgt 800 600;
 QWidget-show wgt;
 sys.exit (() QApplication-exec);
 
