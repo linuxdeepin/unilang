@@ -1,12 +1,55 @@
 () newline;
 
 $defl! log (x) (display x; () newline);
+$defl! logd (x) (log "DEBUG:"; log x);
 
-log "DEBUG: Loading script ...";
+logd "Loading script ...";
+
+$def! $rem $vau . #ignore "";
+
+$def! (encapsulate-class class? decapsulate-class) () make-encapsulation-type;
+$defl! make-class (base ctor) encapsulate-class (list base ctor);
+$defl! ctor-of (c) first (rest (decapsulate-class c));
+$defl! base-of (c) first (decapsulate-class c);
+$defl! apply-ctor (c self args) apply (ctor-of c) (list* self args);
+$defl! make-object (c .args)
+(
+	$def! self () make-environment;
+	$def! base base-of c;
+	$if (null? base) () (apply-ctor base self ());
+	apply-ctor c self args;
+	self
+);
+
+$defl! QWidget-of (obj)
+(
+	$import! obj native_widget_;
+	native_widget_
+);
+
+$def! QWidget make-class () ($lambda (self)
+(
+	logd "[ctor] QWidget";
+	$set! self native_widget_ () make-QWidget;
+	$set! self setLayout QWidget-setLayout;
+));
+
+$def! MyWidget make-class QWidget ($lambda (self)
+(
+	logd "[ctor] MyWidget";
+	$set! self hello list "Hallo Welt" "Hei maailma" "Hola Mundo" "妤把我志快找 技我把";
+	$set! self button make-QPushButton "Click me!";
+	$set! self text make-QLabel "Hello World!" Qt.AlignCenter;
+	$set! self layout () make-QVBoxLayout;
+	$import! self setLayout text button layout;
+	QLayout-addWidget layout text;
+	QLayout-addWidget layout button;
+	setLayout (QWidget-of self) layout
+));
 
 $def! app () make-QApplication;
-$def! wgt () make-QWidget;
-QWidget-resize wgt 800 600;
-QWidget-show wgt;
+$def! wgt make-object MyWidget;
+QWidget-resize (QWidget-of wgt) 800 600;
+QWidget-show (QWidget-of wgt);
 sys.exit (() QApplication-exec);
 
