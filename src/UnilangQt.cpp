@@ -20,12 +20,12 @@ namespace Unilang
 namespace
 {
 
-using YSLib::unique_ptr;
+using YSLib::shared_ptr;
 
 QWidget&
 ResolveQWidget(TermNode& term)
 {
-	const auto& p_wgt(Unilang::ResolveRegular<unique_ptr<QWidget>>(term));
+	const auto& p_wgt(Unilang::ResolveRegular<shared_ptr<QWidget>>(term));
 
 	assert(p_wgt.get());
 	return *p_wgt;
@@ -39,11 +39,11 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 {
 	auto& ctx(intp.Root);
 	using namespace Forms;
-	using YSLib::make_unique;
+	using YSLib::make_shared;
 
 	RegisterStrict(ctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_unique<QApplication>(argc, argv);
+		term.Value = make_shared<QApplication>(argc, argv);
 		return ReductionStatus::Clean;
 	});
 	RegisterStrict(ctx, "QApplication-exec", [](TermNode& term){
@@ -53,7 +53,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	});
 	RegisterStrict(ctx, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_unique<QWidget>();
+		term.Value = make_shared<QWidget>();
 		return ReductionStatus::Clean;
 	});
 	RegisterStrict(ctx, "QWidget-resize", [](TermNode& term){
@@ -67,8 +67,8 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		wgt.resize(w, h);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterUnary<Strict, const unique_ptr<QWidget>>(ctx, "QWidget-show",
-		[](const unique_ptr<QWidget>& p_wgt){
+	RegisterUnary<Strict, const shared_ptr<QWidget>>(ctx, "QWidget-show",
+		[](const shared_ptr<QWidget>& p_wgt){
 		p_wgt->show();
 		return ValueToken::Unspecified;
 	});
