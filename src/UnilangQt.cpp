@@ -122,6 +122,35 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
+	intp.Perform(R"Unilang(
+		$def! (encapsulate-class class? decapsulate-class)
+			() make-encapsulation-type;
+		$defl! make-class (base ctor) encapsulate-class (list base ctor);
+		$defl! ctor-of (c) first (rest (decapsulate-class c));
+		$defl! base-of (c) first (decapsulate-class c);
+		$defl! apply-ctor (c self args) apply (ctor-of c) (list* self args);
+		$defl! make-object (c .args)
+		(
+			$def! self () make-environment;
+			$def! base base-of c;
+			$if (null? base) () (apply-ctor base self ());
+			apply-ctor c self args;
+			self
+		);
+
+		$defl! QWidget-of (obj)
+		(
+			$import! obj native_widget_;
+			native_widget_
+		);
+
+		$def! QWidget make-class () ($lambda (self)
+		(
+			logd "[ctor] QWidget";
+			$set! self native_widget_ () make-QWidget;
+			$set! self setLayout QWidget-setLayout;
+		));
+	)Unilang");
 }
 
 } // namespace Unilang;
