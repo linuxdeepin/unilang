@@ -38,7 +38,12 @@
 
 　　宿主值满足以下类型映射关系（部分没有被语言规范明确要求）：
 
-* `TermNode` ：列表。
+* `TermNode` ：列表和非列表对象。
+	* `TermNode` 中保存 `TermNode` 类型的容器。因为需可靠地支持不完整类型（在 `TermNode` 中保存递归类型），不能使用 ISO C++17 以前的标准库容器。
+	* `TermNode` 保存 `ValueObject` 类型的**值数据成员**，作为非列表的对象的表示。
+	* 列表使用容器中的子节点表示。非列表使用值数据成员表示。只使用两者之一的对象表示称为**正规表示**。
+	* `TermNode` 还包含枚举 `TermTags` 类型的标签，作为指定对象可能作为临时对象、只读或其它状态的元数据。
+	* `TermNode` 在表示基础语言中的对象以外，也用于其它中间表示。参见以下章节。
 * `ValueToken` ：`#inert` 的宿主类型。
 * `TokenValue` ：符号。
 * `shared_ptr<Environment>` ：环境强引用。`
@@ -269,7 +274,10 @@ using string = basic_string<char>;
 	* `RegisterStrict`
 	* `UnaryExpansion`
 	* `RegisterUnary`
-* 函数 `BindParameter` ：实现参数绑定，支持 Unilang 函数调用和 `$def!` 中 <formal> 的递归模式匹配。
+* 函数 `BindParameter` ：实现参数绑定。
+	* 支持 Unilang 函数调用和 `$def!` 中 <formal> 的递归模式匹配。
+	* 绑定匹配后以操作数中的实际参数初始化作为形式参数的对象。
+	* 初始化时，根据操作数中的 `TermTags` 等状态进行复制消除(copy elimination) ，避免创建多余的对象副本。
 
 ## 求值算法的实现
 
