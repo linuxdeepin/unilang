@@ -24,7 +24,8 @@
 #include <sstream> // for std::basic_ostringstream, std::ostream,
 //	std::streamsize;
 #include <YSLib/Core/YModules.h>
-#include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::any_ops;
+#include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::any_ops,
+//	YSLib::any, YSLib::bad_any_cast, YSLib::in_place_type;
 
 namespace Unilang
 {
