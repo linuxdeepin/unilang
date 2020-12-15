@@ -49,7 +49,7 @@ ReduceLeaf(TermNode& term, Context& ctx)
 				if(const auto p_ref
 					= Unilang::TryAccessLeaf<const TermReference>(bound))
 				{
-					term.Subterms = bound.Subterms;
+					term.GetContainerRef() = bound.GetContainer();
 					term.Value = TermReference(*p_ref);
 				}
 				else
@@ -217,7 +217,7 @@ struct BindParameterObject
 		if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
 			cp(p->get());
 		else
-			mv(std::move(o.Subterms), std::move(o.Value));
+			mv(std::move(o.GetContainerRef()), std::move(o.Value));
 	}
 };
 
@@ -414,7 +414,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 				for(; first != last; ++first)
 					BindParameterObject{r_env}(*first,
 						[&](const TermNode& tm){
-						con.emplace_back(tm.Subterms, tm.Value);
+						con.emplace_back(tm.GetContainer(), tm.Value);
 					}, [&](TermNode::Container&& c, ValueObject&& vo)
 						-> TermNode&{
 						con.emplace_back(std::move(c), std::move(vo));
