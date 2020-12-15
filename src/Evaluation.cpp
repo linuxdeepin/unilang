@@ -220,6 +220,13 @@ BindReferenceTags(const TermReference& ref) noexcept
 
 using Action = function<void()>;
 
+void
+MarkTemporaryTerm(TermNode& term, char sigil) noexcept
+{
+	if(sigil != char())
+		term.Tags |= TermTags::Temporary;
+}
+
 struct BindParameterObject
 {
 	lref<const EnvironmentReference> Referenced;
@@ -230,21 +237,46 @@ struct BindParameterObject
 
 	template<typename _fCopy, typename _fMove>
 	void
-	operator()(TermTags o_tags, TermNode& o, _fCopy cp, _fMove mv) const
+	operator()(char sigil, TermTags o_tags, TermNode& o, _fCopy cp, _fMove mv)
+		const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 		const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
 
 		if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
 		{
-			auto& src(p->get());
+			if(sigil != char())
+			{
+				const auto ref_tags(sigil == '&' ? BindReferenceTags(*p)
+					: p->GetTags());
 
-			if(!p->IsMovable())
-				cp(src);
+				if(can_modify && temp)
+					mv(std::move(o.GetContainerRef()),
+						TermReference(ref_tags, std::move(*p)));
+				else
+					mv(TermNode::Container(o.GetContainer()),
+						TermReference(ref_tags, *p));
+			}
 			else
-				mv(std::move(src.GetContainerRef()), std::move(src.Value));
+			{
+				auto& src(p->get());
+
+				if(!p->IsMovable())
+					cp(src);
+				else
+					mv(std::move(src.GetContainerRef()),
+						std::move(src.Value));
+			}
 		}
-		else if(!(can_modify && temp))
+		else if((can_modify || sigil == '%') && temp)
+			MarkTemporaryTerm(mv(std::move(o.GetContainerRef()),
+				std::move(o.Value)), sigil);
+		else if(sigil == '&')
+			mv(TermNode::Container(o.get_allocator()),
+				ValueObject(std::allocator_arg, o.get_allocator(),
+				in_place_type<TermReference>,
+				GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
+		else
 			cp(o);
 	}
 };
@@ -405,8 +437,7 @@ MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
 {
-	return term.Value ? ReduceLeaf(term, ctx)
-		: ReduceBranch(term, ctx);
+	return term.Value ? ReduceLeaf(term, ctx) : ReduceBranch(term, ctx);
 }
 
 ReductionStatus
@@ -441,13 +472,24 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)
 {
 	auto& env(*p_env);
+	const auto check_sigil([&](string_view& id){
+		char sigil(id.front());
 
-	MakeParameterMatcher([&](TermNode& o_tm, TNIter first,
+		if(sigil != '&' && sigil != '%')
+			sigil = char();
+		else
+			id.remove_prefix(1);
+		return sigil;
+	});
+
+	MakeParameterMatcher([&, check_sigil](TermNode& o_tm, TNIter first,
 		string_view id, TermTags o_tags, const EnvironmentReference& r_env){
 		assert(ystdex::begins_with(id, "."));
 		id.remove_prefix(1);
 		if(!id.empty())
 		{
+			const char sigil(check_sigil(id));
+
 			if(!id.empty())
 			{
 				const auto last(o_tm.end());
@@ -455,14 +497,15 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 
 				if(bool(o_tags & (TermTags::Unique | TermTags::Temporary)))
 				{
-					LiftSubtermsToReturn(o_tm);
+					if(sigil == char())
+						LiftSubtermsToReturn(o_tm);
 					con.splice(con.end(), o_tm.GetContainerRef(), first, last);
 				}
 				else
 				{
 					for(; first != last; ++first)
-						BindParameterObject{r_env}(o_tags, *first,
-							[&](const TermNode& tm){
+						BindParameterObject{r_env}(sigil, o_tags,
+							*first, [&](const TermNode& tm){
 							con.emplace_back(tm.GetContainer(), tm.Value);
 							CopyTermTags(con.back(), tm);
 						}, [&](TermNode::Container&& c, ValueObject&& vo)
@@ -471,6 +514,8 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 							return con.back();
 						});
 				}
+				MarkTemporaryTerm(env.Bind(id, TermNode(std::move(con))),
+					sigil);
 			}
 		}
 	}, [&](const TokenValue& n, TermNode& b, TermTags o_tags, 
@@ -479,9 +524,10 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 			if(!n.empty())
 			{
 				string_view id(n);
+				const char sigil(check_sigil(id));
 
 				if(!id.empty())
-					BindParameterObject{r_env}(o_tags, b,
+					BindParameterObject{r_env}(sigil, o_tags, b,
 						[&](const TermNode& tm){
 						CopyTermTags(env.Bind(id, tm), tm);
 					}, [&](TermNode::Container&& c, ValueObject&& vo)
