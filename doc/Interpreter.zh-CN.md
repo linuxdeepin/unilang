@@ -122,7 +122,7 @@ using ystdex::string_view;
 using std::weak_ptr;
 
 namespace pmr = ystdex::pmr;
-···
+```
 
 　　大多数声明和 ISO C++17 的同名声明一致，只有 `lref` 是作为 ISO C++2a 的 `std::reference_wrapper`（相比之前的标准版本，允许不完整类型）的简写。
 
