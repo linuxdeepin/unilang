@@ -85,7 +85,9 @@ public:
 		_tParams&&... args)
 		: container(std::move(con), a), Value(yforward(args)...)
 	{}
-	TermNode(const TermNode&) = default;
+	TermNode(const TermNode& tm)
+		: TermNode(tm, tm.get_allocator())
+	{}
 	TermNode(const TermNode& tm, allocator_type a)
 		: container(tm.container, a), Value(tm.Value)
 	{}
