@@ -134,6 +134,12 @@ public:
 		container.push_back(std::move(term));
 	}
 
+	void
+	ClearContainer() noexcept
+	{
+		container.clear();
+	}
+
 	[[nodiscard, gnu::pure]] iterator
 	begin() noexcept
 	{

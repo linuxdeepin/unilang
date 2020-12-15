@@ -11,7 +11,7 @@ ReductionStatus
 RegularizeTerm(TermNode& term, ReductionStatus status) noexcept
 {
 	if(status == ReductionStatus::Clean)
-		term.GetContainerRef().clear();
+		term.ClearContainer();
 	return status;
 }
 

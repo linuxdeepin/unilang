@@ -282,7 +282,7 @@ EmplaceLeaf(Environment::BindingMap& m, string_view name, _tParams&&... args)
 	auto& nd(i->second);
 
 	nd.Value = _type(yforward(args)...);
-	nd.GetContainerRef().clear();
+	nd.ClearContainer();
 	return {};
 }
 template<typename _type, typename... _tParams>
