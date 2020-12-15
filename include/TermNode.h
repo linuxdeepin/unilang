@@ -4,6 +4,8 @@
 #define INC_Unilang_TermNode_h_ 1
 
 #include "Unilang.h" // for ValueObject, list, yforward;
+#include <YModules.h>
+#include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
 //	ystdex::enable_if_t, std::is_convertible, ystdex::decay_t, ystdex::false_,
 //	ystdex::not_;
@@ -12,6 +14,31 @@
 
 namespace Unilang
 {
+
+enum TermTagIndices : size_t
+{
+	UnqualifiedIndex = 0,
+	UniqueIndex,
+	NonmodifyingIndex,
+	TemporaryIndex
+};
+
+enum class TermTags
+{
+	Unqualified = 1 << UnqualifiedIndex,
+	Unique = 1 << UniqueIndex,
+	Nonmodifying = 1 << NonmodifyingIndex,
+	Temporary = 1 << TemporaryIndex
+};
+
+DefBitmaskEnum(TermTags)
+
+[[nodiscard, gnu::const]] constexpr TermTags
+GetLValueTagsOf(const TermTags& tags) noexcept
+{
+	return tags & ~TermTags::Temporary;
+}
+
 
 constexpr const struct NoContainerTag{} NoContainer{};
 
@@ -36,6 +63,7 @@ private:
 
 public:
 	ValueObject Value{};
+	TermTags Tags = TermTags::Unqualified;
 
 	TermNode() = default;
 	explicit
@@ -85,15 +113,14 @@ public:
 		_tParams&&... args)
 		: container(std::move(con), a), Value(yforward(args)...)
 	{}
-	TermNode(const TermNode& tm)
-		: TermNode(tm, tm.get_allocator())
-	{}
+	TermNode(const TermNode&) = default;
 	TermNode(const TermNode& tm, allocator_type a)
-		: container(tm.container, a), Value(tm.Value)
+		: container(tm.container, a), Value(tm.Value), Tags(tm.Tags)
 	{}
 	TermNode(TermNode&&) = default;
 	TermNode(TermNode&& tm, allocator_type a)
-		: container(std::move(tm.container), a), Value(std::move(tm.Value))
+		: container(std::move(tm.container), a), Value(std::move(tm.Value)),
+		Tags(tm.Tags)
 	{}
 	
 	TermNode&
