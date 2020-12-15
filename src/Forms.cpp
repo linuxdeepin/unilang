@@ -484,7 +484,7 @@ public:
 					if(const auto p
 						= Unilang::TryAccessLeaf<const TermReference>(tm))
 					{
-						term.Subterms = tm.Subterms;
+						term.GetContainerRef() = tm.GetContainer();
 						term.Value = *p;
 					}
 					else
@@ -572,7 +572,8 @@ Cons(TermNode& term)
 
 	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
 		if(IsList(nd_y))
-			term.Subterms.splice(term.end(), std::move(nd_y.Subterms));
+			term.GetContainerRef().splice(term.end(),
+				std::move(nd_y.GetContainerRef()));
 		else
 			throw ListTypeError(ystdex::sfmt(
 				"Expected a list for the 2nd argument, got '%s'.",
@@ -594,9 +595,9 @@ Eval(TermNode& term, Context& ctx)
 	auto p_env(ResolveEnvironment(*std::next(i)).first);
 
 	ResolveTerm([&](TermNode& nd){
-		auto t(std::move(term.Subterms));
+		auto t(std::move(term.GetContainerRef()));
 
-		term.Subterms = nd.Subterms;
+		term.GetContainerRef() = nd.GetContainer();
 		term.Value = nd.Value;
 	}, *i);
 	return RelayForEvalOrDirect(ctx, term,
@@ -756,7 +757,7 @@ MakeEncapsulationType(TermNode& term)
 	const auto a(term.get_allocator());
 	shared_ptr<void> p_type(new byte);
 
-	term.Subterms = {Unilang::AsTermNode(a, tag, std::allocator_arg, a,
+	term.GetContainerRef() = {Unilang::AsTermNode(a, tag, std::allocator_arg, a,
 		FormContextHandler(Encapsulate(p_type), 1)),
 		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
 		FormContextHandler(Encapsulated(p_type), 1)),

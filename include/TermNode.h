@@ -31,19 +31,22 @@ public:
 	using reverse_iterator = Container::reverse_iterator;
 	using const_reverse_iterator = Container::const_reverse_iterator;
 
-	Container Subterms{};
+private:
+	Container container{};
+
+public:
 	ValueObject Value{};
 
 	TermNode() = default;
 	explicit
 	TermNode(allocator_type a)
-		: Subterms(a)
+		: container(a)
 	{}
 	TermNode(const Container& con)
-		: Subterms(con)
+		: container(con)
 	{}
 	TermNode(Container&& con)
-		: Subterms(std::move(con))
+		: container(std::move(con))
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
@@ -54,41 +57,41 @@ public:
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
 	TermNode(const Container& con, _tParams&&... args)
-		: Subterms(con), Value(yforward(args)...)
+		: container(con), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
 	TermNode(Container&& con, _tParams&&... args)
-		: Subterms(std::move(con)), Value(yforward(args)...)
+		: container(std::move(con)), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, NoContainerTag,
 		_tParams&&... args)
-		: Subterms(a), Value(yforward(args)...)
+		: container(a), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, const Container& con,
 		_tParams&&... args)
-		: Subterms(con, a), Value(yforward(args)...)
+		: container(con, a), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, Container&& con,
 		_tParams&&... args)
-		: Subterms(std::move(con), a), Value(yforward(args)...)
+		: container(std::move(con), a), Value(yforward(args)...)
 	{}
 	TermNode(const TermNode&) = default;
 	TermNode(const TermNode& tm, allocator_type a)
-		: Subterms(tm.Subterms, a), Value(tm.Value)
+		: container(tm.container, a), Value(tm.Value)
 	{}
 	TermNode(TermNode&&) = default;
 	TermNode(TermNode&& tm, allocator_type a)
-		: Subterms(std::move(tm.Subterms), a), Value(std::move(tm.Value))
+		: container(std::move(tm.container), a), Value(std::move(tm.Value))
 	{}
 	
 	TermNode&
@@ -108,67 +111,79 @@ public:
 		return Value || !empty();
 	}
 
+	[[nodiscard, gnu::pure]] const Container&
+	GetContainer() const noexcept
+	{
+		return container;
+	}
+
+	[[nodiscard, gnu::pure]] Container&
+	GetContainerRef() noexcept
+	{
+		return container;
+	}
+
 	void
 	Add(const TermNode& term)
 	{
-		Subterms.push_back(term);
+		container.push_back(term);
 	}
 	void
 	Add(TermNode&& term)
 	{
-		Subterms.push_back(std::move(term));
+		container.push_back(std::move(term));
 	}
 
 	[[nodiscard, gnu::pure]] iterator
 	begin() noexcept
 	{
-		return Subterms.begin();
+		return container.begin();
 	}
 	[[nodiscard, gnu::pure]] const_iterator
 	begin() const noexcept
 	{
-		return Subterms.begin();
+		return container.begin();
 	}
 
 	[[nodiscard, gnu::pure]] bool
 	empty() const noexcept
 	{
-		return Subterms.empty();
+		return container.empty();
 	}
 
 	[[nodiscard, gnu::pure]] iterator
 	end() noexcept
 	{
-		return Subterms.end();
+		return container.end();
 	}
 	[[nodiscard, gnu::pure]] const_iterator
 	end() const noexcept
 	{
-		return Subterms.end();
+		return container.end();
 	}
 
 	iterator
 	erase(const_iterator i)
 	{
-		return Subterms.erase(i);
+		return container.erase(i);
 	}
 	iterator
 	erase(const_iterator first, const_iterator last)
 	{
-		return Subterms.erase(first, last);
+		return container.erase(first, last);
 	}
 
 	[[nodiscard, gnu::pure]]
 	allocator_type
 	get_allocator() const noexcept
 	{
-		return Subterms.get_allocator();
+		return container.get_allocator();
 	}
 
 	[[nodiscard, gnu::pure]] size_t
 	size() const noexcept
 	{
-		return Subterms.size();
+		return container.size();
 	}
 };
 
