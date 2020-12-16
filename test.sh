@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -e
 
@@ -8,11 +8,15 @@ ERR=/tmp/err
 touch "$OUT"
 touch "$ERR"
 
+if [[ ! -x "$UNILANG" ]]; then
+	UNILANG=./unilang
+fi
+
 run()
 {
 	set +e
 	echo > "$ERR"
-	echo "$1" | ./unilang 1> "$OUT" 2> "$ERR"
+	echo "$1" | "$UNILANG" 1> "$OUT" 2> "$ERR"
 	set -e
 }
 
