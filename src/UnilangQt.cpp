@@ -146,7 +146,6 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 
 		$def! QWidget make-class () ($lambda (self)
 		(
-			logd "[ctor] QWidget";
 			$set! self native_widget_ () make-QWidget;
 			$set! self setLayout QWidget-setLayout;
 		));
