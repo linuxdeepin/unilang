@@ -659,7 +659,7 @@
 
 　　类似 `$vau/e` ，但以当前环境代替额外的求值环境作为静态环境。
 
-$lambda <formals> <body>`
+`$lambda <formals> <body>`
 
 　　创建 λ 抽象 。
 
