@@ -685,6 +685,12 @@
 
 　　绑定 λ 抽象，等价 `$def! <variable> $lambda <formals> <body>` 。
 
+`$lambda/e <environment> <formals> <body>`
+
+　　创建指定静态环境的 lambda 抽象。
+
+　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
+
 `() make-standard-environment`
 
 　　创建标准环境：创建基础环境绑定外没有其它绑定的环境。
