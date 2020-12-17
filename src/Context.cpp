@@ -28,6 +28,36 @@ public:
 	operator=(AnchorData&&) = default;
 };
 
+
+#if Unilang_CheckParentEnvironment
+YB_ATTR_nodiscard YB_PURE bool
+IsReserved(string_view id) ynothrowv
+{
+	YAssertNonnull(id.data());
+	return ystdex::begins_with(id, "__");
+}
+#endif
+
+shared_ptr<Environment>
+RedirectToShared(string_view id, shared_ptr<Environment> p_env)
+{
+#if Unilang_CheckParentEnvironment
+	if(p_env)
+#else
+	yunused(id);
+	assert(p_env);
+#endif
+		return p_env;
+#if Unilang_CheckParentEnvironment
+	// XXX: Consider use more concrete semantic failure exception.
+	throw InvalidReference(ystdex::sfmt("Invalid reference found for%s name"
+		" '%s', probably due to invalid context access by a dangling"
+		" reference.",
+		IsReserved(id) ? " reserved" : "", id.data()));
+#endif
+}
+
+
 using Redirector = function<const ValueObject*()>;
 
 const ValueObject*
@@ -139,15 +169,14 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 
 				if(tp == ystdex::type_id<EnvironmentReference>())
 				{
-					p_redirected
-						= parent.GetObject<EnvironmentReference>().Lock();
-					assert(bool(p_redirected));
+					p_redirected = RedirectToShared(id,
+						parent.GetObject<EnvironmentReference>().Lock());
 					p_env.swap(p_redirected);
 				}
 				else if(tp == ystdex::type_id<shared_ptr<Environment>>())
 				{
-					p_redirected = parent.GetObject<shared_ptr<Environment>>();
-					assert(bool(p_redirected));
+					p_redirected = RedirectToShared(id,
+						parent.GetObject<shared_ptr<Environment>>());
 					p_env.swap(p_redirected);
 				}
 				else

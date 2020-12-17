@@ -14,6 +14,15 @@
 namespace Unilang
 {
 
+#ifndef Unilang_CheckParentEnvironment
+#	ifndef NDEBUG
+#		define Unilang_CheckParentEnvironment true
+#	else
+#		define Unilang_CheckParentEnvironment false
+#	endif
+#endif
+
+
 using EnvironmentList = vector<ValueObject>;
 
 
