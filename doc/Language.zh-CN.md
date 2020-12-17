@@ -568,11 +568,11 @@
 
 　　创建指定静态环境的 vau 抽象（关于 vau 抽象，参见 [Shu10] ）。
 
-　　创建的抽象是 <eformals> 求值后的环境为*静态环境(static environment)* 的操作子。静态环境是用于创建调用时的新环境的父环境。
-
-　　<environment> 是指定*动态环境(dynamic environment)* 的表达式，应为符号。动态环境是发生调用处的当前环境。
+　　创建的抽象是 <environments> 求值后的环境为*静态环境(static environment)* 的操作子。静态环境是用于创建调用时的新环境的父环境。
 
 　　<formals> 是指定*形式参数(formal parameter)* 表达式，应为以符号为非分支节点的有向无环图。由于不支持引用值，实际上是树，非分支节点是树的叶节点，分支节点是列表。
+
+　　<eformal> 是指定*动态环境(dynamic environment)* 的表达式，应为符号。动态环境是发生调用处的当前环境。
 
 　　<formals> 被用于在合并子调用时匹配操作数树，参数匹配算法如下：
 
