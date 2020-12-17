@@ -8,8 +8,11 @@ ERR=/tmp/err
 touch "$OUT"
 touch "$ERR"
 
-if [[ ! -x "$UNILANG" ]]; then
-	UNILANG=./unilang
+: "${UNILANG:=./unilang}"
+
+if [[ -d "$UNILANG" || ! -x "$UNILANG" ]]; then
+	echo "ERROR: Wrong '$UNILANG' found as the interpreter."
+	exit 1
 fi
 
 run()
