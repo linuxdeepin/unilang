@@ -96,6 +96,13 @@ private:
 	}
 };
 
+
+class InvalidReference : public UnilangException
+{
+public:
+	using UnilangException::UnilangException;
+};
+
 } // namespace Unilang;
 
 #endif
