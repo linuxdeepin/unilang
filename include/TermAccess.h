@@ -41,6 +41,12 @@ TermToString(const TermNode&);
 [[nodiscard, gnu::pure]] string
 TermToStringWithReferenceMark(const TermNode&, bool);
 
+[[nodiscard, gnu::pure]] inline const TokenValue*
+TermToNamePtr(const TermNode&);
+
+[[nodiscard, gnu::pure]] TermTags
+TermToTags(TermNode&);
+
 [[noreturn]] void
 ThrowInsufficientTermsError(const TermNode&, bool);
 
@@ -145,13 +151,28 @@ class TermReference final : private ystdex::equality_comparable<TermReference>
 {
 private:
 	lref<TermNode> term_ref;
+	TermTags tags = TermTags::Unqualified;
 	EnvironmentReference r_env;
 
 public:
 	template<typename _tParam, typename... _tParams>
 	inline
 	TermReference(TermNode& term, _tParam&& arg, _tParams&&... args) noexcept
-		: term_ref(term), r_env(yforward(arg), yforward(args)...)
+		: TermReference(TermToTags(term), term, yforward(arg),
+		yforward(args)...)
+	{}
+	template<typename _tParam, typename... _tParams>
+	inline
+	TermReference(TermTags t, TermNode& term, _tParam&& arg, _tParams&&... args)
+		ynothrow
+		: term_ref(term), tags(t),
+		r_env(yforward(arg), yforward(args)...)
+	{}
+	TermReference(TermTags t, const TermReference& ref) noexcept
+		: term_ref(ref.term_ref), tags(t), r_env(ref.r_env)
+	{}
+	TermReference(TermTags t, TermReference&& ref) noexcept
+		: term_ref(ref.term_ref), tags(t), r_env(std::move(ref.r_env))
 	{}
 	TermReference(const TermReference&) = default;
 
@@ -173,8 +194,14 @@ public:
 	bool
 	IsMovable() const noexcept
 	{
-		// TODO: Support unique reference.
-		return false;
+		return (tags & (TermTags::Unique | TermTags::Nonmodifying))
+			== TermTags::Unique;
+	}
+
+	[[nodiscard, gnu::pure]] TermTags
+	GetTags() const noexcept
+	{
+		return tags;
 	}
 
 	[[nodiscard, gnu::pure]] const EnvironmentReference&

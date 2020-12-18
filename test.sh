@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -e
 
@@ -8,11 +8,18 @@ ERR=/tmp/err
 touch "$OUT"
 touch "$ERR"
 
+: "${UNILANG:=./unilang}"
+
+if [[ -d "$UNILANG" || ! -x "$UNILANG" ]]; then
+	echo "ERROR: Wrong '$UNILANG' found as the interpreter."
+	exit 1
+fi
+
 run()
 {
 	set +e
 	echo > "$ERR"
-	echo "$1" | ./unilang 1> "$OUT" 2> "$ERR"
+	echo "$1" | "$UNILANG" 1> "$OUT" 2> "$ERR"
 	set -e
 }
 

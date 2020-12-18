@@ -418,7 +418,7 @@ FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
 			TermNode tm(a);
 
 			cif.param_codecs[idx].decode(tm, args[idx]);
-			term.Subterms.emplace_back(std::move(tm));
+			term.GetContainerRef().emplace_back(std::move(tm));
 		}
 		c.SetupFront([&, ret, p_term]{
 			cif.ret_codec.encode(term, ret);

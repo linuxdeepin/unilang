@@ -11,7 +11,7 @@ ReductionStatus
 RegularizeTerm(TermNode& term, ReductionStatus status) noexcept
 {
 	if(status == ReductionStatus::Clean)
-		term.Subterms.clear();
+		term.ClearContainer();
 	return status;
 }
 
@@ -21,9 +21,9 @@ LiftOther(TermNode& term, TermNode& tm)
 {
 	assert(&term != &tm);
 
-	const auto t(std::move(term.Subterms));
+	const auto t(std::move(term.GetContainerRef()));
 
-	term.Subterms = std::move(tm.Subterms);
+	term.GetContainerRef() = std::move(tm.GetContainerRef());
 	term.Value = std::move(tm.Value);
 }
 
@@ -34,7 +34,7 @@ LiftOtherOrCopy(TermNode& term, TermNode& tm, bool move)
 		LiftOther(term, tm);
 	else
 	{
-		term.Subterms = tm.Subterms;
+		term.GetContainerRef() = tm.GetContainer();
 		term.Value = tm.Value;
 	}
 }
