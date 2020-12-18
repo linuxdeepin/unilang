@@ -95,22 +95,19 @@ cp 3rdparty/YSLib/YFramework/Linux/lib/libFreeImaged.a 3rdparty/YSLib/YFramework
 　　设安装目标根路径 `$INSTALL_ROOT` ，过程如下：
 　　
 ```
-# Build and deploy.
-SHBuild_UseDebug=true SHBuild_UseRelease=true SHBuild_SysRoot="$INSTALL_ROOT" 3rdparty/YSLib/Tools/install-sysroot.sh -xj,$(nproc)
 # Configure PATH.
 export PATH=$(realpath "$INSTALL_ROOT/usr/bin"):$PATH
+# Configure LD_LIBRARY_PATH (reqiured for Linux with non-default search path).
+export LD_LIBRARY_PATH=$(realpath "$INSTALL_ROOT/usr/lib"):$LD_LIBRARY_PATH
+# Build and deploy.
+SHBuild_UseDebug=true SHBuild_UseRelease=true SHBuild_NoDev=true SHBuild_SysRoot="$INSTALL_ROOT" 3rdparty/YSLib/Tools/install-sysroot.sh -xj,$(nproc)
 ```
 
 　　脚本使用变量 `SHBuild_SysRoot` 指定安装位置。若变量未设置或它的值为空，安装位置为 `3rdparty/YSLib/sysroot` 。
 
-　　对 Linux 环境，还需要提供动态库搜索路径：
-
-```
-# Configure LD_LIBRARY_PATH.
-export LD_LIBRARY_PATH=$(realpath "$INSTALL_ROOT/usr/lib"):$LD_LIBRARY_PATH
-```
-
 　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bashrc` ）中而不需重复配置。
+
+**说明** 调用脚本 `install-sysroot.sh` 时，非空的环境变量 `SHBuild_NoDev` 指定不需要在生成构建工具（ stage 2 `SHBuild` ）之后构建其它辅助工具（不需要在本项目中使用）。构建这些工具的过程调用的构建工具自身依赖待部署的动态库，所以通常需要在调用脚本**之前**确保设置了正确的 `LD_LIBRARY_PATH` ，以免最终可因为找不到动态库而失败。
 
 ### 构建命令
 
