@@ -1,7 +1,9 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h"
+#include "TermAccess.h" // for sfmt, Unilang::TryAccessLeaf;
 #include "Exception.h" // for ListTypeError;
+#include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn;
+#include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
 
 namespace Unilang
 {
@@ -21,6 +23,14 @@ TermToStringWithReferenceMark(const TermNode& term, bool has_ref)
 	auto term_str(TermToString(term));
 
 	return has_ref ? "[*] " + std::move(term_str) : std::move(term_str);
+}
+
+TermTags
+TermToTags(TermNode& term)
+{
+	return ystdex::call_value_or(ystdex::compose(GetLValueTagsOf,
+		std::mem_fn(&TermReference::GetTags)),
+		Unilang::TryAccessLeaf<const TermReference>(term), term.Tags);
 }
 
 void

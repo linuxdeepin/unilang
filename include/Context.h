@@ -14,6 +14,15 @@
 namespace Unilang
 {
 
+#ifndef Unilang_CheckParentEnvironment
+#	ifndef NDEBUG
+#		define Unilang_CheckParentEnvironment true
+#	else
+#		define Unilang_CheckParentEnvironment false
+#	endif
+#endif
+
+
 using EnvironmentList = vector<ValueObject>;
 
 
@@ -282,7 +291,7 @@ EmplaceLeaf(Environment::BindingMap& m, string_view name, _tParams&&... args)
 	auto& nd(i->second);
 
 	nd.Value = _type(yforward(args)...);
-	nd.Subterms.clear();
+	nd.ClearContainer();
 	return {};
 }
 template<typename _type, typename... _tParams>
