@@ -73,41 +73,24 @@ sudo pacman -S freetype2 --needed
 sudo apt install libfreetype6-dev
 ```
 
-　　运行脚本 `./prepare-libs.sh` 安装其它的[二进制依赖](https://frankhb.github.io/YSLib-book/Archives.zh-CN.html)。
+　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具。
 
-**注意** 因为 [GCC 9.2 修复的一个缺陷](https://stackoverflow.com/a/58376059/2307646)，使用之前版本的 GCC 还需要在构建前修改源码变通以避免构建失败：
+　　以下环境变量控制脚本的行为：
 
-```
-sed -i 's/p_impl{}/p_impl/' 3rdparty/YSLib/YFramework/include/YCLib/HostedGUI.h
-```
+* `SHBuild_BuildOpt` ：构建选项。默认值为 `-xj,$(nproc)` ，其中 `$(nproc)` 是并行构建任务数。可调整 `$(nproc)` 为其它正整数。
+* `SHBuild_SysRoot` ：安装根目录。默认指定值指定目录 `"3rdparty/YSLib/sysroot"` 。
+* `SHBuild_BuildDir` ：中间文件安装的目录。默认值指定目录 `"3rdparty/YSLib/build"` 。
 
-**注意** 默认 release 配置启用 LTO(link-time optimization) ，因为一些工具链缺陷可能不稳定。若之后的构建出现和 `lto1` 或 `lto-wrapper` 等 LTO 相关的内部编译器错误(internal compiler error) ，删除构建目录中的子目录 `.shbuild` 和 `.shbuild-dll` ，并使用以下变通全局禁用 LTO ：
+　　使用安装的二进制工具和动态库需配置路径，如下：
 
-```
-sed -i 's/-flto=jobserver//g' 3rdparty/YSLib/Tools/Scripts/SHBuild-YSLib-common.txt
-sed -i 's/-flto//g' 3rdparty/YSLib/Tools/Scripts/SHBuild-YSLib-common.txt
-# Use debug library to work around the LTO information in the release library.
-cp 3rdparty/YSLib/YFramework/Linux/lib/libFreeImaged.a 3rdparty/YSLib/YFramework/Linux/lib/libFreeImage.a
-```
-
-　　之后，开始构建和部署工具，并配置开发环境。
-
-　　设安装目标根路径 `$INSTALL_ROOT` ，过程如下：
-　　
 ```
 # Configure PATH.
-export PATH=$(realpath "$INSTALL_ROOT/usr/bin"):$PATH
+export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 # Configure LD_LIBRARY_PATH (reqiured for Linux with non-default search path).
-export LD_LIBRARY_PATH=$(realpath "$INSTALL_ROOT/usr/lib"):$LD_LIBRARY_PATH
-# Build and deploy.
-SHBuild_UseDebug=true SHBuild_UseRelease=true SHBuild_NoDev=true SHBuild_SysRoot="$INSTALL_ROOT" 3rdparty/YSLib/Tools/install-sysroot.sh -xj,$(nproc)
+export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　脚本使用变量 `SHBuild_SysRoot` 指定安装位置。若变量未设置或它的值为空，安装位置为 `3rdparty/YSLib/sysroot` 。
-
 　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bashrc` ）中而不需重复配置。
-
-**说明** 调用脚本 `install-sysroot.sh` 时，非空的环境变量 `SHBuild_NoDev` 指定不需要在生成构建工具（ stage 2 `SHBuild` ）之后构建其它辅助工具（不需要在本项目中使用）。构建这些工具的过程调用的构建工具自身依赖待部署的动态库，所以通常需要在调用脚本**之前**确保设置了正确的 `LD_LIBRARY_PATH` ，以免最终可因为找不到动态库而失败。
 
 ### 构建命令
 
@@ -137,12 +120,12 @@ SHBuild_UseDebug=true SHBuild_UseRelease=true SHBuild_NoDev=true SHBuild_SysRoot
 
 ```
 # MinGW32
-export PATH=$(realpath "$INSTALL_ROOT/usr/bin"):$PATH
+export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 ```
 
 ```
 # Linux
-export LD_LIBRARY_PATH=$(realpath "$INSTALL_ROOT/usr/lib"):$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
 　　使用静态链接构建的版本不需要这样的运行环境配置。

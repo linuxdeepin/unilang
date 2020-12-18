@@ -1,5 +1,6 @@
 *.o
 *.d
+3rdparty/.patched
 build/*
 unilang*
 
