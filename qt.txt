@@ -1,4 +1,4 @@
-() newline;
+﻿() newline;
 
 $defl! log (x) (display x; () newline);
 $defl! logd (x) (log "DEBUG:"; log x);
@@ -8,7 +8,7 @@ logd "Loading script ...";
 $def! MyWidget make-class QWidget ($lambda (self)
 (
 	logd "[ctor] MyWidget";
-	$set! self hello list "Hallo Welt" "Hei maailma" "Hola Mundo" "����ڧӧ֧� �ާڧ�";
+	$set! self hello list "Hallo Welt" "Hei maailma" "Hola Mundo" "Привет мир";
 	$set! self button make-QPushButton "Click me!";
 	$set! self text make-QLabel "Hello World!" Qt.AlignCenter;
 	$set! self layout () make-QVBoxLayout;
