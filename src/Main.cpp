@@ -2,9 +2,10 @@
 
 #include "Interpreter.h" // for Interpreter;
 #include "Evaluation.h" // for RegisterStrict, ThrowInsufficientTermsError;
-#include "TermAccess.h" // for EnvironmentReference, TermNode;
+#include "TermAccess.h" // for EnvironmentReference, TermNode, ResolveTerm,
+//	IsBranchedList;
 #include "BasicReduction.h" // for ReductionStatus;
-#include "Forms.h"
+#include "Forms.h" // for RetainN;
 #include "UnilangFFI.h"
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
@@ -149,21 +150,20 @@ LoadFunctions(Interpreter& intp)
 	)Unilang");
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
+		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			if(IsBranchedList(nd))
+			{
+				static std::random_device rd;
+				static std::mt19937 mt(rd());
 
-		// TODO: Support term lvalues.
-		auto& tm(*std::next(term.begin()));
-
-		if(!tm.empty())
-		{
-			static std::random_device rd;
-			static std::mt19937 mt(rd());
-
-			LiftOther(term, *std::next(tm.begin(),
-				std::iterator_traits<TermNode::iterator>::difference_type(
-				std::uniform_int_distribution<size_t>(0, tm.size() - 1)(mt))));
-			return ReductionStatus::Retained;
-		}
-		ThrowInsufficientTermsError(term, {});
+				LiftOtherOrCopy(term, *std::next(nd.begin(),
+					std::iterator_traits<TermNode::iterator>::difference_type(
+					std::uniform_int_distribution<size_t>(0, nd.size()
+					- 1)(mt))), Unilang::IsMovable(p_ref));
+				return ReductionStatus::Retained;
+			}
+			ThrowInsufficientTermsError(nd, p_ref);
+		}, *std::next(term.begin()));
 	});
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
