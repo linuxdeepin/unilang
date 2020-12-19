@@ -139,16 +139,16 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 			self
 		);
 
-		$defl! QWidget-of (obj)
-		(
-			$import! obj native_widget_;
-			native_widget_
-		);
-
 		$def! QWidget make-class () ($lambda (self)
 		(
-			$set! self native_widget_ () make-QWidget;
-			$set! self setLayout QWidget-setLayout;
+			$set! self _widget () make-QWidget;
+			$set! self QWidget-setLayout QWidget-setLayout;
+			$set! self setLayout
+				$lambda/e self (layout) QWidget-setLayout _widget layout;
+			$set! self QWidget-resize QWidget-resize;
+			$set! self resize $lambda/e self (w h) QWidget-resize _widget w h;
+			$set! self QWidget-show QWidget-show;
+			$set! self show $lambda/e self () QWidget-show _widget;
 		));
 	)Unilang");
 }
