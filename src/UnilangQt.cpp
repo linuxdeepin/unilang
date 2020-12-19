@@ -126,6 +126,11 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	using namespace Forms;
 	using YSLib::make_shared;
 
+	RegisterStrict(ctx, "make-DynamicQObject", [](TermNode& term){
+		RetainN(term, 0);
+		term.Value = make_shared<DynamicQObject>();
+		return ReductionStatus::Clean;
+	});
 	RegisterStrict(ctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
