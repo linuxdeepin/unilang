@@ -147,6 +147,7 @@ Environment::NameResolution
 Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 {
 	assert(bool(p_env));
+
 	Redirector cont;
 	// NOTE: Blocked. Use ISO C++14 deduced lambda return type (cf. CWG 975)
 	//	compatible to G++ attribute.
@@ -198,9 +199,10 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id)
 						assert(&cur.get() != p_next);
 						cur = *p_next;
 						search_next = true;
+						continue;
 					}
 				}
-				search_next = false;
+				search_next = {};
 			}while(search_next);
 			return bool(p_redirected);
 		}
