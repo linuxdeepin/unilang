@@ -20,6 +20,8 @@
 #if __GNUC__
 #	pragma GCC diagnostic pop
 #endif
+#include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
+#include "Evaluation.h" // for ReduceCombined;
 
 namespace Unilang
 {
@@ -130,6 +132,55 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 0);
 		term.Value = make_shared<DynamicQObject>();
 		return ReductionStatus::Clean;
+	});
+	RegisterStrict(ctx, "QObject-connect", [](TermNode& term, Context& c){
+		RetainN(term, 4);
+
+		auto i(term.begin());
+		auto& sender(ResolveQWidget(*++i));
+		const auto& signal(Unilang::ResolveRegular<string>(*++i));
+		auto& receiver(
+			*Unilang::ResolveRegular<shared_ptr<DynamicQObject>>(*++i));
+		auto& sink(receiver.GetSinkRef());
+
+		// NOTE: Typecheck.
+		yunused(ResolveRegular<ContextHandler>(*++i));
+		sink.ConnectDynamicSlot(sender, signal.c_str(), receiver,
+			"slot()", [&](const char* slot){
+			using namespace std;
+			using namespace placeholders;
+
+#ifndef NDEBUG
+			clog << "DEBUG: Created slot: " << slot << '.' << endl;
+#endif
+			LiftOther(term, *term.rbegin());
+			return DynamicSlot(
+				std::bind([&](QObject*, void**, TermNode& tm) noexcept{
+				// XXX: Throwing exceptions from an event handler is not
+				//	supported by Qt.
+				YSLib::FilterExceptions([&]{
+#ifndef NDEBUG
+					clog << "DEBUG: Slot called." << endl;
+#endif
+					TermNode tm_v(tm.get_allocator());
+
+					tm_v.Add(Unilang::AsTermNode(
+						TermReference(tm, c.GetRecordPtr())));
+
+					Context::ReductionGuard gd(c);
+					auto& orig_next(c.GetNextTermRef());
+
+					c.SetNextTermRef(tm_v);
+					// NOTE: Trampolined. This cannot be asynchnous which
+					//	interleaves with Qt's event loop.
+					c.Rewrite([&](Context& c1){
+						return ReduceCombinedBranch(tm_v, c1);
+					});
+					c.SetNextTermRef(orig_next);
+				}, "slot event handler");
+			}, _1, _2, std::move(term)));
+		});
+		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(ctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
