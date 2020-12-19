@@ -29,6 +29,14 @@ sudo pacman -Syu gcc libffi pkgconf qt5-base --needed
 sudo apt install g++ libffi-dev pkg-config qtbase5-dev # Some may have been preinstalled.
 ```
 
+### Qt 环境要求和假设
+
+* 使用 [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) 。
+* 不支持 `QT_NAMESPACE` 。
+* 直接依赖头文件和库文件在文件系统中的布局，不使用其它文件。
+* 使用编译器选项 `-I$PREFIX/include/QtWidgets` ，其中 `$PREFIX` 是头文件目录的系统前缀。
+* 使用链接器选项 `-lQt5Widgets -lQt5Core` 。
+
 ## 构建环境更新
 
 　　构建之前，更新 git 版本库子模块确保外部依赖项：
@@ -149,6 +157,18 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 echo 'display "Hello world."; () newline' | ./unilang
 ```
+
+## Qt Demo
+
+　　当前实现支持 Qt 绑定的 GUI 演示程序。
+
+　　在当前目录下运行：
+
+```
+echo 'load "qt.txt"' | ./unilang # Or it is like 'build/.debug/unilang.exe' when built by './sbuild.sh'.
+```
+
+　　和使用 PySide2 的 Python 程序 `hello_world.py` 效果相同。
 
 # 支持的语言特性
 
