@@ -1,12 +1,17 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include "UnilangQt.h" // for ReduceReturnUnspecified;
+#include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
+//	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
+//	YSLib::make_shared;
+#include <cassert> // for assert;
+#include <iostream> // for std::cerr, std::endl, std::clog;
 #if __GNUC__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
 #	pragma GCC diagnostic ignored "-Wsign-conversion"
 #	pragma GCC diagnostic ignored "-Wsign-promo"
 #endif
+#include <QHash> // for QHash;
 #include <QApplication> // for QApplication;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
@@ -15,7 +20,6 @@
 #if __GNUC__
 #	pragma GCC diagnostic pop
 #endif
-#include <cassert> // for assert;
 
 namespace Unilang
 {
@@ -24,6 +28,8 @@ namespace
 {
 
 using YSLib::shared_ptr;
+using YSLib::unique_ptr;
+using YSLib::make_unique;
 
 QWidget&
 ResolveQWidget(TermNode& term)
@@ -32,6 +38,82 @@ ResolveQWidget(TermNode& term)
 
 	assert(p_wgt.get());
 	return *p_wgt;
+}
+
+using DynamicSlot = function<void(QObject*, void**)>;
+
+struct Sink
+{
+	QHash<QByteArray, int> SlotIndices;
+	YSLib::vector<DynamicSlot> SlotList;
+
+	[[gnu::nonnull(3, 5)]] bool
+	ConnectDynamicSlot(const QObject&, const char*,
+		const QObject&, const char*, function<DynamicSlot(const char*)>);
+};
+
+bool
+Sink::ConnectDynamicSlot(const QObject& sender, const char* signal,
+	const QObject& receiver, const char* slot,
+	function<DynamicSlot(const char*)> create)
+{
+	const auto the_signal(QMetaObject::normalizedSignature(signal));
+	const auto the_slot(QMetaObject::normalizedSignature(slot));
+
+	if(QMetaObject::checkConnectArgs(the_signal, the_slot))
+	{
+		const int signal_id(sender.metaObject()->indexOfSignal(the_signal));
+
+		if(signal_id >= 0)
+		{
+			int slot_id(SlotIndices.value(the_slot, -1));
+
+			if(slot_id < 0)
+			{
+				slot_id = SlotList.size();
+				SlotList.push_back(create(the_slot.data()));
+				SlotIndices[the_slot] = slot_id;
+			}
+			return QMetaObject::connect(&sender, signal_id, &receiver,
+				slot_id + receiver.metaObject()->methodCount());
+		}
+		else
+			std::cerr << "ERROR: No signal found in the sender for '"
+				<< signal << "'." << std::endl;
+	}
+	return {};
+}
+
+
+class DynamicQObject: public QObject
+{
+private:
+	Sink sink;
+
+public:
+	DynamicQObject(QObject* parent = {})
+		: QObject(parent)
+	{}
+
+	int
+	qt_metacall(QMetaObject::Call, int, void**) override;
+
+	Sink&
+	GetSinkRef()
+	{
+		return sink;
+	}
+};
+
+int
+DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
+{
+	id = QObject::qt_metacall(c, id, arguments);
+	if(id < 0 || c != QMetaObject::InvokeMetaMethod)
+		return id;
+	assert(size_t(id) < sink.SlotList.size());
+	sink.SlotList[size_t(id)](sender(), arguments);
+	return -1;
 }
 
 } // unnamed namespace;
