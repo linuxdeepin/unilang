@@ -68,4 +68,7 @@ test '$def! (x y) list "hello" "world"; display x; display y;'
 test '$def! id $lambda (x) x;'
 test '$defl! id (x) x;'
 test '$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
+# NOTE: Test case on parent environment search.
+test "\$def! e make-environment (() get-current-environment); \
+eval ((unwrap (\$lambda (x) x)) e) e"
 
