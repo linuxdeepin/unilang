@@ -15,7 +15,11 @@ $def! MyWidget make-class QWidget ($lambda (self)
 	$import! self text button layout;
 	QLayout-addWidget layout text;
 	QLayout-addWidget layout button;
-	($remote-eval setLayout self) layout
+	($remote-eval setLayout self) layout;
+	QObject-connect button "clicked(bool)" ($remote-eval _dynamic self)
+		($lambda/e self () (
+		logd "[slot] Callback called.";
+	))
 ));
 
 $def! app () make-QApplication;
