@@ -245,6 +245,17 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		term.Value = shared_ptr<QWidget>(std::move(p_lbl));
 		return ReductionStatus::Clean;
 	});
+	RegisterStrict(ctx, "QLabel-setText", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+		const auto& text(Unilang::ResolveRegular<string>(*++i));
+
+		dynamic_cast<QLabel&>(wgt).setText(
+			QString::fromStdString(YSLib::to_std_string(text)));
+		return ReduceReturnUnspecified(term);
+	});
 	RegisterStrict(ctx, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
