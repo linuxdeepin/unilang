@@ -81,31 +81,6 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 }
 
 ReductionStatus
-ReduceCombinedBranch(TermNode& term, Context& ctx)
-{
-	assert(IsBranchedList(term));
-
-	auto& fm(AccessFirstSubterm(term));
-	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
-
-	if(p_ref_fm)
-	{
-		if(const auto p_handler
-			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
-			return CombinerReturnThunk(*p_handler, term, ctx);
-	}
-	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
-	{
-		// TODO: Implement TCO.
-		auto p(ystdex::share_move(ctx.get_allocator(), *p_handler));
-
-		return CombinerReturnThunk(*p, term, ctx, std::move(p));
-	}
-	throw
-		ListReductionFailure("Invalid object found in the combiner position.");
-}
-
-ReductionStatus
 ReduceBranch(TermNode& term, Context& ctx)
 {
 	if(IsBranch(term))
@@ -433,6 +408,31 @@ MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 }
 
 } // unnamed namespace;
+
+ReductionStatus
+ReduceCombinedBranch(TermNode& term, Context& ctx)
+{
+	assert(IsBranchedList(term));
+
+	auto& fm(AccessFirstSubterm(term));
+	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
+
+	if(p_ref_fm)
+	{
+		if(const auto p_handler
+			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
+			return CombinerReturnThunk(*p_handler, term, ctx);
+	}
+	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
+	{
+		// TODO: Implement TCO.
+		auto p(ystdex::share_move(ctx.get_allocator(), *p_handler));
+
+		return CombinerReturnThunk(*p, term, ctx, std::move(p));
+	}
+	throw
+		ListReductionFailure("Invalid object found in the combiner position.");
+}
 
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
