@@ -122,7 +122,7 @@ public:
 		: container(std::move(tm.container), a), Value(std::move(tm.Value)),
 		Tags(tm.Tags)
 	{}
-	
+
 	TermNode&
 	operator=(const TermNode&) = default;
 	TermNode&
