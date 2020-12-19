@@ -5,6 +5,7 @@ $defl! logd (x) (log "DEBUG:"; log x);
 
 logd "Loading script ...";
 
+$def! global () get-current-environment;
 $def! MyWidget make-class QWidget ($lambda (self)
 (
 	logd "[ctor] MyWidget";
@@ -17,8 +18,9 @@ $def! MyWidget make-class QWidget ($lambda (self)
 	QLayout-addWidget layout button;
 	($remote-eval setLayout self) layout;
 	QObject-connect button "clicked(bool)" ($remote-eval _dynamic self)
-		($lambda/e self () (
+		($lambda/e (make-environment self global) () (
 		logd "[slot] Callback called.";
+		QLabel-setText text (random.choice hello)
 	))
 ));
 
