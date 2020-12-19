@@ -138,12 +138,45 @@ using ReducerSequence = forward_list<Reducer>;
 
 class Context final
 {
+public:
+	class ReductionGuard
+	{
+	private:
+		Context* p_ctx;
+		ReducerSequence::const_iterator i_stacked;
+
+	public:
+		ReductionGuard(Context& ctx) ynothrow
+			: p_ctx(&ctx), i_stacked(ctx.stacked.cbegin())
+		{
+			ctx.stacked.splice_after(ctx.stacked.cbefore_begin(),
+				ctx.current);
+		}
+		ReductionGuard(ReductionGuard&& gd) ynothrow
+			: p_ctx(gd.p_ctx), i_stacked(gd.i_stacked)
+		{
+			gd.p_ctx = {};
+		}
+		~ReductionGuard()
+		{
+			if(p_ctx)
+			{
+				auto& ctx(*p_ctx);
+
+				ctx.current.splice_after(ctx.current.cbefore_begin(),
+					ctx.stacked, ctx.stacked.cbefore_begin(), i_stacked);
+			}
+		}
+	};
+
 private:
 	lref<pmr::memory_resource> memory_rsrc;
 	shared_ptr<Environment> p_record{std::allocate_shared<Environment>(
 		Environment::allocator_type(&memory_rsrc.get()))};
 	TermNode* next_term_ptr = {};
-	ReducerSequence current{};
+	ReducerSequence
+		current{ReducerSequence::allocator_type(&memory_rsrc.get())};
+	ReducerSequence stacked{current.get_allocator()};
 
 public:
 	Reducer TailAction{};

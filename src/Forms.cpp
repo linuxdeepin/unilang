@@ -615,15 +615,22 @@ MakeEnvironment(TermNode& term)
 
 	if(term.size() > 1)
 	{
-		ValueObject parent;
-		const auto tr([&](TNCIter iter){
-			return ystdex::make_transform(iter, [&](TNCIter i){
-				return ReferenceTerm(*i).Value;
+		const auto tr([&](TNIter iter){
+			return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
+				if(const auto p
+					= Unilang::TryAccessLeaf<const TermReference>(*i))
+				{
+					if(!p->IsMovable())
+						return p->get().Value;
+					return std::move(p->get().Value);
+				}
+				return std::move(i->Value);
 			});
 		});
+		ValueObject parent;
 
-		parent = ValueObject(EnvironmentList(tr(std::next(term.begin())),
-			tr(term.end()), a));
+		parent.emplace<EnvironmentList>(tr(std::next(term.begin())),
+			tr(term.end()), a);
 		term.Value = Unilang::AllocateEnvironment(a, std::move(parent));
 	}
 	else
