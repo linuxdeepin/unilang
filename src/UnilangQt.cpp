@@ -229,6 +229,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		$def! QWidget make-class () ($lambda (self)
 		(
 			$set! self _widget () make-QWidget;
+			$set! self _dynamic () make-DynamicQObject;
 			$set! self QWidget-setLayout QWidget-setLayout;
 			$set! self setLayout
 				$lambda/e self (layout) QWidget-setLayout _widget layout;
