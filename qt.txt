@@ -12,15 +12,15 @@ $def! MyWidget make-class QWidget ($lambda (self)
 	$set! self button make-QPushButton "Click me!";
 	$set! self text make-QLabel "Hello World!" Qt.AlignCenter;
 	$set! self layout () make-QVBoxLayout;
-	$import! self setLayout text button layout;
+	$import! self text button layout;
 	QLayout-addWidget layout text;
 	QLayout-addWidget layout button;
-	setLayout (QWidget-of self) layout
+	($remote-eval setLayout self) layout
 ));
 
 $def! app () make-QApplication;
 $def! wgt make-object MyWidget;
-QWidget-resize (QWidget-of wgt) 800 600;
-QWidget-show (QWidget-of wgt);
+($remote-eval resize wgt) 800 600;
+() ($remote-eval show wgt);
 sys.exit (() QApplication-exec);
 
