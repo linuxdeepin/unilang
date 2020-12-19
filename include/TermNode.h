@@ -215,6 +215,28 @@ public:
 		return container.get_allocator();
 	}
 
+	[[nodiscard, gnu::pure]] reverse_iterator
+	rbegin() noexcept
+	{
+		return container.rbegin();
+	}
+	[[nodiscard, gnu::pure]] const_reverse_iterator
+	rbegin() const noexcept
+	{
+		return container.rbegin();
+	}
+
+	[[nodiscard, gnu::pure]] reverse_iterator
+	rend() noexcept
+	{
+		return container.rend();
+	}
+	[[nodiscard, gnu::pure]] const_reverse_iterator
+	rend() const noexcept
+	{
+		return container.rend();
+	}
+
 	[[nodiscard, gnu::pure]] size_t
 	size() const noexcept
 	{
