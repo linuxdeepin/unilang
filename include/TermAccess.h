@@ -62,14 +62,14 @@ template<typename _type>
 TryAccessLeaf(TermNode& term)
 {
 	return term.Value.type() == ystdex::type_id<_type>()
-		? std::addressof(term.Value.GetObject<_type>()) : nullptr; 
+		? std::addressof(term.Value.GetObject<_type>()) : nullptr;
 }
 template<typename _type>
 [[nodiscard, gnu::pure]] inline const _type*
 TryAccessLeaf(const TermNode& term)
 {
 	return term.Value.type() == ystdex::type_id<_type>()
-		? std::addressof(term.Value.GetObject<_type>()) : nullptr; 
+		? std::addressof(term.Value.GetObject<_type>()) : nullptr;
 }
 
 template<typename _type>
