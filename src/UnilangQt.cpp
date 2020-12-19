@@ -79,7 +79,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 2);
 
 		auto i(term.begin());
-		auto& wgt(*Unilang::ResolveRegular<shared_ptr<QWidget>>(*++i));
+		auto& wgt(ResolveQWidget(*++i));
 		auto& layout(*Unilang::ResolveRegular<shared_ptr<QLayout>>(*++i));
 
 		wgt.setLayout(&layout);
@@ -117,12 +117,13 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& layout(*Unilang::ResolveRegular<shared_ptr<QLayout>>(*++i));
-		auto& wgt(*Unilang::ResolveRegular<shared_ptr<QWidget>>(*++i));
+		auto& wgt(ResolveQWidget(*++i));
 
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
 	intp.Perform(R"Unilang(
+		$defv! $remote-eval (&o &e) d eval o (eval e d);
 		$def! (encapsulate-class class? decapsulate-class)
 			() make-encapsulation-type;
 		$defl! make-class (base ctor) encapsulate-class (list base ctor);
