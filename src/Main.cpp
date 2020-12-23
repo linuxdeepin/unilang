@@ -1,16 +1,20 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter;
-#include "Evaluation.h" // for RegisterStrict, ThrowInsufficientTermsError;
-#include "TermAccess.h" // for ComposeReferencedTermOp, IsBoundLValueTerm,
-//	EnvironmentReference, TermNode, ResolveTerm, IsBranchedList;
+#include "Forms.h" // for Forms::RetainN;
+#include "Evaluation.h" // for CheckSymbol, RegisterStrict,
+//	ThrowInsufficientTermsError;
+#include <functional> // for std::bind;
+#include "TermAccess.h" // for Unilang::ResolveTerm, ComposeReferencedTermOp,
+//	IsBoundLValueTerm, EnvironmentReference, TermNode, ResolveTerm,
+//	IsBranchedList;
 #include "BasicReduction.h" // for ReductionStatus;
 #include "Forms.h" // for RetainN;
 #include "UnilangFFI.h"
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
-#include <iterator> // for std::iterator_traits;
+#include <iterator> // for std::iterator_traits, std::next;
 #include <cstdlib> // for std::exit;
 
 namespace Unilang
@@ -19,11 +23,25 @@ namespace Unilang
 namespace
 {
 
+[[nodiscard]] ReductionStatus
+DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
+	const Context& c)
+{
+	Forms::RetainN(term);
+	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		const auto& id(Unilang::AccessRegular<string_view>(nd, p_ref));
+
+		term = CheckSymbol(id, std::bind(f, std::ref(c), id));
+	}, *std::next(term.begin()));
+	return ReductionStatus::Retained;
+}
+
 void
 LoadFunctions(Interpreter& intp)
 {
 	auto& ctx(intp.Root);
 	using namespace Forms;
+	using namespace std::placeholders;
 
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Equal);
@@ -33,6 +51,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "eval", Eval);
+	RegisterForm(ctx, "$resolve-identifier",
+		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
 	RegisterUnary<Strict, const EnvironmentReference>(ctx, "lock-environment",
 		[](const EnvironmentReference& wenv) noexcept{
 		return wenv.Lock();
@@ -196,7 +216,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.20"
+#define APP_VER "0.5.21"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

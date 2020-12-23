@@ -5,6 +5,7 @@
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
 //	ystdex::invoke_value_or;
 #include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
+#include "Context.h" // for complete Environment;
 
 namespace Unilang
 {
@@ -56,6 +57,16 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
+
+TermNode
+PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
+{
+	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+		return term;
+	return Unilang::AsTermNode(term.get_allocator(),
+		TermReference(p_env->MakeTermTags(term), term, p_env));
 }
 
 

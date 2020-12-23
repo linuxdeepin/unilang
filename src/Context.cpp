@@ -144,7 +144,7 @@ Context::Evaluate(TermNode& term)
 }
 
 Environment::NameResolution
-Context::Resolve(shared_ptr<Environment> p_env, string_view id)
+Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 {
 	assert(bool(p_env));
 
@@ -259,6 +259,16 @@ Context::WeakenRecord() const noexcept
 	return p_record;
 }
 
+
+TermNode
+ResolveIdentifier(const Context& ctx, string_view id)
+{
+	auto pr(ResolveName(ctx, id));
+
+	if(pr.first)
+		return PrepareCollapse(*pr.first, pr.second);
+	throw BadIdentifier(id);
+}
 
 pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject& vo)

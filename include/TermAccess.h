@@ -223,6 +223,9 @@ public:
 };
 
 
+[[nodiscard]] TermNode
+PrepareCollapse(TermNode&, const shared_ptr<Environment>&);
+
 [[nodiscard, gnu::pure]] inline TermNode&
 ReferenceTerm(TermNode& term)
 {
