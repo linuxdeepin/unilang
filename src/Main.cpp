@@ -91,6 +91,8 @@ LoadFunctions(Interpreter& intp)
 		$def! lock-current-environment (wrap ($vau () d lock-environment d));
 		$def! $lambda $vau (&formals .&body) d wrap
 			(eval (cons $vau (cons formals (cons ignore (move! body)))) d);
+		$def! $lambda% $vau (&formals .&body) d wrap
+			(eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
@@ -236,7 +238,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.27"
+#define APP_VER "0.5.28"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

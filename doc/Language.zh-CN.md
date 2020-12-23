@@ -738,6 +738,10 @@
 
 　　表达式项的用法和 vau 抽象类似。
 
+`$lambda% <formals> <body>`
+
+　　同 `$lambda` ，但创建的操作子调用时保留 `<body>` 求值的引用值。
+
 `list <object>...`
 
 　　创建列表（类型为 `<list>` ）对象。
