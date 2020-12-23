@@ -112,8 +112,8 @@ LoadFunctions(Interpreter& intp)
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
-		$defl! first ((&x .)) x;
-		$defl! rest ((#ignore .x)) x;
+		$defl%! forward! (%x)
+			$if (bound-lvalue? ($resolve-identifier x)) x (move! x);
 		$defl! apply (&appv &arg .&opt)
 			eval (cons () (cons (unwrap appv) arg))
 				($if (null? opt) (() make-environment)
@@ -123,6 +123,8 @@ LoadFunctions(Interpreter& intp)
 								"Syntax error in applying form.")) opt));
 		$defl! list* (&head .&tail)
 			$if (null? tail) head (cons head (apply list* tail));
+		$defl! first ((&x .)) x;
+		$defl! rest ((#ignore .x)) x;
 		$defv! $defw! (&f &formals &ef .&body) d
 			eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
 		$defv! $cond &clauses d
@@ -240,7 +242,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.29"
+#define APP_VER "0.5.30"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
