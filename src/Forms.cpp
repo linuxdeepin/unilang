@@ -139,6 +139,24 @@ FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
 }
 
 
+ReductionStatus
+EvalImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	Forms::RetainN(term, 2);
+
+	const auto i(std::next(term.begin()));
+	auto p_env(ResolveEnvironment(*std::next(i)).first);
+
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
+	}, *i);
+	return RelayForEvalOrDirect(ctx, term,
+		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), no_lift,
+		Continuation(ReduceOnce, ctx));
+}
+
+
+
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
 {
 private:
@@ -608,20 +626,13 @@ Cons(TermNode& term)
 ReductionStatus
 Eval(TermNode& term, Context& ctx)
 {
-	RetainN(term, 2);
+	return EvalImpl(term, ctx, {});
+}
 
-	const auto i(std::next(term.begin()));
-	auto p_env(ResolveEnvironment(*std::next(i)).first);
-
-	ResolveTerm([&](TermNode& nd){
-		auto t(std::move(term.GetContainerRef()));
-
-		term.GetContainerRef() = nd.GetContainer();
-		term.Value = nd.Value;
-	}, *i);
-	return RelayForEvalOrDirect(ctx, term,
-		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), {},
-		Continuation(ReduceOnce, ctx));
+ReductionStatus
+EvalRef(TermNode& term, Context& ctx)
+{
+	return EvalImpl(term, ctx, true);
 }
 
 

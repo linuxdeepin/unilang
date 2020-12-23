@@ -595,6 +595,10 @@
 
 　　在参数指定的环境中求值，结果作为函数值。
 
+`eval% <expression> <environment>`
+
+　　同 `eval` ，但保留引用值。
+
 `$resolve-identifier <symbol>`
 
 　　解析标识符。
