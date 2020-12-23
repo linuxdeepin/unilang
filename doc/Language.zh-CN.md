@@ -724,6 +724,12 @@
 
 　　类似 `$vau/e` ，但以当前环境代替额外的求值环境作为静态环境。
 
+`$vau% <formals> <eformal> <body>`
+
+　　创建 vau 抽象。
+
+　　类似 `$vau/e%` ，但以当前环境代替额外的求值环境作为静态环境。
+
 `$lambda <formals> <body>`
 
 　　创建 λ 抽象 。
@@ -762,7 +768,7 @@
 
 `() make-standard-environment`
 
-　　创建**标准环境(standard environment)** ：以基础环境作为唯一父环境的新环境。
+　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
 
 `$sequence <expression-sequence>`
 
