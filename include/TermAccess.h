@@ -192,6 +192,11 @@ public:
 	}
 
 	[[nodiscard, gnu::pure]] bool
+	IsModifiable() const noexcept
+	{
+		return !bool(tags & TermTags::Nonmodifying);
+	}
+	[[nodiscard, gnu::pure]] bool
 	IsMovable() const noexcept
 	{
 		return (tags & (TermTags::Unique | TermTags::Nonmodifying))

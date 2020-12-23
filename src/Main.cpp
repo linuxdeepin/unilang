@@ -4,17 +4,17 @@
 #include "Forms.h" // for Forms::RetainN;
 #include "Evaluation.h" // for CheckSymbol, RegisterStrict,
 //	ThrowInsufficientTermsError;
-#include <functional> // for std::bind;
+#include "BasicReduction.h" // for ReductionStatus;
+#include "Forms.h" // for RetainN;
 #include "TermAccess.h" // for Unilang::ResolveTerm, ComposeReferencedTermOp,
 //	IsBoundLValueTerm, EnvironmentReference, TermNode, ResolveTerm,
 //	IsBranchedList;
-#include "BasicReduction.h" // for ReductionStatus;
-#include "Forms.h" // for RetainN;
+#include <iterator> // for std::next, std::iterator_traits;
+#include <functional> // for std::bind;
 #include "UnilangFFI.h"
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
-#include <iterator> // for std::iterator_traits, std::next;
 #include <cstdlib> // for std::exit;
 
 namespace Unilang
@@ -22,6 +22,16 @@ namespace Unilang
 
 namespace
 {
+
+[[nodiscard]] ReductionStatus
+DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
+{
+	Forms::RetainN(term);
+	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		f(term, nd, !p_ref || p_ref->IsModifiable());
+	}, *std::next(term.begin()));
+	return ReductionStatus::Retained;
+}
 
 [[nodiscard]] ReductionStatus
 DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
@@ -49,6 +59,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
+	RegisterStrict(ctx, "move!",
+		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "eval", Eval);
 	RegisterForm(ctx, "$resolve-identifier",
@@ -216,7 +228,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.21"
+#define APP_VER "0.5.22"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
