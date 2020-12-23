@@ -103,6 +103,8 @@ LoadFunctions(Interpreter& intp)
 			eval (list $set! d $f $vau formals ef (move! body)) d;
 		$defv! $defl! (f formals .body) d
 			eval (list $set! d f $lambda formals (move! body)) d;
+		$defv! $defl%! (&f &formals .&body) d
+			eval (list $set! d f $lambda% formals (move! body)) d;
 		$defv! $lambda/e (&e &formals .&body) d
 			wrap (eval (list* $vau/e e formals ignore (move! body)) d);
 		$def! make-standard-environment
@@ -238,7 +240,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.28"
+#define APP_VER "0.5.29"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

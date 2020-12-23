@@ -764,6 +764,10 @@
 
 　　绑定 λ 抽象，等价 `$def! <variable> $lambda <formals> <body>` 。
 
+`$defl%! <variable> <formals> <body>`
+
+　　绑定 λ 抽象，等价 `$def! <variable> $lambda% <formals> <body>` 。
+
 `$lambda/e <environment> <formals> <body>`
 
 　　创建指定静态环境的 lambda 抽象。
