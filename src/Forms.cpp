@@ -275,6 +275,25 @@ CreateVau(TermNode& term, bool no_lift, TNIter i,
 		std::move(p_env), owning, term, no_lift));
 }
 
+ReductionStatus
+VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	return CreateFunction(term, [&, no_lift]{
+		auto i(term.begin());
+		auto& tm(*++i);
+
+		return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
+			term.Value = CheckFunctionCreation([&]{
+				auto p_env_pr(ResolveEnvironment(tm));
+
+				return CreateVau(term, no_lift, i, std::move(p_env_pr.first),
+					p_env_pr.second);
+			});
+			return ReductionStatus::Clean;
+		});
+	}, 3);
+}
+
 [[noreturn]] ReductionStatus
 ThrowForUnwrappingFailure(const ContextHandler& h)
 {
@@ -673,20 +692,13 @@ Define(TermNode& term, Context& ctx)
 ReductionStatus
 VauWithEnvironment(TermNode& term, Context& ctx)
 {
-	return CreateFunction(term, [&]{
-		auto i(term.begin());
-		auto& tm(*++i);
+	return VauWithEnvironmentImpl(term, ctx, {});
+}
 
-		return ReduceSubsequent(tm, ctx, [&, i]{
-			term.Value = CheckFunctionCreation([&]{
-				auto p_env_pr(ResolveEnvironment(tm));
-
-				return CreateVau(term, {}, i, std::move(p_env_pr.first),
-					p_env_pr.second);
-			});
-			return ReductionStatus::Clean;
-		});
-	}, 3);
+ReductionStatus
+VauWithEnvironmentRef(TermNode& term, Context& ctx)
+{
+	return VauWithEnvironmentImpl(term, ctx, true);
 }
 
 
