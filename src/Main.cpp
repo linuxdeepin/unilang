@@ -63,6 +63,7 @@ LoadFunctions(Interpreter& intp)
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "eval", Eval);
+	RegisterStrict(ctx, "eval%", EvalRef);
 	RegisterForm(ctx, "$resolve-identifier",
 		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
 	RegisterUnary<Strict, const EnvironmentReference>(ctx, "lock-environment",
@@ -232,7 +233,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.25"
+#define APP_VER "0.5.26"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
