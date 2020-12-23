@@ -822,6 +822,10 @@
 
 　　取列表第一个元素以外的元素值构成的列表。
 
+`$defv%! <variable> <formals> <eformal> <body>`
+
+　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
+
 `$defw! <variable> <formals> <eformal> <body>`
 
 　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
