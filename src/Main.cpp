@@ -88,6 +88,7 @@ LoadFunctions(Interpreter& intp)
 			(eval (cons $vau (cons formals (cons ignore body))) d);
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
+	RegisterStrict(ctx, "list%", ReduceBranchToList);
 	intp.Perform(R"Unilang(
 		$def! $set! $vau (&e &formals .&expr) d
 			eval (list $def! formals (unwrap eval) expr d) (eval e d);
@@ -228,7 +229,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.22"
+#define APP_VER "0.5.23"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
