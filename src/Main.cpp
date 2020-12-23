@@ -72,6 +72,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
+	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
 	RegisterStrict(ctx, "wrap", Wrap);
 	RegisterStrict(ctx, "unwrap", Unwrap);
 	RegisterUnary<Strict, const string>(ctx, "raise-invalid-syntax-error",
@@ -229,7 +230,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.23"
+#define APP_VER "0.5.24"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

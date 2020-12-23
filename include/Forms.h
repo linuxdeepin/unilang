@@ -143,6 +143,9 @@ Define(TermNode&, Context&);
 ReductionStatus
 VauWithEnvironment(TermNode&, Context&);
 
+ReductionStatus
+VauWithEnvironmentRef(TermNode&, Context&);
+
 
 ReductionStatus
 Wrap(TermNode&);

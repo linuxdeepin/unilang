@@ -678,7 +678,11 @@
 
 　　因为支持保存环境的所有权，`$vau/e` 被设计为比 `$vau` 更基本的操作。
 
-　　不考虑所有权时，`eval` 和 `$vau` 可派生 $vau/e 。
+**注释** 不考虑所有权时，`eval` 和 `$vau` 可派生 $vau/e 。
+
+`$vau/e% <environment> <formals> <eformal> <body>`
+
+　　同 $vau/e ，但创建的操作子调用时保留 `<body>` 求值的引用值。
 
 `wrap <combiner>`
 
