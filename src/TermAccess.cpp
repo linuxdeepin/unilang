@@ -1,8 +1,9 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, Unilang::TryAccessLeaf;
+#include "TermAccess.h" // for sfmt;
 #include "Exception.h" // for ListTypeError;
-#include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn;
+#include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
+//	ystdex::invoke_value_or;
 #include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
 
 namespace Unilang
@@ -55,6 +56,14 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
+
+bool
+IsBoundLValueTerm(const TermNode& term)
+{
+	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
+		Unilang::TryAccessLeaf<const TermReference>(term));
 }
 
 } // namespace Unilang;

@@ -191,11 +191,17 @@ public:
 		return term_ref;
 	}
 
-	bool
+	[[nodiscard, gnu::pure]] bool
 	IsMovable() const noexcept
 	{
 		return (tags & (TermTags::Unique | TermTags::Nonmodifying))
 			== TermTags::Unique;
+	}
+	[[nodiscard, gnu::pure]] bool
+	IsReferencedLValue() const noexcept
+	{
+		return !(bool(tags & TermTags::Unique)
+			|| bool(tags & TermTags::Temporary));
 	}
 
 	[[nodiscard, gnu::pure]] TermTags
@@ -203,7 +209,6 @@ public:
 	{
 		return tags;
 	}
-
 	[[nodiscard, gnu::pure]] const EnvironmentReference&
 	GetEnvironmentReference() const noexcept
 	{
@@ -283,6 +288,9 @@ TryAccessReferencedTerm(const TermNode& term)
 {
 	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
 }
+
+[[nodiscard, gnu::pure]] bool
+IsBoundLValueTerm(const TermNode&);
 
 template<typename _func, class _tTerm>
 auto
