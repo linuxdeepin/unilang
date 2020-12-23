@@ -124,6 +124,13 @@ private:
 public:
 	[[nodiscard, gnu::pure]] NameResolution::first_type
 	LookupName(string_view) const;
+
+	[[nodiscard, gnu::pure]] TermTags
+	MakeTermTags(const TermNode& term) const noexcept
+	{
+		// TODO: Support freezing environments.
+		return term.Tags;
+	}
 };
 
 
@@ -228,8 +235,8 @@ public:
 	ReductionStatus
 	RewriteTerm(TermNode&);
 
-	Environment::NameResolution
-	Resolve(shared_ptr<Environment>, string_view);
+	[[nodiscard]] Environment::NameResolution
+	Resolve(shared_ptr<Environment>, string_view) const;
 
 	template<typename... _tParams>
 	inline void
@@ -340,6 +347,15 @@ EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
 }
 
+[[nodiscard]] inline Environment::NameResolution
+ResolveName(const Context& ctx, string_view id)
+{
+	assert(id.data());
+	return ctx.Resolve(ctx.GetRecordPtr(), id);
+}
+
+[[nodiscard]] TermNode
+ResolveIdentifier(const Context&, string_view);
 
 [[nodiscard]] pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject&);
