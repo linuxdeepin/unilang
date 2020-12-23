@@ -83,10 +83,10 @@ LoadFunctions(Interpreter& intp)
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	intp.Perform(R"Unilang(
 		$def! $vau $vau/e (() get-current-environment) (&formals &ef .&body) d
-			eval (cons $vau/e (cons d (cons formals (cons ef body)))) d;
+			eval (cons $vau/e (cons d (cons formals (cons ef (move! body))))) d;
 		$def! lock-current-environment (wrap ($vau () d lock-environment d));
 		$def! $lambda $vau (&formals .&body) d wrap
-			(eval (cons $vau (cons formals (cons ignore body))) d);
+			(eval (cons $vau (cons formals (cons ignore (move! body)))) d);
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
@@ -94,11 +94,11 @@ LoadFunctions(Interpreter& intp)
 		$def! $set! $vau (&e &formals .&expr) d
 			eval (list $def! formals (unwrap eval) expr d) (eval e d);
 		$def! $defv! $vau (&$f &formals &ef .&body) d
-			eval (list $set! d $f $vau formals ef body) d;
+			eval (list $set! d $f $vau formals ef (move! body)) d;
 		$defv! $defl! (f formals .body) d
-			eval (list $set! d f $lambda formals body) d;
+			eval (list $set! d f $lambda formals (move! body)) d;
 		$defv! $lambda/e (&e &formals .&body) d
-			wrap (eval (list* $vau/e e formals ignore body) d);
+			wrap (eval (list* $vau/e e formals ignore (move! body)) d);
 		$def! make-standard-environment
 			$lambda () () lock-current-environment;
 	)Unilang");
@@ -116,12 +116,12 @@ LoadFunctions(Interpreter& intp)
 		$defl! list* (&head .&tail)
 			$if (null? tail) head (cons head (apply list* tail));
 		$defv! $defw! (&f &formals &ef .&body) d
-			eval (list $set! d f wrap (list* $vau formals ef body)) d;
-		$defv! $cond clauses d
+			eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
+		$defv! $cond &clauses d
 			$if (null? clauses) #inert
 				(apply ($lambda ((&test .&body) .&clauses)
-					$if (eval test d) (eval body d)
-						(apply (wrap $cond) clauses d)) clauses);
+					$if (eval test d) (eval (move! body) d)
+						(apply (wrap $cond) (move! clauses) d)) clauses);
 		$defv! $when (&test .&exprseq) d
 			$if (eval test d) (eval (list* () $sequence exprseq) d);
 		$defv! $unless (&test .&exprseq) d
@@ -136,7 +136,7 @@ LoadFunctions(Interpreter& intp)
 			((null? x) #f)
 			((null? (rest x)) eval (first x) d)
 			(#t ($lambda (r) $if r r
-				(apply (wrap $or?) (rest x) d)) (eval (first x) d));
+				(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
 		$defw! accr (&l &pred? &base &head &tail &sum) d
 			$if (apply pred? (list l) d) base
 				(apply sum (list (apply head (list l) d)
@@ -147,20 +147,22 @@ LoadFunctions(Interpreter& intp)
 		$defw! map1 (&appv &l) d
 			foldr1 ($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 		$defl! list-concat (&x &y) foldr1 cons y x;
-		$defl! append (.&ls) foldr1 list-concat () ls;
+		$defl! append (.&ls) foldr1 list-concat () (move! ls);
 		$defv! $let (&bindings .&body) d
 			eval (list* () (list* $lambda (map1 first bindings)
-				(list body)) (map1 ($lambda (x) list (rest x)) bindings)) d;
+				(list (move! body)))
+				(map1 ($lambda (x) list (rest x)) bindings)) d;
 		$defv! $let/d (&bindings &ef .&body) d
 			eval (list* () (list wrap (list* $vau (map1 first bindings)
-				ef (list body))) (map1 ($lambda (x) list (rest x)) bindings)) d;
+				ef (list (move! body))))
+				(map1 ($lambda (x) list (rest x)) bindings)) d;
 		$defv! $let* (&bindings .&body) d
-			eval ($if (null? bindings) (list* $let bindings body)
+			eval ($if (null? bindings) (list* $let bindings (move! body))
 				(list $let (list (first bindings))
-				(list* $let* (rest bindings) body))) d;
+				(list* $let* (rest bindings) (move! body)))) d;
 		$defv! $letrec (&bindings .&body) d
 			eval (list $let () $sequence (list $def! (map1 first bindings)
-				(list* () list (map1 rest bindings))) body) d;
+				(list* () list (map1 rest bindings))) (move! body)) d;
 		$defv! $bindings/p->environment (&parents .&bindings) d $sequence
 			($def! res apply make-environment (map1 ($lambda (x) eval x d)
 				parents))
@@ -173,12 +175,12 @@ LoadFunctions(Interpreter& intp)
 		$defv! $provide! (&symbols .&body) d
 			$sequence (eval (list $def! symbols (list $let () $sequence
 				(list ($vau (e) d $set! e res (lock-environment d))
-				(() get-current-environment)) body
+				(() get-current-environment)) (move! body)
 				(list* () list symbols))) d) res;
 		$defv! $provide/d! (&symbols &ef .body) d
 			$sequence (eval (list $def! symbols (list $let/d () ef $sequence
 				(list ($vau (e) d $set! e res (lock-environment d))
-				(() get-current-environment)) body
+				(() get-current-environment)) (move! body)
 				(list* () list symbols))) d) res;
 		$defv! $import! (&e .&symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
@@ -230,7 +232,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.24"
+#define APP_VER "0.5.25"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
