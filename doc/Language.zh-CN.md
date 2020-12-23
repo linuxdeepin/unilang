@@ -401,7 +401,7 @@
 　　以下中缀记号中缀变换函数的调用具有以下语义：
 
 * `;` 求值同标准库函数 `$sequence` 。
-* `,` 求值同标准库函数 `list` ，但保留引用值。
+* `,` 求值同标准库函数 `list%` 。
 
 ## 一等(first-class) 实体
 
@@ -727,6 +727,10 @@
 `list <object>...`
 
 　　创建列表（类型为 `<list>` ）对象。
+
+`list% <object>...`
+
+　　创建列表（类型为 `<list>` ）对象，且保留参数中的引用值。
 
 `$set! <environment> <formals> <expressions>`
 
