@@ -1,4 +1,7 @@
-﻿() newline;
+﻿$import! std.classes make-class make-object;
+$import! UnilangQt QWidget;
+
+() newline;
 
 $defl! log (x) (display x; () newline);
 $defl! logd (x) (log "DEBUG:"; log x);
