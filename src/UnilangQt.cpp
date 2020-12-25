@@ -2,7 +2,7 @@
 
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
-//	YSLib::make_shared;
+//	YSLib::make_shared, std::bind, std::ref;
 #include <cassert> // for assert;
 #include <iostream> // for std::cerr, std::endl, std::clog;
 #if __GNUC__
@@ -32,6 +32,19 @@ namespace
 using YSLib::shared_ptr;
 using YSLib::unique_ptr;
 using YSLib::make_unique;
+
+template<typename _fCallable>
+shared_ptr<Environment>
+GetModuleFor(Context& ctx, _fCallable&& f)
+{
+	ystdex::guard<EnvironmentSwitcher>
+		gd(ctx, Unilang::SwitchToFreshEnvironment(ctx,
+		ValueObject(ctx.WeakenRecord())));
+
+	ystdex::invoke(f);
+	// TODO: Freeze the environment?
+	return ctx.ShareRecord();
+}
 
 QWidget&
 ResolveQWidget(TermNode& term)
@@ -118,13 +131,10 @@ DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
 	return -1;
 }
 
-} // unnamed namespace;
-
 
 void
-InitializeQt(Interpreter& intp, int& argc, char* argv[])
+InitializeQtNative(Context& ctx, int& argc, char* argv[])
 {
-	auto& ctx(intp.Root);
 	using namespace Forms;
 	using YSLib::make_shared;
 
@@ -271,6 +281,14 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
+}
+
+} // unnamed namespace;
+
+
+void
+InitializeQt(Interpreter& intp, int& argc, char* argv[])
+{
 	intp.Perform(R"Unilang(
 		$defv! $remote-eval (&o &e) d eval o (eval e d);
 		$def! std.classes $let ()
@@ -300,15 +318,26 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 			);
 			() lock-current-environment
 		);
+	)Unilang");
 
+	auto& ctx(intp.Root);
+
+	ctx.GetRecordRef().Bindings["UnilangQt.native__"].Value = GetModuleFor(ctx,
+		std::bind(InitializeQtNative, std::ref(ctx), std::ref(argc), argv));
+	intp.Perform(R"Unilang(
 		$def! UnilangQt $let ()
 		(
+			$import! UnilangQt.native__ QObject-connect make-QApplication
+				QApplication-exec make-QWidget QWidget-resize
+				QWidget-show QWidget-setLayout make-QPushButton Qt.AlignCenter
+				make-QLabel QLabel-setText make-QVBoxLayout QLayout-addWidget;
 			$def! UnilangQt.impl__ $provide!
 			(
 				QWidget
 			)
 			(
 				$import! std.classes make-class;
+				$import! UnilangQt.native__ make-DynamicQObject;
 				$def! QWidget make-class () ($lambda (self)
 				(
 					$set! self _widget () make-QWidget;
@@ -325,7 +354,8 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 				));
 			);
 			() lock-current-environment
-		);	)Unilang");
+		);
+	)Unilang");
 }
 
 } // namespace Unilang;
