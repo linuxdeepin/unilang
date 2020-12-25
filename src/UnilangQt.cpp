@@ -273,34 +273,59 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	});
 	intp.Perform(R"Unilang(
 		$defv! $remote-eval (&o &e) d eval o (eval e d);
-		$def! (encapsulate-class class? decapsulate-class)
-			() make-encapsulation-type;
-		$defl! make-class (base ctor) encapsulate-class (list base ctor);
-		$defl! ctor-of (c) first (rest (decapsulate-class c));
-		$defl! base-of (c) first (decapsulate-class c);
-		$defl! apply-ctor (c self args) apply (ctor-of c) (list* self args);
-		$defl! make-object (c .args)
+		$def! std.classes $let ()
 		(
-			$def! self () make-environment;
-			$def! base base-of c;
-			$if (null? base) () (apply-ctor base self ());
-			apply-ctor c self args;
-			self
+			$def! impl__ $provide!
+			(
+				make-class
+				make-object
+			)
+			(
+				$def! (encapsulate-class class? decapsulate-class)
+					() make-encapsulation-type;
+				$defl! make-class (base ctor)
+					encapsulate-class (list base ctor);
+				$defl! ctor-of (c) first (rest (decapsulate-class c));
+				$defl! base-of (c) first (decapsulate-class c);
+				$defl! apply-ctor (c self args)
+					apply (ctor-of c) (list* self args);
+				$defl! make-object (c .args)
+				(
+					$def! self () make-environment;
+					$def! base base-of c;
+					$if (null? base) () (apply-ctor base self ());
+					apply-ctor c self args;
+					self
+				)
+			);
+			() lock-current-environment
 		);
 
-		$def! QWidget make-class () ($lambda (self)
+		$def! UnilangQt $let ()
 		(
-			$set! self _widget () make-QWidget;
-			$set! self _dynamic () make-DynamicQObject;
-			$set! self QWidget-setLayout QWidget-setLayout;
-			$set! self setLayout
-				$lambda/e self (layout) QWidget-setLayout _widget layout;
-			$set! self QWidget-resize QWidget-resize;
-			$set! self resize $lambda/e self (w h) QWidget-resize _widget w h;
-			$set! self QWidget-show QWidget-show;
-			$set! self show $lambda/e self () QWidget-show _widget;
-		));
-	)Unilang");
+			$def! UnilangQt.impl__ $provide!
+			(
+				QWidget
+			)
+			(
+				$import! std.classes make-class;
+				$def! QWidget make-class () ($lambda (self)
+				(
+					$set! self _widget () make-QWidget;
+					$set! self _dynamic () make-DynamicQObject;
+					$set! self QWidget-setLayout QWidget-setLayout;
+					$set! self setLayout
+						$lambda/e self (layout)
+							QWidget-setLayout _widget layout;
+					$set! self QWidget-resize QWidget-resize;
+					$set! self resize
+						$lambda/e self (w h) QWidget-resize _widget w h;
+					$set! self QWidget-show QWidget-show;
+					$set! self show $lambda/e self () QWidget-show _widget;
+				));
+			);
+			() lock-current-environment
+		);	)Unilang");
 }
 
 } // namespace Unilang;
