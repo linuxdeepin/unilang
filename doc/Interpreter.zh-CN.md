@@ -220,6 +220,7 @@ using string = basic_string<char>;
 * 类型 `AnchorPtr` 作为环境内部保存的引用计数数据指针。
 * 类 `EnvironmentReference` 表示环境引用，是 Unilang 环境弱引用的宿主类型。
 * 类 `TermReference` 表示项引用，是 Unilang 引用值的宿主类型。
+	* `TermReference::get` 取引用的项。项引用保持被引用项来源的环境的引用计数，调试模式下默认可启用安全性检查。若锁定的环境引用为空，则检查失败。
 * 函数 `ReferenceTerm` 当参数表示的项的值数据成员是引用值时结果是表示被引用对象的项，否则是参数。
 * 用于兼容引用值和非引用值项的访问的实现内部使用的便利接口：
 	* `ResolvedTermReferencePtr`
@@ -250,7 +251,9 @@ using string = basic_string<char>;
 * 类型 `ReducerFunctionType` ：表示动作的函数类型 `ReductionStatus(Context&)` 。
 * 类型 `Reducer` ：规约器，兼容 `ReducerFunctionType` 的多态函数调用包装，是动作的一般表示。
 * 类型 `ReducerSequence` ：`Reducer` 的序列，表示一系列动作。
-* 类 `Conext` ：上下文，包含当前环境、当前动作、下一求值项的引用和规约中需要保存的其它的公共状态，也提供解释器使用规约的内部入口。替换当前环境的操作称为切换(switch) 。
+* 类 `Conext` ：上下文，包含当前环境、当前动作、下一求值项的引用和规约中需要保存的其它的公共状态，也提供解释器使用规约的内部入口。替换当前环境的操作称为*切换(switch)* 。
+	* 父环境通过子对象 `Parent` 引用。这个对象具有 `ValueObject` 类型，可支持不同类型的父环境的表示。父环境最终通过环境强引用访问。
+	* 上下文实现环境查找的逻辑。查找父环境取环境强引用时，调试模式默认附加检查。若锁定的环境引用为空，则检查失败。
 * 类型 `ContextHandler` ：上下文处理器，兼容签名为 `Reduction(TermNode&, Context&)` 的规约函数的多态函数调用包装。
 * 函数模板 `AllocateEnvironment` ：分配环境。
 * 函数模板 `SwitchToFreshEnvironment` ：创建新环境并切换当前环境。结果是被切换的先前上下文中的当前环境。
