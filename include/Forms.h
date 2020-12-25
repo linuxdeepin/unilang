@@ -128,6 +128,9 @@ Cons(TermNode&);
 ReductionStatus
 Eval(TermNode&, Context&);
 
+ReductionStatus
+EvalRef(TermNode&, Context&);
+
 
 ReductionStatus
 MakeEnvironment(TermNode&);
@@ -142,6 +145,9 @@ Define(TermNode&, Context&);
 
 ReductionStatus
 VauWithEnvironment(TermNode&, Context&);
+
+ReductionStatus
+VauWithEnvironmentRef(TermNode&, Context&);
 
 
 ReductionStatus

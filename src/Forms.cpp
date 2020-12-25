@@ -139,6 +139,24 @@ FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
 }
 
 
+ReductionStatus
+EvalImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	Forms::RetainN(term, 2);
+
+	const auto i(std::next(term.begin()));
+	auto p_env(ResolveEnvironment(*std::next(i)).first);
+
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
+	}, *i);
+	return RelayForEvalOrDirect(ctx, term,
+		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), no_lift,
+		Continuation(ReduceOnce, ctx));
+}
+
+
+
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
 {
 private:
@@ -273,6 +291,25 @@ CreateVau(TermNode& term, bool no_lift, TNIter i,
 	term.erase(term.begin(), ++i);
 	return FormContextHandler(VauHandler(std::move(eformal), std::move(formals),
 		std::move(p_env), owning, term, no_lift));
+}
+
+ReductionStatus
+VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	return CreateFunction(term, [&, no_lift]{
+		auto i(term.begin());
+		auto& tm(*++i);
+
+		return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
+			term.Value = CheckFunctionCreation([&]{
+				auto p_env_pr(ResolveEnvironment(tm));
+
+				return CreateVau(term, no_lift, i, std::move(p_env_pr.first),
+					p_env_pr.second);
+			});
+			return ReductionStatus::Clean;
+		});
+	}, 3);
 }
 
 [[noreturn]] ReductionStatus
@@ -589,20 +626,13 @@ Cons(TermNode& term)
 ReductionStatus
 Eval(TermNode& term, Context& ctx)
 {
-	RetainN(term, 2);
+	return EvalImpl(term, ctx, {});
+}
 
-	const auto i(std::next(term.begin()));
-	auto p_env(ResolveEnvironment(*std::next(i)).first);
-
-	ResolveTerm([&](TermNode& nd){
-		auto t(std::move(term.GetContainerRef()));
-
-		term.GetContainerRef() = nd.GetContainer();
-		term.Value = nd.Value;
-	}, *i);
-	return RelayForEvalOrDirect(ctx, term,
-		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), {},
-		Continuation(ReduceOnce, ctx));
+ReductionStatus
+EvalRef(TermNode& term, Context& ctx)
+{
+	return EvalImpl(term, ctx, true);
 }
 
 
@@ -673,20 +703,13 @@ Define(TermNode& term, Context& ctx)
 ReductionStatus
 VauWithEnvironment(TermNode& term, Context& ctx)
 {
-	return CreateFunction(term, [&]{
-		auto i(term.begin());
-		auto& tm(*++i);
+	return VauWithEnvironmentImpl(term, ctx, {});
+}
 
-		return ReduceSubsequent(tm, ctx, [&, i]{
-			term.Value = CheckFunctionCreation([&]{
-				auto p_env_pr(ResolveEnvironment(tm));
-
-				return CreateVau(term, {}, i, std::move(p_env_pr.first),
-					p_env_pr.second);
-			});
-			return ReductionStatus::Clean;
-		});
-	}, 3);
+ReductionStatus
+VauWithEnvironmentRef(TermNode& term, Context& ctx)
+{
+	return VauWithEnvironmentImpl(term, ctx, true);
 }
 
 

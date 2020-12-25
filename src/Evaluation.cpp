@@ -9,7 +9,6 @@
 #include "Exception.h" // for InvalidSyntax, BadIdentifier,
 //	ListReductionFailure, ParameterMismatch;
 #include <ystdex/memory.hpp> // for ystdex::share_move;
-#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
 
@@ -154,16 +153,6 @@ ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 	return ReduceOnce(*i, ctx);
 }
 
-
-template<typename _func>
-auto
-CheckSymbol(string_view n, _func f) -> decltype(f())
-{
-	if(CategorizeBasicLexeme(n) == LexemeCategory::Symbol)
-		return f();
-	throw ParameterMismatch(ystdex::sfmt(
-		"Invalid token '%s' found for symbol parameter.", n.data()));
-}
 
 template<typename _func>
 auto
