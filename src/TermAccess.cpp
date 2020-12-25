@@ -60,6 +60,18 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 }
 
 
+#if Unilang_CheckTermReferenceIndirection
+TermNode&
+TermReference::get() const
+{
+	if(r_env.GetAnchorPtr() && r_env.GetPtr().lock())
+		return term_ref.get();
+	throw InvalidReference("Invalid reference found on indirection, probably"
+		" due to invalid context access by a dangling reference.");
+}
+#endif
+
+
 TermNode
 PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 {

@@ -11,6 +11,15 @@
 namespace Unilang
 {
 
+#ifndef Unilang_CheckTermReferenceIndirection
+#	ifndef NDEBUG
+#		define Unilang_CheckTermReferenceIndirection true
+#else
+#		define Unilang_CheckTermReferenceIndirection false
+#	endif
+#endif
+
+
 // NOTE: The host type of symbol.
 // XXX: The destructor is not virtual.
 class TokenValue final : public string
@@ -220,11 +229,17 @@ public:
 		return r_env;
 	}
 
+#if Unilang_CheckTermReferenceIndirection
+	[[nodiscard, gnu::pure]] TermNode&
+	get() const;
+#else
 	[[nodiscard, gnu::pure]] TermNode&
 	get() const noexcept
 	{
 		return term_ref.get();
 	}
+#endif
+
 };
 
 
