@@ -1,4 +1,4 @@
-﻿$import! std.classes make-class make-object;
+﻿$import! std.classes make-class make-object $access;
 $import! UnilangQt QWidget
 	make-QPushButton make-QLabel make-QPushButton make-QLabel Qt.AlignCenter
 	make-QVBoxLayout QLayout-addWidget QObject-connect QLabel-setText
@@ -32,7 +32,7 @@ $def! MyWidget make-class QWidget ($lambda (self)
 
 $def! app () make-QApplication;
 $def! wgt make-object MyWidget;
-($remote-eval resize wgt) 800 600;
-() ($remote-eval show wgt);
+($access wgt resize) 800 600;
+() ($access wgt show);
 sys.exit (() QApplication-exec);
 

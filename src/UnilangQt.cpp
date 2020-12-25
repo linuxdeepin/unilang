@@ -296,25 +296,32 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 			$def! impl__ $provide!
 			(
 				make-class
+				class?
 				make-object
+				object?
+				$access
 			)
 			(
-				$def! (encapsulate-class class? decapsulate-class)
+				$def! (encapsulate-class% class? decapsulate-class)
 					() make-encapsulation-type;
 				$defl! make-class (base ctor)
-					encapsulate-class (list base ctor);
+					encapsulate-class% (list base ctor);
 				$defl! ctor-of (c) first (rest (decapsulate-class c));
 				$defl! base-of (c) first (decapsulate-class c);
 				$defl! apply-ctor (c self args)
 					apply (ctor-of c) (list* self args);
+				$def! (encapsulate-object% object? decapsulate-object)
+					() make-encapsulation-type;
 				$defl! make-object (c .args)
 				(
 					$def! self () make-environment;
 					$def! base base-of c;
 					$if (null? base) () (apply-ctor base self ());
 					apply-ctor c self args;
-					self
-				)
+					encapsulate-object% (move! self)
+				);
+				$defv%! $access (&o &id) d
+					eval% id (decapsulate-object (eval% o d));
 			);
 			() lock-current-environment
 		);
@@ -331,7 +338,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 				QApplication-exec make-QWidget QWidget-resize
 				QWidget-show QWidget-setLayout make-QPushButton Qt.AlignCenter
 				make-QLabel QLabel-setText make-QVBoxLayout QLayout-addWidget;
-			$def! UnilangQt.impl__ $provide!
+			$def! impl__ $provide!
 			(
 				QWidget
 			)
