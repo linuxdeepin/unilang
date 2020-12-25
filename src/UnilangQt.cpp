@@ -5,11 +5,14 @@
 //	YSLib::make_shared, std::bind, std::ref;
 #include <cassert> // for assert;
 #include <iostream> // for std::cerr, std::endl, std::clog;
-#if __GNUC__
+#ifdef __GNUC__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
 #	pragma GCC diagnostic ignored "-Wsign-conversion"
 #	pragma GCC diagnostic ignored "-Wsign-promo"
+#	ifndef __clang__
+#		pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
+#	endif
 #endif
 #include <QHash> // for QHash;
 #include <QApplication> // for QApplication;
@@ -17,7 +20,7 @@
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QString, QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
-#if __GNUC__
+#ifdef __GNUC__
 #	pragma GCC diagnostic pop
 #endif
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
@@ -162,6 +165,8 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 
 #ifndef NDEBUG
 			clog << "DEBUG: Created slot: " << slot << '.' << endl;
+#else
+			yunused(slot);
 #endif
 			LiftOther(term, *term.rbegin());
 			return DynamicSlot(
