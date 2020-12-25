@@ -3,13 +3,15 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "Context.h" // for ReductionStatus, TermNode, Context, ContextHandler;
+#include "Context.h" // for ReductionStatus, TermNode, Context, ContextHandler,
+//	 ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <algorithm> // for std::find_if;
 #include <ystdex/type_traits.hpp> // for ystdex::enable_if_t, std::is_same;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
+#include "Lexical.h" // for CategorizeLexeme, CategorizeBasicLexeme;
 
 namespace Unilang
 {
@@ -243,6 +245,17 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 {
 	term.Value = ValueToken::Unspecified;
 	return ReductionStatus::Clean;
+}
+
+
+template<typename _func>
+auto
+CheckSymbol(string_view n, _func f) -> decltype(f())
+{
+	if(CategorizeBasicLexeme(n) == LexemeCategory::Symbol)
+		return f();
+	throw ParameterMismatch(ystdex::sfmt(
+		"Invalid token '%s' found for symbol parameter.", n.data()));
 }
 
 void

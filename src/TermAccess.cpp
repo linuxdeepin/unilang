@@ -1,9 +1,11 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, Unilang::TryAccessLeaf;
+#include "TermAccess.h" // for sfmt;
 #include "Exception.h" // for ListTypeError;
-#include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn;
+#include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
+//	ystdex::invoke_value_or;
 #include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
+#include "Context.h" // for complete Environment;
 
 namespace Unilang
 {
@@ -55,6 +57,36 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
+
+#if Unilang_CheckTermReferenceIndirection
+TermNode&
+TermReference::get() const
+{
+	if(r_env.GetAnchorPtr() && r_env.GetPtr().lock())
+		return term_ref.get();
+	throw InvalidReference("Invalid reference found on indirection, probably"
+		" due to invalid context access by a dangling reference.");
+}
+#endif
+
+
+TermNode
+PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
+{
+	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+		return term;
+	return Unilang::AsTermNode(term.get_allocator(),
+		TermReference(p_env->MakeTermTags(term), term, p_env));
+}
+
+
+bool
+IsBoundLValueTerm(const TermNode& term)
+{
+	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
+		Unilang::TryAccessLeaf<const TermReference>(term));
 }
 
 } // namespace Unilang;
