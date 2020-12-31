@@ -11,11 +11,13 @@
 //	IsBranchedList;
 #include <iterator> // for std::next, std::iterator_traits;
 #include <functional> // for std::bind;
-#include "UnilangFFI.h"
+#include <ystdex/functor.hpp> // for ystdex::less, ystdex::less_equal,
+//	ystdex::greater, ystdex::greater_equal;
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
+#include "UnilangFFI.h"
 
 namespace Unilang
 {
@@ -197,23 +199,16 @@ LoadFunctions(Interpreter& intp)
 		$defv! $import! (&e .&symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
 	)Unilang");
-	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
-		RetainN(term);
-		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-			if(IsBranchedList(nd))
-			{
-				static std::random_device rd;
-				static std::mt19937 mt(rd());
-
-				LiftOtherOrCopy(term, *std::next(nd.begin(),
-					std::iterator_traits<TermNode::iterator>::difference_type(
-					std::uniform_int_distribution<size_t>(0, nd.size()
-					- 1)(mt))), Unilang::IsMovable(p_ref));
-				return ReductionStatus::Retained;
-			}
-			ThrowInsufficientTermsError(nd, p_ref);
-		}, *std::next(term.begin()));
-	});
+	// NOTE: Arithmetics.
+	// TODO: Use generic types.
+	RegisterBinary<Strict, const int, const int>(ctx, "<?", ystdex::less<>());
+	RegisterBinary<Strict, const int, const int>(ctx, "<=?",
+		ystdex::less_equal<>());
+	RegisterBinary<Strict, const int, const int>(ctx, ">=?",
+		ystdex::greater_equal<>());
+	RegisterBinary<Strict, const int, const int>(ctx, ">?",
+		ystdex::greater<>());
+	// NOTE: The standard I/O library.
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
 		c.SetupFront([&]{
@@ -234,6 +229,24 @@ LoadFunctions(Interpreter& intp)
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
 	});
+	// NOTE: Supplementary functions.
+	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
+		RetainN(term);
+		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			if(IsBranchedList(nd))
+			{
+				static std::random_device rd;
+				static std::mt19937 mt(rd());
+
+				LiftOtherOrCopy(term, *std::next(nd.begin(),
+					std::iterator_traits<TermNode::iterator>::difference_type(
+					std::uniform_int_distribution<size_t>(0, nd.size()
+					- 1)(mt))), Unilang::IsMovable(p_ref));
+				return ReductionStatus::Retained;
+			}
+			ThrowInsufficientTermsError(nd, p_ref);
+		}, *std::next(term.begin()));
+	});
 	RegisterUnary<Strict, const int>(ctx, "sys.exit", [&](int status){
 		std::exit(status);
 	});
@@ -243,7 +256,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.35"
+#define APP_VER "0.5.37"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
