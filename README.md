@@ -254,4 +254,41 @@ echo 'display "Hello world."; () newline' | ./unilang
 			* `not?`
 			* `make-encapsulation-type`
 			* `load`
+* **V0.6**
+	* README.md: 补充说明。
+	* 新增支持特性：
+		* **实验性** FFI 支持。
+		* 支持绑定的变量（包括函数参数）以引用传递。
+		* 默认在调试构建启用安全检查：
+			* 父环境引用。
+			* 对象悬空引用。
+		* 函数：
+			* 辅助库函数：
+				* `random.choice`
+				* `sys.exit`
+			* `$lambda/e`
+			* `bound-lvalue?`
+			* `$resolve-identifier`
+			* 保留引用值的不安全操作：
+				* `list%`
+				* `$vau/e%`
+				* `eval%`
+				* `$vau%`
+				* `$lambda%`
+				* `$defv%!`
+			* `move!`
+			* `forward!`
+			* 比较 `int` 操作数的关系操作：
+				* `<?`
+				* `<=?`
+				* `>=?`
+				* `>?`
+			* `filter`
+	* 优化实现：
+		* 移除部分标准库函数内部实现中参数传递的不必要的复制。
+		* 函数 `make-environment` 转移实际参数中的本机环境引用。
+	* 修复缺陷：
+		* 缺少列表参数检查。
+		* 错误的常规项（列表或非列表值的内部表示）检查。
+	* 更新外部依赖项，增强构建脚本支持。
 
