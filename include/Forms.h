@@ -93,6 +93,74 @@ struct UnaryAsExpansion
 };
 
 
+template<typename _func>
+struct BinaryExpansion
+	: private ystdex::equality_comparable<BinaryExpansion<_func>>
+{
+	_func Function;
+
+	BinaryExpansion(_func f)
+		: Function(std::move(f))
+	{}
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const BinaryExpansion& x, const BinaryExpansion& y)
+	{
+		return ystdex::examiners::equal_examiner::are_equal(x.Function,
+			y.Function);
+	}
+
+	template<typename... _tParams>
+	inline void
+	operator()(TermNode& term, _tParams&&... args) const
+	{
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& x(*++i);
+
+		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+			ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
+			std::ref(Function)), x, *++i, yforward(args)...),
+			term.get_allocator());
+	}
+};
+
+
+template<typename _type, typename _type2, typename _func>
+struct BinaryAsExpansion : private
+	ystdex::equality_comparable<BinaryAsExpansion<_type, _type2, _func>>
+{
+	_func Function;
+
+	BinaryAsExpansion(_func f)
+		: Function(std::move(f))
+	{}
+
+	[[nodiscard, gnu::pure]] friend bool
+	operator==(const BinaryAsExpansion& x, const BinaryAsExpansion& y)
+	{
+		return ystdex::examiners::equal_examiner::are_equal(x.Function,
+			y.Function);
+	}
+
+	template<typename... _tParams>
+	inline void
+	operator()(TermNode& term, _tParams&&... args) const
+	{
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& x(Unilang::ResolveRegular<_type>(*++i));
+
+		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+			ystdex::make_expanded<void(_type&, _type2&, _tParams&&...)>(
+			std::ref(Function)), x, Unilang::ResolveRegular<_type2>(*++i),
+			yforward(args)...), term.get_allocator());
+	}
+};
+
+
 template<size_t _vWrapping = Strict, typename _func, class _tTarget>
 inline void
 RegisterUnary(_tTarget& target, string_view name, _func f)
@@ -109,12 +177,28 @@ RegisterUnary(_tTarget& target, string_view name, _func f)
 		UnaryAsExpansion<_type, _func>(std::move(f)));
 }
 
+template<size_t _vWrapping = Strict, typename _func, class _tTarget>
+inline void
+RegisterBinary(_tTarget& target, string_view name, _func f)
+{
+	Unilang::RegisterHandler<_vWrapping>(target, name,
+		BinaryExpansion<_func>(std::move(f)));
+}
+template<size_t _vWrapping = Strict, typename _type, typename _type2,
+	typename _func, class _tTarget>
+inline void
+RegisterBinary(_tTarget& target, string_view name, _func f)
+{
+	Unilang::RegisterHandler<_vWrapping>(target, name,
+		BinaryAsExpansion<_type, _type2, _func>(std::move(f)));
+}
 
-ReductionStatus
-Equal(TermNode&);
 
-ReductionStatus
-EqualValue(TermNode&);
+void
+Eq(TermNode&);
+
+void
+EqValue(TermNode&);
 
 
 ReductionStatus
@@ -132,10 +216,10 @@ ReductionStatus
 EvalRef(TermNode&, Context&);
 
 
-ReductionStatus
+void
 MakeEnvironment(TermNode&);
 
-ReductionStatus
+void
 GetCurrentEnvironment(TermNode&, Context&);
 
 

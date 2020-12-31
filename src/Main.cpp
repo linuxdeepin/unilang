@@ -11,12 +11,14 @@
 //	IsBranchedList;
 #include <iterator> // for std::next, std::iterator_traits;
 #include <functional> // for std::bind;
-#include "UnilangFFI.h"
-#include "UnilangQt.h"
+#include <ystdex/functor.hpp> // for ystdex::less, ystdex::less_equal,
+//	ystdex::greater, ystdex::greater_equal;
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
+#include "UnilangFFI.h"
+#include "UnilangQt.h"
 
 namespace Unilang
 {
@@ -55,8 +57,8 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 	using namespace std::placeholders;
 
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
-	RegisterStrict(ctx, "eq?", Equal);
-	RegisterStrict(ctx, "eqv?", EqualValue);
+	RegisterStrict(ctx, "eq?", Eq);
+	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
@@ -161,6 +163,8 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 			foldr1 ($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 		$defl! list-concat (&x &y) foldr1 cons y x;
 		$defl! append (.&ls) foldr1 list-concat () (move! ls);
+		$defl! filter (&accept? &ls) apply append
+			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 		$defv! $let (&bindings .&body) d
 			eval (list* () (list* $lambda (map1 first bindings)
 				(list (move! body)))
@@ -198,6 +202,37 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 		$defv! $import! (&e .&symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
 	)Unilang");
+	// NOTE: Arithmetics.
+	// TODO: Use generic types.
+	RegisterBinary<Strict, const int, const int>(ctx, "<?", ystdex::less<>());
+	RegisterBinary<Strict, const int, const int>(ctx, "<=?",
+		ystdex::less_equal<>());
+	RegisterBinary<Strict, const int, const int>(ctx, ">=?",
+		ystdex::greater_equal<>());
+	RegisterBinary<Strict, const int, const int>(ctx, ">?",
+		ystdex::greater<>());
+	// NOTE: The standard I/O library.
+	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
+		RetainN(term);
+		c.SetupFront([&]{
+			term = intp.ReadFrom(*intp.OpenUnique(std::move(
+				Unilang::ResolveRegular<string>(*std::next(term.begin())))),
+				c);
+			return ReduceOnce(term, c);
+		});
+	});
+	RegisterStrict(ctx, "display", [&](TermNode& term){
+		RetainN(term);
+		LiftOther(term, *std::next(term.begin()));
+		PrintTermNode(std::cout, term);
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(ctx, "newline", [&](TermNode& term){
+		RetainN(term, 0);
+		std::cout << std::endl;
+		return ReduceReturnUnspecified(term);
+	});
+	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
@@ -215,27 +250,6 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 			ThrowInsufficientTermsError(nd, p_ref);
 		}, *std::next(term.begin()));
 	});
-	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
-		RetainN(term);
-		c.SetupFront([&]{
-			term = intp.ReadFrom(*intp.OpenUnique(std::move(
-				Unilang::ResolveRegular<string>(*std::next(term.begin())))),
-				c);
-			return ReduceOnce(term, c);
-		});
-		return ReductionStatus::Clean;
-	});
-	RegisterStrict(ctx, "display", [&](TermNode& term){
-		RetainN(term);
-		LiftOther(term, *std::next(term.begin()));
-		PrintTermNode(std::cout, term);
-		return ReduceReturnUnspecified(term);
-	});
-	RegisterStrict(ctx, "newline", [&](TermNode& term){
-		RetainN(term, 0);
-		std::cout << std::endl;
-		return ReduceReturnUnspecified(term);
-	});
 	RegisterUnary<Strict, const int>(ctx, "sys.exit", [&](int status){
 		std::exit(status);
 	});
@@ -247,7 +261,7 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.32"
+#define APP_VER "0.6.0"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

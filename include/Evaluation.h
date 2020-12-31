@@ -4,12 +4,15 @@
 #define INC_Unilang_Evaluation_h_ 1
 
 #include "Context.h" // for ReductionStatus, TermNode, Context, ContextHandler,
-//	 ystdex::sfmt;
+//	 YSLib::AreEqualHeld, YSLib::GHEvent, ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <algorithm> // for std::find_if;
-#include <ystdex/type_traits.hpp> // for ystdex::enable_if_t, std::is_same;
+#include <ystdex/operators.hpp> // for ystdex::equality_comparable;
+#include <ystdex/function.hpp> // for ystdex::make_function_type_t,
+//	ystdex::make_parameter_list_t;
+#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include "Lexical.h" // for CategorizeLexeme, CategorizeBasicLexeme;
 
@@ -165,16 +168,116 @@ struct SeparatorTransformer
 };
 
 
+template<typename _func>
+class WrappedContextHandler
+	: private ystdex::equality_comparable<WrappedContextHandler<_func>>
+{
+public:
+	_func Handler;
+
+	template<typename... _tParams, typename
+		= ystdex::exclude_self_params_t<WrappedContextHandler, _tParams...>>
+	WrappedContextHandler(_tParams&&... args)
+		: Handler(yforward(args)...)
+	{}
+	WrappedContextHandler(const WrappedContextHandler&) = default;
+	WrappedContextHandler(WrappedContextHandler&&) = default;
+
+	WrappedContextHandler&
+	operator=(const WrappedContextHandler&) = default;
+	WrappedContextHandler&
+	operator=(WrappedContextHandler&&) = default;
+
+	template<typename... _tParams>
+	ReductionStatus
+	operator()(_tParams&&... args) const
+	{
+		Handler(yforward(args)...);
+		return ReductionStatus::Clean;
+	}
+
+	[[nodiscard]] friend bool
+	operator==(const WrappedContextHandler& x, const WrappedContextHandler& y)
+	{
+		return YSLib::AreEqualHeld(x.Handler, y.Handler);
+	}
+
+	friend void
+	swap(WrappedContextHandler& x, WrappedContextHandler& y) noexcept
+	{
+		return swap(x.Handler, y.Handler);
+	}
+};
+
+template<class _tDst, typename _func>
+[[nodiscard, gnu::pure]] inline _tDst
+WrapContextHandler(_func&& h, ystdex::false_)
+{
+	return WrappedContextHandler<YSLib::GHEvent<ystdex::make_function_type_t<
+		void, ystdex::make_parameter_list_t<typename _tDst::BaseType>>>>(
+		yforward(h));
+}
+template<class, typename _func>
+[[nodiscard, gnu::pure]] inline _func
+WrapContextHandler(_func&& h, ystdex::true_)
+{
+	return yforward(h);
+}
+template<class _tDst, typename _func>
+[[nodiscard, gnu::pure]] inline _tDst
+WrapContextHandler(_func&& h)
+{
+	using BaseType = typename _tDst::BaseType;
+
+	return Unilang::WrapContextHandler<_tDst>(yforward(h), ystdex::or_<
+		std::is_constructible<BaseType, _func>,
+		std::is_constructible<BaseType, ystdex::expanded_caller<
+		typename _tDst::FuncType, ystdex::decay_t<_func>>>>());
+}
+template<class _tDst, typename _func, class _tAlloc>
+[[nodiscard, gnu::pure]] inline _tDst
+WrapContextHandler(_func&& h, const _tAlloc& a, ystdex::false_)
+{
+	return WrappedContextHandler<YSLib::GHEvent<ystdex::make_function_type_t<
+		void, ystdex::make_parameter_list_t<typename _tDst::BaseType>>>>(
+		std::allocator_arg, a, yforward(h));
+}
+template<class, typename _func, class _tAlloc>
+[[nodiscard, gnu::pure]] inline _func
+WrapContextHandler(_func&& h, const _tAlloc&, ystdex::true_)
+{
+	return yforward(h);
+}
+template<class _tDst, typename _func, class _tAlloc>
+[[nodiscard, gnu::pure]] inline _tDst
+WrapContextHandler(_func&& h, const _tAlloc& a)
+{
+	using BaseType = typename _tDst::BaseType;
+
+	return Unilang::WrapContextHandler<_tDst>(yforward(h), a, ystdex::or_<
+		std::is_constructible<BaseType, _func>,
+		std::is_constructible<BaseType, ystdex::expanded_caller<
+		typename _tDst::FuncType, ystdex::decay_t<_func>>>>());
+}
+
+
 class FormContextHandler
 {
 public:
 	ContextHandler Handler;
 	size_t Wrapping;
 
-	template<typename _func, typename = ystdex::enable_if_t<
-		!std::is_same<FormContextHandler&, _func&>::value>>
+	template<typename _func,
+		typename = ystdex::exclude_self_t<FormContextHandler, _func>>
 	FormContextHandler(_func&& f, size_t n = 0)
-		: Handler(yforward(f)), Wrapping(n)
+		: Handler(Unilang::WrapContextHandler<ContextHandler>(yforward(f))),
+		Wrapping(n)
+	{}
+	template<typename _func, class _tAlloc>
+	FormContextHandler(std::allocator_arg_t, const _tAlloc& a, _func&& f,
+		size_t n = 0)
+		: Handler(std::allocator_arg, a, Unilang::WrapContextHandler<
+		ContextHandler>(yforward(f), a)), Wrapping(n)
 	{}
 	FormContextHandler(const FormContextHandler&) = default;
 	FormContextHandler(FormContextHandler&&) = default;
