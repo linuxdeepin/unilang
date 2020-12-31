@@ -110,11 +110,11 @@ RegisterUnary(_tTarget& target, string_view name, _func f)
 }
 
 
-ReductionStatus
-Equal(TermNode&);
+void
+Eq(TermNode&);
 
-ReductionStatus
-EqualValue(TermNode&);
+void
+EqValue(TermNode&);
 
 
 ReductionStatus
@@ -132,10 +132,10 @@ ReductionStatus
 EvalRef(TermNode&, Context&);
 
 
-ReductionStatus
+void
 MakeEnvironment(TermNode&);
 
-ReductionStatus
+void
 GetCurrentEnvironment(TermNode&, Context&);
 
 
