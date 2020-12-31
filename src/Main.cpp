@@ -54,8 +54,8 @@ LoadFunctions(Interpreter& intp)
 	using namespace std::placeholders;
 
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
-	RegisterStrict(ctx, "eq?", Equal);
-	RegisterStrict(ctx, "eqv?", EqualValue);
+	RegisterStrict(ctx, "eq?", Eq);
+	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
@@ -222,7 +222,6 @@ LoadFunctions(Interpreter& intp)
 				c);
 			return ReduceOnce(term, c);
 		});
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(ctx, "display", [&](TermNode& term){
 		RetainN(term);
@@ -244,7 +243,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.5.32"
+#define APP_VER "0.5.35"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
