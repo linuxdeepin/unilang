@@ -10,6 +10,7 @@
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
+#include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 
 namespace Unilang
 {
@@ -277,8 +278,7 @@ public:
 
 
 // NOTE: This is the host type for combiners.
-using ContextHandler
-	= ystdex::expanded_function<ReductionStatus(TermNode&, Context&)>;
+using ContextHandler = YSLib::GHEvent<ReductionStatus(TermNode&, Context&)>;
 
 
 template<typename... _tParams>
