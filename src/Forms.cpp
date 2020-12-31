@@ -334,7 +334,7 @@ EqualTerm(TermNode& term, _fComp f, _func g)
 
 template<typename _func>
 void
-EqualTermReference(TermNode& term, _func f)
+EqTermReference(TermNode& term, _func f)
 {
 	EqualTerm(term, [f](const TermNode& x, const TermNode& y){
 		return IsLeaf(x) && IsLeaf(y) ? f(x.Value, y.Value)
@@ -431,7 +431,7 @@ public:
 		return x.Get() == y.Get();
 	}
 
-	ReductionStatus
+	void
 	operator()(TermNode& term) const
 	{
 		Forms::RetainN(term);
@@ -442,7 +442,6 @@ public:
 			ystdex::invoke_value_or(&TermReference::get,
 			Unilang::TryAccessReferencedLeaf<const TermReference>(tm),
 			std::move(tm))));
-		return ReductionStatus::Clean;
 	}
 };
 
@@ -467,7 +466,7 @@ public:
 		return x.Get() == y.Get();
 	}
 
-	ReductionStatus
+	void
 	operator()(TermNode& term) const
 	{
 		Forms::RetainN(term);
@@ -478,7 +477,6 @@ public:
 			ystdex::call_value_or([this](const Encapsulation& enc) noexcept{
 				return Get() == enc.Get();
 			}, Unilang::TryAccessReferencedTerm<Encapsulation>(tm)));
-		return ReductionStatus::Clean;
 	}
 };
 
@@ -560,18 +558,16 @@ RetainN(const TermNode& term, size_t m)
 }
 
 
-ReductionStatus
-Equal(TermNode& term)
+void
+Eq(TermNode& term)
 {
-	EqualTermReference(term, YSLib::HoldSame);
-	return ReductionStatus::Clean;
+	EqTermReference(term, YSLib::HoldSame);
 }
 
-ReductionStatus
-EqualValue(TermNode& term)
+void
+EqValue(TermNode& term)
 {
-	EqualTermReference(term, ystdex::equal_to<>());
-	return ReductionStatus::Clean;
+	EqTermReference(term, ystdex::equal_to<>());
 }
 
 
@@ -636,7 +632,7 @@ EvalRef(TermNode& term, Context& ctx)
 }
 
 
-ReductionStatus
+void
 MakeEnvironment(TermNode& term)
 {
 	Retain(term);
@@ -665,15 +661,13 @@ MakeEnvironment(TermNode& term)
 	}
 	else
 		term.Value = Unilang::AllocateEnvironment(a);
-	return ReductionStatus::Clean;
 }
 
-ReductionStatus
+void
 GetCurrentEnvironment(TermNode& term, Context& ctx)
 {
 	RetainN(term, 0);
 	term.Value = ValueObject(ctx.WeakenRecord());
-	return ReductionStatus::Clean;
 }
 
 
