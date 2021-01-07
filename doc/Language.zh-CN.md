@@ -928,11 +928,11 @@ $or? <test>...
 
 `$bindings/p->environment (<environment>...) <binding>...`
 
-　　转换绑定列表为以指定的环境列表为父环境的环境。
+　　转换绑定列表为以指定的环境列表中的环境为父环境的具有这些绑定的环境。
 
 `$bindings->environment <binding>...`
 
-　　转换绑定列表为以标准环境为父环境的环境。
+　　转换绑定列表为没有父环境的具有这些绑定的环境。
 
 `$provide! <symbols> <body>`
 
