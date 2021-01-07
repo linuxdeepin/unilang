@@ -158,17 +158,17 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 echo 'display "Hello world."; () newline' | ./unilang
 ```
 
-## Qt Demo
-
-　　当前实现支持 Qt 绑定的 GUI 演示程序。
-
-　　在当前目录下运行：
+### Qt Demo
 
 ```
-echo 'load "qt.txt"' | ./unilang # Or it is like 'build/.debug/unilang.exe' when built by './sbuild.sh'.
+echo 'load "qt.txt"' | ./unilang
 ```
 
-　　和使用 PySide2 的 Python 程序 `hello_world.py` 效果相同。
+### Quicksort demo
+
+```
+echo 'load "quicksort.txt"' | ./unilang
+```
 
 # 支持的语言特性
 
