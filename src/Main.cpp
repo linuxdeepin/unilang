@@ -186,8 +186,7 @@ LoadFunctions(Interpreter& intp)
 				(list* () list (map1 rest bindings))) d)
 			res;
 		$defv! $bindings->environment (.&bindings) d
-			eval (list* $bindings/p->environment
-				(list (() make-standard-environment)) bindings) d;
+			eval (list* $bindings/p->environment () bindings) d;
 		$defv! $provide! (&symbols .&body) d
 			$sequence (eval (list $def! symbols (list $let () $sequence
 				(list ($vau (e) d $set! e res (lock-environment d))
@@ -258,7 +257,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.0"
+#define APP_VER "0.6.1"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
