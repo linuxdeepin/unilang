@@ -197,11 +197,6 @@ LoadFunctions(Interpreter& intp)
 				(list ($vau (e) d $set! e res (lock-environment d))
 				(() get-current-environment)) (move! body)
 				(list* () list symbols))) d) res;
-		$defv! $provide/d! (&symbols &ef .body) d
-			$sequence (eval (list $def! symbols (list $let/d () ef $sequence
-				(list ($vau (e) d $set! e res (lock-environment d))
-				(() get-current-environment)) (move! body)
-				(list* () list symbols))) d) res;
 		$defv! $import! (&e .&symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
 	)Unilang");
@@ -262,7 +257,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.3"
+#define APP_VER "0.6.4"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
