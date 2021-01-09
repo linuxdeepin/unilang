@@ -971,12 +971,6 @@ $or? <test>...
 
 　　结果是带有这些绑定的环境。
 
-`$provide/d! <symbols> <eformal> <body>`
-
-　　同 `$provide!` ，但在 <body> 的求值前引入绑定到动态环境的变量 <eformal> 。
-
-　　若 <eformal> 为 `#ignore` ，作用同 `$provide!` 。
-
 `$import! <environment> <symbols>`
 
 　　从第一参数指定的环境导入第二参数指定的符号。
