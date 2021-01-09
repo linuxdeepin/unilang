@@ -923,9 +923,15 @@ $or? <test>...
 
 **注释** 调用谓词的求值顺序未指定。
 
+`derive-current-environment <environment>...`
+
+　　创建当前环境的派生环境。
+
+　　创建参数指定的环境和当前环境作为父环境的空环境。
+
 `$let <bindings> <body>`
 
-　　局部绑定求值。
+　　局部绑定求值：创建以当前环境为父环境的空环境，在其中添加 <bindings> 指定的变量绑定，再求值 <body> 。
 
 `$let/d <bindings> <eformal> <body>`
 

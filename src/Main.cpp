@@ -164,6 +164,8 @@ LoadFunctions(Interpreter& intp)
 		$defl! append (.&ls) foldr1 list-concat () (move! ls);
 		$defl! filter (&accept? &ls) apply append
 			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
+		$defw! derive-current-environment (.&envs) d
+			apply make-environment (append envs (list d)) d;
 		$defv! $let (&bindings .&body) d
 			eval (list* () (list* $lambda (map1 first bindings)
 				(list (move! body)))
@@ -257,7 +259,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.1"
+#define APP_VER "0.6.2"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
