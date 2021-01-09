@@ -71,4 +71,7 @@ test '$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
 # NOTE: Test case on parent environment search.
 test "\$def! e make-environment (() get-current-environment); \
 eval ((unwrap (\$lambda (x) x)) e) e"
+# NOTE: Test case on std.strings.
+test '$import! std.strings string-empty?; display (string-empty? "")'
+test '$import! std.strings string-empty?; display (string-empty? "x")'
 
