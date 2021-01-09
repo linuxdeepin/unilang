@@ -797,6 +797,10 @@
 
 　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
 
+`$defl/e! <variable> <environment> <formals> <body>`
+
+　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <environment> <formals> <body>` 。
+
 `() make-standard-environment`
 
 　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
