@@ -10,7 +10,7 @@
 
 　　标记为 **注释** 的文本属于*说明性(informative)* 而不是*正式(normative)* 规则。
 
-　　外部的引用以[超链接](https://zh.wikipedia.org/zh-cn/%E8%B6%85%E9%93%BE%E6%8E%A5)指定。全文外部引用另见以下的正式引用(normative references) 章节。
+　　外部文档引用和内部章节引用以[超链接](https://zh.wikipedia.org/zh-cn/%E8%B6%85%E9%93%BE%E6%8E%A5)指定。全文外部引用另见以下的正式引用(normative references) 章节。
 
 　　部分术语或其它名词性文本的特定义项首次出现时使用半角括号标注对应的英文翻译供参照。首字母缩略语(acronym) 和非局部概念的标题使用翻译时，词首字母大写。
 
@@ -141,12 +141,14 @@
 
 ## 基本语法
 
+```
 <expression> ::= <atom-expression> | <composite-expression> | <list-expression>
 <composite-expression> ::= <token-expression> | <expression-token>
 <atom-expression> ::= <token>
 <list-expression> ::= <left-list-bound> <expression>* <right-list-bound>
 <left-list-bound> ::= `(` | <extended-left-list-bound>
 <right-list-bound> ::= `)` | <extended-right-list-bound>
+```
 
 　　Unilang 基础语言的翻译单元以*表达式(expression)* 作为语法单位。一个表达式可以是：
 
@@ -158,10 +160,10 @@
 
 　　以下词法构造在基础语言中是空集，可由派生实现定义：
 
-* <extended-left-list-bound>
-* <extended-right-list-bound>
-* <token-expression>
-* <expression-token>
+* `<extended-left-list-bound>`
+* `<extended-right-list-bound>`
+* `<token-expression>`
+* `<expression-token>`
 
 ## 中缀变换
 
@@ -419,7 +421,7 @@
 
 ## 中缀变换
 
-　　中缀变换的 <transformed-infix> 在被求值时在操作符的位置，起到函数的作用。
+　　中缀变换的 `<transformed-infix>` 在被求值时在操作符的位置，起到函数的作用。
 
 　　以下中缀记号中缀变换函数的调用具有以下语义：
 
@@ -430,7 +432,7 @@
 
 　　程序引入或可被程序操作的 Unilang 实体在基础语言中是*一等实体(first-class entity)* 。一等实体总是可被作为操作数（用以调用函数）或作为函数调用的求值结果。
 
-　　若一等实体是对象，它是*一等对象(first-class object)* 。
+　　若一等实体是对象，它是*一等对象(first-class object)</a>* 。
 
 　　相较于其它语言，基础语言不附加限制区分非一等的实体。这有利于同时提升简单性和一致性。区分一等对象和一等实体并不是限制，
 
