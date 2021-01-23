@@ -17,7 +17,7 @@
 //	ThrowInsufficientTermsError;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal;
-#include <regex> // for std::regex;
+#include <regex> // for std::regex, std::regex_match;
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -155,6 +155,16 @@ LoadModule_std_strings(Context& ctx)
 	RegisterUnary<Strict, const string>(renv, "string->regex",
 		[](const string& str){
 		return std::regex(str);
+	});
+	RegisterStrict(renv, "regex-match?", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(std::next(term.begin()));
+		const auto& str(Unilang::ResolveRegular<const string>(*i));
+		const auto& r(Unilang::ResolveRegular<const std::regex>(*++i));
+
+		term.Value = std::regex_match(str, r);
+		return ReductionStatus::Clean;
 	});
 }
 
@@ -380,7 +390,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.21"
+#define APP_VER "0.6.22"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
