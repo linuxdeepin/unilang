@@ -113,6 +113,17 @@ LoadModule_std_strings(Context& ctx)
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
+	RegisterBinary<Strict, string, string>(renv, "string-contains-ci?",
+		[](string x, string y){
+		const auto to_lwr([](string& str) noexcept{
+			for(auto& c : str)
+				c = ystdex::tolower(c);
+		});
+
+		to_lwr(x),
+		to_lwr(y);
+		return x.find(y) != string::npos;
+	});
 }
 
 void
@@ -337,7 +348,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.17"
+#define APP_VER "0.6.18"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
