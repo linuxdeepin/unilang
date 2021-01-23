@@ -109,6 +109,10 @@ LoadModule_std_strings(Context& ctx)
 	});
 	RegisterBinary<Strict, const string, const string>(renv, "string=?",
 		ystdex::equal_to<>());
+	RegisterBinary<Strict, string, string>(renv, "string-contains?",
+		[](const string& x, const string& y){
+		return x.find(y) != string::npos;
+	});
 }
 
 void
@@ -333,7 +337,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.16"
+#define APP_VER "0.6.17"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
