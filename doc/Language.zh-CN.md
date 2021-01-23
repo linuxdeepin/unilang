@@ -1129,6 +1129,12 @@ $or? <test>...
 `string-empty? <string>`
 
 　　判断字符串是否为空。
+　　
+`string<- <string1> <string2>`
+
+　　字符串赋值。
+
+　　以第二参数为源，修改第一参数指定的目标。
 
 ## 算术操作
 

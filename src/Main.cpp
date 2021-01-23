@@ -86,6 +86,27 @@ LoadModule_std_strings(Context& ctx)
 		[](const string& str) noexcept{
 			return str.empty();
 		});
+	RegisterBinary<>(renv, "string<-", [](TermNode& x, TermNode& y){
+		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
+			if(!p_ref_x || p_ref_x->IsModifiable())
+			{
+				auto& str_x(Unilang::AccessRegular<string>(nd_x, p_ref_x));
+
+				ResolveTerm(
+					[&](TermNode& nd_y, ResolvedTermReferencePtr p_ref_y){
+					auto& str_y(Unilang::AccessRegular<string>(nd_y, p_ref_y));
+
+					if(Unilang::IsMovable(p_ref_y))
+						str_x = std::move(str_y);
+					else
+						str_x = str_y;
+				}, y);
+			}
+			else
+				ThrowNonmodifiableErrorForAssignee();
+		}, x);
+		return ValueToken::Unspecified;
+	});
 }
 
 void
@@ -310,7 +331,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.14"
+#define APP_VER "0.6.15"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
