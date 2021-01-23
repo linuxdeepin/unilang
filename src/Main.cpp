@@ -6,7 +6,7 @@
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <functional> // for std::bind, std::placeholders;
-#include "Forms.h" // for Forms::RetainN;
+#include "Forms.h" // for Forms::RetainN, CallBinaryFold;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "BasicReduction.h" // for ReductionStatus;
 #include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
@@ -15,8 +15,8 @@
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Evaluation.h" // for CheckSymbol, RegisterStrict,
 //	ThrowInsufficientTermsError;
-#include <ystdex/functor.hpp> // for ystdex::less, ystdex::less_equal,
-//	ystdex::greater, ystdex::greater_equal;
+#include <ystdex/functor.hpp> // for ystdex::plus, ystdex::less,
+//	ystdex::less_equal, ystdex::greater, ystdex::greater_equal;
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -79,6 +79,9 @@ LoadModule_std_strings(Context& ctx)
 	using namespace Forms;
 	auto& renv(ctx.GetRecordRef());
 
+	RegisterStrict(renv, "++",
+		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
+		string(), std::placeholders::_1));
 	RegisterUnary<Strict, const string>(renv, "string-empty?",
 		[](const string& str) noexcept{
 			return str.empty();
@@ -307,7 +310,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.13"
+#define APP_VER "0.6.14"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
