@@ -1,7 +1,8 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Context.h" // for lref;
-#include "Exception.h" // for UnilangException, ListTypeError;
+#include <cassert> // for assert;
+#include "Exception.h" // for BadIdentifier, UnilangException, ListTypeError;
 #include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
@@ -82,6 +83,14 @@ void
 Environment::CheckParent(const ValueObject&)
 {
 	// TODO: Check parent type.
+}
+
+void
+Environment::DefineChecked(string_view id, ValueObject&& vo)
+{
+	assert(id.data());
+	if(!AddValue(id, std::move(vo)))
+		throw BadIdentifier(id, 2);
 }
 
 Environment&
