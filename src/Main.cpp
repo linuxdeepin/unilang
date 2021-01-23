@@ -73,6 +73,17 @@ DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 	return ReductionStatus::Retained;
 }
 
+TokenValue
+StringToSymbol(const string& s)
+{
+	return TokenValue(s);
+}
+TokenValue
+StringToSymbol(string&& s)
+{
+	return TokenValue(std::move(s));
+}
+
 void
 LoadModule_std_strings(Context& ctx)
 {
@@ -123,6 +134,14 @@ LoadModule_std_strings(Context& ctx)
 		to_lwr(x),
 		to_lwr(y);
 		return x.find(y) != string::npos;
+	});
+	RegisterUnary<>(renv, "string->symbol", [](TermNode& term){
+		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			auto& s(Unilang::AccessRegular<string>(nd, p_ref));
+
+			return Unilang::IsMovable(p_ref) ? StringToSymbol(std::move(s))
+				: StringToSymbol(s);
+		}, term);
 	});
 }
 
@@ -348,7 +367,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.18"
+#define APP_VER "0.6.19"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
