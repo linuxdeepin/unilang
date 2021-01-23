@@ -1122,6 +1122,10 @@ $or? <test>...
 
 　　字符串操作加载为基础环境下的 `std.string` 环境。
 
+　　字符串操作支持以下求值得到的操作数：
+
+* `<regex>` 正则表达式类型。
+
 `++ <string>...`
 
 　　字符串串接。
@@ -1157,6 +1161,14 @@ $or? <test>...
 `symbol->string <symbol>`
 
 　　转换符号为字符串。
+
+`symbol->string <symbol>`
+
+　　转换符号为字符串。
+
+`string->regex <string>`
+
+　　创建字符串初始化的正则表达式。
 
 ## 算术操作
 
