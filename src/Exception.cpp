@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Exception.h" // for std::string, make_shared;
 
@@ -20,6 +20,13 @@ BadIdentifier::BadIdentifier(string_view id, size_t n)
 	: InvalidSyntax(InitBadIdentifierExceptionString(std::string(id.data(),
 	id.data() + id.size()), n)), p_identifier(make_shared<string>(id))
 {}
+
+
+void
+ThrowNonmodifiableErrorForAssignee()
+{
+	throw TypeError("Destination operand of assignment shall be modifiable.");
+}
 
 } // namespace Unilang;
 
