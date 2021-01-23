@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
@@ -102,6 +102,10 @@ class InvalidReference : public UnilangException
 public:
 	using UnilangException::UnilangException;
 };
+
+
+[[noreturn]] void
+ThrowNonmodifiableErrorForAssignee();
 
 } // namespace Unilang;
 
