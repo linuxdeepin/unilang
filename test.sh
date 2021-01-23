@@ -74,4 +74,5 @@ eval ((unwrap (\$lambda (x) x)) e) e"
 # NOTE: Test case on std.strings.
 test '$import! std.strings string-empty?; display (string-empty? "")'
 test '$import! std.strings string-empty?; display (string-empty? "x")'
+test '$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123")'
 
