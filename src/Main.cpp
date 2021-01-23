@@ -1,16 +1,20 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for Interpreter;
+#include "Interpreter.h" // for Interpreter, ValueObject;
+#include "Context.h" // for EnvironmentSwitcher,
+//	Unilang::SwitchToFreshEnvironment;
+#include <ystdex/scope_guard.hpp> // for ystdex::guard;
+#include <ystdex/invoke.hpp> // for ystdex::invoke;
+#include <functional> // for std::bind, std::placeholders;
 #include "Forms.h" // for Forms::RetainN;
-#include "Evaluation.h" // for CheckSymbol, RegisterStrict,
-//	ThrowInsufficientTermsError;
+#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "BasicReduction.h" // for ReductionStatus;
-#include "Forms.h" // for RetainN;
-#include "TermAccess.h" // for Unilang::ResolveTerm, ComposeReferencedTermOp,
-//	IsBoundLValueTerm, EnvironmentReference, TermNode, ResolveTerm,
+#include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
+//	ComposeReferencedTermOp, IsBoundLValueTerm, EnvironmentReference, TermNode,
 //	IsBranchedList;
 #include <iterator> // for std::next, std::iterator_traits;
-#include <functional> // for std::bind;
+#include "Evaluation.h" // for CheckSymbol, RegisterStrict,
+//	ThrowInsufficientTermsError;
 #include <ystdex/functor.hpp> // for ystdex::less, ystdex::less_equal,
 //	ystdex::greater, ystdex::greater_equal;
 #include <iostream> // for std::cout, std::endl;
@@ -24,6 +28,27 @@ namespace Unilang
 
 namespace
 {
+
+template<typename _fCallable>
+shared_ptr<Environment>
+GetModuleFor(Context& ctx, _fCallable&& f)
+{
+	ystdex::guard<EnvironmentSwitcher> gd(ctx,
+		Unilang::SwitchToFreshEnvironment(ctx,
+		ValueObject(ctx.WeakenRecord())));
+
+	ystdex::invoke(f);
+	// TODO: Freeze?
+	return ctx.ShareRecord();
+}
+
+template<typename _fCallable>
+inline void
+LoadModuleChecked(Context& ctx, string_view module_name, _fCallable&& f)
+{
+	ctx.GetRecordRef().DefineChecked(module_name,
+		Unilang::GetModuleFor(ctx, yforward(f)));
+}
 
 [[nodiscard]] ReductionStatus
 DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
@@ -49,11 +74,23 @@ DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 }
 
 void
+LoadModule_std_strings(Context& ctx)
+{
+	using namespace Forms;
+	auto& renv(ctx.GetRecordRef());
+
+	RegisterUnary<Strict, const string>(renv, "string-empty?",
+		[](const string& str) noexcept{
+			return str.empty();
+		});
+}
+
+void
 LoadFunctions(Interpreter& intp)
 {
-	auto& ctx(intp.Root);
 	using namespace Forms;
 	using namespace std::placeholders;
+	auto& ctx(intp.Root);
 
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Eq);
@@ -203,13 +240,6 @@ LoadFunctions(Interpreter& intp)
 			eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
 		$defv! $import! (&e .&symbols) d
 			eval (list $set! d symbols (list* () list symbols)) (eval e d);
-		$def! std.strings make-environment ($as-environment ($provide/let! (
-			string-empty?
-		)
-		((mods () get-current-environment))
-		(
-			$defl/e! string-empty? mods (&s) eqv? s "";
-		)));
 	)Unilang");
 	// NOTE: Arithmetics.
 	// TODO: Use generic types.
@@ -262,13 +292,22 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<Strict, const int>(ctx, "sys.exit", [&](int status){
 		std::exit(status);
 	});
+
+	auto& rctx(intp.Root);
+	const auto load_std_module([&](string_view module_name,
+		void(&load_module)(Context& ctx)){
+		LoadModuleChecked(rctx, "std." + string(module_name),
+			std::bind(load_module, std::ref(ctx)));
+	});
+
+	load_std_module("strings", LoadModule_std_strings);
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
 	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.9"
+#define APP_VER "0.6.13"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
