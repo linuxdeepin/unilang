@@ -1122,6 +1122,10 @@ $or? <test>...
 
 　　字符串操作加载为基础环境下的 `std.string` 环境。
 
+`++ <string>...`
+
+　　字符串串接。
+
 `string-empty? <string>`
 
 　　判断字符串是否为空。
