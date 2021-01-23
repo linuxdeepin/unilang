@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
@@ -114,6 +114,9 @@ public:
 
 	static void
 	CheckParent(const ValueObject&);
+
+	void
+	DefineChecked(string_view, ValueObject&&);
 
 	static Environment&
 	EnsureValid(const shared_ptr<Environment>&);
