@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Forms_h_
 #define INC_Unilang_Forms_h_ 1
@@ -7,12 +7,14 @@
 //	YSLib::EmplaceCallResult, Strict, Unilang::RegisterHandler, Context,
 //	YSLib::HoldSame;
 #include <cassert> // for assert;
+#include <ystdex/iterator.hpp> // for ystdex::make_transform;
 #include "TermAccess.h" // for Unilang::ResolveRegular;
+#include <numeric> // for std::accumulate;
+#include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_2,
+//	function, ystdex::make_expanded, std::ref;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/examiner.hpp> // for ystdex::invoke_nonvoid;
 #include <iterator> // for std::next;
-#include <ystdex/functional.hpp> // for function, ystdex::make_expanded,
-//	std::ref;
 
 namespace Unilang
 {
@@ -30,6 +32,23 @@ Retain(const TermNode& term) noexcept
 
 size_t
 RetainN(const TermNode&, size_t = 1);
+
+
+template<typename _type, typename _func, typename... _tParams>
+void
+CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
+{
+	const auto n(term.size() - 1);
+	auto i(term.begin());
+	const auto j(ystdex::make_transform(++i, [](TNIter it){
+		return Unilang::ResolveRegular<_type>(*it);
+	}));
+
+	YSLib::EmplaceCallResult(term.Value, std::accumulate(j, std::next(j,
+		typename std::iterator_traits<decltype(j)>::difference_type(n)), val,
+		ystdex::bind1(f, std::placeholders::_2, yforward(args)...)),
+		term.get_allocator());
+}
 
 
 template<typename _func>
