@@ -1162,10 +1162,6 @@ $or? <test>...
 
 　　转换符号为字符串。
 
-`symbol->string <symbol>`
-
-　　转换符号为字符串。
-
 `string->regex <string>`
 
 　　创建字符串初始化的正则表达式。
