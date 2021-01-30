@@ -352,6 +352,12 @@ LoadFunctions(Interpreter& intp)
 			return e1 / e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
+	RegisterBinary<Strict, const int, const int>(ctx, "mod",
+		[](const int& e1, const int& e2){
+		if(e2 != 0)
+			return e1 % e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
 	// NOTE: The standard I/O library.
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
@@ -409,7 +415,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.27"
+#define APP_VER "0.6.28"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
