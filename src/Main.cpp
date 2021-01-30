@@ -18,6 +18,7 @@
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal;
 #include <regex> // for std::regex, std::regex_match;
+#include "Arithmetic.h" // for Numbers;
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -326,12 +327,13 @@ LoadFunctions(Interpreter& intp)
 	)Unilang");
 	// NOTE: Arithmetics.
 	// TODO: Use generic types.
-	RegisterBinary<Strict, const int, const int>(ctx, "<?", ystdex::less<>());
-	RegisterBinary<Strict, const int, const int>(ctx, "<=?",
+	RegisterBinary<Strict, const Number, const Number>(ctx, "<?",
+		ystdex::less<>());
+	RegisterBinary<Strict, const Number, const Number>(ctx, "<=?",
 		ystdex::less_equal<>());
-	RegisterBinary<Strict, const int, const int>(ctx, ">=?",
+	RegisterBinary<Strict, const Number, const Number>(ctx, ">=?",
 		ystdex::greater_equal<>());
-	RegisterBinary<Strict, const int, const int>(ctx, ">?",
+	RegisterBinary<Strict, const Number, const Number>(ctx, ">?",
 		ystdex::greater<>());
 	// NOTE: The standard I/O library.
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
@@ -390,7 +392,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.22"
+#define APP_VER "0.6.23"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
