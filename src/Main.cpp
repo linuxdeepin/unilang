@@ -17,7 +17,7 @@
 //	ThrowInsufficientTermsError;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
-//	ystdex::minus;
+//	ystdex::minus, ystdex::multiplies;
 #include <regex> // for std::regex, std::regex_match;
 #include "Arithmetic.h" // for Numbers;
 #include <iostream> // for std::cout, std::endl;
@@ -342,6 +342,10 @@ LoadFunctions(Interpreter& intp)
 		ystdex::plus<>());
 	RegisterBinary<Strict, const Number, const Number>(ctx, "-",
 		ystdex::minus<>());
+	RegisterStrict(ctx, "*", std::bind(CallBinaryFold<Number,
+		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
+	RegisterBinary<Strict, const Number, const Number>(ctx, "multiply2",
+		ystdex::multiplies<>());
 	// NOTE: The standard I/O library.
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
@@ -399,7 +403,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.25"
+#define APP_VER "0.6.26"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
