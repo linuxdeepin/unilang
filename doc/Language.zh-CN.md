@@ -1207,6 +1207,15 @@ $or? <test>...
 
 　　结果为 \<number> 类型的差。
 
+`*` <number>...
+`multiply2` <number> <number>
+
+　　乘法。
+
+　　参数是乘数。
+
+　　结果为 \<number> 类型的积。
+
 ## 标准 I/O 库
 
 　　标准 I/O 库的操作在基础环境中直接提供绑定。
