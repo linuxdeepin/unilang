@@ -45,12 +45,6 @@ operator<(const Number& x, const Number& y) noexcept
 	return x.value < y.value;
 }
 
-Number
-operator-(const Number& x, const Number& y)
-{
-	return x.value - y.value;
-}
-
 } // inline namespace Numbers;
 
 } // namespace Unilang;
