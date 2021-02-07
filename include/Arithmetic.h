@@ -30,14 +30,10 @@ public:
 	operator*=(const Number&);
 
 	[[nodiscard, gnu::pure]] friend bool
-	operator==(const Number& x, const Number& y) noexcept;
+	operator==(const Number&, const Number&) noexcept;
 
 	[[nodiscard, gnu::pure]] friend bool
-	operator<(const Number& x, const Number& y) noexcept;
-
-	// XXX: Temporary workaround to avoid ambiguity
-	[[nodiscard, gnu::pure]] friend Number
-	operator-(const Number& x, const Number& y);
+	operator<(const Number&, const Number&) noexcept;
 };
 
 } // inline namespace Numbers;
