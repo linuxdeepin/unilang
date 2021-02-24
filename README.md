@@ -31,10 +31,22 @@ sudo apt install g++ libffi-dev pkg-config qtbase5-dev # Some may have been prei
 
 ## 构建环境更新
 
-　　构建之前，更新 git 版本库子模块确保外部依赖项：
+　　构建之前，在版本库根目录运行以下命令确保外部依赖项：
 
 ```
 git submodule update --init
+```
+
+　　若实际发生更新，且之前执行过 `install-sbuild.sh` 脚本，需清理补丁标记文件以确保再次执行这个脚本时能继续正确地处理源代码：
+
+```
+rm -f 3rdparty/.patched
+```
+
+　　使用以下 `git` 命令也能清理文件：
+
+```
+git clean -f -X 3rdparty
 ```
 
 ## 使用直接构建脚本
@@ -80,6 +92,9 @@ sudo apt install libfreetype6-dev
 * `SHBuild_BuildOpt` ：构建选项。默认值为 `-xj,$(nproc)` ，其中 `$(nproc)` 是并行构建任务数。可调整 `$(nproc)` 为其它正整数。
 * `SHBuild_SysRoot` ：安装根目录。默认指定值指定目录 `"3rdparty/YSLib/sysroot"` 。
 * `SHBuild_BuildDir` ：中间文件安装的目录。默认值指定目录 `"3rdparty/YSLib/build"` 。
+* `SHBuild_Rebuild_S1` ：非空值指定重新构建 [stage 1 SHBuild](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA)（较慢）。
+	* **注意** 构建环境更新 `3rdparty/YSLib/Tools/Scripts` 的文件后，需指定此环境变量为非空值，以避免可能和更新后的文件不兼容的问题。
+	* 其它情形不必要，建议忽略，以提升构建性能。
 
 　　使用安装的二进制工具和动态库需配置路径，如下：
 
