@@ -89,6 +89,12 @@ public:
 		return p_anchor.use_count() == 1;
 	}
 
+	[[nodiscard, gnu::pure]] size_t
+	GetAnchorCount() const noexcept
+	{
+		return size_t(p_anchor.use_count());
+	}
+
 	[[nodiscard, gnu::pure]] const AnchorPtr&
 	GetAnchorPtr() const noexcept
 	{
