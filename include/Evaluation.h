@@ -43,57 +43,6 @@ enum class ValueToken
 };
 
 
-class Continuation
-{
-public:
-	using allocator_type
-		= decltype(std::declval<const Context&>().get_allocator());
-
-	ContextHandler Handler;
-
-	template<typename _func, typename
-		= ystdex::exclude_self_t<Continuation, _func>>
-	inline
-	Continuation(_func&& handler, allocator_type a)
-		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
-		yforward(handler)))
-	{}
-	template<typename _func, typename
-		= ystdex::exclude_self_t<Continuation, _func>>
-	inline
-	Continuation(_func&& handler, const Context& ctx)
-		: Continuation(yforward(handler), ctx.get_allocator())
-	{}
-	Continuation(const Continuation& cont, allocator_type a)
-		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
-		cont.Handler))
-	{}
-	Continuation(Continuation&& cont, allocator_type a)
-		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
-		std::move(cont.Handler)))
-	{}
-	Continuation(const Continuation&) = default;
-	Continuation(Continuation&&) = default;
-
-	Continuation&
-	operator=(const Continuation&) = default;
-	Continuation&
-	operator=(Continuation&&) = default;
-
-	[[nodiscard, gnu::const]] friend bool
-	operator==(const Continuation& x, const Continuation& y) noexcept
-	{
-		return ystdex::ref_eq<>()(x, y);
-	}
-
-	ReductionStatus
-	operator()(Context& ctx) const
-	{
-		return Handler(ctx.GetNextTermRef(), ctx);
-	}
-};
-
-
 struct SeparatorTransformer
 {
 	template<typename _func, class _tTerm, class _fPred>
