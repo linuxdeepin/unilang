@@ -268,6 +268,135 @@ ReduceSubsequent(TermNode& term, Context& ctx, _fNext&& next)
 		yforward(next));
 }
 
+
+struct NonTailCall final
+{
+	template<typename _fCurrent>
+	static inline ReductionStatus
+	RelayNextGuarded(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
+		_fCurrent&& cur)
+	{
+		return Unilang::RelayCurrentNext(ctx, term, yforward(cur),
+			MakeMoveGuard(gd));
+	}
+
+	template<typename _fCurrent>
+	static inline ReductionStatus
+	RelayNextGuardedLifted(Context& ctx, TermNode& term,
+		EnvironmentGuard&& gd, _fCurrent&& cur)
+	{
+		auto act(MakeMoveGuard(gd));
+		Continuation cont([&]{
+			return ReduceForLiftedResult(term);
+		}, ctx);
+
+		RelaySwitched(ctx, std::move(act));
+		return Unilang::RelayCurrentNext(ctx, term, yforward(cur),
+			std::move(cont));
+	}
+
+	template<typename _fCurrent>
+	static ReductionStatus
+	RelayNextGuardedProbe(Context& ctx, TermNode& term,
+		EnvironmentGuard&& gd, bool lift, _fCurrent&& cur)
+	{
+		auto act(MakeMoveGuard(gd));
+
+		if(lift)
+		{
+			Continuation cont([&]{
+				return ReduceForLiftedResult(term);
+			}, ctx);
+
+			RelaySwitched(ctx, std::move(act));
+			return Unilang::RelayCurrentNext(ctx, term, yforward(cur),
+				std::move(cont));
+		}
+		return Unilang::RelayCurrentNext(ctx, term, yforward(cur), std::move(act));
+	}
+
+	static void
+	SetupForNonTail(Context& ctx, TermNode& term)
+	{
+		assert(!AccessTCOAction(ctx));
+		ctx.LastStatus = ReductionStatus::Neutral;
+		SetupTailTCOAction(ctx, term, {});
+	}
+};
+
+
+struct TailCall final
+{
+	template<typename _fCurrent>
+	static inline ReductionStatus
+	RelayNextGuarded(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
+		_fCurrent&& cur)
+	{
+		PrepareTCOEvaluation(ctx, term, std::move(gd));
+		return Unilang::RelayCurrentOrDirect(ctx, yforward(cur), term);
+	}
+
+	template<typename _fCurrent>
+	static inline ReductionStatus
+	RelayNextGuardedLifted(Context& ctx, TermNode& term,
+		EnvironmentGuard&& gd, _fCurrent&& cur)
+	{
+		PrepareTCOEvaluation(ctx, term, std::move(gd)).SetupLift();
+		return Unilang::RelayCurrentOrDirect(ctx, yforward(cur), term);
+	}
+
+	template<typename _fCurrent>
+	static inline ReductionStatus
+	RelayNextGuardedProbe(Context& ctx, TermNode& term,
+		EnvironmentGuard&& gd, bool lift, _fCurrent&& cur)
+	{
+		PrepareTCOEvaluation(ctx, term, std::move(gd)).SetupLift(lift);
+		return Unilang::RelayCurrentOrDirect(ctx, yforward(cur), term);
+	}
+
+	static void
+	SetupForNonTail(Context&, TermNode&) noexcept
+	{}
+};
+
+
+template<class _tTraits>
+struct Combine final
+{
+	static ReductionStatus
+	RelayEnvSwitch(Context& ctx, TermNode& term, EnvironmentGuard gd)
+	{
+		return _tTraits::RelayNextGuarded(ctx, term, std::move(gd),
+			std::ref(ReduceCombinedBranch));
+	}
+	static ReductionStatus
+	RelayEnvSwitch(Context& ctx, TermNode& term,
+		shared_ptr<Environment> p_env)
+	{
+		return RelayEnvSwitch(ctx, term, EnvironmentGuard(ctx,
+			ctx.SwitchEnvironmentUnchecked(std::move(p_env))));
+	}
+
+	template<class _tGuardOrEnv>
+	static inline ReductionStatus
+	ReduceEnvSwitch(TermNode& term, Context& ctx, _tGuardOrEnv&& gd_or_env)
+	{
+		_tTraits::SetupForNonTail(ctx, term);
+		return RelayEnvSwitch(ctx, term, yforward(gd_or_env));
+	}
+
+	template<typename _fNext, class _tGuardOrEnv>
+	static ReductionStatus
+	ReduceCallSubsequent(TermNode& term, Context& ctx,
+		_tGuardOrEnv&& gd_or_env, _fNext&& next)
+	{
+		return Unilang::ReduceCurrentNext(term, ctx,
+			ystdex::bind1([](TermNode& t, Context& c, _tGuardOrEnv& g_e){
+			return ReduceEnvSwitch(t, c, std::move(g_e));
+		}, std::placeholders::_2, std::move(gd_or_env)), yforward(next));
+	}
+};
+
 } // namespace Unilang;
 
 #endif
