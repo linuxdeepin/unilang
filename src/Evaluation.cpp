@@ -11,6 +11,7 @@
 #include <ystdex/memory.hpp> // for ystdex::share_move;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
+#include "TCO.h" // for RelayDirect;
 
 namespace Unilang
 {
@@ -425,6 +426,14 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
+{
+	ctx.SetNextTermRef(term);
+	return RelayDirect(ctx, ctx.ReduceOnce, term);
+}
+
+// NOTE: See Context.h for the declaration.
+ReductionStatus
+Context::DefaultReduceOnce(TermNode& term, Context& ctx)
 {
 	return term.Value ? ReduceLeaf(term, ctx) : ReduceBranch(term, ctx);
 }

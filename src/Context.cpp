@@ -148,7 +148,7 @@ Context::Evaluate(TermNode& term)
 {
 	next_term_ptr = &term;
 	return Rewrite([this](Context& ctx){
-		return ReduceOnce(ctx.GetNextTermRef(), ctx);
+		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
 	});
 }
 
