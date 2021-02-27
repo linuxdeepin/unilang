@@ -159,6 +159,55 @@ using Reducer = ystdex::expanded_function<ReducerFunctionType>;
 
 using ReducerSequence = forward_list<Reducer>;
 
+using ContextAllocator = pmr::polymorphic_allocator<byte>;
+
+// NOTE: This is the host type for combiners.
+using ContextHandler = YSLib::GHEvent<ReductionStatus(TermNode&, Context&)>;
+
+
+class Continuation
+{
+public:
+	using allocator_type = ContextAllocator;
+	ContextHandler Handler;
+
+	template<typename _func, typename
+		= ystdex::exclude_self_t<Continuation, _func>>
+	inline
+	Continuation(_func&& handler, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		yforward(handler)))
+	{}
+	template<typename _func, typename
+		= ystdex::exclude_self_t<Continuation, _func>>
+	inline
+	Continuation(_func&&, const Context&);
+	Continuation(const Continuation& cont, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		cont.Handler))
+	{}
+	Continuation(Continuation&& cont, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		std::move(cont.Handler)))
+	{}
+	Continuation(const Continuation&) = default;
+	Continuation(Continuation&&) = default;
+
+	Continuation&
+	operator=(const Continuation&) = default;
+	Continuation&
+	operator=(Continuation&&) = default;
+
+	[[nodiscard, gnu::const]] friend bool
+	operator==(const Continuation& x, const Continuation& y) noexcept
+	{
+		return ystdex::ref_eq<>()(x, y);
+	}
+
+	ReductionStatus
+	operator()(Context& ctx) const;
+};
+
 
 class Context final
 {
@@ -292,16 +341,26 @@ public:
 	[[nodiscard, gnu::pure]] EnvironmentReference
 	WeakenRecord() const noexcept;
 
-	[[nodiscard, gnu::pure]] pmr::polymorphic_allocator<byte>
+	[[nodiscard, gnu::pure]] ContextAllocator
 	get_allocator() const noexcept
 	{
-		return pmr::polymorphic_allocator<byte>(&memory_rsrc.get());
+		return ContextAllocator(&memory_rsrc.get());
 	}
 };
 
 
-// NOTE: This is the host type for combiners.
-using ContextHandler = YSLib::GHEvent<ReductionStatus(TermNode&, Context&)>;
+template<typename _func, typename
+	= ystdex::exclude_self_t<Continuation, _func>>
+inline
+Continuation::Continuation(_func&& handler, const Context& ctx)
+	: Continuation(yforward(handler), ctx.get_allocator())
+{}
+
+inline ReductionStatus
+Continuation::operator()(Context& ctx) const
+{
+	return Handler(ctx.GetNextTermRef(), ctx);
+}
 
 
 template<typename... _tParams>
