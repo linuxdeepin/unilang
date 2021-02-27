@@ -142,9 +142,10 @@ public:
 	CompressFrameList();
 
 	void
-	CompressForContext(Context&)
+	CompressForContext(Context& ctx)
 	{
 		CompressFrameList();
+		RecordCompressor(ctx.GetRecordPtr()).Compress();
 	}
 
 	void
