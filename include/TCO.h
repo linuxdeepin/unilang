@@ -164,6 +164,28 @@ public:
 	}
 };
 
+[[nodiscard, gnu::pure]] inline TCOAction*
+AccessTCOAction(Context& ctx) noexcept
+{
+	return ctx.AccessCurrentAs<TCOAction>();
+}
+
+[[nodiscard]] TCOAction&
+EnsureTCOAction(Context&, TermNode&);
+
+[[nodiscard]] inline
+TCOAction&
+RefTCOAction(Context& ctx)
+{
+	return *AccessTCOAction(ctx);
+}
+
+inline void
+SetupTailTCOAction(Context& ctx, TermNode& term, bool lift)
+{
+	ctx.SetupFront(TCOAction(ctx, term, lift));
+}
+
 } // namespace Unilang;
 
 #endif
