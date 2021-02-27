@@ -212,6 +212,53 @@ AssertNextTerm(Context& ctx, TermNode& term)
 	assert(ystdex::ref_eq<>()(term, ctx.GetNextTermRef()));
 }
 
+
+template<typename _fCurrent>
+inline ReductionStatus
+RelayDirect(Context& ctx, _fCurrent&& cur)
+{
+	return cur(ctx);
+}
+
+template<typename _fCurrent>
+inline auto
+RelayDirect(Context& ctx, _fCurrent&& cur, TermNode& term)
+	-> decltype(cur(term, ctx))
+{
+	// XXX: See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=93470.
+	return ystdex::unref(cur)(term, ctx);
+}
+inline ReductionStatus
+RelayDirect(Context& ctx, const Continuation& cur, TermNode& term)
+{
+	return cur.Handler(term, ctx);
+}
+
+template<typename _fCurrent>
+inline ReductionStatus
+RelayCurrentOrDirect(Context& ctx, _fCurrent&& cur, TermNode& term)
+{
+	return Unilang::RelayDirect(ctx, yforward(cur), term);
+}
+
+template<typename _fCurrent, typename _fNext>
+inline ReductionStatus
+RelayCurrentNext(Context& ctx, TermNode& term, _fCurrent&& cur,
+	_fNext&& next)
+{
+	RelaySwitched(ctx, yforward(next));
+	return Unilang::RelayDirect(ctx, yforward(cur), term);
+}
+
+template<typename _fCurrent, typename _fNext>
+inline ReductionStatus
+ReduceCurrentNext(TermNode& term, Context& ctx, _fCurrent&& cur,
+	_fNext&& next)
+{
+	ctx.SetNextTermRef(term);
+	return Unilang::RelayCurrentNext(ctx, term, yforward(cur), yforward(next));
+}
+
 } // namespace Unilang;
 
 #endif
