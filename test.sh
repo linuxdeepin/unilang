@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2016
 
 set -e
 
