@@ -1,12 +1,120 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
 #include "TCO.h" // for std::get;
-#include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <cassert> // for assert;
+#include <ystdex/typeinfo.h> // for ystdex::type_id;
+#include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
 #include "Exception.h" // for UnilangException;
 
 namespace Unilang
 {
+
+RecordCompressor::RecordCompressor(const shared_ptr<Environment>& p_root)
+	: RecordCompressor(p_root, p_root->Bindings.get_allocator())
+{}
+RecordCompressor::RecordCompressor(const shared_ptr<Environment>& p_root,
+	Environment::allocator_type a)
+	: RootPtr(p_root), Reachable({*p_root}, a), NewlyReachable(a), Universe(a)
+{
+	AddParents(*p_root);
+}
+
+void
+RecordCompressor::AddParents(Environment& e)
+{
+	Traverse(e, e.Parent,
+		[this](const shared_ptr<Environment>& p_dst, const Environment&){
+		return Universe.emplace(*p_dst, CountReferences(p_dst)).second;
+	});
+}
+
+void
+RecordCompressor::Compress()
+{
+	const auto p_root(RootPtr.lock());
+
+	assert(bool(p_root));
+	for(auto& pr : Universe)
+	{
+		auto& e(pr.first.get());
+
+		Traverse(e, e.Parent, [this](const shared_ptr<Environment>& p_dst){
+			auto& count(Universe.at(*p_dst));
+
+			assert(count > 0);
+			--count;
+			return false;
+		});
+	}
+	for(auto i(Universe.cbegin()); i != Universe.cend(); )
+		if(i->second > 0)
+		{
+			NewlyReachable.insert(i->first);
+			i = Universe.erase(i);
+		}
+		else
+			++i;
+	for(ReferenceSet rs; !NewlyReachable.empty();
+		NewlyReachable = std::move(rs))
+	{
+		for(const auto& e : NewlyReachable)
+			Traverse(e, e.get().Parent,
+				[&](const shared_ptr<Environment>& p_dst) noexcept{
+				auto& dst(*p_dst);
+
+				rs.insert(dst);
+				Universe.erase(dst);
+				return false;
+			});
+		Reachable.insert(std::make_move_iterator(NewlyReachable.begin()),
+			std::make_move_iterator(NewlyReachable.end()));
+		for(auto i(rs.cbegin()); i != rs.cend(); )
+			if(ystdex::exists(Reachable, *i))
+				i = rs.erase(i);
+			else
+				++i;
+	}
+
+	ReferenceSet accessed;
+
+	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
+		bool collected = {};
+
+		Traverse(*p_root, p_root->Parent, [&](const shared_ptr<Environment>&
+			p_dst, Environment& src, ValueObject& parent) -> bool{
+			auto& dst(*p_dst);
+
+			if(accessed.insert(src).second)
+			{
+				if(!ystdex::exists(Universe, ystdex::ref(dst)))
+					return true;
+				parent = dst.Parent;
+				collected = true;
+			}
+			return {};
+		});
+		return collected;
+	});
+}
+
+size_t
+RecordCompressor::CountReferences(const shared_ptr<Environment>& p) noexcept
+{
+	const auto acnt(p->GetAnchorCount());
+
+	assert(acnt > 0);
+	return CountStrong(p) + size_t(acnt) - 2;
+}
+
+size_t
+RecordCompressor::CountStrong(const shared_ptr<Environment>& p) noexcept
+{
+	const long scnt(p.use_count());
+
+	assert(scnt > 0);
+	return size_t(scnt);
+}
+
 
 TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 	: term_guard(ystdex::unique_guard(GuardFunction{term})),
