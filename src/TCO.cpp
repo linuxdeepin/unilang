@@ -243,6 +243,18 @@ TCOAction::SetupLift() const
 			"TCO action lift request count overflow detected.");
 }
 
+TCOAction&
+EnsureTCOAction(Context& ctx, TermNode& term)
+{
+	auto p_act(AccessTCOAction(ctx));
+
+	if(!p_act)
+	{
+		SetupTailTCOAction(ctx, term, {});
+		p_act = AccessTCOAction(ctx);
+	}
+	return *p_act;
+}
 
 } // namespace Unilang;
 
