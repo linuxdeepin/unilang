@@ -254,6 +254,7 @@ private:
 public:
 	Reducer TailAction{};
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
+	Continuation ReduceOnce{DefaultReduceOnce, *this};
 
 	Context(pmr::memory_resource& rsrc)
 		: memory_rsrc(rsrc)
@@ -298,6 +299,10 @@ public:
 
 	ReductionStatus
 	ApplyTail();
+
+	// NOTE: See Evaluation.cpp for the definition.
+	static ReductionStatus
+	DefaultReduceOnce(TermNode&, Context&);
 
 	ReductionStatus
 	Evaluate(TermNode&);
