@@ -259,6 +259,15 @@ ReduceCurrentNext(TermNode& term, Context& ctx, _fCurrent&& cur,
 	return Unilang::RelayCurrentNext(ctx, term, yforward(cur), yforward(next));
 }
 
+
+template<typename _fNext>
+inline ReductionStatus
+ReduceSubsequent(TermNode& term, Context& ctx, _fNext&& next)
+{
+	return Unilang::ReduceCurrentNext(term, ctx, std::ref(ReduceOnce),
+		yforward(next));
+}
+
 } // namespace Unilang;
 
 #endif

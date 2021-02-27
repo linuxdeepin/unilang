@@ -2,6 +2,7 @@
 
 #include "Forms.h" // for ystdex::sfmt, ystdex::ref_eq,
 //	Unilang::TryAccessReferencedTerm;
+#include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
 #include <exception> // for std::throw_with_nested;
@@ -21,15 +22,6 @@ ExtractBool(const TermNode& term)
 	if(const auto p = Unilang::TryAccessReferencedTerm<bool>(term))
 		return *p;
 	return true;
-}
-
-
-inline ReductionStatus
-MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
-{
-	const auto egd(std::move(gd));
-
-	return ctx.LastStatus;
 }
 
 
