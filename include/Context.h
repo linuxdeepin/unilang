@@ -82,6 +82,13 @@ public:
 		return &x == &y;
 	}
 
+	[[nodiscard, gnu::pure]]
+	bool
+	IsOrphan() const noexcept
+	{
+		return p_anchor.use_count() == 1;
+	}
+
 	[[nodiscard, gnu::pure]] const AnchorPtr&
 	GetAnchorPtr() const noexcept
 	{
