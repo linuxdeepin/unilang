@@ -408,6 +408,15 @@ struct EnvironmentSwitcher
 	}
 };
 
+
+template<typename _fCurrent>
+inline ReductionStatus
+RelaySwitched(Context& ctx, _fCurrent&& cur)
+{
+	ctx.SetupFront(yforward(cur));
+	return ReductionStatus::Partial;
+}
+
 } // namespace Unilang;
 
 #endif
