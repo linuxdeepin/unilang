@@ -256,5 +256,32 @@ EnsureTCOAction(Context& ctx, TermNode& term)
 	return *p_act;
 }
 
+void
+SetupTailTCOAction(Context& ctx, TermNode& term, bool lift)
+{
+	ctx.SetupFront(TCOAction(ctx, term, lift));
+}
+
+
+TCOAction&
+PrepareTCOEvaluation(Context& ctx, TermNode& term, EnvironmentGuard&& gd)
+{
+	auto& act(RefTCOAction(ctx));
+
+	assert(&act.GetTermRef() == &term);
+	yunused(term);
+	act.CompressForGuard(ctx, std::move(gd));
+	return act;
+}
+
+
+ReductionStatus
+MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
+{
+	const auto egd(std::move(gd));
+
+	return ctx.LastStatus;
+}
+
 } // namespace Unilang;
 
