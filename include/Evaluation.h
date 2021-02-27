@@ -27,15 +27,6 @@ ReductionStatus
 ReduceOnce(TermNode&, Context&);
 
 
-template<typename _fNext>
-inline ReductionStatus
-ReduceSubsequent(TermNode& term, Context& ctx, _fNext&& next)
-{
-	ctx.SetupFront(yforward(next));
-	return ReduceOnce(term, ctx);
-}
-
-
 // NOTE: The collection of values of unit types.
 enum class ValueToken
 {
