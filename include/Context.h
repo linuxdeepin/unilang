@@ -240,6 +240,13 @@ public:
 		next_term_ptr = &term;
 	}
 
+	template<typename _type>
+	[[nodiscard, gnu::pure]] _type*
+	AccessCurrentAs()
+	{
+		return IsAlive() ? current.front().template target<_type>() : nullptr;
+	}
+
 	ReductionStatus
 	ApplyTail();
 
