@@ -6,10 +6,12 @@
 #include "Evaluation.h" // for lref, map, set, weak_ptr, shared_ptr,
 //	Environment, ContextHandler, list, TermNode, EnvironmentGuard,
 //	ReductionStatus, Context;
-#include <ystdex/functional.hpp> // for ystdex::get_less;
+#include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
 #include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
 #include <tuple> // for std::tuple;
+#include <functional> // for std::bind, std::placeholder, std::ref;
+#include <cassert> // for assert;
 
 namespace Unilang
 {
@@ -98,7 +100,7 @@ private:
 	{
 		lref<TermNode> TermRef;
 
-		PDefHOp(void, (), ) const ynothrow
+		PDefHOp(void, (), ) const noexcept
 			ImplExpr(TermRef.get().Clear())
 	};
 
@@ -180,10 +182,34 @@ RefTCOAction(Context& ctx)
 	return *AccessTCOAction(ctx);
 }
 
-inline void
-SetupTailTCOAction(Context& ctx, TermNode& term, bool lift)
+void
+SetupTailTCOAction(Context&, TermNode&, bool);
+
+
+TCOAction&
+PrepareTCOEvaluation(Context&, TermNode&, EnvironmentGuard&&);
+
+
+ReductionStatus
+MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept;
+
+using MoveGuardAction = decltype(std::bind(MoveGuard,
+	std::declval<EnvironmentGuard>(), std::placeholders::_1));
+
+[[nodiscard]] inline
+MoveGuardAction
+MakeMoveGuard(EnvironmentGuard& gd)
 {
-	ctx.SetupFront(TCOAction(ctx, term, lift));
+	return std::bind(MoveGuard, std::move(gd), std::placeholders::_1);
+}
+
+
+inline void
+AssertNextTerm(Context& ctx, TermNode& term)
+{
+	yunused(ctx),
+	yunused(term);
+	assert(ystdex::ref_eq<>()(term, ctx.GetNextTermRef()));
 }
 
 } // namespace Unilang;
