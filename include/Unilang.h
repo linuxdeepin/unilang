@@ -61,6 +61,10 @@ template<typename _tKey, typename _tMapped, typename _fComp
 	= pmr::polymorphic_allocator<std::pair<const _tKey, _tMapped>>>
 using map = ystdex::map<_tKey, _tMapped, _fComp, _tAlloc>;
 
+template<typename _tKey, typename _fComp = ystdex::less<_tKey>,
+	class _tAlloc = pmr::polymorphic_allocator<_tKey>>
+using set = std::set<_tKey, _fComp, _tAlloc>;
+
 template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
 using vector = std::vector<_type, _tAlloc>;
 
