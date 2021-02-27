@@ -164,6 +164,13 @@ public:
 	}
 
 	void
+	Clear() noexcept
+	{
+		Value.Clear();
+		ClearContainer();
+	}
+
+	void
 	ClearContainer() noexcept
 	{
 		container.clear();
