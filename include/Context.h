@@ -10,6 +10,7 @@
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
+#include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 
@@ -149,6 +150,9 @@ public:
 		// TODO: Support freezing environments.
 		return term.Tags;
 	}
+
+	[[noreturn]] static void
+	ThrowForInvalidType(const ystdex::type_info&);
 };
 
 
