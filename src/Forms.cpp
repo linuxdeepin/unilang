@@ -102,8 +102,8 @@ ReductionStatus
 RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 	bool no_lift)
 {
-	return RelayForEvalOrDirect(ctx, term, std::move(gd), no_lift,
-		Continuation(ReduceOnce, ctx));
+	return TailCall::RelayNextGuardedProbe(ctx, term, std::move(gd), !no_lift,
+		std::ref(ctx.ReduceOnce));
 }
 
 
@@ -255,16 +255,22 @@ private:
 		if(move)
 		{
 			TermNode eval_struct(std::move(Deref(p_eval_struct)));
+			auto& act(RefTCOAction(ctx));
 
+			if(p_static && p_static.use_count() == 1)
+				act.RecordList.emplace_front(ContextHandler(),
+					std::move(p_static));
+
+			yunused(act.MoveFunction());
 			LiftOther(term, eval_struct);
 			return RelayForCall(ctx, term, std::move(gd), no_lift);
 		}
 		else
 		{
-			auto& tm(Unilang::Deref(p_eval_struct));
+			auto& eval_struct(Unilang::Deref(p_eval_struct));
 
-			term.GetContainerRef() = tm.GetContainer();
-			term.Value = tm.Value;
+			term.GetContainerRef() = eval_struct.GetContainer();
+			term.Value = eval_struct.Value;
 		}
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
