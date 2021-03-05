@@ -345,9 +345,9 @@
 
 　　一个环境是*空环境(empty environment)* ，当且仅当其中的绑定是空集。
 
-　　*新环境(fresh environment)* 是新创建的环境。除非另行指定，新环境是不存在能引起程序行为改变的父环境的空环境。
+　　环境可以引用零个或有限多个*父环境(parent)* 。环境的父环境在创建时指定，之后不可变。
 
-　　环境可以具有零个或有限多个父环境。环境的父环境在创建时指定，之后不可变。
+　　*新环境(fresh environment)* 是新创建的环境。除非另行指定，新环境是不存在能引起程序行为改变的父环境的空环境。
 
 　　给定一个名称，在环境中确定被名称指称的对象，称为*名称解析(name resolution)* 。
 
@@ -525,6 +525,7 @@
 * `<applicative>` 应用子。
 * `<predicate>` 谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
 * `<environment>` 一等环境。
+* `<parent>` ：指定环境的父环境的值，包括 `<environment>` 或元素为 `<environment>` 的 `<list>` 。
 
 　　操作数在操作的描述中作为约束。
 
@@ -775,17 +776,19 @@
 
 　　类似 <formals> ，<definiend> 支持递归匹配。
 
-`$vau/e <environment> <formals> <eformal> <body>`
+`$vau/e <parent> <formals> <eformal> <body>`
 
 　　创建指定静态环境的 vau 抽象（关于 vau 抽象，参见 [Shu10] ）。
 
-　　创建的抽象是 <environments> 求值后的环境为*静态环境(static environment)* 的操作子。静态环境是用于创建调用时的新环境的父环境。
+　　创建的抽象是操作子，作为求值 `$vau/e` 的调用结果。
 
-　　<formals> 是指定*形式参数(formal parameter)* 表达式，应为以符号为非分支节点的有向无环图。由于不支持引用值，实际上是树，非分支节点是树的叶节点，分支节点是列表。
+　　求值 `$vau/e` 的调用首先求值 `<parent>` ，其结果中的环境是创建的抽象的*静态环境(static environment)* 。
 
-　　<eformal> 是指定*动态环境(dynamic environment)* 的表达式，应为符号。动态环境是发生调用处的当前环境。
+　　`<formals>` 是指定*形式参数(formal parameter)* 表达式，应为以符号为非分支节点的有向无环图。由于不支持引用值，实际上是树，非分支节点是树的叶节点，分支节点是列表。
 
-　　<formals> 被用于在合并子调用时匹配操作数树，参数匹配算法如下：
+　　`<eformal>` 是指定*动态环境(dynamic environment)* 的表达式，应为符号。动态环境是发生调用处的当前环境。
+
+　　`<formals>` 被用于在合并子调用时匹配操作数树，参数匹配算法如下：
 
 * 初始化 <formals> 为当前形式参数，函数合并（包括作为合并子的第一个子项和作为操作数的之后余下的子项）作为当前操作数。
 * 对每一对当前形式参数和当前操作数，比较两者（除非另行指定，操作数的值是引用值的，视为匹配被引用对象，下同）：
@@ -823,10 +826,10 @@
 * 保存当前环境作为动态环境。
 * 创建环境*守卫(guard)* 保存当前环境，之后不论调用成功或出错都会回滚保存的环境。
 * 创建新的环境，并以这个新环境作为当前环境。
-* 若 <eformal> 是不等于 `#ignore` 的符号则绑定动态环境（先前的当前环境）到这个以符号作为名称的变量。
+* 若创建抽象时的 `<eformal>` 是不等于 `#ignore` 的符号则绑定动态环境（先前的当前环境）到这个以符号作为名称的变量。
 * 设置操作子保存的静态环境为当前环境的父环境。
 * 匹配实际参数。成功匹配时，其中绑定的对象初始化环境中的变量绑定。
-* 在当前环境中以函数体 (<body>) 中的表达式的副本作为*求值结构(evaluation structure)* 进行求值。
+* 以函数体（创建时以 `<body>` 指定）中的表达式的副本作为*求值结构(evaluation structure)* ，在当前环境进行求值。
 
 　　类似 `$vau` ，但支持额外的求值环境作为静态环境。
 
@@ -834,7 +837,7 @@
 
 **注释** 不考虑所有权时，`eval` 和 `$vau` 可派生 $vau/e 。
 
-`$vau/e% <environment> <formals> <eformal> <body>`
+`$vau/e% <parent> <formals> <eformal> <body>`
 
 　　同 $vau/e ，但创建的操作子调用时保留 `<body>` 求值的引用值。
 
@@ -920,15 +923,15 @@
 
 　　绑定 λ 抽象，等价 `$def! <variable> $lambda% <formals> <body>` 。
 
-`$lambda/e <environment> <formals> <body>`
+`$lambda/e <parent> <formals> <body>`
 
 　　创建指定静态环境的 lambda 抽象。
 
 　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
 
-`$defl/e! <variable> <environment> <formals> <body>`
+`$defl/e! <variable> <parent> <formals> <body>`
 
-　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <environment> <formals> <body>` 。
+　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
 
 `() make-standard-environment`
 
