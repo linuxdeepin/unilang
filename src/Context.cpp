@@ -8,6 +8,7 @@
 #include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/utility.hpp> // ystdex::exchange;
+#include "TermAccess.h" // for Unilang::IsMovable;
 
 namespace Unilang
 {
@@ -294,8 +295,16 @@ ResolveEnvironment(const ValueObject& vo)
 		return {p->Lock(), {}};
 	if(const auto p = vo.AccessPtr<const shared_ptr<Environment>>())
 		return {*p, true};
-	throw TypeError(
-		ystdex::sfmt("Invalid environment type '%s' found.", vo.type().name()));
+	Environment::ThrowForInvalidType(vo.type());
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(ValueObject& vo, bool move)
+{
+	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
+		return {p->Lock(), {}};
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return {move ? std::move(*p) : *p, true};
+	Environment::ThrowForInvalidType(vo.type());
 }
 pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode& term)
@@ -306,6 +315,17 @@ ResolveEnvironment(const TermNode& term)
 		throw ListTypeError(
 			ystdex::sfmt("Invalid environment formed from list '%s' found.",
 			TermToStringWithReferenceMark(nd, has_ref).c_str()));
+	}, term);
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(TermNode& term)
+{
+	return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		if(!IsExtendedList(nd))
+			return ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref));
+		throw ListTypeError(
+			ystdex::sfmt("Invalid environment formed from list '%s' found.",
+			TermToStringWithReferenceMark(nd, p_ref).c_str()));
 	}, term);
 }
 
