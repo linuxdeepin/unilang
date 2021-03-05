@@ -1,6 +1,6 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
-#include "TCO.h" // for std::get;
+#include "TCO.h" // for std::get, Unilang::Nonnull, Unilang::Deref;
 #include <cassert> // for assert;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
@@ -31,7 +31,7 @@ RecordCompressor::AddParents(Environment& e)
 void
 RecordCompressor::Compress()
 {
-	const auto p_root(RootPtr.lock());
+	const auto p_root(Nonnull(RootPtr.lock()));
 
 	assert(bool(p_root));
 	for(auto& pr : Universe)
@@ -39,7 +39,7 @@ RecordCompressor::Compress()
 		auto& e(pr.first.get());
 
 		Traverse(e, e.Parent, [this](const shared_ptr<Environment>& p_dst){
-			auto& count(Universe.at(*p_dst));
+			auto& count(Universe.at(Unilang::Deref(p_dst)));
 
 			assert(count > 0);
 			--count;
@@ -60,7 +60,7 @@ RecordCompressor::Compress()
 		for(const auto& e : NewlyReachable)
 			Traverse(e, e.get().Parent,
 				[&](const shared_ptr<Environment>& p_dst) noexcept{
-				auto& dst(*p_dst);
+				auto& dst(Unilang::Deref(p_dst));
 
 				rs.insert(dst);
 				Universe.erase(dst);
@@ -82,7 +82,7 @@ RecordCompressor::Compress()
 
 		Traverse(*p_root, p_root->Parent, [&](const shared_ptr<Environment>&
 			p_dst, Environment& src, ValueObject& parent) -> bool{
-			auto& dst(*p_dst);
+			auto& dst(Unilang::Deref(p_dst));
 
 			if(accessed.insert(src).second)
 			{
@@ -185,7 +185,8 @@ TCOAction::CompressFrameList()
 			auto& p_frame_env_ref(std::get<ActiveEnvironmentPtr>(
 				*ystdex::cast_mutable(RecordList, i)));
 
-			if(p_frame_env_ref.use_count() != 1 || p_frame_env_ref->IsOrphan())
+			if(p_frame_env_ref.use_count() != 1
+				|| Unilang::Deref(p_frame_env_ref).IsOrphan())
 				i = RecordList.erase(i);
 			else
 				++i;
@@ -253,7 +254,7 @@ EnsureTCOAction(Context& ctx, TermNode& term)
 		SetupTailTCOAction(ctx, term, {});
 		p_act = AccessTCOAction(ctx);
 	}
-	return *p_act;
+	return Unilang::Deref(p_act);
 }
 
 void

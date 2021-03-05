@@ -3,7 +3,8 @@
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
 
-#include "Unilang.h" // for size_t, string, shared_ptr, std::string;
+#include "Unilang.h" // for size_t, string, shared_ptr, std::string,
+//	Unilang::Deref;
 #include <exception> // for std::runtime_error;
 
 namespace Unilang
@@ -82,8 +83,7 @@ public:
 	[[nodiscard, gnu::pure]] const string&
 	GetIdentifier() const noexcept
 	{
-		assert(p_identifier);
-		return *p_identifier;
+		return Unilang::Deref(p_identifier);
 	}
 
 private:

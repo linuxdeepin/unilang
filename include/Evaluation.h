@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
@@ -45,7 +45,7 @@ struct SeparatorTransformer
 
 		return AddRange([&](TermNode& res, it_t b, it_t e){
 			const auto add([&](TermNode& node, it_t i){
-				node.Add(trans(*i));
+				node.Add(trans(Unilang::Deref(i)));
 			});
 
 			if(b != e)
