@@ -80,6 +80,7 @@ public:
 	TermNode::allocator_type Allocator{pmr::new_delete_resource()};
 	Context Root{Unilang::Deref(Allocator.resource())};
 	SeparatorPass Preprocess{Allocator};
+	TermNode Term{Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
