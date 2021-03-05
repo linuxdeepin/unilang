@@ -1,6 +1,6 @@
 ﻿// © 2020 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for ystdex::sfmt, ystdex::ref_eq,
+#include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
 //	Unilang::TryAccessReferencedTerm;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
@@ -141,10 +141,10 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
-	}, *i);
-	return RelayForEvalOrDirect(ctx, term,
-		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), no_lift,
-		Continuation(ReduceOnce, ctx));
+	}, Unilang::Deref(i));
+	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
+		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
+		std::ref(ctx.ReduceOnce));
 }
 
 
