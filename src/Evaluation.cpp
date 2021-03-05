@@ -1,8 +1,8 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Evaluation.h" // for ReductionStatus, TermNode, Context,
+#include "Evaluation.h" // for TermTags, ReductionStatus, TermNode, Context,
 //	TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf,
-//	TermReference, ContextHandler, std::prev, TermTags, GetLValueTagsOf,
+//	TermReference, ContextHandler, std::prev, GetLValueTagsOf,
 //	in_place_type, ThrowInsufficientTermsError, ystdex::begins_with;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
@@ -18,6 +18,12 @@ namespace Unilang
 
 namespace
 {
+
+[[nodiscard, gnu::pure]] inline TermReference
+EnsureLValueReference(TermReference&& ref)
+{
+	return TermReference(ref.GetTags() & ~TermTags::Unique, std::move(ref));
+}
 
 ReductionStatus
 ReduceLeaf(TermNode& term, Context& ctx)
@@ -46,14 +52,19 @@ ReduceLeaf(TermNode& term, Context& ctx)
 			{
 				auto& bound(*pr.first);
 
-				if(const auto p_ref
+				if(const auto p_bound
 					= Unilang::TryAccessLeaf<const TermReference>(bound))
 				{
 					term.GetContainerRef() = bound.GetContainer();
-					term.Value = TermReference(*p_ref);
+					term.Value = EnsureLValueReference(TermReference(*p_bound));
 				}
 				else
-					term.Value = TermReference(bound, std::move(pr.second));
+				{
+					auto p_env(Unilang::Nonnull(pr.second));
+
+					term.Value = TermReference(p_env->MakeTermTags(bound)
+						& ~TermTags::Unique, bound, std::move(p_env));
+				}
 				res = ReductionStatus::Neutral;
 			}
 			else
