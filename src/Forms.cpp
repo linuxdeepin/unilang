@@ -397,6 +397,18 @@ CreateVauWithParent(TermNode& term, bool no_lift, TNIter i,
 }
 
 ReductionStatus
+VauImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	return CreateFunction(term, [&, no_lift]{
+		term.Value = CheckFunctionCreation([&]{
+			return
+				CreateVau(term, no_lift, term.begin(), ctx.ShareRecord(), {});
+		});
+		return ReductionStatus::Clean;
+	}, 2);
+}
+
+ReductionStatus
 VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 {
 	return CreateFunction(term, [&, no_lift]{
@@ -791,6 +803,18 @@ Define(TermNode& term, Context& ctx)
 	throw InvalidSyntax("Invalid syntax found in definition.");
 }
 
+
+ReductionStatus
+Vau(TermNode& term, Context& ctx)
+{
+	return VauImpl(term, ctx, {});
+}
+
+ReductionStatus
+VauRef(TermNode& term, Context& ctx)
+{
+	return VauImpl(term, ctx, true);
+}
 
 ReductionStatus
 VauWithEnvironment(TermNode& term, Context& ctx)
