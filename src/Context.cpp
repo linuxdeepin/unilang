@@ -2,7 +2,8 @@
 
 #include "Context.h" // for lref;
 #include <cassert> // for assert;
-#include "Exception.h" // for BadIdentifier, UnilangException, ListTypeError;
+#include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
+//	ListTypeError;
 #include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
@@ -115,6 +116,13 @@ Environment::LookupName(string_view id) const
 	const auto i(Bindings.find(id));
 
 	return i != Bindings.cend() ? &i->second : nullptr;
+}
+
+void
+Environment::ThrowForInvalidType(const ystdex::type_info& tp)
+{
+	throw TypeError(
+		ystdex::sfmt("Invalid environment type '%s' found.", tp.name()));
 }
 
 
