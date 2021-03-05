@@ -1,11 +1,11 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Interpreter_h_
 #define INC_Unilang_Interpreter_h_ 1
 
 #include "Forms.h" // for TokenValue, HasValue, std::bind, std::placeholders,
 //	TermNode, lref, stack, std::declval, Forms::Sequence, ReduceBranchToList,
-//	string, shared_ptr, pmr, YSLib::unique_ptr;
+//	string, shared_ptr, pmr, Unilang::Deref, YSLib::unique_ptr;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
 #include <istream> // for std::istream;
@@ -77,8 +77,9 @@ private:
 public:
 	shared_ptr<string> CurrentSource{};
 	bool Echo = std::getenv("ECHO");
-	Context Root{*pmr::new_delete_resource()};
-	SeparatorPass Preprocess{pmr::new_delete_resource()};
+	TermNode::allocator_type Allocator{pmr::new_delete_resource()};
+	Context Root{Unilang::Deref(Allocator.resource())};
+	SeparatorPass Preprocess{Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
