@@ -239,12 +239,34 @@ private:
 	{
 		assert(p_eval_struct);
 
+		const bool move(p_eval_struct.use_count() == 1
+			&& bool(term.Tags & TermTags::Temporary));
+
 		RemoveHead(term);
 		BindParameter(ctx.GetRecordPtr(), *p_formals, term);
 		ctx.GetRecordRef().Parent = parent;
-		// TODO: Implement TCO.
+		AssertNextTerm(ctx, term);
+
 		LiftOtherOrCopy(term, *p_eval_struct, {});
 		return RelayForCall(ctx, term, std::move(gd), NoLifting);
+
+		const bool no_lift(NoLifting);
+
+		if(move)
+		{
+			TermNode eval_struct(std::move(Deref(p_eval_struct)));
+
+			LiftOther(term, eval_struct);
+			return RelayForCall(ctx, term, std::move(gd), no_lift);
+		}
+		else
+		{
+			auto& tm(Unilang::Deref(p_eval_struct));
+
+			term.GetContainerRef() = tm.GetContainer();
+			term.Value = tm.Value;
+		}
+		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
 };
 
