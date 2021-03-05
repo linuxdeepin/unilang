@@ -409,10 +409,13 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 
 	if(p_ref_fm)
 	{
+		term.Tags &= ~TermTags::Temporary;
 		if(const auto p_handler
 			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
 			return CombinerReturnThunk(*p_handler, term, ctx);
 	}
+	else
+		term.Tags |= TermTags::Temporary;
 	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
 	{
 		// TODO: Implement TCO.
