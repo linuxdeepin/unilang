@@ -158,6 +158,7 @@ private:
 	mutable shared_ptr<Environment> p_static;
 	mutable shared_ptr<TermNode> p_eval_struct;
 	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
+	void(&save)(const VauHandler&, TCOAction&);
 
 public:
 	bool NoLifting = {};
@@ -169,7 +170,8 @@ public:
 		p_static(owning ? std::move(p_env) : nullptr),
 		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
 		Unilang::AsTermNode(term.get_allocator())))),
-		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
+		call(eformal.empty() ? CallStatic : CallDynamic),
+		save(owning ? SaveOwning : SaveNothing), NoLifting(nl)
 	{}
 
 	friend bool
@@ -257,10 +259,7 @@ private:
 			TermNode eval_struct(std::move(Deref(p_eval_struct)));
 			auto& act(RefTCOAction(ctx));
 
-			if(p_static && p_static.use_count() == 1)
-				act.RecordList.emplace_front(ContextHandler(),
-					std::move(p_static));
-
+			save(*this, act);
 			yunused(act.MoveFunction());
 			LiftOther(term, eval_struct);
 			return RelayForCall(ctx, term, std::move(gd), no_lift);
@@ -273,6 +272,23 @@ private:
 			term.Value = eval_struct.Value;
 		}
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
+	}
+
+	static void
+	SaveNothing(const VauHandler&, TCOAction&)
+	{}
+
+	static void
+	SaveOwning(const VauHandler& vau, TCOAction& act)
+	{
+		SaveOwningPtr(vau.p_static, act);
+	}
+
+	static void
+	SaveOwningPtr(shared_ptr<Environment>& p_static, TCOAction& act)
+	{
+		if(p_static.use_count() == 1)
+			act.RecordList.emplace_front(ContextHandler(), std::move(p_static));
 	}
 };
 
