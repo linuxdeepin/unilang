@@ -157,7 +157,7 @@ private:
 	EnvironmentReference parent;
 	mutable shared_ptr<Environment> p_static;
 	mutable shared_ptr<TermNode> p_eval_struct;
-	ReductionStatus(VauHandler::*p_call)(TermNode&, Context&) const;
+	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
 
 public:
 	bool NoLifting = {};
@@ -168,8 +168,8 @@ public:
 		std::move(p_fm))), parent((Environment::EnsureValid(p_env), p_env)),
 		p_static(owning ? std::move(p_env) : nullptr),
 		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())))), p_call(eformal.empty()
-		? &VauHandler::CallStatic : &VauHandler::CallDynamic), NoLifting(nl)
+		Unilang::AsTermNode(term.get_allocator())))),
+		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 
 	friend bool
@@ -186,7 +186,7 @@ public:
 		if(IsBranchedList(term))
 		{
 			if(p_eval_struct)
-				return (this->*p_call)(term, ctx);
+				return call(*this, term, ctx);
 			throw UnilangException("Invalid handler of call found.");
 		}
 		throw UnilangException("Invalid composition found.");
@@ -216,22 +216,22 @@ private:
 		ctx.GetRecordRef().AddValue(eformal, std::move(vo));
 	}
 
-	ReductionStatus
-	CallDynamic(TermNode& term, Context& ctx) const
+	static ReductionStatus
+	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
 		auto wenv(ctx.WeakenRecord());
 		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-		BindEnvironment(ctx, std::move(wenv));
-		return DoCall(term, ctx, gd);
+		vau.BindEnvironment(ctx, std::move(wenv));
+		return vau.DoCall(term, ctx, gd);
 	}
 
-	ReductionStatus
-	CallStatic(TermNode& term, Context& ctx) const
+	static ReductionStatus
+	CallStatic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
 		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-		return DoCall(term, ctx, gd);
+		return vau.DoCall(term, ctx, gd);
 	}
 
 	ReductionStatus
