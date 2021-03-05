@@ -294,10 +294,6 @@ LoadFunctions(Interpreter& intp)
 			eval (list* () (list* $lambda (map1 first bindings)
 				(list (move! body)))
 				(map1 ($lambda (x) list (rest x)) bindings)) d;
-		$defv! $let/d (&bindings &ef .&body) d
-			eval (list* () (list wrap (list* $vau (map1 first bindings)
-				ef (list (move! body))))
-				(map1 ($lambda (x) list (rest x)) bindings)) d;
 		$defv! $let* (&bindings .&body) d
 			eval ($if (null? bindings) (list* $let bindings (move! body))
 				(list $let (list (first bindings))
@@ -412,7 +408,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.65"
+#define APP_VER "0.6.66"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

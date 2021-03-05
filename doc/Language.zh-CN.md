@@ -1077,12 +1077,6 @@ $or? <test>...
 
 　　局部绑定求值：创建以当前环境为父环境的空环境，在其中添加 <bindings> 指定的变量绑定，再求值 <body> 。
 
-`$let/d <bindings> <eformal> <body>`
-
-　　同 `$let` ，但在 <body> 的求值前引入绑定到动态环境的变量 <eformal> 。
-
-　　若 <eformal> 为 `#ignore` ，作用同 `$let` 。
-
 `$let* <bindings> <body>`
 
 　　顺序局部绑定求值。
