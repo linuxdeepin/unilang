@@ -420,8 +420,14 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 
 		return CombinerReturnThunk(*p, term, ctx, std::move(p));
 	}
-	throw
-		ListReductionFailure("Invalid object found in the combiner position.");
+	assert(IsBranch(term));
+	return ResolveTerm([&](const TermNode& nd, bool has_ref)
+		YB_ATTR_LAMBDA(noreturn) -> ReductionStatus{
+		throw ListReductionFailure(ystdex::sfmt("No matching combiner '%s'"
+			" for operand with %zu argument(s) found.",
+			TermToStringWithReferenceMark(nd, has_ref).c_str(),
+			term.size() - 1));
+	}, fm);
 }
 
 ReductionStatus
