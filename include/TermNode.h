@@ -1,9 +1,9 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermNode_h_
 #define INC_Unilang_TermNode_h_ 1
 
-#include "Unilang.h" // for ValueObject, list, yforward;
+#include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
@@ -307,13 +307,13 @@ Access(const TermNode& term)
 AccessFirstSubterm(TermNode& term) noexcept
 {
 	assert(IsBranch(term));
-	return *term.begin();
+	return Unilang::Deref(term.begin());
 }
 [[nodiscard, gnu::pure]] inline const TermNode&
 AccessFirstSubterm(const TermNode& term) noexcept
 {
 	assert(IsBranch(term));
-	return *term.begin();
+	return Unilang::Deref(term.begin());
 }
 
 [[nodiscard, gnu::pure]] inline TermNode&&

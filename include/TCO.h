@@ -5,7 +5,7 @@
 
 #include "Evaluation.h" // for lref, map, set, weak_ptr, shared_ptr,
 //	Environment, ContextHandler, list, TermNode, EnvironmentGuard,
-//	ReductionStatus, Context;
+//	ReductionStatus, Context, Unilang::Deref;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
 #include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
@@ -73,7 +73,7 @@ private:
 		if(ystdex::expand_proxy<void(const shared_ptr<Environment>&,
 			Environment&, ValueObject&)>::call(trace, p, e, parent))
 		{
-			auto& dst(*p);
+			auto& dst(Unilang::Deref(p));
 
 			p.reset();
 			Traverse(dst, dst.Parent, trace);
@@ -175,11 +175,10 @@ AccessTCOAction(Context& ctx) noexcept
 [[nodiscard]] TCOAction&
 EnsureTCOAction(Context&, TermNode&);
 
-[[nodiscard]] inline
-TCOAction&
+[[nodiscard]] inline TCOAction&
 RefTCOAction(Context& ctx)
 {
-	return *AccessTCOAction(ctx);
+	return Unilang::Deref(AccessTCOAction(ctx));
 }
 
 void

@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Unilang_h_
 #define INC_Unilang_Unilang_h_ 1
@@ -25,7 +25,8 @@
 //	std::streamsize;
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::any_ops,
-//	YSLib::any, YSLib::bad_any_cast, YSLib::in_place_type;
+//	YSLib::any, YSLib::bad_any_cast, YSLib::in_place_type, YSLib::Deref,
+//	YSLib::Nonnull;
 
 namespace Unilang
 {
@@ -86,6 +87,10 @@ namespace any_ops = YSLib::any_ops;
 using YSLib::any;
 using YSLib::bad_any_cast;
 using YSLib::in_place_type;
+
+
+using YSLib::Deref;
+using YSLib::Nonnull;
 
 } // namespace Unilang;
 

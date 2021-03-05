@@ -1,9 +1,9 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermAccess_h_
 #define INC_Unilang_TermAccess_h_ 1
 
-#include "TermNode.h" // for string, TermNode, ystdex::sfmt;
+#include "TermNode.h" // for string, TermNode, Unilang::Deref;
 #include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
@@ -279,9 +279,9 @@ IsMovable(const TermReference& ref) noexcept
 template<typename _tPointer>
 [[nodiscard, gnu::pure]] inline auto
 IsMovable(_tPointer p) noexcept
-	-> decltype(!bool(p) || Unilang::IsMovable(*p))
+	-> decltype(!bool(p) || Unilang::IsMovable(Unilang::Deref(p)))
 {
-	return !bool(p) || Unilang::IsMovable(*p);
+	return !bool(p) || Unilang::IsMovable(Unilang::Deref(p));
 }
 
 

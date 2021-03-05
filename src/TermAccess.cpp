@@ -1,6 +1,6 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt;
+#include "TermAccess.h" // for sfmt, Unilang::Nonnull;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
 //	ystdex::invoke_value_or;
@@ -77,8 +77,8 @@ PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 {
 	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
 		return term;
-	return Unilang::AsTermNode(term.get_allocator(),
-		TermReference(p_env->MakeTermTags(term), term, p_env));
+	return Unilang::AsTermNode(term.get_allocator(), TermReference(
+		p_env->MakeTermTags(term), term, Unilang::Nonnull(p_env)));
 }
 
 

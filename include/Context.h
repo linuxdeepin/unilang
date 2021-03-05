@@ -4,7 +4,8 @@
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for ValueObject, vector, string, TermNode,
-//	ystdex::less, map, AnchorPtr, pmr, EnvironmentReference;
+//	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
+//	EnvironmentReference;
 #include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
@@ -121,8 +122,8 @@ public:
 	TermNode&
 	Bind(_tKey&& k, _tNode&& tm)
 	{
-		return ystdex::insert_or_assign(Bindings, yforward(k),
-			yforward(tm)).first->second;
+		return Unilang::Deref(ystdex::insert_or_assign(Bindings, yforward(k),
+			yforward(tm)).first).second;
 	}
 
 	static void
@@ -234,7 +235,7 @@ public:
 		{
 			if(p_ctx)
 			{
-				auto& ctx(*p_ctx);
+				auto& ctx(Unilang::Deref(p_ctx));
 
 				ctx.current.splice_after(ctx.current.cbefore_begin(),
 					ctx.stacked, ctx.stacked.cbefore_begin(), i_stacked);
