@@ -206,12 +206,9 @@ LoadFunctions(Interpreter& intp)
 	});
 	RegisterStrict(ctx, "make-encapsulation-type", MakeEncapsulationType);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
+	RegisterForm(ctx, "$vau", Vau);
+	RegisterForm(ctx, "$vau%", VauRef);
 	intp.Perform(R"Unilang(
-		$def! $vau $vau/e (() get-current-environment) (&formals &ef .&body) d
-			eval (cons $vau/e (cons d (cons formals (cons ef (move! body))))) d;
-		$def! $vau% $vau (&formals &ef .&body) d
-			eval (cons $vau/e% (cons d (cons formals (cons ef (move! body)))))
-				d;
 		$def! lock-current-environment (wrap ($vau () d lock-environment d));
 		$def! $lambda $vau (&formals .&body) d wrap
 			(eval (cons $vau (cons formals (cons ignore (move! body)))) d);
@@ -415,7 +412,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.28"
+#define APP_VER "0.6.65"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
