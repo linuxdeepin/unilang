@@ -452,8 +452,11 @@ ResolveIdentifier(const Context&, string_view);
 [[nodiscard]] pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject&);
 [[nodiscard]] pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(ValueObject&, bool);
+[[nodiscard]] pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode&);
-
+[[nodiscard]] pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(TermNode&);
 
 struct EnvironmentSwitcher
 {
