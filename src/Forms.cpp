@@ -154,8 +154,7 @@ class VauHandler final : private ystdex::equality_comparable<VauHandler>
 private:
 	string eformal{};
 	shared_ptr<TermNode> p_formals;
-	EnvironmentReference parent;
-	mutable shared_ptr<Environment> p_static;
+	mutable ValueObject parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
 	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
 	void(&save)(const VauHandler&, TCOAction&);
@@ -166,8 +165,7 @@ public:
 	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
 		shared_ptr<Environment>&& p_env, bool owning, TermNode& term, bool nl)
 		: eformal(std::move(ename)), p_formals((CheckParameterTree(*p_fm),
-		std::move(p_fm))), parent((Environment::EnsureValid(p_env), p_env)),
-		p_static(owning ? std::move(p_env) : nullptr),
+		std::move(p_fm))), parent(MakeParentSingle(p_env, owning)),
 		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
 		Unilang::AsTermNode(term.get_allocator())))),
 		call(eformal.empty() ? CallStatic : CallDynamic),
@@ -178,8 +176,7 @@ public:
 	operator==(const VauHandler& x, const VauHandler& y)
 	{
 		return x.eformal == y.eformal && x.p_formals == y.p_formals
-			&& x.parent == y.parent && x.p_static == y.p_static
-			&& x.NoLifting == y.NoLifting;
+			&& x.parent == y.parent && x.NoLifting == y.NoLifting;
 	}
 
 	ReductionStatus
@@ -274,6 +271,15 @@ private:
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
 
+	[[nodiscard, gnu::pure]] static ValueObject
+	MakeParentSingle(const shared_ptr<Environment>& p_env, bool owning)
+	{
+		Environment::EnsureValid(p_env);
+		if(owning)
+			return p_env;
+		return EnvironmentReference(p_env);
+	}
+
 	static void
 	SaveNothing(const VauHandler&, TCOAction&)
 	{}
@@ -281,7 +287,7 @@ private:
 	static void
 	SaveOwning(const VauHandler& vau, TCOAction& act)
 	{
-		SaveOwningPtr(vau.p_static, act);
+		SaveOwningPtr(vau.parent.GetObject<shared_ptr<Environment>>(), act);
 	}
 
 	static void
