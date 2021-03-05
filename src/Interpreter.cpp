@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for string_view, ByteParser, std::getline;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
@@ -205,11 +205,10 @@ Interpreter::Process()
 					C.UnwindCurrent();
 				}
 			} gd{Root};
-			auto term(Read(line));
-
-			Evaluate(term);
+			Term = Read(line);
+			Evaluate(Term);
 			if(Echo)
-				Print(term);
+				Print(Term);
 		}
 		catch(UnilangException& e)
 		{
