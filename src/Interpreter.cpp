@@ -3,6 +3,7 @@
 #include "Interpreter.h" // for string_view, ByteParser, std::getline;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
+#include "Arithmetic.h" // for Number;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
@@ -47,7 +48,7 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 					throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
 						" postfix is unsupported in identifier '%s'.",
 						id.data()));
-			term.Value = ans;
+			term.Value = Number(ans);
 		}
 		else if(id == "#t")
 			term.Value = true;
