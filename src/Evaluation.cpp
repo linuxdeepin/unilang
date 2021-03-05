@@ -2,8 +2,9 @@
 
 #include "Evaluation.h" // for TermTags, ReductionStatus, TermNode, Context,
 //	TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf,
-//	TermReference, ContextHandler, std::prev, GetLValueTagsOf,
-//	in_place_type, ThrowInsufficientTermsError, ystdex::begins_with;
+//	TermReference, ContextHandler, yunseq, std::prev, GetLValueTagsOf,
+//	in_place_type, ThrowInsufficientTermsError, Unilang::TryAccessTerm,
+//	ystdex::begins_with;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, BadIdentifier,
@@ -82,13 +83,15 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 {
 	static_assert(sizeof...(args) < 2, "Unsupported owner arguments found.");
 
-	// TODO: Implement TCO.
+	auto& act(EnsureTCOAction(ctx, term));
+	auto& lf(act.LastFunction);
+
+	term.Value.Clear();
+	lf = {};
+	yunseq(0,
+		(lf = &act.AttachFunction(std::forward<_tParams>(args)).get(), 0)...);
 	ctx.SetNextTermRef(term);
-	ctx.SetupFront(std::bind([&](const _tParams&...){
-		return RegularizeTerm(term, ctx.LastStatus);
-	}, std::move(args)...));
-	ctx.SetupFront(Continuation(std::ref(h), ctx));
-	return ReductionStatus::Partial;
+	return RelaySwitched(ctx, Continuation(std::ref(lf ? *lf : h), ctx));
 }
 
 ReductionStatus
@@ -428,12 +431,8 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	else
 		term.Tags |= TermTags::Temporary;
 	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
-	{
-		// TODO: Implement TCO.
-		auto p(ystdex::share_move(ctx.get_allocator(), *p_handler));
-
-		return CombinerReturnThunk(*p, term, ctx, std::move(p));
-	}
+		return
+			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
 	assert(IsBranch(term));
 	return ResolveTerm([&](const TermNode& nd, bool has_ref)
 		YB_ATTR_LAMBDA(noreturn) -> ReductionStatus{
