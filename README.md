@@ -145,7 +145,7 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 　　使用静态链接构建的版本不需要这样的运行环境配置。
 
-## 运行
+## 运行解释器
 
 　　经过可能需要的配置后，直接运行即可：
 
@@ -163,6 +163,23 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 ```
 echo 'display "Hello world."; () newline' | ./unilang
+```
+
+## 运行测试脚本
+
+　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
+
+　　当前测试用例直接在脚本中指定。
+
+　　脚本以下支持环境变量：
+
+* `UNILANG` ：指定解释器可执行文件路径，默认为 `./unilang` 。
+* `PTC` ：非空时，运行 PTC 测试用例。手动终止进程后结束用例。在此期间，正确的 PTC 实现可确保最终内存占用不随时间增长。
+
+　　使用 `sbuild.sh` 构建的可执行文件不在当前目录。可使用类似以下的 `bash` 命令调用：
+
+```
+UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
 # 支持的语言特性
