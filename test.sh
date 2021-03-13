@@ -37,6 +37,14 @@ test()
 	fi
 }
 
+if [[ "$PTC" != '' ]]; then
+# NOTE: Test cases should print no errors.
+	echo "The following case are expected to be non-terminating."
+	echo "However, the maximum memory consumption is expected constant."
+	echo "Please exit manually by SIGINT."
+	test '$defl! f (n) $if #t (f n); f 1'
+fi
+
 # Sanity.
 test 'display'
 
