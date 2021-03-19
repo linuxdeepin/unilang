@@ -7,14 +7,15 @@
 //	YSLib::EmplaceCallResult, Unilang::Deref, yforward, Strict,
 //	Unilang::RegisterHandler, Context;
 #include <cassert> // for assert;
+#include <ystdex/functional.hpp> // for ystdex::expand_proxy,
+//	ystdex::invoke_nonvoid, ystdex::make_expanded, ystdex::bind1,
+//	std::placeholders::_2, std::ref;
+#include <iterator> // for std::next;
 #include <ystdex/iterator.hpp> // for ystdex::make_transform;
 #include "TermAccess.h" // for Unilang::ResolveRegular;
 #include <numeric> // for std::accumulate;
-#include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_2,
-//	function, ystdex::make_expanded, std::ref;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
-#include <ystdex/examiner.hpp> // for ystdex::invoke_nonvoid;
-#include <iterator> // for std::next;
+#include <ystdex/examiner.hpp> // for ystdex::examiners;
 
 namespace Unilang
 {
@@ -33,6 +34,28 @@ Retain(const TermNode& term) noexcept
 size_t
 RetainN(const TermNode&, size_t = 1);
 
+
+template<typename _func, typename... _tParams>
+inline auto
+CallRawUnary(_func&& f, TermNode& term, _tParams&&... args)
+	-> yimpl(decltype(ystdex::expand_proxy<void(TermNode&, _tParams&&...)>
+	::call(f, Unilang::Deref(std::next(term.begin())), yforward(args)...)))
+{
+	RetainN(term);
+	return ystdex::expand_proxy<yimpl(void)(TermNode&, _tParams&&...)>::call(f,
+		Unilang::Deref(std::next(term.begin())), yforward(args)...);
+}
+
+template<typename _func, typename... _tParams>
+void
+CallUnary(_func&& f, TermNode& term, _tParams&&... args)
+{
+	Forms::CallRawUnary([&](TermNode& tm){
+		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(std::ref(f)),
+			tm, yforward(args)...), term.get_allocator());
+	}, term);
+}
 
 template<typename _type, typename _func, typename... _tParams>
 void
