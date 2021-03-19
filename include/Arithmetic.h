@@ -34,6 +34,11 @@ public:
 
 	[[nodiscard, gnu::pure]] friend bool
 	operator<(const Number&, const Number&) noexcept;
+
+	operator int() const noexcept
+	{
+		return value;
+	}
 };
 
 } // inline namespace Numbers;
