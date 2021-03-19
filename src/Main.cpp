@@ -246,7 +246,8 @@ LoadFunctions(Interpreter& intp)
 							(raise-invalid-syntax-error
 								"Syntax error in applying form.")) opt));
 		$defl! list* (&head .&tail)
-			$if (null? tail) head (cons head (apply list* tail));
+			$if (null? tail) (forward! head)
+				(cons (forward! head) (apply list* (move! tail)));
 		$defl! first ((&x .)) x;
 		$defl! rest ((#ignore .x)) x;
 		$defv! $defv%! (&$f &formals &ef .&body) d
@@ -409,7 +410,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.72"
+#define APP_VER "0.6.73"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
