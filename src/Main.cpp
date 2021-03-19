@@ -249,11 +249,10 @@ LoadFunctions(Interpreter& intp)
 			$lambda () () lock-current-environment;
 		$def! $lvalue-identifier? $vau (&s) d
 			eval (list bound-lvalue? (list $resolve-identifier s)) d;
+		$defl%! forward! (%x) $if ($lvalue-identifier? x) x (move! x);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
-		$defl%! forward! (%x)
-			$if (bound-lvalue? ($resolve-identifier x)) x (move! x);
 		$defl%! apply (&appv &arg .&opt)
 			eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
 				($if (null? opt) (() make-environment)
@@ -436,7 +435,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.86"
+#define APP_VER "0.6.87"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
