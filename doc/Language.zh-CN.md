@@ -1011,6 +1011,18 @@
 
 　　绑定 `wrap` 的 `vau` 抽象，等价 `$def! <variable> wrap ($vau% <formals> <eformal> <body>)` 。
 
+`forward-first% <applicative> <list>`
+
+　　取列表的第一元素并转发给指定的应用子。
+
+　　对参数列表 `(&appv (&x .))` ，作用同求值：
+
+```
+(forward! appv) (list% ($move-resolved! x))
+```
+
+　　其中，调用 `appv` 的底层合并子的当前环境同调用 `forward-first%` 的动态环境。
+
 `first <list>`
 
 　　取列表第一个元素的值。
