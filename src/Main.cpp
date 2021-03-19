@@ -69,7 +69,7 @@ DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 {
 	Forms::RetainN(term);
 	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		const auto& id(Unilang::AccessRegular<string_view>(nd, p_ref));
+		const string_view id(Unilang::AccessRegular<TokenValue>(nd, p_ref));
 
 		term = CheckSymbol(id, std::bind(f, std::ref(c), id));
 	}, *std::next(term.begin()));
@@ -409,7 +409,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.69"
+#define APP_VER "0.6.71"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
