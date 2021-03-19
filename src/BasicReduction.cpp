@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "BasicReduction.h"
 #include "TermAccess.h" // for Unilang::TryAccessLeaf;
@@ -33,10 +33,7 @@ LiftOtherOrCopy(TermNode& term, TermNode& tm, bool move)
 	if(move)
 		LiftOther(term, tm);
 	else
-	{
-		term.GetContainerRef() = tm.GetContainer();
-		term.Value = tm.Value;
-	}
+		term.CopyContent(tm);
 }
 
 
