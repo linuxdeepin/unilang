@@ -447,6 +447,9 @@ ResolveName(const Context& ctx, string_view id)
 }
 
 [[nodiscard]] TermNode
+MoveResolved(const Context&, string_view);
+
+[[nodiscard]] TermNode
 ResolveIdentifier(const Context&, string_view);
 
 [[nodiscard]] pair<shared_ptr<Environment>, bool>
