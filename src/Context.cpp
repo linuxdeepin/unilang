@@ -280,6 +280,17 @@ Context::WeakenRecord() const noexcept
 
 
 TermNode
+MoveResolved(const Context& ctx, string_view id)
+{
+	auto pr(ResolveName(ctx, id));
+
+	if(const auto p = pr.first)
+		// TODO: Avoid moving for frozen environments.
+		return std::move(*p);
+	throw BadIdentifier(id);
+}
+
+TermNode
 ResolveIdentifier(const Context& ctx, string_view id)
 {
 	auto pr(ResolveName(ctx, id));
