@@ -8,6 +8,7 @@
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
+#include "Arithmetic.h" // for Number;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <ios> // for std::ios_base::eofbit;
@@ -109,6 +110,9 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 						return *p ? "#t" : "#f";
 					if(const auto p = vo.AccessPtr<int>())
 						return ystdex::sfmt<string>("%d", *p);
+					if(const auto p = vo.AccessPtr<Number>())
+						// TODO: Support different internal representations.
+						return ystdex::sfmt<string>("%d", int(*p));
 					if(const auto p = vo.AccessPtr<ValueToken>())
 						if(*p == ValueToken::Unspecified)
 							return "#inert";
