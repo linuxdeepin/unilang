@@ -264,8 +264,9 @@ LoadFunctions(Interpreter& intp)
 						(move! clauses));
 		$defv%! $when (&test .&exprseq) d
 			$if (eval test d) (eval% (list () $sequence (move! exprseq)) d);
-		$defv! $unless (&test .&exprseq) d
-			$if (eval test d) #inert (eval (list* () $sequence exprseq) d);
+		$defv%! $unless (&test .&exprseq) d
+			$if (eval test d) #inert
+				(eval% (list () $sequence (move! exprseq)) d);
 		$defl! not? (x) eqv? x #f;
 		$defv! $and? x d $cond
 			((null? x) #t)
@@ -413,7 +414,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.77"
+#define APP_VER "0.6.78"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
