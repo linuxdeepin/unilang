@@ -509,8 +509,9 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 
 			if(!id.empty())
 			{
+				const auto a(o_tm.get_allocator());
 				const auto last(o_tm.end());
-				TermNode::Container con(t.get_allocator());
+				TermNode::Container con(a);
 
 				if((o_tags & (TermTags::Unique | TermTags::Nonmodifying))
 					== TermTags::Unique || bool(o_tags & TermTags::Temporary))
@@ -518,12 +519,14 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 					if(sigil == char())
 						LiftSubtermsToReturn(o_tm);
 					con.splice(con.end(), o_tm.GetContainerRef(), first, last);
+					MarkTemporaryTerm(env.Bind(id, TermNode(std::move(con))),
+						sigil);
 				}
 				else
 				{
 					for(; first != last; ++first)
 						BindParameterObject{r_env}(sigil, o_tags,
-							*first, [&](const TermNode& tm){
+							Unilang::Deref(first), [&](const TermNode& tm){
 							con.emplace_back(tm.GetContainer(), tm.Value);
 							CopyTermTags(con.back(), tm);
 						}, [&](TermNode::Container&& c, ValueObject&& vo)
@@ -531,9 +534,20 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 							con.emplace_back(std::move(c), std::move(vo));
 							return con.back();
 						});
+					if(sigil == '&')
+					{
+						auto p_sub(YSLib::allocate_shared<TermNode>(a,
+							std::move(con)));
+						auto& sub(Unilang::Deref(p_sub));
+
+						env.Bind(id, TermNode(std::allocator_arg, a,
+							{Unilang::AsTermNode(a, std::move(p_sub))},
+							std::allocator_arg, a, TermReference(sub, r_env)));
+					}
+					else
+						MarkTemporaryTerm(env.Bind(id,
+							TermNode(std::move(con))), sigil);
 				}
-				MarkTemporaryTerm(env.Bind(id, TermNode(std::move(con))),
-					sigil);
 			}
 		}
 	}, [&](const TokenValue& n, TermNode& b, TermTags o_tags, 
