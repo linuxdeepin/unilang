@@ -7,8 +7,8 @@
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
-//	ystdex::enable_if_t, std::is_convertible, ystdex::decay_t, ystdex::false_,
-//	ystdex::not_;
+//	ystdex::enable_if_t, std::is_assignable, std::is_nothrow_assignable,
+//	std::is_convertible, ystdex::decay_t, ystdex::false_, ystdex::not_;
 #include <cassert> // for assert;
 #include <ystdex/type_op.hpp> // for ystdex::cond_or_t;
 
@@ -152,6 +152,29 @@ public:
 		return container;
 	}
 
+	template<class _tCon, class _type>
+	ystdex::enable_if_t<
+		ystdex::and_<std::is_assignable<Container, _tCon&&>,
+		std::is_assignable<ValueObject, _type&&>>::value>
+	SetContent(_tCon&& con, _type&& val) noexcept(ystdex::and_<
+		std::is_nothrow_assignable<Container, _tCon&&>,
+		std::is_nothrow_assignable<ValueObject, _type&&>>())
+	{
+		container = yforward(con);
+		Value = yforward(val);
+	}
+	void
+	SetContent(const TermNode& term)
+	{
+		SetContent(term.container, term.Value);
+	}
+	void
+	SetContent(TermNode&& term)
+	{
+		SetContent(std::move(term.container), std::move(term.Value));
+		Tags = term.Tags;
+	}
+
 	void
 	Add(const TermNode& term)
 	{
@@ -174,6 +197,24 @@ public:
 	ClearContainer() noexcept
 	{
 		container.clear();
+	}
+
+	void
+	CopyContainer(const TermNode& nd)
+	{
+		GetContainerRef() = Container(nd.GetContainer());
+	}
+
+	void
+	CopyContent(const TermNode& nd)
+	{
+		SetContent(TermNode(nd));
+	}
+
+	void
+	CopyValue(const TermNode& nd)
+	{
+		Value = ValueObject(nd.Value);
 	}
 
 	[[nodiscard, gnu::pure]] iterator
