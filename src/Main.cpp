@@ -268,6 +268,8 @@ LoadFunctions(Interpreter& intp)
 			wrap (eval (list* $vau/e e formals ignore (move! body)) d);
 		$defv! $defl/e! (&f &e &formals .&body) d
 			eval (list $set! d f $lambda/e e formals (move! body)) d;
+		$defv! $defw%! (&f &formals &ef .&body) d
+			eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
 		$defl! first ((&x .)) x;
 		$defl! rest ((#ignore .x)) x;
 		$defv! $defv%! (&$f &formals &ef .&body) d
@@ -432,7 +434,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.84"
+#define APP_VER "0.6.85"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
