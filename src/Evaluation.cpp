@@ -512,7 +512,8 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 				const auto last(o_tm.end());
 				TermNode::Container con(t.get_allocator());
 
-				if(bool(o_tags & (TermTags::Unique | TermTags::Temporary)))
+				if((o_tags & (TermTags::Unique | TermTags::Nonmodifying))
+					== TermTags::Unique || bool(o_tags & TermTags::Temporary))
 				{
 					if(sigil == char())
 						LiftSubtermsToReturn(o_tm);
