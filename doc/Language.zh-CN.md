@@ -1003,6 +1003,10 @@
 
 　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
 
+`$defw%! <variable> <formals> <eformal> <body>`
+
+　　绑定 `wrap` 的 `vau` 抽象，等价 `$def! <variable> wrap ($vau% <formals> <eformal> <body>)` 。
+
 `first <list>`
 
 　　取列表第一个元素的值。
