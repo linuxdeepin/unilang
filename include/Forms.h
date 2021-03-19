@@ -228,6 +228,9 @@ If(TermNode&, Context&);
 ReductionStatus
 Cons(TermNode&);
 
+ReductionStatus
+ConsRef(TermNode&);
+
 
 ReductionStatus
 Eval(TermNode&, Context&);
