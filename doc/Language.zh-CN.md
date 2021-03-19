@@ -953,11 +953,9 @@
 
 　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
 
-`$sequence <expression-sequence>`
+`$lvalue-identifier?` <symbol>
 
-　　顺序求值。操作数非空时结果是最后的参数，可能是引用值；否则结果是 `#inert` 。
-
-　　求值每个 <object> 的副作用包括其中临时对象的销毁都被顺序限制。
+　　解析当前环境中的标识符（同 `$resolve-identifier` ）并判断是否为左值（同 `bound-lvalue?` ）。
 
 `forward! <object>`
 
@@ -966,6 +964,12 @@
 　　参数是右值操作数或可修改的临时对象时转移，其它情形复制。
 
 **注释** 被转发的值若是形式参数树中的变量，一般应以带有标记字符 `&` 的形式绑定；否则，转发的不是对应的实际参数，而可能是其按值绑定的副本。
+
+`$sequence <expression-sequence>`
+
+　　顺序求值。操作数非空时结果是最后的参数，可能是引用值；否则结果是 `#inert` 。
+
+　　求值每个 <object> 的副作用包括其中临时对象的销毁都被顺序限制。
 
 `apply <applicative> <object> <environment>`
 
