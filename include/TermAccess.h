@@ -229,6 +229,12 @@ public:
 		return r_env;
 	}
 
+	void
+	AddTags(TermTags t) noexcept
+	{
+		tags |= t;
+	}
+
 #if Unilang_CheckTermReferenceIndirection
 	[[nodiscard, gnu::pure]] TermNode&
 	get() const;
