@@ -145,9 +145,10 @@ Context::ApplyTail()
 	{
 		LastStatus = TailAction(*this);
 	}
-	catch(bad_any_cast&)
+	catch(bad_any_cast& ex)
 	{
-		std::throw_with_nested(TypeError("Mismatched type found."));
+		std::throw_with_nested(TypeError(ystdex::sfmt("Mismatched types ('%s',"
+			" '%s') found.", ex.from(), ex.to()).c_str()));
 	}
 	return LastStatus;
 }
