@@ -238,8 +238,8 @@ LoadFunctions(Interpreter& intp)
 	intp.Perform(R"Unilang(
 		$defl%! forward! (%x)
 			$if (bound-lvalue? ($resolve-identifier x)) x (move! x);
-		$defl! apply (&appv &arg .&opt)
-			eval (cons () (cons (unwrap appv) arg))
+		$defl%! apply (&appv &arg .&opt)
+			eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
 				($if (null? opt) (() make-environment)
 					(($lambda ((&e .&eopt))
 						$if (null? eopt) e
@@ -409,7 +409,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.71"
+#define APP_VER "0.6.72"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
