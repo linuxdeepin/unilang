@@ -19,7 +19,8 @@
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
 #include <regex> // for std::regex, std::regex_match;
-#include "Arithmetic.h" // for Numbers;
+#include "Arithmetic.h" // for Number;
+#include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -61,6 +62,17 @@ DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 		f(term, nd, !p_ref || p_ref->IsModifiable());
 	}, *std::next(term.begin()));
 	return ReductionStatus::Retained;
+}
+
+[[nodiscard]] ReductionStatus
+Qualify(TermNode& term, TermTags tag_add)
+{
+	return Forms::CallRawUnary([&](TermNode& tm){
+		if(const auto p = Unilang::TryAccessLeaf<TermReference>(tm))
+			p->AddTags(tag_add);
+		LiftTerm(term, tm);
+		return ReductionStatus::Retained;
+	}, term);
 }
 
 [[nodiscard]] ReductionStatus
@@ -183,6 +195,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
+	RegisterStrict(ctx, "as-const",
+		ystdex::bind1(Qualify, TermTags::Nonmodifying));
 	RegisterStrict(ctx, "move!",
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
 	RegisterStrict(ctx, "cons", Cons);
@@ -414,7 +428,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.78"
+#define APP_VER "0.6.81"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
