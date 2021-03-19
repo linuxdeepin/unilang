@@ -779,6 +779,12 @@ Cons(TermNode& term)
 	return ReductionStatus::Retained;
 }
 
+ReductionStatus
+ConsRef(TermNode& term)
+{
+	return ConsImpl(term);
+}
+
 
 ReductionStatus
 Eval(TermNode& term, Context& ctx)
