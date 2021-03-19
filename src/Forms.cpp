@@ -472,6 +472,52 @@ EqTermReference(TermNode& term, _func f)
 }
 
 
+void
+MakeValueListOrMove(TermNode& term, TermNode& nd,
+	ResolvedTermReferencePtr p_ref)
+{
+	if(Unilang::IsMovable(p_ref))
+		term.GetContainerRef().splice(term.end(),
+			std::move(nd.GetContainerRef()));
+	else
+		for(const auto& sub : nd)
+			term.Add(sub);
+}
+
+
+[[noreturn]] void
+ThrowConsError(TermNode& nd, ResolvedTermReferencePtr p_ref)
+{
+	throw ListTypeError(ystdex::sfmt(
+		"Expected a list for the 2nd argument, got '%s'.",
+		TermToStringWithReferenceMark(nd, p_ref).c_str()));
+}
+
+void
+ConsItem(TermNode& term, TermNode& y)
+{
+	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
+		if(IsList(nd_y))
+			MakeValueListOrMove(term, nd_y, p_ref);
+		else
+			ThrowConsError(nd_y, p_ref);
+	}, y);
+}
+
+ReductionStatus
+ConsImpl(TermNode& term)
+{
+	Forms::RetainN(term, 2);
+	RemoveHead(term);
+
+	const auto i(std::next(term.begin()));
+
+	ConsItem(term, Unilang::Deref(i));
+	term.erase(i);
+	return ReductionStatus::Retained;
+}
+
+
 class EncapsulationBase
 {
 private:
@@ -728,21 +774,7 @@ If(TermNode& term, Context& ctx)
 ReductionStatus
 Cons(TermNode& term)
 {
-	RetainN(term, 2);
-
-	const auto i(std::next(term.begin(), 2));
-
-	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
-		if(IsList(nd_y))
-			term.GetContainerRef().splice(term.end(),
-				std::move(nd_y.GetContainerRef()));
-		else
-			throw ListTypeError(ystdex::sfmt(
-				"Expected a list for the 2nd argument, got '%s'.",
-				TermToStringWithReferenceMark(nd_y, p_ref).c_str()));
-	}, *i);
-	term.erase(i);
-	RemoveHead(term);
+	ConsImpl(term);
 	LiftSubtermsToReturn(term);
 	return ReductionStatus::Retained;
 }
