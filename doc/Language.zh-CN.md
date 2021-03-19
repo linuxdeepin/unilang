@@ -387,7 +387,7 @@
 
 　　合并子分为两类：
 
-* 调用时总是先对操作数树中的每个直接子节点（即每个确定实际参数的操作数子对象）求值，然后调用*底层(underlying)* 合并子。这种合并子是*应用合并子(applicative combiner)* 简称*应用子(applicative)* 。
+* 调用时总是先对操作数树中的每个直接子节点（即每个确定实际参数的操作数子对象）求值，然后调用对应的*底层(underlying)* 合并子。这种合并子是*应用合并子(applicative combiner)* 简称*应用子(applicative)* 。
 * 否则，合并子是*操作合并子(operative combiner)* ，简称*操作子(operative)* 。
 
 　　应用子的底层合并子可以是其它应用子，即确定实际参数的求值可能发生多次。
@@ -774,6 +774,14 @@
 
 　　直接保留解析结果中项的类型，不按成员访问规则确定值类别，因此和解析名称表达式的结果总是左值不同，可保留消亡值。
 
+`$move-resolved! <symbol>`
+
+　　转移解析标识符的对象。
+
+　　和 `$resolve-identifier` 类似，但直接取被绑定的对象并从环境中转移。
+
+**注释** 一般应仅用于被绑定的对象不需要再被使用时。
+
 `lock-environment <environment>`
 
 　　锁定环境：创建环境强引用。
@@ -865,7 +873,7 @@
 
 `unwrap <applicative>`
 
-　　解包装应用子为底层的合并子。
+　　解包装应用子为底层合并子。
 
 `raise-invalid-syntax-error` <string>
 
@@ -941,16 +949,6 @@
 
 　　绑定 λ 抽象，等价 `$def! <variable> $lambda% <formals> <body>` 。
 
-`$lambda/e <parent> <formals> <body>`
-
-　　创建指定静态环境的 lambda 抽象。
-
-　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
-
-`$defl/e! <variable> <parent> <formals> <body>`
-
-　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
-
 `() make-standard-environment`
 
 　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
@@ -994,6 +992,16 @@
 `list*% <object>+`
 
 　　同 `list*` ，但创建的列表元素保留引用值。
+
+`$lambda/e <parent> <formals> <body>`
+
+　　创建指定静态环境的 lambda 抽象。
+
+　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
+
+`$defl/e! <variable> <parent> <formals> <body>`
+
+　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
 
 `first <list>`
 
