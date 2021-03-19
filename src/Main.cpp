@@ -197,6 +197,8 @@ LoadFunctions(Interpreter& intp)
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterStrict(ctx, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
+	RegisterStrict(ctx, "expire",
+		ystdex::bind1(Qualify, TermTags::Unique));
 	RegisterStrict(ctx, "move!",
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
 	RegisterStrict(ctx, "cons", Cons);
@@ -428,7 +430,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.81"
+#define APP_VER "0.6.82"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
