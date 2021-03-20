@@ -220,43 +220,55 @@ struct BindParameterObject
 		const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
-		const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
 
-		if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
+		if(sigil != '@')
 		{
-			if(sigil != char())
-			{
-				const auto ref_tags(sigil == '&' ? BindReferenceTags(*p)
-					: p->GetTags());
+			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
 
-				if(can_modify && temp)
-					mv(std::move(o.GetContainerRef()),
-						TermReference(ref_tags, std::move(*p)));
+			if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
+			{
+				if(sigil != char())
+				{
+					const auto ref_tags(sigil == '&' ? BindReferenceTags(*p)
+						: p->GetTags());
+
+					if(can_modify && temp)
+						mv(std::move(o.GetContainerRef()),
+							TermReference(ref_tags, std::move(*p)));
+					else
+						mv(TermNode::Container(o.GetContainer()),
+							TermReference(ref_tags, *p));
+				}
 				else
-					mv(TermNode::Container(o.GetContainer()),
-						TermReference(ref_tags, *p));
+				{
+					auto& src(p->get());
+
+					if(!p->IsMovable())
+						cp(src);
+					else
+						mv(std::move(src.GetContainerRef()),
+							std::move(src.Value));
+				}
 			}
+			else if((can_modify || sigil == '%') && temp)
+				MarkTemporaryTerm(mv(std::move(o.GetContainerRef()),
+					std::move(o.Value)), sigil);
+			else if(sigil == '&')
+				mv(TermNode::Container(o.get_allocator()),
+					ValueObject(std::allocator_arg, o.get_allocator(),
+					in_place_type<TermReference>,
+					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
 			else
-			{
-				auto& src(p->get());
-
-				if(!p->IsMovable())
-					cp(src);
-				else
-					mv(std::move(src.GetContainerRef()),
-						std::move(src.Value));
-			}
+				cp(o);
 		}
-		else if((can_modify || sigil == '%') && temp)
-			MarkTemporaryTerm(mv(std::move(o.GetContainerRef()),
-				std::move(o.Value)), sigil);
-		else if(sigil == '&')
+		else if(!temp)
 			mv(TermNode::Container(o.get_allocator()),
 				ValueObject(std::allocator_arg, o.get_allocator(),
-				in_place_type<TermReference>,
-				GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
+				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
+				o, Referenced));
 		else
-			cp(o);
+			throw
+				InvalidReference("Invalid operand found on binding sigil '@'.");
 	}
 };
 
@@ -492,7 +504,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	const auto check_sigil([&](string_view& id){
 		char sigil(id.front());
 
-		if(sigil != '&' && sigil != '%')
+		if(sigil != '&' && sigil != '%' && sigil != '@')
 			sigil = char();
 		else
 			id.remove_prefix(1);
