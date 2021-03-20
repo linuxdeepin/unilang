@@ -312,8 +312,9 @@ LoadFunctions(Interpreter& intp)
 				(apply sum (list% (apply head (list% l) d)
 					(apply accr (list% (apply tail (list% l) d)
 					pred? (forward! base) head tail sum) d)) d);
-		$defw! foldr1 (&kons &knil &l) d
-			apply accr (list l null? knil first rest kons) d;
+		$defw%! foldr1 (&kons &knil &l) d
+			apply accr
+				(list% (forward! l) null? (forward! knil) first% rest% kons) d;
 		$defw! map1 (&appv &l) d
 			foldr1 ($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
 		$defl! list-concat (&x &y) foldr1 cons y x;
@@ -443,7 +444,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.99"
+#define APP_VER "0.6.100"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
