@@ -1119,7 +1119,7 @@ $or? <test>...
 
 `foldr1 <applicative> <object> <list>`
 
-　　同 `accr` ，但指定谓词为 `null?` ，应用子分别为 `first` 和 `rest` 。
+　　同 `accr` ，但指定谓词为 `null?` ，应用子分别为 `first%` 和 `rest%` 。
 
 `map1 <applicative> <list>`
 
