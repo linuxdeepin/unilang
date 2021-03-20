@@ -276,6 +276,9 @@ LoadFunctions(Interpreter& intp)
 		$defl%! first (%l)
 			($lambda% (fwd) forward-first% forward! (fwd l))
 				($if ($lvalue-identifier? l) id expire);
+		$defl%! first% (%l)
+			($lambda (fwd (@x .)) fwd x)
+				($if ($lvalue-identifier? l) id expire) l;
 		$defl! rest ((#ignore .x)) x;
 		$defv! $defv%! (&$f &formals &ef .&body) d
 			eval (list $set! d $f $vau% formals ef (move! body)) d;
@@ -439,7 +442,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.89"
+#define APP_VER "0.6.97"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
