@@ -1059,6 +1059,10 @@
 
 　　取列表第一个元素以外的元素值构成的列表。
 
+`rest% <list>`
+
+　　取列表第一个元素以外的元素值经过转发的值构成的列表。
+
 `$defv%! <variable> <formals> <eformal> <body>`
 
 　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
