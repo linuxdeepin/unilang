@@ -1117,13 +1117,25 @@ $or? <test>...
 
 　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
 
+　　参数 `<applicative1>` 和参数参数 `<applicative2>` 应接受两个参数，否则引起错误。
+
+　　参数 `<applicative3>` 应接受两个参数，否则引起错误。
+
+　　调用参数中的应用子的 <object1> 实际参数在不同的应用子调用中可能同一。
+
+　　调用参数中的应用子的底层合并子的当前环境同调用 `accr` 的动态环境。
+
 `foldr1 <applicative> <object> <list>`
 
 　　同 `accr` ，但指定谓词为 `null?` ，应用子分别为 `first%` 和 `rest%` 。
 
+　　参数 `<applicative>` 同 `accr` 的参数 `<applicative3>` 。
+
 `map1 <applicative> <list>`
 
 　　单列表映射操作，使用指定应用子对列表中每个参数进行调用，结果为调用结果的列表。
+
+　　参数 `<applicative>` 应接受一个参数，否则引起错误。
 
 　　任意两个调用之间的相对求值顺序未指定。
 
