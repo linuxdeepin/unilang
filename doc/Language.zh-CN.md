@@ -461,13 +461,37 @@
 
 　　函数是合并子右值、合并子左值（引用值）或求值为这些值的符号。
 
-　　一般地，函数合并的求值结果替换函数合并表达式，这种替换是*函数调用(function call)* 。合并子调用的结果是函数调用的结果，称为*函数值(function value)* 。
+　　一般地，函数合并的求值结果替换函数合并表达式，这种替换是*函数调用(function call)* 。合并子调用的结果是函数调用的结果，称为*函数值(function value)* 。替换函数使操作数被求值的函数调用是*函数应用(function application)* 。
 
 　　函数调用时，*主调函数(caller function)* 等*调用者(caller)* 或其它引起调用的计算的实体转移程序的控制到被调用的函数，使之*进入(enter)* 函数。控制可能通过调用被再次转移，即*嵌套调用(nested call)* 。一些被调用的过程可能被多次进入，即*重入(reenter)* 。
 
 　　通过嵌套调用直接（总是以自身作为调用者）或间接（通过其它调用者转移控制）的重入是*递归调用(recursive call)* 。
 
 　　特定的函数总是用来创建特定类型值的对象（右值）。这类函数是（特定类型值的）*构造器(constructor)* 。
+
+### PTC(proper tail call)
+
+　　求值函数调用时的最后一个函数调用是尾调用。尾调用发生在*尾上下文(tail context)* 。
+
+**注释** 和某些其它语言不同，尾上下文是隐式的，由运行时的求值状态而非静态的语法构造确定。
+
+　　若一个尾调用允许不限次数地重入，则尾调用是 PTC（Proper Tail Call，真尾调用）。
+
+**注释** PTC 符合 [[Cl98]](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) 中 proper tail recursion 的形式定义。
+
+　　支持 PTC 的尾上下文中被求值的子表达式中的对象生存期可被调整，其方式未指定。
+
+**注释** 这不影响可观察行为，但可能要求和其它语言的互操作遵循附加的要求。
+
+　　以下上下文提供 PTC 支持：
+
+* 求值算法中求值操作合并。
+* 以下标准库中的求值：
+	* 对 `<body>` 的求值；
+	* 由 `<test>` 控制或连续求值多个表达式中最后被求值的子表达式求值。
+	* 函数 `apply` 对 `<applicative>` 和 `<object>` 在 `<environment>` 或默认的动态环境中的应用。
+
+　　不改变程序的可观察行为时，实现可支持任意其它的尾上下文上的 PTC 。
 
 ## 一等实体
 
