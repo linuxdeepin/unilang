@@ -570,6 +570,7 @@
 * `<lists>` 元素都是列表的列表。
 * `<bool>` 布尔值，值为 `#t` 或 `#f` 的集合。
 * `<test>` 类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
+	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果为 `#inert` 。
 * `<combiner>` 合并子。
 * `<applicative>` 应用子。
 * `<predicate>` 谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
@@ -765,7 +766,7 @@
 
 `$if <test> <consequent>`
 
-　　省略第三操作数的条件分支，条件成立时返回 `<consequent>` 。若<test> 求值为 #f ，则结果为 `#inert` 。
+　　省略第三操作数的条件分支，条件成立时返回 `<consequent>` 。
 
 `null? <object>`
 
@@ -1119,13 +1120,19 @@
 
 　　条件成立时顺序求值。
 
-　　求值 <test> ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
+　　求值 `<test>` ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
 
 `$unless <test> <expression-sequence>`
 
 　　条件不成立时顺序求值。
 
-　　求值 <test> ，结果作为条件，当条件不成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
+　　求值 `<test>` ，结果作为条件，当条件不成立时顺序求值 `<expression-sequence>` ，并以其求值结果作为调用的求值结果。
+
+`$while <test> <expression-sequence>`
+
+　　条件成立时循环求值。
+
+　　循环求值 `<test>` ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` 。结果是最后一次 `<expression-sequence>` 的求值结果。
 
 not? <object>
 
