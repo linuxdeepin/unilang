@@ -1132,7 +1132,13 @@
 
 　　条件成立时循环求值。
 
-　　循环求值 `<test>` ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` 。结果是最后一次 `<expression-sequence>` 的求值结果。
+　　循环求值 `<test>` ，结果作为条件，当条件成立时顺序求值 `<expression-sequence>` 。结果是最后一次 `<expression-sequence>` 求值（若存在）的求值结果。
+
+`$until <test> <expression-sequence>`
+
+　　条件不成立时循环求值。
+
+　　循环求值 `<test>` ，结果作为条件，当条件不成立时顺序求值 `<expression-sequence>` 。结果是最后一次 `<expression-sequence>` 求值（若存在）的求值结果。
 
 not? <object>
 
