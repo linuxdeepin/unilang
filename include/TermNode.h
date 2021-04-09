@@ -39,6 +39,12 @@ GetLValueTagsOf(const TermTags& tags) noexcept
 	return tags & ~TermTags::Temporary;
 }
 
+[[nodiscard, gnu::const]] constexpr TermTags
+PropagateTo(TermTags dst, TermTags tags) noexcept
+{
+	return dst | (tags & TermTags::Nonmodifying);
+}
+
 
 constexpr const struct NoContainerTag{} NoContainer{};
 
