@@ -186,7 +186,6 @@ private:
 	mutable ValueObject parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
 	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
-	void(&save)(const VauHandler&, TCOAction&);
 
 public:
 	bool NoLifting = {};
@@ -197,8 +196,7 @@ public:
 		std::move(p_fm))), parent(MakeParentSingle(p_env, owning)),
 		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
 		Unilang::AsTermNode(term.get_allocator())))),
-		call(eformal.empty() ? CallStatic : CallDynamic),
-		save(owning ? SaveOwning : SaveNothing), NoLifting(nl)
+		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 	VauHandler(int, string&& ename, shared_ptr<TermNode>&& p_fm,
 		ValueObject&& vo, TermNode& term, bool nl)
@@ -207,8 +205,7 @@ public:
 		parent((Environment::CheckParent(vo), std::move(vo))),
 		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
 		Unilang::AsTermNode(term.get_allocator())))),
-		call(eformal.empty() ? CallStatic : CallDynamic), save(SaveList),
-		NoLifting(nl)
+		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 
 	friend bool
@@ -294,20 +291,17 @@ private:
 
 		if(move)
 		{
-			TermNode eval_struct(std::move(Deref(p_eval_struct)));
+			ctx.GetRecordRef().Parent = std::move(parent);
+			term.SetContent(std::move(Unilang::Deref(p_eval_struct)));
+
 			auto& act(RefTCOAction(ctx));
 
-			save(*this, act);
 			yunused(act.MoveFunction());
-			LiftOther(term, eval_struct);
-			return RelayForCall(ctx, term, std::move(gd), no_lift);
 		}
 		else
 		{
-			auto& eval_struct(Unilang::Deref(p_eval_struct));
-
-			term.GetContainerRef() = eval_struct.GetContainer();
-			term.Value = eval_struct.Value;
+			ctx.GetRecordRef().Parent = parent;
+ 			term.SetContent(Unilang::Deref(p_eval_struct));
 		}
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
