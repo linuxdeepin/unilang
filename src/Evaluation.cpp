@@ -229,8 +229,8 @@ struct BindParameterObject
 			{
 				if(sigil != char())
 				{
-					const auto ref_tags(sigil == '&' ? BindReferenceTags(*p)
-						: p->GetTags());
+					const auto ref_tags(PropagateTo(sigil == '&'
+						? BindReferenceTags(*p) : p->GetTags(), o_tags));
 
 					if(can_modify && temp)
 						mv(std::move(o.GetContainerRef()),
@@ -350,7 +350,7 @@ private:
 								tags = (tags
 									& ~(TermTags::Unique | TermTags::Temporary))
 									| (ref_tags & TermTags::Unique);
-								tags |= ref_tags & TermTags::Nonmodifying;
+								tags = PropagateTo(tags, ref_tags);
 							}
 							MatchSubterms(t.begin(), last, nd, nd.begin(), tags,
 								p_ref ? p_ref->GetEnvironmentReference()
