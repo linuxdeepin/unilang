@@ -233,11 +233,13 @@ public:
 	static void
 	CheckParameterTree(const TermNode& term)
 	{
-		for(const auto& child : term)
+		auto& nd(ReferenceTerm(term));
+
+		for(const auto& child : nd)
 			CheckParameterTree(child);
-		if(term.Value)
+		if(nd.Value)
 		{
-			if(const auto p = TermToNamePtr(term))
+			if(const auto p = TermToNamePtr(nd))
 				CheckVauSymbol(*p, "parameter in a parameter tree",
 					IsIgnore(*p)
 						|| CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
