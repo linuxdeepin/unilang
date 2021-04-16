@@ -1193,9 +1193,16 @@
 
 `foldr1 <applicative> <object> <list>`
 
-　　同 `accr` ，但指定谓词为 `null?` ，应用子分别为 `first%` 和 `rest%` 。
+　　作用同符合以下要求的 `accr` 调用：
 
-　　参数 `<applicative>` 同 `accr` 的参数 `<applicative3>` 。
+* 指定 `accr` 的参数为 `<list>` 、`null?` 、`(forward! <object>)` 、`first%` 、`rest%` 和 `<applicative>` ；
+* 调用应用子 `rest%` 时不复制 `<object>` 或其子对象。
+
+　　参数指定的应用子的调用不添加或移除列表元素，否则行为未定义。
+
+**注释** 类似 [SRFI-1 的 `fold-right`](https://srfi.schemers.org/srfi-1/srfi-1.html#FoldUnfoldMap) ，但只接受一个真列表。
+
+**注释** 名称中的 `1` 指 `<list>` 参数的个数。（更一般的其它形式可接受多个 `<list>` 。）
 
 `map1 <applicative> <list>`
 
