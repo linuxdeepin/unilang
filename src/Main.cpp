@@ -325,10 +325,9 @@ LoadFunctions(Interpreter& intp)
 				($if ($lvalue-identifier? l) ($lambda (&l) first% l)
 				($lambda (&l) expire (first% l))) rest% kons) d;
 		$defw%! map1 (&appv &l) d
-			foldr1 ($lambda (&x &xs) cons%
-				(apply appv (list% (forward! x)) d) (move! xs)) () (forward! l);
-		$defw! map1 (&appv &l) d
-			foldr1 ($lambda (&x &xs) cons (apply appv (list x) d) xs) () l;
+			foldr1 ($lambda (%x &xs) cons%
+				(apply appv (list% ($move-resolved! x)) d) (move! xs)) ()
+				(forward! l);
 		$defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
 		$defl! append (.&ls) foldr1 list-concat () (move! ls);
 		$defl! filter (&accept? &ls) apply append
@@ -456,7 +455,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.112"
+#define APP_VER "0.6.113"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
