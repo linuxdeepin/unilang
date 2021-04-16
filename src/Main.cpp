@@ -10,8 +10,8 @@
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "BasicReduction.h" // for ReductionStatus;
 #include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
-//	ComposeReferencedTermOp, IsBoundLValueTerm, EnvironmentReference, TermNode,
-//	IsBranchedList;
+//	ComposeReferencedTermOp, IsBoundLValueTerm, IsUncollapsedTerm,
+//	EnvironmentReference, TermNode, IsBranchedList;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Evaluation.h" // for CheckSymbol, RegisterStrict,
 //	ThrowInsufficientTermsError;
@@ -195,6 +195,7 @@ LoadFunctions(Interpreter& intp)
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
+	RegisterUnary<>(ctx, "uncollapsed?", IsUncollapsedTerm);
 	RegisterStrict(ctx, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
 	RegisterStrict(ctx, "expire",
@@ -455,7 +456,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.114"
+#define APP_VER "0.6.115"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

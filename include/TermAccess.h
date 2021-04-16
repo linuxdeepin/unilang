@@ -319,7 +319,13 @@ TryAccessReferencedTerm(const TermNode& term)
 }
 
 [[nodiscard, gnu::pure]] bool
+IsReferenceTerm(const TermNode&);
+
+[[nodiscard, gnu::pure]] bool
 IsBoundLValueTerm(const TermNode&);
+
+[[nodiscard, gnu::pure]] bool
+IsUncollapsedTerm(const TermNode&);
 
 template<typename _func, class _tTerm>
 auto
