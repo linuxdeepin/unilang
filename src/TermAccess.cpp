@@ -83,9 +83,23 @@ PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 
 
 bool
+IsReferenceTerm(const TermNode& term)
+{
+	return bool(Unilang::TryAccessLeaf<const TermReference>(term));
+}
+
+bool
 IsBoundLValueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
+		Unilang::TryAccessLeaf<const TermReference>(term));
+}
+
+bool
+IsUncollapsedTerm(const TermNode& term)
+{
+	return ystdex::call_value_or(ystdex::compose(IsReferenceTerm,
+		std::mem_fn(&TermReference::get)),
 		Unilang::TryAccessLeaf<const TermReference>(term));
 }
 
