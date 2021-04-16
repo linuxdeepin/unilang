@@ -338,17 +338,50 @@ LoadFunctions(Interpreter& intp)
 			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 		$defw! derive-current-environment (.&envs) d
 			apply make-environment (append envs (list d)) d;
-		$defv! $let (&bindings .&body) d
-			eval (list* () (list* $lambda (map1 first bindings)
-				(list (move! body)))
-				(map1 rest bindings)) d;
-		$defv! $let* (&bindings .&body) d
-			eval ($if (null? bindings) (list* $let bindings (move! body))
-				(list $let (list (first bindings))
-				(list* $let* (rest bindings) (move! body)))) d;
-		$defv! $letrec (&bindings .&body) d
-			eval (list $let () $sequence (list $def! (map1 first bindings)
-				(list* () list (map1 rest bindings))) (move! body)) d;
+		$def! ($let $let* $letrec) ($lambda (&ce)
+		(
+			$def! mods () ($lambda/e ce ()
+			(
+				$def! idv $lambda% (x) $move-resolved! x;
+				$defl%! rulist (&l)
+					$if ($lvalue-identifier? l)
+						(accr (($lambda ((.@xs)) xs) l) null? ()
+							($lambda% (%l) $sequence
+								($def! %x idv (($lambda% ((@x .)) x) l))
+								(($if (uncollapsed? x) idv expire) (expire x)))
+								rest%
+							($lambda (%x &xs)
+								(cons% ($resolve-identifier x) (move! xs))))
+						(idv (forward! l));
+				$defl%! list-extract-first (&l) map1 first l;
+				$defl%! list-extract-rest% (&l) map1 rest% l;
+				$defv%! $lqual (&ls) d
+					($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
+						(eval% ls d);
+				$defv%! $lqual* (&x) d
+					($if (eval (list $lvalue-identifier? x) d) as-const expire)
+						(eval% x d);
+				$defl%! mk-let ($ctor &bindings &body)
+					list* () (list* $ctor (list-extract-first bindings)
+						(list (move! body))) (list-extract-rest% bindings);
+				$defl%! mk-let* ($let $let* &bindings &body)
+					$if (null? bindings) (list* $let () (move! body))
+						(list $let (list (first% ($lqual* bindings)))
+						(list* $let* (rest% ($lqual* bindings)) (move! body)));
+				$defl%! mk-letrec ($let &bindings &body)
+					list $let () $sequence (list $def! (list-extract-first
+						bindings) (list* () list (list-extract-rest% bindings)))
+						(move! body);
+				() lock-current-environment
+			));
+			$defv/e%! $let mods (&bindings .&body) d
+				eval% (mk-let $lambda ($lqual bindings) (move! body)) d;
+			$defv/e%! $let* mods (&bindings .&body) d
+				eval% (mk-let* $let $let* ($lqual* bindings) (move! body)) d;
+			$defv/e%! $letrec mods (&bindings .&body) d
+				eval% (mk-letrec $let ($lqual bindings) (move! body)) d;
+			map1 move! (list% $let $let* $letrec)
+		)) (() get-current-environment);
 		$defv! $as-environment (.&body) d
 			eval (list $let () (list $sequence (move! body)
 				(list () lock-current-environment))) d;
@@ -459,7 +492,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.117"
+#define APP_VER "0.6.118"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
