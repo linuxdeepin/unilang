@@ -128,6 +128,10 @@ public:
 		: container(std::move(tm.container), a), Value(std::move(tm.Value)),
 		Tags(tm.Tags)
 	{}
+	~TermNode()
+	{
+		Clear();
+	}
 
 	TermNode&
 	operator=(const TermNode&) = default;
@@ -200,10 +204,7 @@ public:
 	}
 
 	void
-	ClearContainer() noexcept
-	{
-		container.clear();
-	}
+	ClearContainer() noexcept;
 
 	void
 	CopyContainer(const TermNode& nd)
