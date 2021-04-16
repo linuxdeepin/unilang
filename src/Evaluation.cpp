@@ -224,6 +224,7 @@ struct BindParameterObject
 		if(sigil != '@')
 		{
 			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
+			const auto a(o.get_allocator());
 
 			if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
 			{
@@ -234,10 +235,12 @@ struct BindParameterObject
 
 					if(can_modify && temp)
 						mv(std::move(o.GetContainerRef()),
-							TermReference(ref_tags, std::move(*p)));
+							ValueObject(std::allocator_arg, a, in_place_type<
+							TermReference>, ref_tags, std::move(*p)));
 					else
 						mv(TermNode::Container(o.GetContainer()),
-							TermReference(ref_tags, *p));
+							ValueObject(std::allocator_arg, a,
+							in_place_type<TermReference>, ref_tags, *p));
 				}
 				else
 				{
