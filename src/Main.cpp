@@ -334,9 +334,6 @@ LoadFunctions(Interpreter& intp)
 			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 		$defw! derive-current-environment (.&envs) d
 			apply make-environment (append envs (list d)) d;
-		$defv! $as-environment (.&body) d
-			eval (list $let () (list $sequence (move! body)
-				(list () lock-current-environment))) d;
 		$defv! $let (&bindings .&body) d
 			eval (list* () (list* $lambda (map1 first bindings)
 				(list (move! body)))
@@ -348,6 +345,9 @@ LoadFunctions(Interpreter& intp)
 		$defv! $letrec (&bindings .&body) d
 			eval (list $let () $sequence (list $def! (map1 first bindings)
 				(list* () list (map1 rest bindings))) (move! body)) d;
+		$defv! $as-environment (.&body) d
+			eval (list $let () (list $sequence (move! body)
+				(list () lock-current-environment))) d;
 		$defv! $bindings/p->environment (&parents .&bindings) d $sequence
 			($def! res apply make-environment (map1 ($lambda (x) eval x d)
 				parents))
@@ -455,7 +455,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.113"
+#define APP_VER "0.6.114"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
