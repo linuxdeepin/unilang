@@ -216,8 +216,8 @@ struct BindParameterObject
 
 	template<typename _fCopy, typename _fMove>
 	void
-	operator()(char sigil, TermTags o_tags, TermNode& o, _fCopy cp, _fMove mv)
-		const
+	operator()(char sigil, bool ref_temp, TermTags o_tags, TermNode& o,
+		_fCopy cp, _fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 
@@ -230,7 +230,7 @@ struct BindParameterObject
 			{
 				if(sigil != char())
 				{
-					const auto ref_tags(PropagateTo(sigil == '&'
+					const auto ref_tags(PropagateTo(ref_temp
 						? BindReferenceTags(*p) : p->GetTags(), o_tags));
 
 					if(can_modify && temp)
@@ -540,7 +540,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 				else
 				{
 					for(; first != last; ++first)
-						BindParameterObject{r_env}(sigil, o_tags,
+						BindParameterObject{r_env}(sigil, {}, o_tags,
 							Unilang::Deref(first), [&](const TermNode& tm){
 							con.emplace_back(tm.GetContainer(), tm.Value);
 							CopyTermTags(con.back(), tm);
@@ -574,7 +574,7 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 				const char sigil(check_sigil(id));
 
 				if(!id.empty())
-					BindParameterObject{r_env}(sigil, o_tags, b,
+					BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
 						[&](const TermNode& tm){
 						CopyTermTags(env.Bind(id, tm), tm);
 					}, [&](TermNode::Container&& c, ValueObject&& vo)
