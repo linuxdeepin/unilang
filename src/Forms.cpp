@@ -221,24 +221,6 @@ public:
 		throw UnilangException("Invalid composition found.");
 	}
 
-	static void
-	CheckParameterTree(const TermNode& term)
-	{
-		auto& nd(ReferenceTerm(term));
-
-		for(const auto& child : nd)
-			CheckParameterTree(child);
-		if(nd.Value)
-		{
-			if(const auto p = TermToNamePtr(nd))
-				CheckVauSymbol(*p, "parameter in a parameter tree",
-					IsIgnore(*p)
-						|| CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
-			else
-				ThrowInvalidSymbolType(term, "parameter tree node");
-		}
-	}
-
 private:
 	void
 	BindEnvironment(Context& ctx, ValueObject&& vo) const
