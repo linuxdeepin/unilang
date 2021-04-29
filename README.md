@@ -323,4 +323,73 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 		* 缺少列表参数检查。
 		* 错误的常规项（列表或非列表值的内部表示）检查。
 	* 更新外部依赖项，增强构建脚本支持。
+* **V0.7**
+	* 添加关于模块的规则和约定。
+	* 新增支持特性：
+		* 新增标准库函数：
+			* `derive-current-environment`
+			* `$as-environment`
+			* `$provide/d!`
+			* `$provide/let!`
+			* `$defl/e!`
+			* 模块 `std.strings` 及其中的函数：
+				* `++`
+				* `string-empty?`
+				* `string<-`
+				* `string=?`
+				* `string-contains?`
+				* `string-contains-ci?`
+				* `string->symbol`
+				* `symbol->string`
+				* `string->regex`
+				* `regex->match?`
+			* 整数数值操作：
+				* `+`
+				* `add2`
+				* `-`
+				* `*`
+				* `multiply2`
+				* `/`
+				* `div`
+				* `mod`
+			* `cons%`
+			* `id`
+			* `as-const`
+			* `expire`
+			* `$move-resolved!`
+			* `$lvalue-identifier?`
+			* `forward-first%`
+			* `first%`
+			* `rest%`
+			* `$while`
+			* `$until`
+			* `uncollapsed?`
+			* `$defv/e%!`
+		* 构造合并子等标准库函数支持环境列表作为父环境。
+		* 引用值支持增强：
+			* 函数 `cons` 复制左值操作数。
+			* 以下函数支持保留引用值和转发参数：
+				* `apply`
+				* `$cond`
+				* `$when`
+				* `$unless`
+				* `first`
+				* `accr`
+				* `foldr1`
+				* `map1`
+				* `list-concat`
+		* 形式参数树支持引用标记字符 `@` 绑定列表左值子对象的引用值。
+		* 支持通过 `eval` 求值和合并子调用的上下文的 PTC(proper tail call) 保证。
+	* 修复实现问题：
+		* 修复以下函数中的非预期对象复制：
+			* `foldr1`
+			* `map1`
+			* `$let`
+			* `$let*`
+			* `$letrec`
+		* 修复解释器中可能由用户程序中构造的深度过大的嵌套列表引起的未定义行为，包括列表对象被销毁时和形式参数树被检查时。 
+	* 优化实现：
+		* 支持合并子右值调用转移而不是复制内部资源。
+		* 省略合并子调用时对形式参数的冗余检查。
 
+	
