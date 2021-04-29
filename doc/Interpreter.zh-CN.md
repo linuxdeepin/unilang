@@ -156,6 +156,10 @@
 
 **原理** 这允许合并子的静态环境具有足够长的生存期，其捕获对象不会在合并子调用时被释放。这也适合 C++ 实现的合并子的上下文处理器（可以是带有状态的函数对象或捕获对象的 lambda 表达式）。
 
+　　用户程序可以通过特定的操作构造合并子。定义合并子的形式参数和变量等义等操作共用相同的语法，即通过形式参数树指定需在函数体或初值符求值前初始化的变量。构造合并子时对形式参数树进行检查。调用合并子时，省略检查以提升性能。与此不同，定义变量时，变量绑定前直接对被定义的变量的形式参数树进行检查。
+
+　　当前设计中，变量绑定和名称解析逗不会被缓存，这可能在以后实现以进一步优化用户定义的合并子的调用性能。
+
 ### PTC（proper tail call，真尾调用）
 
 **注释** PTC 不仅仅在对象语言中的函数调用使用，而且在 `eval` 等直接求值的情形下也被使用，这不一定对应程序语法上的递归重入。PTC 的 [[Cl98]](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) 中以 Scheme 的子集为对象语言定义的 PTR(proper tail recursion) 更广，但其形式上本质相同，除了本设计因为支持链式环境（因为语言规范要求一等环境对象支持父环境）而无法实现比一般 PTC 更强的 SFS(safe for space) 保证。
