@@ -7,14 +7,15 @@
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <functional> // for std::bind, std::placeholders;
 #include "Forms.h" // for Forms::RetainN, CallBinaryFold;
-#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
+#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
+//	ThrowInvalidTokenError;
 #include "BasicReduction.h" // for ReductionStatus;
 #include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
 //	ComposeReferencedTermOp, IsBoundLValueTerm, IsUncollapsedTerm,
 //	EnvironmentReference, TermNode, IsBranchedList;
 #include <iterator> // for std::next, std::iterator_traits;
-#include "Evaluation.h" // for CheckSymbol, RegisterStrict,
-//	ThrowInsufficientTermsError;
+#include "Lexical.h" // for IsUnilangSymbol;
+#include "Evaluation.h" // for RegisterStrict, ThrowInsufficientTermsError;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
@@ -73,6 +74,15 @@ Qualify(TermNode& term, TermTags tag_add)
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
 	}, term);
+}
+
+template<typename _func>
+auto
+CheckSymbol(string_view id, _func f) -> decltype(f())
+{
+	if(IsUnilangSymbol(id))
+		return f();
+	ThrowInvalidTokenError(id);
 }
 
 [[nodiscard]] ReductionStatus
@@ -492,7 +502,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.6.118"
+#define APP_VER "0.6.125"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

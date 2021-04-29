@@ -14,7 +14,7 @@
 //	ystdex::make_parameter_list_t;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include "Lexical.h" // for CategorizeLexeme, CategorizeBasicLexeme;
+#include "TermAccess.h" // for TokenValue;
 
 namespace Unilang
 {
@@ -295,16 +295,6 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 IsIgnore(const TokenValue& s) noexcept
 {
 	return s == "#ignore";
-}
-
-template<typename _func>
-auto
-CheckSymbol(string_view n, _func f) -> decltype(f())
-{
-	if(CategorizeBasicLexeme(n) == LexemeCategory::Symbol)
-		return f();
-	throw ParameterMismatch(ystdex::sfmt(
-		"Invalid token '%s' found for symbol parameter.", n.data()));
 }
 
 void
