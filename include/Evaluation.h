@@ -300,6 +300,10 @@ IsIgnore(const TokenValue& s) noexcept
 void
 BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
 
+void
+BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
+	TermNode&);
+
 } // namespace Unilang;
 
 #endif
