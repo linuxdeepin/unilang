@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Lexical_h_
 #define INC_Unilang_Lexical_h_ 1
@@ -54,6 +54,12 @@ enum class LexemeCategory
 
 [[nodiscard, gnu::pure]] LexemeCategory
 CategorizeBasicLexeme(string_view) noexcept;
+
+[[nodiscard, gnu::pure]] inline bool
+IsUnilangSymbol(string_view id) noexcept
+{
+	return CategorizeBasicLexeme(id) == LexemeCategory::Symbol;
+}
 
 } // namespace Unilang;
 
