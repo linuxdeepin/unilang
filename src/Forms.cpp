@@ -39,12 +39,6 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 }
 
 
-[[nodiscard, gnu::pure]] inline bool
-IsIgnore(const TokenValue& s) noexcept
-{
-	return s == "#ignore";
-}
-
 [[gnu::nonnull(2)]] void
 CheckVauSymbol(const TokenValue& s, const char* target, bool is_valid)
 {

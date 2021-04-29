@@ -291,6 +291,12 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 }
 
 
+[[nodiscard, gnu::pure]] inline bool
+IsIgnore(const TokenValue& s) noexcept
+{
+	return s == "#ignore";
+}
+
 template<typename _func>
 auto
 CheckSymbol(string_view n, _func f) -> decltype(f())
