@@ -66,6 +66,9 @@ ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
 [[noreturn]] void
 ThrowListTypeErrorForNonlist(const TermNode&, bool);
 
+[[noreturn]] void
+ThrowTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&, bool);
+
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
 TryAccessLeaf(TermNode& term)
