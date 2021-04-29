@@ -1,11 +1,12 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
 //	Unilang::TryAccessReferencedTerm;
-#include "TCO.h" // for MoveGuard, ReduceSubsequent;
-#include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
-#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
 #include <exception> // for std::throw_with_nested;
+#include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
+#include "TCO.h" // for MoveGuard, ReduceSubsequent;
+#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
+#include "Evaluation.h" // for BindParameterWellFormed;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
@@ -256,7 +257,8 @@ private:
 			&& bool(term.Tags & TermTags::Temporary));
 
 		RemoveHead(term);
-		BindParameter(ctx.GetRecordPtr(), *p_formals, term);
+		BindParameterWellFormed(ctx.GetRecordPtr(), Unilang::Deref(p_formals),
+			term);
 		ctx.GetRecordRef().Parent = parent;
 		AssertNextTerm(ctx, term);
 
