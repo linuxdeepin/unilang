@@ -13,6 +13,7 @@
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
 #include "TCO.h" // for RelayDirect;
+#include "Lexical.h" // for IsUnilangSymbol;
 
 namespace Unilang
 {
@@ -166,15 +167,6 @@ ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 		return ReduceSequenceOrderedAsync(term, ctx, term.erase(i));
 	});
 	return ReduceOnce(*i, ctx);
-}
-
-
-template<typename _func>
-auto
-CheckParameterLeafToken(string_view n, _func f) -> decltype(f())
-{
-	if(n != "#ignore")
-		CheckSymbol(n, f);
 }
 
 
@@ -567,23 +559,31 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 		}
 	}, [&](const TokenValue& n, TermNode& b, TermTags o_tags, 
 		const EnvironmentReference& r_env){
-		CheckParameterLeafToken(n, [&]{
-			if(!n.empty())
+		if(n != "#ignore")
+		{
+			if(IsUnilangSymbol(n))
 			{
-				string_view id(n);
-				const char sigil(check_sigil(id));
+				if(!n.empty())
+				{
+					string_view id(n);
+					const char sigil(check_sigil(id));
 
-				if(!id.empty())
-					BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
-						[&](const TermNode& tm){
-						CopyTermTags(env.Bind(id, tm), tm);
-					}, [&](TermNode::Container&& c, ValueObject&& vo)
-						-> TermNode&{
-						return env.Bind(id,
-							TermNode(std::move(c), std::move(vo)));
-					});
+					if(!id.empty())
+						BindParameterObject{r_env}(sigil, sigil == '&', o_tags,
+							b, [&](const TermNode& tm){
+							CopyTermTags(env.Bind(id, tm), tm);
+						}, [&](TermNode::Container&& c, ValueObject&& vo)
+							-> TermNode&{
+							return env.Bind(id,
+								TermNode(std::move(c), std::move(vo)));
+						});
+				}
 			}
-		});
+			else
+				throw ParameterMismatch(ystdex::sfmt(
+					"Invalid token '%s' found for symbol parameter.",
+					n.data()));
+		}
 	})(t, o, TermTags::Temporary, p_env);
 }
 
