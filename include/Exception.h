@@ -3,8 +3,8 @@
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
 
-#include "Unilang.h" // for size_t, string, shared_ptr, std::string,
-//	Unilang::Deref;
+#include "Unilang.h" // for size_t, string, string_view, shared_ptr,
+//	std::string, Unilang::Deref;
 #include <exception> // for std::runtime_error;
 
 namespace Unilang
@@ -103,6 +103,9 @@ public:
 	using UnilangException::UnilangException;
 };
 
+
+[[noreturn]] void
+ThrowInvalidTokenError(string_view);
 
 [[noreturn]] void
 ThrowNonmodifiableErrorForAssignee();
