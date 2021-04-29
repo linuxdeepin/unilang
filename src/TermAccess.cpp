@@ -1,7 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, Unilang::Nonnull;
-#include "Exception.h" // for ListTypeError;
+#include "TermAccess.h" // for sfmt, ystdex::sfmt, Unilang::Nonnull;
+#include "Exception.h" // for ListTypeError, TypeError;
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
 //	ystdex::invoke_value_or;
 #include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
@@ -57,6 +57,14 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
+void
+ThrowTypeErrorForInvalidType(const ystdex::type_info& tp, const TermNode& term,
+	bool has_ref)
+{
+	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
+		tp.name(), TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 
 
