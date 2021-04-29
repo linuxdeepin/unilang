@@ -177,6 +177,7 @@ public:
 	SetContent(const TermNode& nd)
 	{
 		SetContent(nd.container, nd.Value);
+		Tags = nd.Tags;
 	}
 	void
 	SetContent(TermNode&& nd)
