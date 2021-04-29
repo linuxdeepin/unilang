@@ -190,7 +190,106 @@ BindReferenceTags(const TermReference& ref) noexcept
 }
 
 
+[[noreturn]] inline void
+ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
+{
+	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
+}
+
+[[noreturn]] void
+ThrowNestedParameterTreeCheckError()
+{
+	std::throw_with_nested(InvalidSyntax("Failed checking for parameter in a"
+		" parameter tree (expected a symbol or '#ignore')."));
+}
+
+
 using Action = function<void()>;
+
+template<typename _fBindValue>
+class GParameterValueMatcher final
+{
+public:
+	_fBindValue BindValue;
+
+private:
+	mutable Action act{};
+
+public:
+	template<class _type>
+	GParameterValueMatcher(_type&& arg)
+		: BindValue(yforward(arg))
+	{}
+
+	void
+	operator()(const TermNode& t) const
+	{
+		try
+		{
+			Match(t, {});
+			while(act)
+			{
+				const auto a(std::move(act));
+
+				a();
+			}
+		}
+		CatchExpr(ParameterMismatch&, throw)
+		CatchExpr(..., ThrowNestedParameterTreeCheckError())
+	}
+
+private:
+	YB_FLATTEN void
+	Match(const TermNode& t, bool t_has_ref) const
+	{
+		if(IsList(t))
+		{
+			if(IsBranch(t))
+				MatchSubterms(t.begin(), t.end());
+		}
+		else if(const auto p_t = Unilang::TryAccessLeaf<const TermReference>(t))
+		{
+			auto& nd(p_t->get());
+
+			ystdex::update_thunk(act, [&]{
+				Match(nd, true);
+			});
+		}
+		else if(const auto p = TermToNamePtr(t))
+		{
+			const auto& n(*p);
+
+			if(!IsIgnore(n))
+			{
+				if(IsUnilangSymbol(n))
+					BindValue(n);
+				else
+					ThrowInvalidTokenError(n);
+			}
+		}
+		else
+			ThrowFormalParameterTypeError(t, t_has_ref);
+	}
+
+	void
+	MatchSubterms(TNCIter i, TNCIter last) const
+	{
+		if(i != last)
+		{
+			ystdex::update_thunk(act, [this, i, last]{
+				return MatchSubterms(std::next(i), last);
+			});
+			Match(Unilang::Deref(i), {});
+		}
+	}
+};
+
+template<typename _fBindValue>
+[[nodiscard]] inline GParameterValueMatcher<_fBindValue>
+MakeParameterValueMatcher(_fBindValue bind_value)
+{
+	return GParameterValueMatcher<_fBindValue>(std::move(bind_value));
+}
 
 void
 MarkTemporaryTerm(TermNode& term, char sigil) noexcept
@@ -268,19 +367,6 @@ struct BindParameterObject
 	}
 };
 
-
-[[noreturn]] inline void
-ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
-{
-	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
-}
-
-[[noreturn]] void
-ThrowNestedParameterTreeCheckError()
-{
-	std::throw_with_nested(InvalidSyntax("Failed checking for parameter in a"
-		" parameter tree (expected a symbol or '#ignore')."));
-}
 
 struct ParameterCheck final
 {
@@ -695,6 +781,12 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 	return ReductionStatus::Partial;
 }
 
+
+void
+CheckParameterTree(const TermNode& term)
+{
+	MakeParameterValueMatcher([&](const TokenValue&) noexcept{})(term);
+}
 
 void
 BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,

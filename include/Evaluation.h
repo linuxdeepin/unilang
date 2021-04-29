@@ -298,6 +298,9 @@ IsIgnore(const TokenValue& s) noexcept
 }
 
 void
+CheckParameterTree(const TermNode&);
+
+void
 BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
 
 void
