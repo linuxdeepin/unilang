@@ -1,6 +1,9 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Exception.h" // for std::string, make_shared;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
+#include "TermAccess.h" // for TermToStringWithReferenceMark;
+#include <cassert> // for assert;
 
 namespace Unilang
 {
@@ -20,6 +23,20 @@ BadIdentifier::BadIdentifier(string_view id, size_t n)
 	: InvalidSyntax(InitBadIdentifierExceptionString(std::string(id.data(),
 	id.data() + id.size()), n)), p_identifier(make_shared<string>(id))
 {}
+
+
+void
+ThrowInvalidTokenError(string_view sv)
+{
+	assert(sv.data());
+	throw InvalidSyntax(ystdex::sfmt("Invalid token '%s' found", sv.data()));
+}
+
+void
+ThrowNonmodifiableErrorForAssignee()
+{
+	throw TypeError("Destination operand of assignment shall be modifiable.");
+}
 
 } // namespace Unilang;
 

@@ -1,11 +1,14 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Context.h" // for lref;
-#include "Exception.h" // for UnilangException, ListTypeError;
+#include <cassert> // for assert;
+#include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
+//	ListTypeError;
 #include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/utility.hpp> // ystdex::exchange;
+#include "TermAccess.h" // for Unilang::IsMovable;
 
 namespace Unilang
 {
@@ -84,6 +87,14 @@ Environment::CheckParent(const ValueObject&)
 	// TODO: Check parent type.
 }
 
+void
+Environment::DefineChecked(string_view id, ValueObject&& vo)
+{
+	assert(id.data());
+	if(!AddValue(id, std::move(vo)))
+		throw BadIdentifier(id, 2);
+}
+
 Environment&
 Environment::EnsureValid(const shared_ptr<Environment>& p_env)
 {
@@ -108,6 +119,13 @@ Environment::LookupName(string_view id) const
 	return i != Bindings.cend() ? &i->second : nullptr;
 }
 
+void
+Environment::ThrowForInvalidType(const ystdex::type_info& tp)
+{
+	throw TypeError(
+		ystdex::sfmt("Invalid environment type '%s' found.", tp.name()));
+}
+
 
 TermNode&
 Context::GetNextTermRef() const
@@ -127,9 +145,10 @@ Context::ApplyTail()
 	{
 		LastStatus = TailAction(*this);
 	}
-	catch(bad_any_cast&)
+	catch(bad_any_cast& ex)
 	{
-		std::throw_with_nested(TypeError("Mismatched type found."));
+		std::throw_with_nested(TypeError(ystdex::sfmt("Mismatched types ('%s',"
+			" '%s') found.", ex.from(), ex.to()).c_str()));
 	}
 	return LastStatus;
 }
@@ -139,7 +158,7 @@ Context::Evaluate(TermNode& term)
 {
 	next_term_ptr = &term;
 	return Rewrite([this](Context& ctx){
-		return ReduceOnce(ctx.GetNextTermRef(), ctx);
+		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
 	});
 }
 
@@ -261,6 +280,17 @@ Context::WeakenRecord() const noexcept
 
 
 TermNode
+MoveResolved(const Context& ctx, string_view id)
+{
+	auto pr(ResolveName(ctx, id));
+
+	if(const auto p = pr.first)
+		// TODO: Avoid moving for frozen environments.
+		return std::move(*p);
+	throw BadIdentifier(id);
+}
+
+TermNode
 ResolveIdentifier(const Context& ctx, string_view id)
 {
 	auto pr(ResolveName(ctx, id));
@@ -277,8 +307,16 @@ ResolveEnvironment(const ValueObject& vo)
 		return {p->Lock(), {}};
 	if(const auto p = vo.AccessPtr<const shared_ptr<Environment>>())
 		return {*p, true};
-	throw TypeError(
-		ystdex::sfmt("Invalid environment type '%s' found.", vo.type().name()));
+	Environment::ThrowForInvalidType(vo.type());
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(ValueObject& vo, bool move)
+{
+	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
+		return {p->Lock(), {}};
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return {move ? std::move(*p) : *p, true};
+	Environment::ThrowForInvalidType(vo.type());
 }
 pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode& term)
@@ -289,6 +327,17 @@ ResolveEnvironment(const TermNode& term)
 		throw ListTypeError(
 			ystdex::sfmt("Invalid environment formed from list '%s' found.",
 			TermToStringWithReferenceMark(nd, has_ref).c_str()));
+	}, term);
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(TermNode& term)
+{
+	return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		if(!IsExtendedList(nd))
+			return ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref));
+		throw ListTypeError(
+			ystdex::sfmt("Invalid environment formed from list '%s' found.",
+			TermToStringWithReferenceMark(nd, p_ref).c_str()));
 	}, term);
 }
 

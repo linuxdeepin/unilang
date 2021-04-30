@@ -1,10 +1,12 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for ystdex::sfmt, ystdex::ref_eq,
+#include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
 //	Unilang::TryAccessReferencedTerm;
-#include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
-#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
 #include <exception> // for std::throw_with_nested;
+#include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
+#include "TCO.h" // for MoveGuard, ReduceSubsequent;
+#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
+#include "Evaluation.h" // for BindParameterWellFormed;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
@@ -24,15 +26,6 @@ ExtractBool(const TermNode& term)
 }
 
 
-inline ReductionStatus
-MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
-{
-	const auto egd(std::move(gd));
-
-	return ctx.LastStatus;
-}
-
-
 [[noreturn]] inline void
 ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 {
@@ -46,12 +39,6 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 	}
 }
 
-
-[[nodiscard, gnu::pure]] inline bool
-IsIgnore(const TokenValue& s) noexcept
-{
-	return s == "#ignore";
-}
 
 [[gnu::nonnull(2)]] void
 CheckVauSymbol(const TokenValue& s, const char* target, bool is_valid)
@@ -110,8 +97,8 @@ ReductionStatus
 RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 	bool no_lift)
 {
-	return RelayForEvalOrDirect(ctx, term, std::move(gd), no_lift,
-		Continuation(ReduceOnce, ctx));
+	return TailCall::RelayNextGuardedProbe(ctx, term, std::move(gd), !no_lift,
+		std::ref(ctx.ReduceOnce));
 }
 
 
@@ -139,6 +126,14 @@ FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
 }
 
 
+[[noreturn]] void
+ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
+{
+	throw TypeError(ystdex::sfmt("Invalid environment formed from object '%s'"
+		" found.", TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
+
 ReductionStatus
 EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 {
@@ -149,12 +144,33 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
-	}, *i);
-	return RelayForEvalOrDirect(ctx, term,
-		EnvironmentGuard(ctx, ctx.SwitchEnvironment(std::move(p_env))), no_lift,
-		Continuation(ReduceOnce, ctx));
+	}, Unilang::Deref(i));
+	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
+		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
+		std::ref(ctx.ReduceOnce));
 }
 
+
+[[nodiscard]] ValueObject
+MakeEnvironmentParent(TNIter first, TNIter last,
+	const TermNode::allocator_type& a, bool nonmodifying)
+{
+	const auto tr([&](TNIter iter){
+		return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
+			if(const auto p = Unilang::TryAccessLeaf<const TermReference>(*i))
+			{
+				if(nonmodifying || !p->IsMovable())
+					return p->get().Value;
+				return std::move(p->get().Value);
+			}
+			return std::move(i->Value);
+		});
+	});
+	ValueObject parent;
+
+	parent.emplace<EnvironmentList>(tr(first), tr(last), a);
+	return parent;
+}
 
 
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
@@ -162,10 +178,9 @@ class VauHandler final : private ystdex::equality_comparable<VauHandler>
 private:
 	string eformal{};
 	shared_ptr<TermNode> p_formals;
-	EnvironmentReference parent;
-	mutable shared_ptr<Environment> p_static;
+	mutable ValueObject parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
-	ReductionStatus(VauHandler::*p_call)(TermNode&, Context&) const;
+	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
 
 public:
 	bool NoLifting = {};
@@ -173,19 +188,26 @@ public:
 	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
 		shared_ptr<Environment>&& p_env, bool owning, TermNode& term, bool nl)
 		: eformal(std::move(ename)), p_formals((CheckParameterTree(*p_fm),
-		std::move(p_fm))), parent((Environment::EnsureValid(p_env), p_env)),
-		p_static(owning ? std::move(p_env) : nullptr),
+		std::move(p_fm))), parent(MakeParentSingle(p_env, owning)),
 		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())))), p_call(eformal.empty()
-		? &VauHandler::CallStatic : &VauHandler::CallDynamic), NoLifting(nl)
+		Unilang::AsTermNode(term.get_allocator())))),
+		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
+	{}
+	VauHandler(int, string&& ename, shared_ptr<TermNode>&& p_fm,
+		ValueObject&& vo, TermNode& term, bool nl)
+		: eformal(std::move(ename)),
+		p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
+		parent((Environment::CheckParent(vo), std::move(vo))),
+		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
+		Unilang::AsTermNode(term.get_allocator())))),
+		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 
 	friend bool
 	operator==(const VauHandler& x, const VauHandler& y)
 	{
 		return x.eformal == y.eformal && x.p_formals == y.p_formals
-			&& x.parent == y.parent && x.p_static == y.p_static
-			&& x.NoLifting == y.NoLifting;
+			&& x.parent == y.parent && x.NoLifting == y.NoLifting;
 	}
 
 	ReductionStatus
@@ -194,26 +216,10 @@ public:
 		if(IsBranchedList(term))
 		{
 			if(p_eval_struct)
-				return (this->*p_call)(term, ctx);
+				return call(*this, term, ctx);
 			throw UnilangException("Invalid handler of call found.");
 		}
 		throw UnilangException("Invalid composition found.");
-	}
-
-	static void
-	CheckParameterTree(const TermNode& term)
-	{
-		for(const auto& child : term)
-			CheckParameterTree(child);
-		if(term.Value)
-		{
-			if(const auto p = TermToNamePtr(term))
-				CheckVauSymbol(*p, "parameter in a parameter tree",
-					IsIgnore(*p)
-						|| CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
-			else
-				ThrowInvalidSymbolType(term, "parameter tree node");
-		}
 	}
 
 private:
@@ -224,22 +230,22 @@ private:
 		ctx.GetRecordRef().AddValue(eformal, std::move(vo));
 	}
 
-	ReductionStatus
-	CallDynamic(TermNode& term, Context& ctx) const
+	static ReductionStatus
+	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
 		auto wenv(ctx.WeakenRecord());
 		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-		BindEnvironment(ctx, std::move(wenv));
-		return DoCall(term, ctx, gd);
+		vau.BindEnvironment(ctx, std::move(wenv));
+		return vau.DoCall(term, ctx, gd);
 	}
 
-	ReductionStatus
-	CallStatic(TermNode& term, Context& ctx) const
+	static ReductionStatus
+	CallStatic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
 		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-		return DoCall(term, ctx, gd);
+		return vau.DoCall(term, ctx, gd);
 	}
 
 	ReductionStatus
@@ -247,12 +253,71 @@ private:
 	{
 		assert(p_eval_struct);
 
+		const bool move(p_eval_struct.use_count() == 1
+			&& bool(term.Tags & TermTags::Temporary));
+
 		RemoveHead(term);
-		BindParameter(ctx.GetRecordPtr(), *p_formals, term);
+		BindParameterWellFormed(ctx.GetRecordPtr(), Unilang::Deref(p_formals),
+			term);
 		ctx.GetRecordRef().Parent = parent;
-		// TODO: Implement TCO.
+		AssertNextTerm(ctx, term);
+
 		LiftOtherOrCopy(term, *p_eval_struct, {});
 		return RelayForCall(ctx, term, std::move(gd), NoLifting);
+
+		const bool no_lift(NoLifting);
+
+		if(move)
+		{
+			ctx.GetRecordRef().Parent = std::move(parent);
+			term.SetContent(std::move(Unilang::Deref(p_eval_struct)));
+
+			auto& act(RefTCOAction(ctx));
+
+			yunused(act.MoveFunction());
+		}
+		else
+		{
+			ctx.GetRecordRef().Parent = parent;
+ 			term.SetContent(Unilang::Deref(p_eval_struct));
+		}
+		return RelayForCall(ctx, term, std::move(gd), no_lift);
+	}
+
+	[[nodiscard, gnu::pure]] static ValueObject
+	MakeParentSingle(const shared_ptr<Environment>& p_env, bool owning)
+	{
+		Environment::EnsureValid(p_env);
+		if(owning)
+			return p_env;
+		return EnvironmentReference(p_env);
+	}
+
+	static void
+	SaveNothing(const VauHandler&, TCOAction&)
+	{}
+
+	static void
+	SaveList(const VauHandler& vau, TCOAction& act)
+	{
+		for(auto& vo : vau.parent.GetObject<EnvironmentList>())
+		{
+			if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+				SaveOwningPtr(*p, act);
+		}
+	}
+
+	static void
+	SaveOwning(const VauHandler& vau, TCOAction& act)
+	{
+		SaveOwningPtr(vau.parent.GetObject<shared_ptr<Environment>>(), act);
+	}
+
+	static void
+	SaveOwningPtr(shared_ptr<Environment>& p_static, TCOAction& act)
+	{
+		if(p_static.use_count() == 1)
+			act.RecordList.emplace_front(ContextHandler(), std::move(p_static));
 	}
 };
 
@@ -281,7 +346,7 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 }
 
-ContextHandler
+[[nodiscard]] ContextHandler
 CreateVau(TermNode& term, bool no_lift, TNIter i,
 	shared_ptr<Environment>&& p_env, bool owning)
 {
@@ -293,19 +358,57 @@ CreateVau(TermNode& term, bool no_lift, TNIter i,
 		std::move(p_env), owning, term, no_lift));
 }
 
+[[nodiscard]] ContextHandler
+CreateVauWithParent(TermNode& term, bool no_lift, TNIter i,
+	ValueObject&& parent)
+{
+	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
+	auto eformal(CheckEnvFormal(Unilang::Deref(++i)));
+
+	term.erase(term.begin(), ++i);
+	return FormContextHandler(VauHandler(0, std::move(eformal),
+		std::move(formals), std::move(parent), term, no_lift));
+}
+
+ReductionStatus
+VauImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	return CreateFunction(term, [&, no_lift]{
+		term.Value = CheckFunctionCreation([&]{
+			return
+				CreateVau(term, no_lift, term.begin(), ctx.ShareRecord(), {});
+		});
+		return ReductionStatus::Clean;
+	}, 2);
+}
+
 ReductionStatus
 VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 {
 	return CreateFunction(term, [&, no_lift]{
 		auto i(term.begin());
-		auto& tm(*++i);
+		auto& tm(Unilang::Deref(++i));
 
 		return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
 			term.Value = CheckFunctionCreation([&]{
-				auto p_env_pr(ResolveEnvironment(tm));
+				return ResolveTerm([&](TermNode& nd,
+					ResolvedTermReferencePtr p_ref) -> ContextHandler{
+					if(!IsExtendedList(nd))
+					{
+						auto p_env_pr(ResolveEnvironment(nd.Value,
+							Unilang::IsMovable(p_ref)));
 
-				return CreateVau(term, no_lift, i, std::move(p_env_pr.first),
-					p_env_pr.second);
+						Environment::EnsureValid(p_env_pr.first);
+						return CreateVau(term, no_lift, i,
+							std::move(p_env_pr.first), p_env_pr.second);
+					}
+					if(IsList(nd))
+						return CreateVauWithParent(term, no_lift, i,
+							MakeEnvironmentParent(nd.begin(),
+							nd.end(), nd.get_allocator(),
+							!Unilang::IsMovable(p_ref)));
+					ThrowInvalidEnvironmentType(nd, p_ref);
+				}, tm);
 			});
 			return ReductionStatus::Clean;
 		});
@@ -340,6 +443,52 @@ EqTermReference(TermNode& term, _func f)
 		return IsLeaf(x) && IsLeaf(y) ? f(x.Value, y.Value)
 			: ystdex::ref_eq<>()(x, y);
 	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
+}
+
+
+void
+MakeValueListOrMove(TermNode& term, TermNode& nd,
+	ResolvedTermReferencePtr p_ref)
+{
+	if(Unilang::IsMovable(p_ref))
+		term.GetContainerRef().splice(term.end(),
+			std::move(nd.GetContainerRef()));
+	else
+		for(const auto& sub : nd)
+			term.Add(sub);
+}
+
+
+[[noreturn]] void
+ThrowConsError(TermNode& nd, ResolvedTermReferencePtr p_ref)
+{
+	throw ListTypeError(ystdex::sfmt(
+		"Expected a list for the 2nd argument, got '%s'.",
+		TermToStringWithReferenceMark(nd, p_ref).c_str()));
+}
+
+void
+ConsItem(TermNode& term, TermNode& y)
+{
+	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
+		if(IsList(nd_y))
+			MakeValueListOrMove(term, nd_y, p_ref);
+		else
+			ThrowConsError(nd_y, p_ref);
+	}, y);
+}
+
+ReductionStatus
+ConsImpl(TermNode& term)
+{
+	Forms::RetainN(term, 2);
+	RemoveHead(term);
+
+	const auto i(std::next(term.begin()));
+
+	ConsItem(term, Unilang::Deref(i));
+	term.erase(i);
+	return ReductionStatus::Retained;
 }
 
 
@@ -599,23 +748,15 @@ If(TermNode& term, Context& ctx)
 ReductionStatus
 Cons(TermNode& term)
 {
-	RetainN(term, 2);
-
-	const auto i(std::next(term.begin(), 2));
-
-	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
-		if(IsList(nd_y))
-			term.GetContainerRef().splice(term.end(),
-				std::move(nd_y.GetContainerRef()));
-		else
-			throw ListTypeError(ystdex::sfmt(
-				"Expected a list for the 2nd argument, got '%s'.",
-				TermToStringWithReferenceMark(nd_y, p_ref).c_str()));
-	}, *i);
-	term.erase(i);
-	RemoveHead(term);
+	ConsImpl(term);
 	LiftSubtermsToReturn(term);
 	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+ConsRef(TermNode& term)
+{
+	return ConsImpl(term);
 }
 
 
@@ -639,28 +780,9 @@ MakeEnvironment(TermNode& term)
 
 	const auto a(term.get_allocator());
 
-	if(term.size() > 1)
-	{
-		const auto tr([&](TNIter iter){
-			return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
-				if(const auto p
-					= Unilang::TryAccessLeaf<const TermReference>(*i))
-				{
-					if(!p->IsMovable())
-						return p->get().Value;
-					return std::move(p->get().Value);
-				}
-				return std::move(i->Value);
-			});
-		});
-		ValueObject parent;
-
-		parent.emplace<EnvironmentList>(tr(std::next(term.begin())),
-			tr(term.end()), a);
-		term.Value = Unilang::AllocateEnvironment(a, std::move(parent));
-	}
-	else
-		term.Value = Unilang::AllocateEnvironment(a);
+	term.Value = term.size() > 1 ? Unilang::AllocateEnvironment(a,
+		MakeEnvironmentParent(std::next(term.begin()), term.end(), a, {}))
+		: Unilang::AllocateEnvironment(a);
 }
 
 void
@@ -693,6 +815,18 @@ Define(TermNode& term, Context& ctx)
 	throw InvalidSyntax("Invalid syntax found in definition.");
 }
 
+
+ReductionStatus
+Vau(TermNode& term, Context& ctx)
+{
+	return VauImpl(term, ctx, {});
+}
+
+ReductionStatus
+VauRef(TermNode& term, Context& ctx)
+{
+	return VauImpl(term, ctx, true);
+}
 
 ReductionStatus
 VauWithEnvironment(TermNode& term, Context& ctx)

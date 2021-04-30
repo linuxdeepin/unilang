@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Unilang_h_
 #define INC_Unilang_Unilang_h_ 1
@@ -25,7 +25,8 @@
 //	std::streamsize;
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::any_ops,
-//	YSLib::any, YSLib::bad_any_cast, YSLib::in_place_type;
+//	YSLib::any, YSLib::bad_any_cast, YSLib::in_place_type, YSLib::Deref,
+//	YSLib::Nonnull;
 
 namespace Unilang
 {
@@ -61,6 +62,10 @@ template<typename _tKey, typename _tMapped, typename _fComp
 	= pmr::polymorphic_allocator<std::pair<const _tKey, _tMapped>>>
 using map = ystdex::map<_tKey, _tMapped, _fComp, _tAlloc>;
 
+template<typename _tKey, typename _fComp = ystdex::less<_tKey>,
+	class _tAlloc = pmr::polymorphic_allocator<_tKey>>
+using set = std::set<_tKey, _fComp, _tAlloc>;
+
 template<typename _type, class _tAlloc = pmr::polymorphic_allocator<_type>>
 using vector = std::vector<_type, _tAlloc>;
 
@@ -82,6 +87,10 @@ namespace any_ops = YSLib::any_ops;
 using YSLib::any;
 using YSLib::bad_any_cast;
 using YSLib::in_place_type;
+
+
+using YSLib::Deref;
+using YSLib::Nonnull;
 
 } // namespace Unilang;
 

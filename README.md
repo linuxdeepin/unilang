@@ -39,10 +39,22 @@ sudo apt install g++ libffi-dev pkg-config qtbase5-dev # Some may have been prei
 
 ## 构建环境更新
 
-　　构建之前，更新 git 版本库子模块确保外部依赖项：
+　　构建之前，在版本库根目录运行以下命令确保外部依赖项：
 
 ```
 git submodule update --init
+```
+
+　　若实际发生更新，且之前执行过 `install-sbuild.sh` 脚本，需清理补丁标记文件以确保再次执行这个脚本时能继续正确地处理源代码：
+
+```
+rm -f 3rdparty/.patched
+```
+
+　　使用以下 `git` 命令也能清理文件：
+
+```
+git clean -f -X 3rdparty
 ```
 
 ## 使用直接构建脚本
@@ -88,6 +100,9 @@ sudo apt install libfreetype6-dev
 * `SHBuild_BuildOpt` ：构建选项。默认值为 `-xj,$(nproc)` ，其中 `$(nproc)` 是并行构建任务数。可调整 `$(nproc)` 为其它正整数。
 * `SHBuild_SysRoot` ：安装根目录。默认指定值指定目录 `"3rdparty/YSLib/sysroot"` 。
 * `SHBuild_BuildDir` ：中间文件安装的目录。默认值指定目录 `"3rdparty/YSLib/build"` 。
+* `SHBuild_Rebuild_S1` ：非空值指定重新构建 [stage 1 SHBuild](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA)（较慢）。
+	* **注意** 构建环境更新 `3rdparty/YSLib/Tools/Scripts` 的文件后，需指定此环境变量为非空值，以避免可能和更新后的文件不兼容的问题。
+	* 其它情形不必要，建议忽略，以提升构建性能。
 
 　　使用安装的二进制工具和动态库需配置路径，如下：
 
@@ -138,7 +153,7 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 　　使用静态链接构建的版本不需要这样的运行环境配置。
 
-## 运行
+## 运行解释器
 
 　　经过可能需要的配置后，直接运行即可：
 
@@ -168,6 +183,23 @@ echo 'load "qt.txt"' | ./unilang
 
 ```
 echo 'load "quicksort.txt"' | ./unilang
+```
+
+## 运行测试脚本
+
+　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
+
+　　当前测试用例直接在脚本中指定。
+
+　　脚本以下支持环境变量：
+
+* `UNILANG` ：指定解释器可执行文件路径，默认为 `./unilang` 。
+* `PTC` ：非空时，运行 PTC 测试用例。手动终止进程后结束用例。在此期间，正确的 PTC 实现可确保最终内存占用不随时间增长。
+
+　　使用 `sbuild.sh` 构建的可执行文件不在当前目录。可使用类似以下的 `bash` 命令调用：
+
+```
+UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
 # 支持的语言特性
@@ -311,4 +343,73 @@ echo 'load "quicksort.txt"' | ./unilang
 		* 缺少列表参数检查。
 		* 错误的常规项（列表或非列表值的内部表示）检查。
 	* 更新外部依赖项，增强构建脚本支持。
+* **V0.7**
+	* 添加关于模块的规则和约定。
+	* 新增支持特性：
+		* 新增标准库函数：
+			* `derive-current-environment`
+			* `$as-environment`
+			* `$provide/d!`
+			* `$provide/let!`
+			* `$defl/e!`
+			* 模块 `std.strings` 及其中的函数：
+				* `++`
+				* `string-empty?`
+				* `string<-`
+				* `string=?`
+				* `string-contains?`
+				* `string-contains-ci?`
+				* `string->symbol`
+				* `symbol->string`
+				* `string->regex`
+				* `regex->match?`
+			* 整数数值操作：
+				* `+`
+				* `add2`
+				* `-`
+				* `*`
+				* `multiply2`
+				* `/`
+				* `div`
+				* `mod`
+			* `cons%`
+			* `id`
+			* `as-const`
+			* `expire`
+			* `$move-resolved!`
+			* `$lvalue-identifier?`
+			* `forward-first%`
+			* `first%`
+			* `rest%`
+			* `$while`
+			* `$until`
+			* `uncollapsed?`
+			* `$defv/e%!`
+		* 构造合并子等标准库函数支持环境列表作为父环境。
+		* 引用值支持增强：
+			* 函数 `cons` 复制左值操作数。
+			* 以下函数支持保留引用值和转发参数：
+				* `apply`
+				* `$cond`
+				* `$when`
+				* `$unless`
+				* `first`
+				* `accr`
+				* `foldr1`
+				* `map1`
+				* `list-concat`
+		* 形式参数树支持引用标记字符 `@` 绑定列表左值子对象的引用值。
+		* 支持通过 `eval` 求值和合并子调用的上下文的 PTC(proper tail call) 保证。
+	* 修复实现问题：
+		* 修复以下函数中的非预期对象复制：
+			* `foldr1`
+			* `map1`
+			* `$let`
+			* `$let*`
+			* `$letrec`
+		* 修复解释器中可能由用户程序中构造的深度过大的嵌套列表引起的未定义行为，包括列表对象被销毁时和形式参数树被检查时。 
+	* 优化实现：
+		* 支持合并子右值调用转移而不是复制内部资源。
+		* 省略合并子调用时对形式参数的冗余检查。
 
+	

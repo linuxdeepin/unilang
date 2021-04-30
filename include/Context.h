@@ -1,14 +1,16 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for ValueObject, vector, string, TermNode,
-//	ystdex::less, map, AnchorPtr, pmr, EnvironmentReference;
+//	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
+//	EnvironmentReference;
 #include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
+#include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 
@@ -82,6 +84,19 @@ public:
 		return &x == &y;
 	}
 
+	[[nodiscard, gnu::pure]]
+	bool
+	IsOrphan() const noexcept
+	{
+		return p_anchor.use_count() == 1;
+	}
+
+	[[nodiscard, gnu::pure]] size_t
+	GetAnchorCount() const noexcept
+	{
+		return size_t(p_anchor.use_count());
+	}
+
 	[[nodiscard, gnu::pure]] const AnchorPtr&
 	GetAnchorPtr() const noexcept
 	{
@@ -108,12 +123,15 @@ public:
 	TermNode&
 	Bind(_tKey&& k, _tNode&& tm)
 	{
-		return ystdex::insert_or_assign(Bindings, yforward(k),
-			yforward(tm)).first->second;
+		return Unilang::Deref(ystdex::insert_or_assign(Bindings, yforward(k),
+			yforward(tm)).first).second;
 	}
 
 	static void
 	CheckParent(const ValueObject&);
+
+	void
+	DefineChecked(string_view, ValueObject&&);
 
 	static Environment&
 	EnsureValid(const shared_ptr<Environment>&);
@@ -132,6 +150,9 @@ public:
 		// TODO: Support freezing environments.
 		return term.Tags;
 	}
+
+	[[noreturn]] static void
+	ThrowForInvalidType(const ystdex::type_info&);
 };
 
 
@@ -142,6 +163,55 @@ using ReducerFunctionType = ReductionStatus(Context&);
 using Reducer = ystdex::expanded_function<ReducerFunctionType>;
 
 using ReducerSequence = forward_list<Reducer>;
+
+using ContextAllocator = pmr::polymorphic_allocator<byte>;
+
+// NOTE: This is the host type for combiners.
+using ContextHandler = YSLib::GHEvent<ReductionStatus(TermNode&, Context&)>;
+
+
+class Continuation
+{
+public:
+	using allocator_type = ContextAllocator;
+	ContextHandler Handler;
+
+	template<typename _func, typename
+		= ystdex::exclude_self_t<Continuation, _func>>
+	inline
+	Continuation(_func&& handler, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		yforward(handler)))
+	{}
+	template<typename _func, typename
+		= ystdex::exclude_self_t<Continuation, _func>>
+	inline
+	Continuation(_func&&, const Context&);
+	Continuation(const Continuation& cont, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		cont.Handler))
+	{}
+	Continuation(Continuation&& cont, allocator_type a)
+		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
+		std::move(cont.Handler)))
+	{}
+	Continuation(const Continuation&) = default;
+	Continuation(Continuation&&) = default;
+
+	Continuation&
+	operator=(const Continuation&) = default;
+	Continuation&
+	operator=(Continuation&&) = default;
+
+	[[nodiscard, gnu::const]] friend bool
+	operator==(const Continuation& x, const Continuation& y) noexcept
+	{
+		return ystdex::ref_eq<>()(x, y);
+	}
+
+	ReductionStatus
+	operator()(Context& ctx) const;
+};
 
 
 class Context final
@@ -169,7 +239,7 @@ public:
 		{
 			if(p_ctx)
 			{
-				auto& ctx(*p_ctx);
+				auto& ctx(Unilang::Deref(p_ctx));
 
 				ctx.current.splice_after(ctx.current.cbefore_begin(),
 					ctx.stacked, ctx.stacked.cbefore_begin(), i_stacked);
@@ -189,6 +259,7 @@ private:
 public:
 	Reducer TailAction{};
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
+	Continuation ReduceOnce{DefaultReduceOnce, *this};
 
 	Context(pmr::memory_resource& rsrc)
 		: memory_rsrc(rsrc)
@@ -224,8 +295,19 @@ public:
 		next_term_ptr = &term;
 	}
 
+	template<typename _type>
+	[[nodiscard, gnu::pure]] _type*
+	AccessCurrentAs()
+	{
+		return IsAlive() ? current.front().template target<_type>() : nullptr;
+	}
+
 	ReductionStatus
 	ApplyTail();
+
+	// NOTE: See Evaluation.cpp for the definition.
+	static ReductionStatus
+	DefaultReduceOnce(TermNode&, Context&);
 
 	ReductionStatus
 	Evaluate(TermNode&);
@@ -269,16 +351,25 @@ public:
 	[[nodiscard, gnu::pure]] EnvironmentReference
 	WeakenRecord() const noexcept;
 
-	[[nodiscard, gnu::pure]] pmr::polymorphic_allocator<byte>
+	[[nodiscard, gnu::pure]] ContextAllocator
 	get_allocator() const noexcept
 	{
-		return pmr::polymorphic_allocator<byte>(&memory_rsrc.get());
+		return ContextAllocator(&memory_rsrc.get());
 	}
 };
 
 
-// NOTE: This is the host type for combiners.
-using ContextHandler = YSLib::GHEvent<ReductionStatus(TermNode&, Context&)>;
+template<typename _func, typename>
+inline
+Continuation::Continuation(_func&& handler, const Context& ctx)
+	: Continuation(yforward(handler), ctx.get_allocator())
+{}
+
+inline ReductionStatus
+Continuation::operator()(Context& ctx) const
+{
+	return Handler(ctx.GetNextTermRef(), ctx);
+}
 
 
 template<typename... _tParams>
@@ -355,13 +446,19 @@ ResolveName(const Context& ctx, string_view id)
 }
 
 [[nodiscard]] TermNode
+MoveResolved(const Context&, string_view);
+
+[[nodiscard]] TermNode
 ResolveIdentifier(const Context&, string_view);
 
 [[nodiscard]] pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject&);
 [[nodiscard]] pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(ValueObject&, bool);
+[[nodiscard]] pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode&);
-
+[[nodiscard]] pair<shared_ptr<Environment>, bool>
+ResolveEnvironment(TermNode&);
 
 struct EnvironmentSwitcher
 {
@@ -384,6 +481,15 @@ struct EnvironmentSwitcher
 			ContextRef.get().SwitchEnvironmentUnchecked(std::move(SavedPtr));
 	}
 };
+
+
+template<typename _fCurrent>
+inline ReductionStatus
+RelaySwitched(Context& ctx, _fCurrent&& cur)
+{
+	ctx.SetupFront(yforward(cur));
+	return ReductionStatus::Partial;
+}
 
 } // namespace Unilang;
 

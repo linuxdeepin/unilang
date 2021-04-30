@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
@@ -14,7 +14,7 @@
 //	ystdex::make_parameter_list_t;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include "Lexical.h" // for CategorizeLexeme, CategorizeBasicLexeme;
+#include "TermAccess.h" // for TokenValue;
 
 namespace Unilang
 {
@@ -27,70 +27,10 @@ ReductionStatus
 ReduceOnce(TermNode&, Context&);
 
 
-template<typename _fNext>
-inline ReductionStatus
-ReduceSubsequent(TermNode& term, Context& ctx, _fNext&& next)
-{
-	ctx.SetupFront(yforward(next));
-	return ReduceOnce(term, ctx);
-}
-
-
 // NOTE: The collection of values of unit types.
 enum class ValueToken
 {
 	Unspecified
-};
-
-
-class Continuation
-{
-public:
-	using allocator_type
-		= decltype(std::declval<const Context&>().get_allocator());
-
-	ContextHandler Handler;
-
-	template<typename _func, typename
-		= ystdex::exclude_self_t<Continuation, _func>>
-	inline
-	Continuation(_func&& handler, allocator_type a)
-		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
-		yforward(handler)))
-	{}
-	template<typename _func, typename
-		= ystdex::exclude_self_t<Continuation, _func>>
-	inline
-	Continuation(_func&& handler, const Context& ctx)
-		: Continuation(yforward(handler), ctx.get_allocator())
-	{}
-	Continuation(const Continuation& cont, allocator_type a)
-		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
-		cont.Handler))
-	{}
-	Continuation(Continuation&& cont, allocator_type a)
-		: Handler(ystdex::make_obj_using_allocator<ContextHandler>(a,
-		std::move(cont.Handler)))
-	{}
-	Continuation(const Continuation&) = default;
-	Continuation(Continuation&&) = default;
-
-	Continuation&
-	operator=(const Continuation&) = default;
-	Continuation&
-	operator=(Continuation&&) = default;
-
-	[[nodiscard, gnu::const]] friend bool
-	operator==(const Continuation& x, const Continuation& y) noexcept
-	{
-		return ystdex::ref_eq<>()(x, y);
-	}
-
-	ReductionStatus
-	operator()(Context& ctx) const
-	{
-		return Handler(ctx.GetNextTermRef(), ctx);
-	}
 };
 
 
@@ -105,7 +45,7 @@ struct SeparatorTransformer
 
 		return AddRange([&](TermNode& res, it_t b, it_t e){
 			const auto add([&](TermNode& node, it_t i){
-				node.Add(trans(*i));
+				node.Add(trans(Unilang::Deref(i)));
 			});
 
 			if(b != e)
@@ -351,18 +291,21 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 }
 
 
-template<typename _func>
-auto
-CheckSymbol(string_view n, _func f) -> decltype(f())
+[[nodiscard, gnu::pure]] inline bool
+IsIgnore(const TokenValue& s) noexcept
 {
-	if(CategorizeBasicLexeme(n) == LexemeCategory::Symbol)
-		return f();
-	throw ParameterMismatch(ystdex::sfmt(
-		"Invalid token '%s' found for symbol parameter.", n.data()));
+	return s == "#ignore";
 }
 
 void
+CheckParameterTree(const TermNode&);
+
+void
 BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
+
+void
+BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
+	TermNode&);
 
 } // namespace Unilang;
 

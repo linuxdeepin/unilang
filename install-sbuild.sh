@@ -12,6 +12,11 @@ case $(uname) in
 	exit 1
 esac
 
+# NOTE: This works around the missing execution bit in scripts cloned from YSLib
+#	repository (originally in Mercurial which cannot set the bit portably).
+
+find "$YSLib_BaseDir" -type f -name "*.sh" -exec chmod +x {} \;
+
 # NOTE: Prepare archives for YSLib build.
 
 LIB="$YSLib_BaseDir/YFramework/Linux/lib"
@@ -93,7 +98,7 @@ SHBuild_BuildOpt="$SHBuild_BuildOpt" SHBuild_SysRoot="$SHBuild_SysRoot" \
 
 echo 'To make the build environment work, ensure environment variables are' \
 	'exported as following:'
-echo "export PATH="$SHBuild_SysRoot/usr/bin":\$PATH"
+echo "export PATH=$SHBuild_SysRoot/usr/bin:\$PATH"
 echo "export LD_LIBRARY_PATH=$SHBuild_SysRoot/usr/lib:\$LD_LIBRARY_PATH"
 
 echo 'Done.'

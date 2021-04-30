@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
@@ -24,7 +24,8 @@
 #	pragma GCC diagnostic pop
 #endif
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
-#include "Evaluation.h" // for ReduceCombined;
+#include "Evaluation.h" // for ReduceCombinedBranch;
+#include "Arithmetic.h" // for Number;
 
 namespace Unilang
 {
@@ -186,7 +187,7 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 					auto& orig_next(c.GetNextTermRef());
 
 					c.SetNextTermRef(tm_v);
-					// NOTE: Trampolined. This cannot be asynchnous which
+					// NOTE: Trampolined. This cannot be asynchronous which
 					//	interleaves with Qt's event loop.
 					c.Rewrite([&](Context& c1){
 						return ReduceCombinedBranch(tm_v, c1);
@@ -217,8 +218,8 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& wgt(ResolveQWidget(*++i));
-		const auto& w(Unilang::ResolveRegular<int>(*++i));
-		const auto& h(Unilang::ResolveRegular<int>(*++i));
+		const int& w(Unilang::ResolveRegular<Number>(*++i));
+		const int& h(Unilang::ResolveRegular<Number>(*++i));
 
 		wgt.resize(w, h);
 		return ReduceReturnUnspecified(term);

@@ -1,12 +1,14 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for string_view, ByteParser, std::getline;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
+#include "Arithmetic.h" // for Number;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
+#include "Arithmetic.h" // for Number;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <ios> // for std::ios_base::eofbit;
@@ -47,7 +49,7 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 					throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
 						" postfix is unsupported in identifier '%s'.",
 						id.data()));
-			term.Value = ans;
+			term.Value = Number(ans);
 		}
 		else if(id == "#t")
 			term.Value = true;
@@ -108,6 +110,9 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 						return *p ? "#t" : "#f";
 					if(const auto p = vo.AccessPtr<int>())
 						return ystdex::sfmt<string>("%d", *p);
+					if(const auto p = vo.AccessPtr<Number>())
+						// TODO: Support different internal representations.
+						return ystdex::sfmt<string>("%d", int(*p));
 					if(const auto p = vo.AccessPtr<ValueToken>())
 						if(*p == ValueToken::Unspecified)
 							return "#inert";
@@ -205,11 +210,10 @@ Interpreter::Process()
 					C.UnwindCurrent();
 				}
 			} gd{Root};
-			auto term(Read(line));
-
-			Evaluate(term);
+			Term = Read(line);
+			Evaluate(Term);
 			if(Echo)
-				Print(term);
+				Print(Term);
 		}
 		catch(UnilangException& e)
 		{
