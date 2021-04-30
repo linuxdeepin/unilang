@@ -13,6 +13,19 @@ CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
 
 case $(uname) in
+*MINGW64*)
+# XXX: Workaround for MinGW64 G++ + ld with ASLR enabled by default. Clang++
+#	+ ld or G++ + lld do need the flag, but leaving it here as-is.
+#	See https://www.msys2.org/news/#2021-01-31-aslr-enabled-by-default,
+#	https://github.com/msys2/MINGW-packages/issues/6986,
+#	https://github.com/msys2/MINGW-packages/issues/7023,
+#	and https://sourceware.org/bugzilla/show_bug.cgi?id=26659.
+	LDFLAGS_LOWBASE_=-Wl,--default-image-base-low
+	;;
+*)
+	SHBuild_LIBS='-lffi -ldl'
+esac
+case $(uname) in
 *MSYS* | *MINGW*)
 	SHBuild_LIBS="$LIBS_Qt -lffi"
 	;;
@@ -21,9 +34,10 @@ case $(uname) in
 esac
 mkdir -p "$Unilang_BaseDir/build"
 (cd "$Unilang_BaseDir/build" \
-	&& SHBuild_NoAdjustSubsystem=true SHBuild_LIBS="$SHBuild_LIBS" \
-	SHBuild-BuildPkg.sh "$@" -xn,unilang "$Unilang_BaseDir/src" \
-	-I\""$Unilang_BaseDir/include\"" "$CXXFLAGS_Qt")
+	&& SHBuild_NoAdjustSubsystem=true SHBuild_LDFLAGS="$LDFLAGS_LOWBASE_" \
+	SHBuild_LIBS="$SHBuild_LIBS" SHBuild-BuildPkg.sh "$@" \
+	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include\"" \
+	"$CXXFLAGS_Qt")
 
 echo "Done."
 

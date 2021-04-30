@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2016
 
 set -e
 
@@ -36,6 +37,14 @@ test()
 	fi
 }
 
+if [[ "$PTC" != '' ]]; then
+# NOTE: Test cases should print no errors.
+	echo "The following case are expected to be non-terminating."
+	echo "However, the maximum memory consumption is expected constant."
+	echo "Please exit manually by SIGINT."
+	test '$defl! f (n) $if #t (f n); f 1'
+fi
+
 # Sanity.
 test 'display'
 
@@ -71,4 +80,8 @@ test '$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
 # NOTE: Test case on parent environment search.
 test "\$def! e make-environment (() get-current-environment); \
 eval ((unwrap (\$lambda (x) x)) e) e"
+# NOTE: Test case on std.strings.
+test '$import! std.strings string-empty?; display (string-empty? "")'
+test '$import! std.strings string-empty?; display (string-empty? "x")'
+test '$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123")'
 

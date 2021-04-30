@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_UnilangQt_h_
 #define INC_Unilang_UnilangQt_h_ 1
@@ -8,6 +8,8 @@
 namespace Unilang
 {
 
+// NOTE: This function shall be called to use Qt bindings. The 'argc' argument
+//	is explicitly kept of 'int' type in the caller.
 void
 InitializeQt(Interpreter&, int&, char*[]);
 

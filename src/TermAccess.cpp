@@ -1,7 +1,7 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt;
-#include "Exception.h" // for ListTypeError;
+#include "TermAccess.h" // for sfmt, ystdex::sfmt, Unilang::Nonnull;
+#include "Exception.h" // for ListTypeError, TypeError;
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
 //	ystdex::invoke_value_or;
 #include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
@@ -59,6 +59,14 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 
+void
+ThrowTypeErrorForInvalidType(const ystdex::type_info& tp, const TermNode& term,
+	bool has_ref)
+{
+	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
+		tp.name(), TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+
 
 #if Unilang_CheckTermReferenceIndirection
 TermNode&
@@ -77,15 +85,29 @@ PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 {
 	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
 		return term;
-	return Unilang::AsTermNode(term.get_allocator(),
-		TermReference(p_env->MakeTermTags(term), term, p_env));
+	return Unilang::AsTermNode(term.get_allocator(), TermReference(
+		p_env->MakeTermTags(term), term, Unilang::Nonnull(p_env)));
 }
 
+
+bool
+IsReferenceTerm(const TermNode& term)
+{
+	return bool(Unilang::TryAccessLeaf<const TermReference>(term));
+}
 
 bool
 IsBoundLValueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
+		Unilang::TryAccessLeaf<const TermReference>(term));
+}
+
+bool
+IsUncollapsedTerm(const TermNode& term)
+{
+	return ystdex::call_value_or(ystdex::compose(IsReferenceTerm,
+		std::mem_fn(&TermReference::get)),
 		Unilang::TryAccessLeaf<const TermReference>(term));
 }
 

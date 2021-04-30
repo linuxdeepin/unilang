@@ -1,9 +1,10 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
 
-#include "Unilang.h" // for size_t, string, shared_ptr, std::string;
+#include "Unilang.h" // for size_t, string, string_view, shared_ptr,
+//	std::string, Unilang::Deref;
 #include <exception> // for std::runtime_error;
 
 namespace Unilang
@@ -82,8 +83,7 @@ public:
 	[[nodiscard, gnu::pure]] const string&
 	GetIdentifier() const noexcept
 	{
-		assert(p_identifier);
-		return *p_identifier;
+		return Unilang::Deref(p_identifier);
 	}
 
 private:
@@ -102,6 +102,13 @@ class InvalidReference : public UnilangException
 public:
 	using UnilangException::UnilangException;
 };
+
+
+[[noreturn]] void
+ThrowInvalidTokenError(string_view);
+
+[[noreturn]] void
+ThrowNonmodifiableErrorForAssignee();
 
 } // namespace Unilang;
 

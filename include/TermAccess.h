@@ -1,9 +1,9 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermAccess_h_
 #define INC_Unilang_TermAccess_h_ 1
 
-#include "TermNode.h" // for string, TermNode, ystdex::sfmt;
+#include "TermNode.h" // for string, TermNode, Unilang::Deref;
 #include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
@@ -65,6 +65,9 @@ ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
 
 [[noreturn]] void
 ThrowListTypeErrorForNonlist(const TermNode&, bool);
+
+[[noreturn]] void
+ThrowTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&, bool);
 
 template<typename _type>
 [[nodiscard, gnu::pure]] inline _type*
@@ -229,6 +232,12 @@ public:
 		return r_env;
 	}
 
+	void
+	AddTags(TermTags t) noexcept
+	{
+		tags |= t;
+	}
+
 #if Unilang_CheckTermReferenceIndirection
 	[[nodiscard, gnu::pure]] TermNode&
 	get() const;
@@ -279,9 +288,9 @@ IsMovable(const TermReference& ref) noexcept
 template<typename _tPointer>
 [[nodiscard, gnu::pure]] inline auto
 IsMovable(_tPointer p) noexcept
-	-> decltype(!bool(p) || Unilang::IsMovable(*p))
+	-> decltype(!bool(p) || Unilang::IsMovable(Unilang::Deref(p)))
 {
-	return !bool(p) || Unilang::IsMovable(*p);
+	return !bool(p) || Unilang::IsMovable(Unilang::Deref(p));
 }
 
 
@@ -313,7 +322,13 @@ TryAccessReferencedTerm(const TermNode& term)
 }
 
 [[nodiscard, gnu::pure]] bool
+IsReferenceTerm(const TermNode&);
+
+[[nodiscard, gnu::pure]] bool
 IsBoundLValueTerm(const TermNode&);
+
+[[nodiscard, gnu::pure]] bool
+IsUncollapsedTerm(const TermNode&);
 
 template<typename _func, class _tTerm>
 auto
