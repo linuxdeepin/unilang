@@ -29,10 +29,10 @@ public:
 	Number&
 	operator*=(const Number&);
 
-	[[nodiscard, gnu::pure]] friend bool
+	friend bool
 	operator==(const Number&, const Number&) noexcept;
 
-	[[nodiscard, gnu::pure]] friend bool
+	friend bool
 	operator<(const Number&, const Number&) noexcept;
 
 	operator int() const noexcept
