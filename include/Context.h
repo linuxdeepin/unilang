@@ -174,6 +174,7 @@ class Continuation
 {
 public:
 	using allocator_type = ContextAllocator;
+
 	ContextHandler Handler;
 
 	template<typename _func, typename
@@ -359,8 +360,7 @@ public:
 };
 
 
-template<typename _func, typename
-	= ystdex::exclude_self_t<Continuation, _func>>
+template<typename _func, typename>
 inline
 Continuation::Continuation(_func&& handler, const Context& ctx)
 	: Continuation(yforward(handler), ctx.get_allocator())
