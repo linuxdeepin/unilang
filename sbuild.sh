@@ -9,6 +9,9 @@ Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 [[ "$1" != '' ]] || (echo \
 	"ERROR: The configuration name should not be empty." >& 2; exit 1)
 
+CXXFLAGS_EXTRA='-fexceptions -frtti'
+LIBS_EXTRA='-lffi'
+
 case $(uname) in
 *MINGW64*)
 # XXX: Workaround for MinGW64 G++ + ld with ASLR enabled by default. Clang++
@@ -22,16 +25,15 @@ case $(uname) in
 esac
 case $(uname) in
 *MSYS* | *MINGW*)
-	SHBuild_LIBS=-lffi
 	;;
 *)
-	SHBuild_LIBS='-lffi -ldl'
+	LIBS_EXTRA="$LIBS_EXTRA -ldl"
 esac
 mkdir -p "$Unilang_BaseDir/build"
-(cd "$Unilang_BaseDir/build" \
-	&& SHBuild_NoAdjustSubsystem=true SHBuild_LDFLAGS="$LDFLAGS_LOWBASE_" \
-	SHBuild_LIBS="$SHBuild_LIBS" SHBuild-BuildPkg.sh "$@" \
-	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include\"")
+(cd "$Unilang_BaseDir/build" && SHBuild_NoAdjustSubsystem=true \
+	SHBuild_CXXFLAGS="$CXXFLAGS_EXTRA" SHBuild_LDFLAGS="$LDFLAGS_LOWBASE_" \
+	SHBuild_LIBS="$LIBS_EXTRA" SHBuild-BuildPkg.sh "$@" \
+	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include"\")
 
 echo "Done."
 

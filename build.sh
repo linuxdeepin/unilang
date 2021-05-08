@@ -4,6 +4,9 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
+CXXFLAGS_EXTRA='-fexceptions -frtti'
+LIBS_EXTRA='-lffi'
+
 case $(uname) in
 *MSYS* | *MINGW*)
 	EXTRA_OPT="-I$YSLib_BaseDir/YFramework/Win32/include \
@@ -20,6 +23,7 @@ esac
 
 # shellcheck disable=2086
 g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
+$CXXFLAGS_EXTRA \
 -Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/cassert.cpp" \
@@ -41,5 +45,5 @@ g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
-$EXTRA_OPT -lffi
+$EXTRA_OPT $LIBS_EXTRA
 
