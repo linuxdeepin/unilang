@@ -14,19 +14,29 @@
 
 ## 构建环境依赖
 
-　　除 `git` 外，构建环境依赖和支持 ISO C++ 11 的 G++、`bash` 和 GNU coreutils 。源代码在版本库及 git 子模块中提供，除此之外需要 libffi 的包。
+　　一些外部依赖项的源代码在版本库及 git 子模块中提供。
 
-　　构建 Qt demo 需要依赖 Qt5 和 `pkg-config` 。
+　　构建环境依赖以下环境工具：
+
+* `git`
+* `bash`
+* GNU coreutils
+* 支持 ISO C++ 11 的 G++ 和与之兼容的 GNU binutils
+
+　　构建使用外部二进制依赖和相关工具：
+
+* libffi
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```
+# Some dependencies may have been preinstalled.
 # MSYS
-pacman -Syu mingw-w64-x86_64-gcc mingw-w64-x86_64-libffi mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5 --needed
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi
 # Arch Linux
-sudo pacman -Syu gcc libffi pkgconf qt5-base --needed
+sudo pacman -S --needed bash coreutils git gcc binutils libffi
 # Debian/Ubuntu/UOS
-sudo apt install g++ libffi-dev pkg-config qtbase5-dev # Some may have been preinstalled.
+sudo apt install bash coreutils git g++ libffi-dev
 ```
 
 ## 构建环境更新
@@ -87,7 +97,7 @@ sudo apt install libfreetype6-dev
 
 　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具和库。其中，二进制依赖直接被部署到源码树中。当前二进制依赖只支持 `x86_64-linux-gnu` 。本项目构建输出的文件分发时不需要依赖其中的二进制文件。
 
-**注释** 二进制依赖可能会随构建环境更新改变，但当前本项目保证不依赖其中可能存在的二进制不兼容的部分。因此，二进制依赖的更新是可选的。但是，在构建环境更新后，一般仍需再次运行脚本配置环境，以确保覆盖安装外部工具和（非二进制依赖形式分发的）库的最新版本。其中，若二进制依赖项依赖不再在预期的部署位置中存在，脚本会重新获取最新版本的二进制依赖。
+**注释** 脚本安装的二进制依赖可能会随构建环境更新改变，但当前本项目保证不依赖其中可能存在的二进制不兼容的部分。因此，二进制依赖的更新是可选的。但是，在构建环境更新后，一般仍需再次运行脚本配置环境，以确保覆盖安装外部工具和（非二进制依赖形式分发的）库的最新版本。其中，若二进制依赖文件不再在脚本预期的部署位置中存在，脚本会重新获取最新版本的二进制依赖。
 
 　　以下环境变量控制脚本的行为：
 
@@ -146,6 +156,8 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
 　　使用静态链接构建的版本不需要这样的运行环境配置。
+
+**注意** 非脚本配置的外部二进制依赖项可能不兼容，需要通过系统包管理器等方式部署，依赖这些库导致解释器最终的二进制文件不保证跨系统环境（如不同 Linux 发行版）之间可移植。
 
 ## 运行解释器
 
