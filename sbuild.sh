@@ -19,8 +19,6 @@ case $(uname) in
 #	and https://sourceware.org/bugzilla/show_bug.cgi?id=26659.
 	LDFLAGS_LOWBASE_=-Wl,--default-image-base-low
 	;;
-*)
-	SHBuild_LIBS='-lffi -ldl'
 esac
 case $(uname) in
 *MSYS* | *MINGW*)
