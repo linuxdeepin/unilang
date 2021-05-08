@@ -670,6 +670,12 @@ using string = basic_string<char>;
 
 　　确定需进行代码生成替换的特性，应能保证被 LLVM API 支持。
 
+## 实现注记
+
+　　当前使用 LLVM 通过外部部署。发行版提供的版本默认不支持 RTTI 和异常，但在 Unilang 解释器中需要依赖，需要调整构建命令行选项复原（使用 `-fexceptions -frtti` ）。
+
+　　因为不依赖 LLVM 库的异常和 RTTI 支持，通过 LLVM 的依赖路径传播异常和 LLVM 库中 RTTI 需要被解释器实现避免。
+
 ## 参考资料
 
 　　基于 LLVM 开发可参照以下官方文档：

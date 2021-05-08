@@ -9,8 +9,8 @@ Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 [[ "$1" != '' ]] || (echo \
 	"ERROR: The configuration name should not be empty." >& 2; exit 1)
 
-CXXFLAGS_EXTRA='-fexceptions -frtti'
-LIBS_EXTRA='-lffi'
+CXXFLAGS_EXTRA="$(llvm-config --cxxflags) -fexceptions -frtti"
+LIBS_EXTRA="$(llvm-config --ldflags) $(llvm-config --libs) -lffi"
 
 case $(uname) in
 *MINGW64*)

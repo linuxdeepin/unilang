@@ -4,8 +4,8 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
-CXXFLAGS_EXTRA='-fexceptions -frtti'
-LIBS_EXTRA='-lffi'
+CXXFLAGS_EXTRA="$(llvm-config --cxxflags) -fexceptions -frtti"
+LIBS_EXTRA="$(llvm-config --ldflags) $(llvm-config --libs) -lffi"
 
 case $(uname) in
 *MSYS* | *MINGW*)
