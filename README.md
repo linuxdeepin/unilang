@@ -26,17 +26,19 @@
 　　构建使用外部二进制依赖和相关工具：
 
 * libffi
+* LLVM（版本 7.0/11.0/11.1 已测试）
+	* `llvm-config`
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```
 # Some dependencies may have been preinstalled.
 # MSYS
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi
+sudo pacman -S --needed bash coreutils git gcc binutils libffi llvm
 # Debian/Ubuntu/UOS
-sudo apt install bash coreutils git g++ libffi-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm
 ```
 
 ## 构建环境更新
