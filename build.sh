@@ -4,8 +4,9 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
-CXXFLAGS_EXTRA="$(llvm-config --cxxflags) -fexceptions -frtti"
-LIBS_EXTRA="$(llvm-config --ldflags) $(llvm-config --libs) -lffi"
+. "$Unilang_BaseDir/detect-llvm.sh"
+
+echo "Building ..."
 
 case $(uname) in
 *MSYS* | *MINGW*)
@@ -46,4 +47,6 @@ $CXXFLAGS_EXTRA \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
 $EXTRA_OPT $LIBS_EXTRA
+
+echo "Done."
 
