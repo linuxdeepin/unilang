@@ -4,6 +4,8 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
+echo "Building ..."
+
 CXXFLAGS_EXTRA='-fexceptions -frtti'
 LIBS_EXTRA='-lffi'
 
@@ -46,4 +48,6 @@ $CXXFLAGS_EXTRA \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
 $EXTRA_OPT $LIBS_EXTRA
+
+echo "Done."
 
