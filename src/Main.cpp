@@ -509,6 +509,9 @@ constexpr auto
 
 } // unnamed namespace;
 
+void
+llvm_main();
+
 } // namespace Unilang;
 
 int
@@ -520,6 +523,7 @@ main()
 
 	cout << title << endl << "Initializing...";
 	LoadFunctions(intp);
+	llvm_main();
 	cout << "Initialization finished." << endl;
 	cout << "Type \"exit\" to exit." << endl << endl;
 	intp.Run();
