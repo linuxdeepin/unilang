@@ -71,14 +71,15 @@ private:
 class Interpreter final
 {
 private:
+	pmr::pool_resource resource{pmr::new_delete_resource()};
 	string line{};
 	shared_ptr<Environment> p_ground{};
 
 public:
 	shared_ptr<string> CurrentSource{};
 	bool Echo = std::getenv("ECHO");
-	TermNode::allocator_type Allocator{pmr::new_delete_resource()};
-	Context Root{Unilang::Deref(Allocator.resource())};
+	TermNode::allocator_type Allocator{&resource};
+	Context Root{resource};
 	SeparatorPass Preprocess{Allocator};
 	TermNode Term{Allocator};
 
