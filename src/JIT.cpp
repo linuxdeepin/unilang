@@ -1,6 +1,6 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Unilang.h"
+#include "JIT.h"
 #if __GNUG__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
@@ -18,9 +18,6 @@
 
 namespace Unilang
 {
-
-void
-llvm_main();
 
 namespace
 {
