@@ -27,6 +27,7 @@
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
+#include "JIT.h"
 
 namespace Unilang
 {
@@ -508,9 +509,6 @@ constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
 
 } // unnamed namespace;
-
-void
-llvm_main();
 
 } // namespace Unilang;
 
