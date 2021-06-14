@@ -697,7 +697,7 @@ using string = basic_string<char>;
 
 　　当前使用 LLVM 通过外部部署。发行版提供的版本默认不支持 RTTI 和异常，但在 Unilang 解释器中需要依赖，需要调整构建命令行选项复原（使用 `-fexceptions -frtti` ）。
 
-　　因为不依赖 LLVM 库的异常和 RTTI 支持，通过 LLVM 的依赖路径传播异常和 LLVM 库中 RTTI 需要被解释器实现避免。
+　　因为不依赖 LLVM 库的异常和 RTTI 支持，通过 LLVM 的依赖路径传播异常和 LLVM 库中 RTTI 需要被解释器实现避免。注意 LLVM 中被声明为内联的函数调用中的 `new` 等调用路径仍可能在 `-fexceptions` 下抛出异常（而在 LLVM 的库中的代码中因可能以 `-fexception` ，抛出异常时编译器生成的代码直接调用 `abort` ），因此这个上下文中无视这个限制。
 
 ## 参考资料
 
