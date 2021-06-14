@@ -24,8 +24,8 @@ test_llvm7_prefix
 echo 'Found LLVM 7 prefix:' "$LLVM_PREFIX"
 echo 'LLVM version:' "$("$LLVM_BINDIR/llvm-config" --version)"
 
-CXXFLAGS_EXTRA="$("$LLVM_BINDIR/llvm-config" --cxxflags) -fexceptions -frtti \
--U_FORTIFY_SOURCE -Wno-date-time"
+CXXFLAGS_EXTRA="$("$LLVM_BINDIR/llvm-config" --cxxflags | sed s/-DNDEBUG//g) \
+-fexceptions -frtti -U_FORTIFY_SOURCE -Wno-date-time"
 LIBS_EXTRA="$("$LLVM_BINDIR/llvm-config" --ldflags) \
 $("$LLVM_BINDIR/llvm-config" --libs) -lffi"
 
