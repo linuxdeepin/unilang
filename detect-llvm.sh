@@ -26,6 +26,7 @@ echo 'LLVM version:' "$("$LLVM_BINDIR/llvm-config" --version)"
 
 CXXFLAGS_EXTRA="$("$LLVM_BINDIR/llvm-config" --cxxflags | sed s/-DNDEBUG//g) \
 -fexceptions -frtti -U_FORTIFY_SOURCE -Wno-date-time"
+# NOTE: Loading local symbol in LLVM IR requires '--export-dynamic'.
 LIBS_EXTRA="$("$LLVM_BINDIR/llvm-config" --ldflags) \
-$("$LLVM_BINDIR/llvm-config" --libs) -lffi"
+$("$LLVM_BINDIR/llvm-config" --libs) -lffi -Wl,--export-dynamic"
 
