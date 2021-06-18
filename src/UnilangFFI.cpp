@@ -1,10 +1,11 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #if __GNUC__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
-#include "UnilangFFI.h" // for YSLib::unique_ptr_from;
+#include "UnilangFFI.h" // for Unilang::allocate_shared;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::unique_ptr_from;
 #if __GNUC__
 #	pragma GCC diagnostic pop
 #endif
@@ -405,7 +406,7 @@ FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
 	const auto& cb(*static_cast<FFICallback*>(user_data));
 	auto& ctx(*cb.ContextPtr);
 	const auto a(ctx.get_allocator());
-	auto p_term(YSLib::allocate_shared<TermNode>(a));
+	auto p_term(Unilang::allocate_shared<TermNode>(a));
 	auto& term(*p_term);
 
 	ctx.SetupFront([&, args, ret, p_term](Context& c){

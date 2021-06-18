@@ -1,10 +1,11 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Syntax_h_
 #define INC_Unilang_Syntax_h_ 1
 
-#include "TermNode.h" // for TermNode;
+#include "TermNode.h" // for TermNode, stack;
 #include "Exception.h" // for UnilangException;
+#include <cassert> // for assert;
 
 namespace Unilang
 {

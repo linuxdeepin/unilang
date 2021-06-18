@@ -3,8 +3,8 @@
 #ifndef INC_Unilang_TCO_h_
 #define INC_Unilang_TCO_h_ 1
 
-#include "Evaluation.h" // for lref, map, set, weak_ptr, shared_ptr,
-//	Environment, ContextHandler, list, TermNode, EnvironmentGuard,
+#include "Evaluation.h" // for map, lref, Environment, size_t, set, weak_ptr,
+//	shared_ptr, ContextHandler, list, TermNode, EnvironmentGuard,
 //	ReductionStatus, Context, Unilang::Deref;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
