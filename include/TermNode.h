@@ -3,7 +3,8 @@
 #ifndef INC_Unilang_TermNode_h_
 #define INC_Unilang_TermNode_h_ 1
 
-#include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward;
+#include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward,
+//	std::allocator_arg_t;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
