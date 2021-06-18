@@ -1,6 +1,6 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Context.h" // for lref;
+#include "Context.h" // for Unilang::allocate_shared, lref;
 #include <cassert> // for assert;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
@@ -106,7 +106,7 @@ Environment::EnsureValid(const shared_ptr<Environment>& p_env)
 AnchorPtr
 Environment::InitAnchor() const
 {
-	return std::allocate_shared<AnchorData>(Bindings.get_allocator());
+	return Unilang::allocate_shared<AnchorData>(Bindings.get_allocator());
 }
 
 Environment::NameResolution::first_type

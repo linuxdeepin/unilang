@@ -4,7 +4,8 @@
 //	TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
 //	TermReference, ContextHandler, yunseq, std::prev, GetLValueTagsOf,
 //	EnvironmentReference, in_place_type, ThrowTypeErrorForInvalidType,
-//	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with;
+//	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with,
+//	Unilang::allocate_shared;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
@@ -678,7 +679,7 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 						});
 					if(sigil == '&')
 					{
-						auto p_sub(YSLib::allocate_shared<TermNode>(a,
+						auto p_sub(Unilang::allocate_shared<TermNode>(a,
 							std::move(con)));
 						auto& sub(Unilang::Deref(p_sub));
 

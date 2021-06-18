@@ -3,8 +3,9 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "Context.h" // for ReductionStatus, TermNode, Context, ContextHandler,
-//	 YSLib::AreEqualHeld, YSLib::GHEvent, ystdex::sfmt;
+#include "Context.h" // for ReductionStatus, TermNode, Context,
+//	YSLib::AreEqualHeld, YSLib::GHEvent, ContextHandler, std::allocator_arg_t;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
 #include <ystdex/algorithm.hpp> // for ystdex::split;

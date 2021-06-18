@@ -5,14 +5,15 @@
 
 #include "TermAccess.h" // for ValueObject, vector, string, TermNode,
 //	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
-//	EnvironmentReference;
-#include "BasicReduction.h" // for ReductionStatus;
+//	Unilang::allocate_shared, EnvironmentReference;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include <ystdex/typeinfo.h> // for ystdex::type_info;
+#include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
+#include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
 
 namespace Unilang
 {
@@ -250,7 +251,7 @@ public:
 
 private:
 	lref<pmr::memory_resource> memory_rsrc;
-	shared_ptr<Environment> p_record{std::allocate_shared<Environment>(
+	shared_ptr<Environment> p_record{Unilang::allocate_shared<Environment>(
 		Environment::allocator_type(&memory_rsrc.get()))};
 	TermNode* next_term_ptr = {};
 	ReducerSequence
@@ -377,7 +378,7 @@ template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(const Environment::allocator_type& a, _tParams&&... args)
 {
-	return std::allocate_shared<Environment>(a, yforward(args)...);
+	return Unilang::allocate_shared<Environment>(a, yforward(args)...);
 }
 template<typename... _tParams>
 inline shared_ptr<Environment>
