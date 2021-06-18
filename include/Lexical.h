@@ -5,6 +5,7 @@
 
 #include "Unilang.h" // for string_view;
 #include <cassert> // for assert;
+#include <cctype> // for std::isgraph;
 
 namespace Unilang
 {
