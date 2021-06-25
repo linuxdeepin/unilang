@@ -32,8 +32,12 @@
 namespace Unilang
 {
 
+#define Unilang_UseJIT true
+
 namespace
 {
+
+const bool Unilang_UseJIT(!std::getenv("UNILANG_NO_JIT"));
 
 template<typename _fCallable>
 shared_ptr<Environment>
@@ -194,12 +198,14 @@ LoadModule_std_strings(Context& ctx)
 }
 
 void
-LoadFunctions(Interpreter& intp)
+LoadFunctions(Interpreter& intp, bool jit)
 {
 	using namespace Forms;
 	using namespace std::placeholders;
 	auto& ctx(intp.Root);
 
+	if(jit)
+		SetupJIT(ctx);
 	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
@@ -520,7 +526,7 @@ main()
 	Interpreter intp{};
 
 	cout << title << endl << "Initializing...";
-	LoadFunctions(intp);
+	LoadFunctions(intp, Unilang_UseJIT);
 	llvm_main();
 	cout << "Initialization finished." << endl;
 	cout << "Type \"exit\" to exit." << endl << endl;
