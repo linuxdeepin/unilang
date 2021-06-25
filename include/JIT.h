@@ -3,7 +3,7 @@
 #ifndef INC_Unilang_JIT_h_
 #define INC_Unilang_JIT_h_ 1
 
-#include "Context.h" // for ReductionStatus;
+#include "Context.h" // for Context;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::make_unique,
 //	YSLib::unique_ptr, YSLib::to_pmr_string, YSLib::to_std_string;
 #include <cstdint> // for std::int8_t;
@@ -29,6 +29,9 @@ using HostPtr = std::int8_t*;
 using InteropFuncPtr = ReductionStatus(*)(HostPtr);
 
 } // inline namespace JITTypes;
+
+void
+SetupJIT(Context&);
 
 void
 llvm_main();
