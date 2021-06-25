@@ -193,6 +193,8 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 echo 'display "Hello world."; () newline' | ./unilang
 ```
 
+　　解释器执行时允许 JIT 编译和执行代码。若设置环境变量 `UNILANG_NO_JIT` ，则停用 JIT 编译，使用纯解释器。
+
 ## 运行测试脚本
 
 　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
