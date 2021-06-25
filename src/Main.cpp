@@ -1,6 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter, ValueObject;
+#include <cstdlib> // for std::getenv;
 #include "Context.h" // for EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
@@ -31,8 +32,6 @@
 
 namespace Unilang
 {
-
-#define Unilang_UseJIT true
 
 namespace
 {
@@ -525,7 +524,8 @@ main()
 	using namespace std;
 	Interpreter intp{};
 
-	cout << title << endl << "Initializing...";
+	cout << title << endl << "Initializing the interpreter " << (Unilang_UseJIT
+		? "[JIT enabled]" : "[JIT disabled]") << " ..." << endl;
 	LoadFunctions(intp, Unilang_UseJIT);
 	llvm_main();
 	cout << "Initialization finished." << endl;
