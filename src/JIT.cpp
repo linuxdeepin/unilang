@@ -52,7 +52,20 @@ Driver::Run()
 {
 }
 
+
+ReductionStatus
+JITReduceOnce(TermNode& term, Context& ctx)
+{
+	return Context::DefaultReduceOnce(term, ctx);
+}
+
 } // unnamed namespace;
+
+void
+SetupJIT(Context& ctx)
+{
+	ctx.ReduceOnce = Continuation(JITReduceOnce, ctx);
+}
 
 void
 llvm_main()
