@@ -688,6 +688,21 @@ public:
 	}
 };
 
+void
+CheckFrozenEnvironment(const shared_ptr<Environment>& p_env)
+{
+	if(YB_UNLIKELY(Unilang::Deref(p_env).Frozen))
+		throw TypeError("Cannot define variables in a frozen environment.");
+}
+
+void
+CheckBindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
+	TermNode& o)
+{
+	CheckFrozenEnvironment(p_env);
+	BindParameter(p_env, t, o);
+}
+
 } // unnamed namespace;
 
 
@@ -807,7 +822,7 @@ Define(TermNode& term, Context& ctx)
 		return ReduceSubsequent(term, ctx,
 			std::bind([&](Context&, const TermNode& saved,
 			const shared_ptr<Environment>& p_e){
-			BindParameter(p_e, saved, term);
+			CheckBindParameter(p_e, saved, term);
 			term.Value = ValueToken::Unspecified;
 			return ReductionStatus::Clean;
 		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()));
