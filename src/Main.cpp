@@ -198,8 +198,9 @@ LoadFunctions(Interpreter& intp)
 	using namespace Forms;
 	using namespace std::placeholders;
 	auto& ctx(intp.Root);
+	auto& env(ctx.GetRecordRef());
 
-	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
+	env.Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
@@ -498,11 +499,13 @@ LoadFunctions(Interpreter& intp)
 	load_std_module("strings", LoadModule_std_strings);
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
+	// NOTE: Prevent the ground environment from modification.
+	env.Frozen = true;
 	intp.SaveGround();
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.0"
+#define APP_VER "0.7.8"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
