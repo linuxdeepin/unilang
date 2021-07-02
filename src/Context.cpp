@@ -285,8 +285,11 @@ MoveResolved(const Context& ctx, string_view id)
 	auto pr(ResolveName(ctx, id));
 
 	if(const auto p = pr.first)
-		// TODO: Avoid moving for frozen environments.
+	{
+		if(Unilang::Deref(pr.second).Frozen)
+			return *p;
 		return std::move(*p);
+	}
 	throw BadIdentifier(id);
 }
 

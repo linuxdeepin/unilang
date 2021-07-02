@@ -40,6 +40,7 @@ public:
 
 	mutable BindingMap Bindings;
 	ValueObject Parent{};
+	bool Frozen = {};
 
 private:
 	AnchorPtr p_anchor{InitAnchor()};
@@ -148,8 +149,7 @@ public:
 	[[nodiscard, gnu::pure]] TermTags
 	MakeTermTags(const TermNode& term) const noexcept
 	{
-		// TODO: Support freezing environments.
-		return term.Tags;
+		return Frozen ? term.Tags | TermTags::Nonmodifying : term.Tags;
 	}
 
 	[[noreturn]] static void
