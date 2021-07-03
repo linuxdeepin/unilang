@@ -26,17 +26,22 @@
 　　构建使用外部二进制依赖和相关工具：
 
 * libffi
+* LLVM 7
+	* `llvm-config`
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```
 # Some dependencies may have been preinstalled.
-# MSYS
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi
+# MSYS2
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm
 # Arch Linux
 sudo pacman -S --needed bash coreutils git gcc binutils libffi
-# Debian/Ubuntu/UOS
-sudo apt install bash coreutils git g++ libffi-dev
+yay -S llvm70 # Or some other AUR frontend command.
+# Debian (strech/buster)/Ubuntu (bionic-updates/focal)
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
+# UOS
+sudo apt install bash coreutils git g++ libffi-dev llvm-dev
 ```
 
 ## 构建环境更新
@@ -143,7 +148,7 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 ## 运行环境配置
 
-　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含）：
+　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含），如：
 
 ```
 # MinGW32
@@ -155,7 +160,16 @@ export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　使用静态链接构建的版本不需要这样的运行环境配置。
+　　若使用系统包管理器以外的方式安装 LLVM 运行时库到非默认位置，类似添加 LLVM 的路径，如：
+
+```
+# Linux
+export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
+```
+
+　　以上 Linux 配置的 `LD_LIBRARY_PATH` 也可通过 [`ldconfig`](https://man7.org/linux/man-pages/man8/ldconfig.8.html) 等其它方式代替。
+
+　　使用静态链接构建的版本不需要这样的运行环境配置；不过 LLVM 通常使用动态库。
 
 **注意** 非脚本配置的外部二进制依赖项可能不兼容，需要通过系统包管理器等方式部署，依赖这些库导致解释器最终的二进制文件不保证跨系统环境（如不同 Linux 发行版）之间可移植。
 
@@ -178,6 +192,8 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 echo 'display "Hello world."; () newline' | ./unilang
 ```
+
+　　解释器执行时允许 JIT 编译和执行代码。若设置环境变量 `UNILANG_NO_JIT` ，则停用 JIT 编译，使用纯解释器。
 
 ## 运行测试脚本
 

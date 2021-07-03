@@ -4,10 +4,9 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
-echo "Building ..."
+. "$Unilang_BaseDir/detect-llvm.sh"
 
-CXXFLAGS_EXTRA='-fexceptions -frtti'
-LIBS_EXTRA='-lffi'
+echo "Building ..."
 
 case $(uname) in
 *MSYS* | *MINGW*)

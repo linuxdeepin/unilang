@@ -1,6 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter, ValueObject;
+#include <cstdlib> // for std::getenv;
 #include "Context.h" // for EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
@@ -27,12 +28,15 @@
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
+#include "JIT.h"
 
 namespace Unilang
 {
 
 namespace
 {
+
+const bool Unilang_UseJIT(!std::getenv("UNILANG_NO_JIT"));
 
 template<typename _fCallable>
 shared_ptr<Environment>
@@ -193,13 +197,15 @@ LoadModule_std_strings(Context& ctx)
 }
 
 void
-LoadFunctions(Interpreter& intp)
+LoadFunctions(Interpreter& intp, bool jit)
 {
 	using namespace Forms;
 	using namespace std::placeholders;
 	auto& ctx(intp.Root);
 	auto& env(ctx.GetRecordRef());
 
+	if(jit)
+		SetupJIT(ctx);
 	env.Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
@@ -505,7 +511,7 @@ LoadFunctions(Interpreter& intp)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.8"
+#define APP_VER "0.7.13"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -521,8 +527,10 @@ main()
 	using namespace std;
 	Interpreter intp{};
 
-	cout << title << endl << "Initializing...";
-	LoadFunctions(intp);
+	cout << title << endl << "Initializing the interpreter " << (Unilang_UseJIT
+		? "[JIT enabled]" : "[JIT disabled]") << " ..." << endl;
+	LoadFunctions(intp, Unilang_UseJIT);
+	llvm_main();
 	cout << "Initialization finished." << endl;
 	cout << "Type \"exit\" to exit." << endl << endl;
 	intp.Run();
