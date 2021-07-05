@@ -139,19 +139,33 @@ Context::GetNextTermRef() const
 ReductionStatus
 Context::ApplyTail()
 {
-	assert(IsAlive());
+	assert(IsAlive() && "No tail action found.");
 	TailAction = std::move(current.front());
 	current.pop_front();
 	try
 	{
 		LastStatus = TailAction(*this);
 	}
+	catch(...)
+	{
+		HandleException(std::current_exception());
+	}
+	return LastStatus;
+}
+
+void
+Context::DefaultHandleException(std::exception_ptr p)
+{
+	assert(bool(p));
+	try
+	{
+		std::rethrow_exception(std::move(p));
+	}
 	catch(bad_any_cast& ex)
 	{
 		std::throw_with_nested(TypeError(ystdex::sfmt("Mismatched types ('%s',"
 			" '%s') found.", ex.from(), ex.to()).c_str()));
 	}
-	return LastStatus;
 }
 
 Environment::NameResolution
