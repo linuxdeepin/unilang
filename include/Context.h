@@ -14,6 +14,7 @@
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 #include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
+#include <exception> // for std::exception_ptr;
 
 namespace Unilang
 {
@@ -239,6 +240,7 @@ public:
 class Context final
 {
 public:
+	using ExceptionHandler = function<void(std::exception_ptr)>;
 	class ReductionGuard
 	{
 	private:
@@ -280,6 +282,7 @@ private:
 
 public:
 	Reducer TailAction{};
+	ExceptionHandler HandleException{DefaultHandleException};
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
 	Continuation ReduceOnce{DefaultReduceOnce, *this};
 
@@ -327,6 +330,9 @@ public:
 	ReductionStatus
 	ApplyTail();
 
+	[[noreturn]] static void
+	DefaultHandleException(std::exception_ptr);
+
 	// NOTE: See Evaluation.cpp for the definition.
 	static ReductionStatus
 	DefaultReduceOnce(TermNode&, Context&);
@@ -345,6 +351,15 @@ public:
 
 	[[nodiscard]] Environment::NameResolution
 	Resolve(shared_ptr<Environment>, string_view) const;
+
+	void
+	SaveExceptionHandler()
+	{
+		return SetupFront(std::bind([this](ExceptionHandler& h) noexcept{
+			HandleException = std::move(h);
+			return LastStatus;
+		}, std::move(HandleException)));
+	}
 
 	template<typename... _tParams>
 	inline void
