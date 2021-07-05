@@ -8,10 +8,9 @@
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
-#include "Arithmetic.h" // for Number;
+#include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
-#include <ios> // for std::ios_base::eofbit;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
 #include "Syntax.h" // for ReduceSyntax;
