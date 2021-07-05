@@ -235,27 +235,29 @@ Context::Rewrite(Reducer reduce)
 }
 
 ReductionStatus
+Context::RewriteGuarded(TermNode& term, Reducer reduce)
+{
+	const auto unwind(ystdex::make_guard([this]() noexcept{
+		TailAction = nullptr;
+		UnwindCurrent();
+	}));
+
+	return Rewrite(std::move(reduce));
+}
+
+ReductionStatus
 Context::RewriteTerm(TermNode& term)
 {
 	next_term_ptr = &term;
-	return Rewrite([this](Context& ctx){
-		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
-	});
+	return Rewrite(Unilang::ToReducer(get_allocator(), std::ref(ReduceOnce)));
 }
 
 ReductionStatus
 Context::RewriteTermGuarded(TermNode& term)
 {
 	next_term_ptr = &term;
-
-	const auto unwind(ystdex::make_guard([this]() noexcept{
-		TailAction = nullptr;
-		UnwindCurrent();
-	}));
-
-	return Rewrite([this](Context& ctx){
-		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
-	});
+	return RewriteGuarded(term,
+		Unilang::ToReducer(get_allocator(), std::ref(ReduceOnce)));
 }
 
 shared_ptr<Environment>

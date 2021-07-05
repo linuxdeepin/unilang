@@ -335,6 +335,9 @@ public:
 	Rewrite(Reducer);
 
 	ReductionStatus
+	RewriteGuarded(TermNode&, Reducer);
+
+	ReductionStatus
 	RewriteTerm(TermNode&);
 
 	ReductionStatus
@@ -355,7 +358,8 @@ public:
 	inline void
 	SetupFront(_tParams&&... args)
 	{
-		current.emplace_front(yforward(args)...);
+		current.push_front(
+			Unilang::ToReducer(get_allocator(), yforward(args)...));
 	}
 
 	[[nodiscard, gnu::pure]] shared_ptr<Environment>
