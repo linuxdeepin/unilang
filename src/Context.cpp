@@ -8,6 +8,7 @@
 #include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/utility.hpp> // ystdex::exchange;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include "TermAccess.h" // for Unilang::IsMovable;
 
 namespace Unilang
@@ -237,6 +238,21 @@ ReductionStatus
 Context::RewriteTerm(TermNode& term)
 {
 	next_term_ptr = &term;
+	return Rewrite([this](Context& ctx){
+		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
+	});
+}
+
+ReductionStatus
+Context::RewriteTermGuarded(TermNode& term)
+{
+	next_term_ptr = &term;
+
+	const auto unwind(ystdex::make_guard([this]() noexcept{
+		TailAction = nullptr;
+		UnwindCurrent();
+	}));
+
 	return Rewrite([this](Context& ctx){
 		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
 	});

@@ -317,6 +317,9 @@ public:
 	ReductionStatus
 	RewriteTerm(TermNode&);
 
+	ReductionStatus
+	RewriteTermGuarded(TermNode&);
+
 	[[nodiscard]] Environment::NameResolution
 	Resolve(shared_ptr<Environment>, string_view) const;
 
