@@ -163,6 +163,26 @@ using ReducerFunctionType = ReductionStatus(Context&);
 
 using Reducer = ystdex::expanded_function<ReducerFunctionType>;
 
+template<class _tAlloc, class _func,
+	yimpl(typename = ystdex::enable_if_same_param_t<Reducer, _func>)>
+inline _func&&
+ToReducer(const _tAlloc&, _func&& f)
+{
+	return yforward(f);
+}
+template<class _tAlloc, typename _tParam, typename... _tParams>
+inline
+	yimpl(ystdex::exclude_self_t)<Reducer, _tParam, Reducer>
+ToReducer(const _tAlloc& a, _tParam&& arg, _tParams&&... args)
+{
+#if true
+	return Reducer(std::allocator_arg, a, yforward(arg), yforward(args)...);
+#else
+	return ystdex::make_obj_using_allocator<Reducer>(a, yforward(arg),
+		yforward(args)...);
+#endif
+}
+
 using ReducerSequence = forward_list<Reducer>;
 
 using ContextAllocator = pmr::polymorphic_allocator<byte>;
