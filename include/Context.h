@@ -312,9 +312,6 @@ public:
 	DefaultReduceOnce(TermNode&, Context&);
 
 	ReductionStatus
-	Evaluate(TermNode&);
-
-	ReductionStatus
 	Rewrite(Reducer);
 
 	ReductionStatus

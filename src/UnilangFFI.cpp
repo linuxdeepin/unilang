@@ -429,7 +429,7 @@ FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
 	});
 	EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-	ctx.Evaluate(term);
+	ctx.RewriteTerm(term);
 }
 
 } // unnamed namespace;

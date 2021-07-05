@@ -153,15 +153,6 @@ Context::ApplyTail()
 	return LastStatus;
 }
 
-ReductionStatus
-Context::Evaluate(TermNode& term)
-{
-	next_term_ptr = &term;
-	return Rewrite([this](Context& ctx){
-		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
-	});
-}
-
 Environment::NameResolution
 Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 {
@@ -240,6 +231,15 @@ Context::Rewrite(Reducer reduce)
 		ApplyTail();
 	}while(IsAlive());
 	return LastStatus;
+}
+
+ReductionStatus
+Context::RewriteTerm(TermNode& term)
+{
+	next_term_ptr = &term;
+	return Rewrite([this](Context& ctx){
+		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
+	});
 }
 
 shared_ptr<Environment>

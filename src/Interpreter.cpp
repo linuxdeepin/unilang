@@ -163,7 +163,7 @@ Interpreter::Interpreter()
 void
 Interpreter::Evaluate(TermNode& term)
 {
-	Root.Evaluate(term);
+	Root.RewriteTerm(term);
 }
 
 YSLib::unique_ptr<std::istream>
