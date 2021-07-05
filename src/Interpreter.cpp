@@ -163,7 +163,7 @@ Interpreter::Interpreter()
 void
 Interpreter::Evaluate(TermNode& term)
 {
-	Root.RewriteTerm(term);
+	Root.RewriteTermGuarded(term);
 }
 
 YSLib::unique_ptr<std::istream>
@@ -201,15 +201,6 @@ Interpreter::Process()
 	else if(!line.empty())
 		try
 		{
-			struct Guard final
-			{
-				Context& C;
-
-				~Guard()
-				{
-					C.UnwindCurrent();
-				}
-			} gd{Root};
 			Term = Read(line);
 			Evaluate(Term);
 			if(Echo)
