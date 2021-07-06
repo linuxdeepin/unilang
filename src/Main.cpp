@@ -29,6 +29,8 @@
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
+#include <Helper/YModules.h>
+#include YFM_Helper_Initialization // for YSLib::TraceForOutermost;
 
 namespace Unilang
 {
@@ -511,7 +513,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.13"
+#define APP_VER "0.7.23"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -521,18 +523,45 @@ constexpr auto
 } // namespace Unilang;
 
 int
-main()
+main(int argc, char* argv[])
 {
 	using namespace Unilang;
 	using namespace std;
-	Interpreter intp{};
+	using YSLib::Alert;
+	using YSLib::LoggedEvent;
 
-	cout << title << endl << "Initializing the interpreter " << (Unilang_UseJIT
-		? "[JIT enabled]" : "[JIT disabled]") << " ..." << endl;
-	LoadFunctions(intp, Unilang_UseJIT);
-	llvm_main();
-	cout << "Initialization finished." << endl;
-	cout << "Type \"exit\" to exit." << endl << endl;
-	intp.Run();
+	return YSLib::FilterExceptions([&]{
+		if(argc > 1)
+		{
+			if(std::strcmp(argv[1], "-e") == 0)
+			{
+				if(argc == 3)
+				{
+					Interpreter intp{};
+
+					LoadFunctions(intp, Unilang_UseJIT);
+					llvm_main();
+					intp.RunLine(argv[2]);
+				}
+				else
+					throw LoggedEvent("Option '-e' expect exact one argument.");
+			}
+			else
+				throw LoggedEvent("Too many arguments.");
+		}
+		else if(argc == 1)
+		{
+			Interpreter intp{};
+
+			cout << title << endl << "Initializing the interpreter "
+				<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]")
+				<< " ..." << endl;
+			LoadFunctions(intp, Unilang_UseJIT);
+			llvm_main();
+			cout << "Initialization finished." << endl;
+			cout << "Type \"exit\" to exit." << endl << endl;
+			intp.Run();
+		}
+	}, yfsig, Alert, YSLib::TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
