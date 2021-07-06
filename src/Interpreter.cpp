@@ -124,7 +124,7 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 				}();
 				return {tm, true};
 			}
-		catch(bad_any_cast&)
+			catch(bad_any_cast&)
 			{}
 			return {tm, false};
 		}, subterm);
@@ -165,6 +165,48 @@ Interpreter::Evaluate(TermNode& term)
 	Root.RewriteTermGuarded(term);
 }
 
+ReductionStatus
+Interpreter::EvaluateOnceIn(Context& ctx)
+{
+	return ReduceOnce(Term, ctx);
+}
+
+ReductionStatus
+Interpreter::ExecuteOnce(string_view unit, Context& ctx)
+{
+	ctx.SaveExceptionHandler();
+	ctx.HandleException = std::bind(
+		[&](std::exception_ptr p, const ReducerSequence::const_iterator& i){
+		ctx.TailAction = nullptr;
+		ctx.Shift(Backtrace, i);
+		try
+		{
+			Context::DefaultHandleException(std::move(p));
+		}
+		catch(UnilangException& e)
+		{
+			using namespace std;
+
+			cerr << "UnilangException[" << typeid(e).name() << "]: "
+				<< e.what() << endl;
+		}
+	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
+	if(Echo)
+		RelaySwitched(ctx, [&]{
+			Print(Term);
+			return ReductionStatus::Neutral;
+		});
+	Term = Read(unit);
+	return EvaluateOnceIn(ctx);
+}
+
+ReductionStatus
+Interpreter::Exit()
+{
+	Root.UnwindCurrent();
+	return ReductionStatus::Neutral;
+}
+
 YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(string filename)
 {
@@ -190,29 +232,6 @@ Interpreter::Perform(string_view unit)
 
 	Evaluate(term);
 	return term;
-}
-
-bool
-Interpreter::Process()
-{
-	if(line == "exit")
-		return {};
-	else if(!line.empty())
-		try
-		{
-			Term = Read(line);
-			Evaluate(Term);
-			if(Echo)
-				Print(Term);
-		}
-		catch(UnilangException& e)
-		{
-			using namespace std;
-
-			cerr << "UnilangException[" << typeid(e).name() << "]: "
-				<< e.what() << endl;
-		}
-	return true;
 }
 
 TermNode
@@ -264,8 +283,30 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 void
 Interpreter::Run()
 {
-	while(WaitForLine() && Process())
-		;
+	Root.Rewrite(Unilang::ToReducer(Allocator, std::bind(
+		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
+}
+
+void
+Interpreter::RunLine(string_view unit)
+{
+	if(!unit.empty() && unit != "exit")
+		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+			return ExecuteOnce(unit, ctx);
+		}));
+}
+
+ReductionStatus
+Interpreter::RunLoop(Context& ctx)
+{
+	if(WaitForLine())
+	{
+		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
+			std::placeholders::_1));
+		return !line.empty() ? (line != "exit" ? ExecuteOnce(line, ctx)
+			: Exit()) : ReductionStatus::Partial;
+	}
+	return ReductionStatus::Retained;
 }
 
 bool

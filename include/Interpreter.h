@@ -82,12 +82,24 @@ public:
 	Context Root{resource};
 	SeparatorPass Preprocess{Allocator};
 	TermNode Term{Allocator};
+	ReducerSequence Backtrace{Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
 
 	void
 	Evaluate(TermNode&);
+
+	ReductionStatus
+	EvaluateOnceIn(Context&);
+
+private:
+	ReductionStatus
+	ExecuteOnce(string_view, Context&);
+
+public:
+	ReductionStatus
+	Exit();
 
 	YSLib::unique_ptr<std::istream>
 	OpenUnique(string);
@@ -97,9 +109,6 @@ public:
 
 	static void
 	Print(const TermNode&);
-
-	bool
-	Process();
 
 	[[nodiscard]] TermNode
 	Read(string_view);
@@ -115,6 +124,14 @@ public:
 	void
 	Run();
 
+	void
+	RunLine(string_view);
+
+private:
+	ReductionStatus
+	RunLoop(Context&);
+
+public:
 	bool
 	SaveGround();
 
