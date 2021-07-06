@@ -23,7 +23,7 @@ namespace Unilang
 namespace
 {
 
-[[nodiscard, gnu::pure]] inline TermReference
+YB_ATTR_nodiscard YB_PURE inline TermReference
 EnsureLValueReference(TermReference&& ref)
 {
 	return TermReference(ref.GetTags() & ~TermTags::Unique, std::move(ref));
@@ -178,26 +178,26 @@ CopyTermTags(TermNode& term, const TermNode& tm) noexcept
 	term.Tags = GetLValueTagsOf(tm.Tags);
 }
 
-[[nodiscard, gnu::const]] constexpr TermTags
+YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
 BindReferenceTags(TermTags ref_tags) noexcept
 {
 	return bool(ref_tags & TermTags::Unique) ? ref_tags | TermTags::Temporary
 		: ref_tags;
 }
-[[nodiscard, gnu::pure]] inline TermTags
+YB_ATTR_nodiscard YB_PURE inline TermTags
 BindReferenceTags(const TermReference& ref) noexcept
 {
 	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
 }
 
 
-[[noreturn]] inline void
+YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
 	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
 }
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowNestedParameterTreeCheckError()
 {
 	std::throw_with_nested(InvalidSyntax("Failed checking for parameter in a"
@@ -286,7 +286,7 @@ private:
 };
 
 template<typename _fBindValue>
-[[nodiscard]] inline GParameterValueMatcher<_fBindValue>
+YB_ATTR_nodiscard inline GParameterValueMatcher<_fBindValue>
 MakeParameterValueMatcher(_fBindValue bind_value)
 {
 	return GParameterValueMatcher<_fBindValue>(std::move(bind_value));
@@ -616,7 +616,7 @@ private:
 };
 
 template<class _tTraits, typename _fBindTrailing, typename _fBindValue>
-[[nodiscard]] inline GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>
+YB_ATTR_nodiscard inline GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>
 MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 {
 	return GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>(

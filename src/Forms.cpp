@@ -17,7 +17,7 @@ namespace Unilang
 namespace
 {
 
-[[nodiscard, gnu::pure]] bool
+YB_ATTR_nodiscard YB_PURE bool
 ExtractBool(const TermNode& term)
 {
 	if(const auto p = Unilang::TryAccessReferencedTerm<bool>(term))
@@ -26,7 +26,7 @@ ExtractBool(const TermNode& term)
 }
 
 
-[[noreturn]] inline void
+YB_NORETURN inline void
 ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 {
 	try
@@ -55,7 +55,7 @@ ThrowInvalidSymbolType(const TermNode& term, const char* n)
 		term.Value.type().name()));
 }
 
-[[nodiscard, gnu::pure]] string
+YB_ATTR_nodiscard YB_PURE string
 CheckEnvFormal(const TermNode& eterm)
 {
 	const auto& term(ReferenceTerm(eterm));
@@ -103,14 +103,14 @@ RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 
 
 template<typename _fCopy, typename _fMove>
-[[nodiscard]] auto
+YB_ATTR_nodiscard auto
 MakeValueOrMove(ResolvedTermReferencePtr p_ref, _fCopy cp, _fMove mv)
 	-> decltype(Unilang::IsMovable(p_ref) ? mv() : cp())
 {
 	return Unilang::IsMovable(p_ref) ? mv() : cp();
 }
 
-[[nodiscard, gnu::pure]] inline InvalidSyntax
+YB_ATTR_nodiscard YB_PURE inline InvalidSyntax
 MakeFunctionAbstractionError() noexcept
 {
 	return InvalidSyntax("Invalid syntax found in function abstraction.");
@@ -126,7 +126,7 @@ FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
 }
 
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 {
 	throw TypeError(ystdex::sfmt("Invalid environment formed from object '%s'"
@@ -151,7 +151,7 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 }
 
 
-[[nodiscard]] ValueObject
+YB_ATTR_nodiscard ValueObject
 MakeEnvironmentParent(TNIter first, TNIter last,
 	const TermNode::allocator_type& a, bool nonmodifying)
 {
@@ -284,7 +284,7 @@ private:
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
 
-	[[nodiscard, gnu::pure]] static ValueObject
+	YB_ATTR_nodiscard YB_PURE static ValueObject
 	MakeParentSingle(const shared_ptr<Environment>& p_env, bool owning)
 	{
 		Environment::EnsureValid(p_env);
@@ -346,7 +346,7 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 }
 
-[[nodiscard]] ContextHandler
+YB_ATTR_nodiscard ContextHandler
 CreateVau(TermNode& term, bool no_lift, TNIter i,
 	shared_ptr<Environment>&& p_env, bool owning)
 {
@@ -358,7 +358,7 @@ CreateVau(TermNode& term, bool no_lift, TNIter i,
 		std::move(p_env), owning, term, no_lift));
 }
 
-[[nodiscard]] ContextHandler
+YB_ATTR_nodiscard ContextHandler
 CreateVauWithParent(TermNode& term, bool no_lift, TNIter i,
 	ValueObject&& parent)
 {
@@ -415,7 +415,7 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 	}, 3);
 }
 
-[[noreturn]] ReductionStatus
+YB_NORETURN ReductionStatus
 ThrowForUnwrappingFailure(const ContextHandler& h)
 {
 	throw TypeError(ystdex::sfmt("Unwrapping failed with type '%s'.",
@@ -459,7 +459,7 @@ MakeValueListOrMove(TermNode& term, TermNode& nd,
 }
 
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowConsError(TermNode& nd, ResolvedTermReferencePtr p_ref)
 {
 	throw ListTypeError(ystdex::sfmt(
@@ -509,7 +509,7 @@ public:
 	EncapsulationBase&
 	operator=(EncapsulationBase&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const EncapsulationBase& x, const EncapsulationBase& y) noexcept
 	{
 		return x.p_type == y.p_type;
@@ -549,7 +549,7 @@ public:
 	Encapsulation&
 	operator=(Encapsulation&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -574,7 +574,7 @@ public:
 	Encapsulate&
 	operator=(Encapsulate&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulate& x, const Encapsulate& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -609,7 +609,7 @@ public:
 	Encapsulated&
 	operator=(Encapsulated&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulated& x, const Encapsulated& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -644,7 +644,7 @@ public:
 	Decapsulate&
 	operator=(Decapsulate&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Decapsulate& x, const Decapsulate& y) noexcept
 	{
 		return x.Get() == y.Get();
