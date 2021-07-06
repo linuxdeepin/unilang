@@ -146,7 +146,7 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 # 运行
 
-## 运行环境配置
+## 运行环境
 
 　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含），如：
 
@@ -175,25 +175,18 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 
 ## 运行解释器
 
-　　经过可能需要的配置后，直接运行即可：
-
-```
-./unilang
-```
-
-　　进入解释器 REPL 。
+　　运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
 
 　　可选环境变量：
 
 * `ECHO`：启用 REPL 回显。
+* `UNILANG_NO_JIT`：停用代码执行时 JIT 编译，使用纯解释器。
 
-　　配合 `echo` 命令，可支持非交互式输入，如：
+　　除使用选项 `-e` ，配合 `echo` 命令，也可支持非交互式输入，如：
 
 ```
 echo 'display "Hello world."; () newline' | ./unilang
 ```
-
-　　解释器执行时允许 JIT 编译和执行代码。若设置环境变量 `UNILANG_NO_JIT` ，则停用 JIT 编译，使用纯解释器。
 
 ## 运行测试脚本
 
