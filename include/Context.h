@@ -81,26 +81,26 @@ public:
 	Environment&
 	operator=(Environment&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Environment& x, const Environment& y) noexcept
 	{
 		return &x == &y;
 	}
 
-	[[nodiscard, gnu::pure]]
+	YB_ATTR_nodiscard YB_PURE
 	bool
 	IsOrphan() const noexcept
 	{
 		return p_anchor.use_count() == 1;
 	}
 
-	[[nodiscard, gnu::pure]] size_t
+	YB_ATTR_nodiscard YB_PURE size_t
 	GetAnchorCount() const noexcept
 	{
 		return size_t(p_anchor.use_count());
 	}
 
-	[[nodiscard, gnu::pure]] const AnchorPtr&
+	YB_ATTR_nodiscard YB_PURE const AnchorPtr&
 	GetAnchorPtr() const noexcept
 	{
 		return p_anchor;
@@ -140,20 +140,20 @@ public:
 	EnsureValid(const shared_ptr<Environment>&);
 
 private:
-	[[nodiscard, gnu::pure]] AnchorPtr
+	YB_ATTR_nodiscard YB_PURE AnchorPtr
 	InitAnchor() const;
 
 public:
-	[[nodiscard, gnu::pure]] NameResolution::first_type
+	YB_ATTR_nodiscard YB_PURE NameResolution::first_type
 	LookupName(string_view) const;
 
-	[[nodiscard, gnu::pure]] TermTags
+	YB_ATTR_nodiscard YB_PURE TermTags
 	MakeTermTags(const TermNode& term) const noexcept
 	{
 		return Frozen ? term.Tags | TermTags::Nonmodifying : term.Tags;
 	}
 
-	[[noreturn]] static void
+	YB_NORETURN static void
 	ThrowForInvalidType(const ystdex::type_info&);
 };
 
@@ -226,7 +226,7 @@ public:
 	Continuation&
 	operator=(Continuation&&) = default;
 
-	[[nodiscard, gnu::const]] friend bool
+	YB_ATTR_nodiscard YB_STATELESS friend bool
 	operator==(const Continuation& x, const Continuation& y) noexcept
 	{
 		return ystdex::ref_eq<>()(x, y);
@@ -296,7 +296,7 @@ public:
 		return !current.empty();
 	}
 
-	[[nodiscard]] Environment::BindingMap&
+	YB_ATTR_nodiscard Environment::BindingMap&
 	GetBindingsRef() const noexcept
 	{
 		return p_record->Bindings;
@@ -306,14 +306,14 @@ public:
 	{
 		return current;
 	}
-	[[nodiscard, gnu::pure]] TermNode&
+	YB_ATTR_nodiscard YB_PURE TermNode&
 	GetNextTermRef() const;
-	[[nodiscard, gnu::pure]] const shared_ptr<Environment>&
+	YB_ATTR_nodiscard YB_PURE const shared_ptr<Environment>&
 	GetRecordPtr() const noexcept
 	{
 		return p_record;
 	}
-	[[nodiscard]] Environment&
+	YB_ATTR_nodiscard Environment&
 	GetRecordRef() const noexcept
 	{
 		return *p_record;
@@ -326,7 +326,7 @@ public:
 	}
 
 	template<typename _type>
-	[[nodiscard, gnu::pure]] _type*
+	YB_ATTR_nodiscard YB_PURE _type*
 	AccessCurrentAs()
 	{
 		return IsAlive() ? current.front().template target<_type>() : nullptr;
@@ -335,7 +335,7 @@ public:
 	ReductionStatus
 	ApplyTail();
 
-	[[noreturn]] static void
+	YB_NORETURN static void
 	DefaultHandleException(std::exception_ptr);
 
 	// NOTE: See Evaluation.cpp for the definition.
@@ -354,7 +354,7 @@ public:
 	ReductionStatus
 	RewriteTermGuarded(TermNode&);
 
-	[[nodiscard]] Environment::NameResolution
+	YB_ATTR_nodiscard Environment::NameResolution
 	Resolve(shared_ptr<Environment>, string_view) const;
 
 	void
@@ -382,7 +382,7 @@ public:
 			Unilang::ToReducer(get_allocator(), yforward(args)...));
 	}
 
-	[[nodiscard, gnu::pure]] shared_ptr<Environment>
+	YB_ATTR_nodiscard YB_PURE shared_ptr<Environment>
 	ShareRecord() const noexcept;
 
 	void
@@ -401,10 +401,10 @@ public:
 	void
 	UnwindCurrent() noexcept;
 
-	[[nodiscard, gnu::pure]] EnvironmentReference
+	YB_ATTR_nodiscard YB_PURE EnvironmentReference
 	WeakenRecord() const noexcept;
 
-	[[nodiscard, gnu::pure]] ContextAllocator
+	YB_ATTR_nodiscard YB_PURE ContextAllocator
 	get_allocator() const noexcept
 	{
 		return ContextAllocator(&memory_rsrc.get());
@@ -491,26 +491,26 @@ EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
 }
 
-[[nodiscard]] inline Environment::NameResolution
+YB_ATTR_nodiscard inline Environment::NameResolution
 ResolveName(const Context& ctx, string_view id)
 {
 	assert(id.data());
 	return ctx.Resolve(ctx.GetRecordPtr(), id);
 }
 
-[[nodiscard]] TermNode
+YB_ATTR_nodiscard TermNode
 MoveResolved(const Context&, string_view);
 
-[[nodiscard]] TermNode
+YB_ATTR_nodiscard TermNode
 ResolveIdentifier(const Context&, string_view);
 
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject&);
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(ValueObject&, bool);
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode&);
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(TermNode&);
 
 struct EnvironmentSwitcher

@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Parser.h"
 #include "Lexical.h" // for IsDelimiter, IsGraphicalDelimiter;
@@ -86,7 +86,7 @@ ByteParser::UpdateBack(char c)
 				b = ' ';
 				break;
 			}
-			[[fallthrough]];
+			YB_ATTR_fallthrough;
 		default:
 			break;
 	}

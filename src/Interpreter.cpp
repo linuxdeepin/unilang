@@ -75,14 +75,14 @@ ParseLeaf(string_view id)
 		{
 		case LexemeCategory::Code:
 			id = DeliteralizeUnchecked(id);
-			[[fallthrough]];
+			YB_ATTR_fallthrough;
 		case LexemeCategory::Symbol:
 			if(CheckReducible(DefaultEvaluateLeaf(term, id)))
 				term.Value = TokenValue(id);
 			break;
 		case LexemeCategory::Data:
 			term.Value = string(Deliteralize(id));
-			[[fallthrough]];
+			YB_ATTR_fallthrough;
 		default:
 			break;
 		}

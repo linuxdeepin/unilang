@@ -10,10 +10,10 @@
 namespace Unilang
 {
 
-[[nodiscard, gnu::pure]] char
+YB_ATTR_nodiscard YB_PURE char
 CheckLiteral(string_view) noexcept;
 
-[[nodiscard, gnu::pure]] inline string_view
+YB_ATTR_nodiscard YB_PURE inline string_view
 DeliteralizeUnchecked(string_view sv) noexcept
 {
 	assert(sv.data());
@@ -21,19 +21,19 @@ DeliteralizeUnchecked(string_view sv) noexcept
 	return sv.substr(1, sv.size() - 2);
 }
 
-[[nodiscard, gnu::pure]] inline string_view
+YB_ATTR_nodiscard YB_PURE inline string_view
 Deliteralize(string_view sv) noexcept
 {
 	return CheckLiteral(sv) != char() ? DeliteralizeUnchecked(sv) : sv;
 }
 
-[[nodiscard, gnu::const]] constexpr bool
+YB_ATTR_nodiscard YB_STATELESS constexpr bool
 IsGraphicalDelimiter(char c) noexcept
 {
 	return c == '(' || c == ')' || c == ',' || c == ';';
 }
 
-[[nodiscard]] constexpr bool
+YB_ATTR_nodiscard constexpr bool
 IsDelimiter(char c) noexcept
 {
 #if CHAR_MIN < 0
@@ -53,10 +53,10 @@ enum class LexemeCategory
 };
 
 
-[[nodiscard, gnu::pure]] LexemeCategory
+YB_ATTR_nodiscard YB_PURE LexemeCategory
 CategorizeBasicLexeme(string_view) noexcept;
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsUnilangSymbol(string_view id) noexcept
 {
 	return CategorizeBasicLexeme(id) == LexemeCategory::Symbol;

@@ -61,7 +61,7 @@ LoadModuleChecked(Context& ctx, string_view module_name, _fCallable&& f)
 		Unilang::GetModuleFor(ctx, yforward(f)));
 }
 
-[[nodiscard]] ReductionStatus
+YB_ATTR_nodiscard ReductionStatus
 DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 {
 	Forms::RetainN(term);
@@ -71,7 +71,7 @@ DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 	return ReductionStatus::Retained;
 }
 
-[[nodiscard]] ReductionStatus
+YB_ATTR_nodiscard ReductionStatus
 Qualify(TermNode& term, TermTags tag_add)
 {
 	return Forms::CallRawUnary([&](TermNode& tm){
@@ -91,7 +91,7 @@ CheckSymbol(string_view id, _func f) -> decltype(f())
 	ThrowInvalidTokenError(id);
 }
 
-[[nodiscard]] ReductionStatus
+YB_ATTR_nodiscard ReductionStatus
 DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 	const Context& c)
 {

@@ -110,15 +110,15 @@ public:
 	static void
 	Print(const TermNode&);
 
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	Read(string_view);
 
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	ReadFrom(std::streambuf&, Context&) const;
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	ReadFrom(std::istream&, Context&) const;
 
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	ReadParserResult(const ByteParser&) const;
 
 	void

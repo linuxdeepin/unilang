@@ -162,7 +162,7 @@ TCOAction::operator()(Context& ctx) const
 	return res;
 }
 
-[[nodiscard]] lref<const ContextHandler>
+YB_ATTR_nodiscard lref<const ContextHandler>
 TCOAction::AttachFunction(ContextHandler&& h)
 {
 	ystdex::erase_all(xgds, h);
@@ -212,7 +212,7 @@ TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 	AddRecord({});
 }
 
-[[nodiscard]] ContextHandler
+YB_ATTR_nodiscard ContextHandler
 TCOAction::MoveFunction()
 {
 	ContextHandler res(std::allocator_arg, xgds.get_allocator());

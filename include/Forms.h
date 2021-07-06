@@ -84,7 +84,7 @@ struct UnaryExpansion
 		: Function(std::move(f))
 	{}
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const UnaryExpansion& x, const UnaryExpansion& y)
 	{
 		return ystdex::examiners::equal_examiner::are_equal(x.Function,
@@ -115,7 +115,7 @@ struct UnaryAsExpansion
 		: Function(std::move(f))
 	{}
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const UnaryAsExpansion& x, const UnaryAsExpansion& y)
 	{
 		return ystdex::examiners::equal_examiner::are_equal(x.Function,
@@ -146,7 +146,7 @@ struct BinaryExpansion
 		: Function(std::move(f))
 	{}
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const BinaryExpansion& x, const BinaryExpansion& y)
 	{
 		return ystdex::examiners::equal_examiner::are_equal(x.Function,
@@ -180,7 +180,7 @@ struct BinaryAsExpansion : private
 		: Function(std::move(f))
 	{}
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const BinaryAsExpansion& x, const BinaryAsExpansion& y)
 	{
 		return ystdex::examiners::equal_examiner::are_equal(x.Function,

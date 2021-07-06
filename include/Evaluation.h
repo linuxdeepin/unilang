@@ -38,7 +38,7 @@ enum class ValueToken
 struct SeparatorTransformer
 {
 	template<typename _func, class _tTerm, class _fPred>
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	operator()(_func trans, _tTerm&& term, const ValueObject& pfx,
 		_fPred filter) const
 	{
@@ -69,7 +69,7 @@ struct SeparatorTransformer
 	}
 
 	template<typename _func, class _tTerm, class _fPred>
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	AddRange(_func add_range, _tTerm&& term, const ValueObject& pfx,
 		_fPred filter) const
 	{
@@ -90,7 +90,7 @@ struct SeparatorTransformer
 	}
 
 	template<class _tTerm, class _fPred>
-	[[nodiscard]] static TermNode
+	YB_ATTR_nodiscard static TermNode
 	Process(_tTerm&& term, const ValueObject& pfx, _fPred filter)
 	{
 		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
@@ -137,7 +137,7 @@ public:
 		return ReductionStatus::Clean;
 	}
 
-	[[nodiscard]] friend bool
+	YB_ATTR_nodiscard friend bool
 	operator==(const WrappedContextHandler& x, const WrappedContextHandler& y)
 	{
 		return YSLib::AreEqualHeld(x.Handler, y.Handler);
@@ -151,7 +151,7 @@ public:
 };
 
 template<class _tDst, typename _func>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h, ystdex::false_)
 {
 	return WrappedContextHandler<YSLib::GHEvent<ystdex::make_function_type_t<
@@ -159,13 +159,13 @@ WrapContextHandler(_func&& h, ystdex::false_)
 		yforward(h));
 }
 template<class, typename _func>
-[[nodiscard, gnu::pure]] inline _func
+YB_ATTR_nodiscard YB_PURE inline _func
 WrapContextHandler(_func&& h, ystdex::true_)
 {
 	return yforward(h);
 }
 template<class _tDst, typename _func>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h)
 {
 	using BaseType = typename _tDst::BaseType;
@@ -176,7 +176,7 @@ WrapContextHandler(_func&& h)
 		typename _tDst::FuncType, ystdex::decay_t<_func>>>>());
 }
 template<class _tDst, typename _func, class _tAlloc>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h, const _tAlloc& a, ystdex::false_)
 {
 	return WrappedContextHandler<YSLib::GHEvent<ystdex::make_function_type_t<
@@ -184,13 +184,13 @@ WrapContextHandler(_func&& h, const _tAlloc& a, ystdex::false_)
 		std::allocator_arg, a, yforward(h));
 }
 template<class, typename _func, class _tAlloc>
-[[nodiscard, gnu::pure]] inline _func
+YB_ATTR_nodiscard YB_PURE inline _func
 WrapContextHandler(_func&& h, const _tAlloc&, ystdex::true_)
 {
 	return yforward(h);
 }
 template<class _tDst, typename _func, class _tAlloc>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h, const _tAlloc& a)
 {
 	using BaseType = typename _tDst::BaseType;
@@ -292,7 +292,7 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 }
 
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsIgnore(const TokenValue& s) noexcept
 {
 	return s == "#ignore";

@@ -50,13 +50,13 @@ private:
 public:
 	ArityMismatch(size_t, size_t);
 
-	[[nodiscard, gnu::pure]] size_t
+	YB_ATTR_nodiscard YB_PURE size_t
 	GetExpected() const noexcept
 	{
 		return expected;
 	}
 
-	[[nodiscard, gnu::pure]] size_t
+	YB_ATTR_nodiscard YB_PURE size_t
 	GetReceived() const noexcept
 	{
 		return received;
@@ -76,11 +76,11 @@ private:
 	shared_ptr<string> p_identifier;
 
 public:
-	[[gnu::nonnull(2)]]
+	YB_NONNULL(2)
 	BadIdentifier(const char*, size_t = 0);
 	BadIdentifier(string_view, size_t = 0);
 
-	[[nodiscard, gnu::pure]] const string&
+	YB_ATTR_nodiscard YB_PURE const string&
 	GetIdentifier() const noexcept
 	{
 		return Unilang::Deref(p_identifier);
@@ -104,10 +104,10 @@ public:
 };
 
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowInvalidTokenError(string_view);
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowNonmodifiableErrorForAssignee();
 
 } // namespace Unilang;
