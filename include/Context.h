@@ -301,6 +301,11 @@ public:
 	{
 		return p_record->Bindings;
 	}
+	const ReducerSequence&
+	GetCurrent() const noexcept
+	{
+		return current;
+	}
 	[[nodiscard, gnu::pure]] TermNode&
 	GetNextTermRef() const;
 	[[nodiscard, gnu::pure]] const shared_ptr<Environment>&
@@ -379,6 +384,13 @@ public:
 
 	[[nodiscard, gnu::pure]] shared_ptr<Environment>
 	ShareRecord() const noexcept;
+
+	void
+	Shift(ReducerSequence& rs, ReducerSequence::const_iterator i) noexcept
+	{
+		rs.splice_after(rs.cbefore_begin(), current, current.cbefore_begin(),
+			i);
+	}
 
 	shared_ptr<Environment>
 	SwitchEnvironment(const shared_ptr<Environment>&);
