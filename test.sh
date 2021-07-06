@@ -16,19 +16,20 @@ if [[ -d "$UNILANG" || ! -x "$UNILANG" ]]; then
 	exit 1
 fi
 
-run()
+call_intp()
 {
 	set +e
 	echo > "$ERR"
-	echo "$1" | "$UNILANG" 1> "$OUT" 2> "$ERR"
+#	echo "$1" | "$UNILANG" 1> "$OUT" 2> "$ERR"
+	"$UNILANG" -e "$1" 1> "$OUT" 2> "$ERR"
 	set -e
 }
 
 # NOTE: Test cases should print no errors.
-test()
+run_case()
 {
 	echo "Running case:" "$1"
-	if ! (run "$1") || [ -s "$ERR" ]; then
+	if ! (call_intp "$1") || [ -s "$ERR" ]; then
 		echo "FAIL."
 		echo "Error:"
 		cat "$ERR"
@@ -42,46 +43,47 @@ if [[ "$PTC" != '' ]]; then
 	echo "The following case are expected to be non-terminating."
 	echo "However, the maximum memory consumption is expected constant."
 	echo "Please exit manually by SIGINT."
-	test '$defl! f (n) $if #t (f n); f 1'
+	run_case '$defl! f (n) $if #t (f n); f 1'
 fi
 
 # Sanity.
-test 'display'
+run_case 'display'
 
 # Documented examples.
-test 'display "Hello, world!"'
-test 'display (display "Hello, world!")'
-test '(display "Hello, world!")'
-test '() newline'
-test '() display "Hello, world!"'
-test 'display "Hello, world!";'
-test '$sequence display "Hello, world!"'
-test 'display "Hello, "; display "world!"'
-test '$sequence (display "Hello, ") (display "world!")'
-test '$def! x "hello"'
-test 'list "hello" "world"'
-test 'cons "x" ()'
-test 'list "x"'
-test 'cons "x" (cons "y" ())'
-test 'list "x" "y"'
-test '$lambda (x) display x'
-test '$lambda (x) x'
-test '($lambda (x) display x)'
-test '($lambda (x) (display x))'
-test '$lambda (x y) $sequence (display x) (display y)'
-test '$def! id $lambda (x) x;'
-test 'display (($lambda ((x y)) x) (list "hello" "world"))'
-test '$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;'
-test 'eval (list display "Hello, world!") (() get-current-environment)'
-test '$def! (x y) list "hello" "world"; display x; display y;'
-test '$def! id $lambda (x) x;'
-test '$defl! id (x) x;'
-test '$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
+run_case 'display "Hello, world!"'
+run_case 'display (display "Hello, world!")'
+run_case '(display "Hello, world!")'
+run_case '() newline'
+run_case '() display "Hello, world!"'
+run_case 'display "Hello, world!";'
+run_case '$sequence display "Hello, world!"'
+run_case 'display "Hello, "; display "world!"'
+run_case '$sequence (display "Hello, ") (display "world!")'
+run_case '$def! x "hello"'
+run_case 'list "hello" "world"'
+run_case 'cons "x" ()'
+run_case 'list "x"'
+run_case 'cons "x" (cons "y" ())'
+run_case 'list "x" "y"'
+run_case '$lambda (x) display x'
+run_case '$lambda (x) x'
+run_case '($lambda (x) display x)'
+run_case '($lambda (x) (display x))'
+run_case '$lambda (x y) $sequence (display x) (display y)'
+run_case '$def! id $lambda (x) x;'
+run_case 'display (($lambda ((x y)) x) (list "hello" "world"))'
+run_case '$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;'
+run_case 'eval (list display "Hello, world!") (() get-current-environment)'
+run_case '$def! (x y) list "hello" "world"; display x; display y;'
+run_case '$def! id $lambda (x) x;'
+run_case '$defl! id (x) x;'
+run_case \
+'$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
 # NOTE: Test case on parent environment search.
-test "\$def! e make-environment (() get-current-environment); \
+run_case "\$def! e make-environment (() get-current-environment); \
 eval ((unwrap (\$lambda (x) x)) e) e"
 # NOTE: Test case on std.strings.
-test '$import! std.strings string-empty?; display (string-empty? "")'
-test '$import! std.strings string-empty?; display (string-empty? "x")'
-test '$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123")'
+run_case '$import! std.strings string-empty?; display (string-empty? "")'
+run_case '$import! std.strings string-empty?; display (string-empty? "x")'
+run_case '$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123")'
 
