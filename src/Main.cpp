@@ -29,8 +29,8 @@
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
-#include <Helper/YModules.h>
-#include YFM_Helper_Initialization // for YSLib::TraceForOutermost;
+#include <YSLib/Core/YModules.h>
+#include YFM_YSLib_Core_YException // for YSLib::FilterExceptions, YSLib::Alert;
 
 namespace Unilang
 {
@@ -513,7 +513,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.23"
+#define APP_VER "0.7.26"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -527,7 +527,6 @@ main(int argc, char* argv[])
 {
 	using namespace Unilang;
 	using namespace std;
-	using YSLib::Alert;
 	using YSLib::LoggedEvent;
 
 	return YSLib::FilterExceptions([&]{
@@ -562,6 +561,6 @@ main(int argc, char* argv[])
 			cout << "Type \"exit\" to exit." << endl << endl;
 			intp.Run();
 		}
-	}, yfsig, Alert, YSLib::TraceForOutermost) ? EXIT_FAILURE : EXIT_SUCCESS;
+	}, yfsig, YSLib::Alert) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
