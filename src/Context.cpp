@@ -249,8 +249,9 @@ Context::Rewrite(Reducer reduce)
 }
 
 ReductionStatus
-Context::RewriteGuarded(TermNode& term, Reducer reduce)
+Context::RewriteGuarded(TermNode&, Reducer reduce)
 {
+	// XXX: The term is not used.
 	const auto unwind(ystdex::make_guard([this]() noexcept{
 		TailAction = nullptr;
 		UnwindCurrent();
