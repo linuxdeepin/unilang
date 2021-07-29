@@ -1054,11 +1054,11 @@
 
 　　解包装应用子为底层合并子。
 
-`raise-invalid-syntax-error` <string>
+`raise-invalid-syntax-error <string>`
 
 　　引起包含参数指定的字符串内容的语法错误。
 
-() make-encapsulation-type
+`() make-encapsulation-type`
 
 　　创建封装类型。
 
@@ -1142,7 +1142,7 @@
 
 　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
 
-`$lvalue-identifier?` <symbol>
+`$lvalue-identifier? <symbol>`
 
 　　解析当前环境中的标识符（同 `$resolve-identifier` ）并判断是否为左值（同 `bound-lvalue?` ）。
 
@@ -1158,7 +1158,7 @@
 
 　　顺序求值。操作数非空时结果是最后的参数，可能是引用值；否则结果是 `#inert` 。
 
-　　求值每个 <object> 的副作用包括其中临时对象的销毁都被顺序限制。
+　　求值每个 `<object>` 的副作用包括其中临时对象的销毁都被顺序限制。
 
 `apply <applicative> <object> <environment>`
 
@@ -1292,9 +1292,9 @@
 
 　　在抽象列表的元素上应用右结合的二元操作。
 
-　　对 <object1> 指定的抽象列表进行处理，取得部分和。
+　　对 `<object1>` 指定的抽象列表进行处理，取得部分和。
 
-　　当谓词 <predicate> 成立时结果为参数指定的对象，否则继续处理抽象列表中余下的元素。
+　　当谓词 `<predicate>` 成立时结果为参数指定的对象，否则继续处理抽象列表中余下的元素。
 
 　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
 
@@ -1302,7 +1302,7 @@
 
 　　参数 `<applicative3>` 应接受两个参数，否则引起错误。
 
-　　调用参数中的应用子的 <object1> 实际参数在不同的应用子调用中可能同一。
+　　调用参数中的应用子的 `<object1>` 实际参数在不同的应用子调用中可能同一。
 
 　　调用参数中的应用子的底层合并子的当前环境同调用 `accr` 的动态环境。
 
@@ -1357,13 +1357,13 @@
 
 `$let <bindings> <body>`
 
-　　局部绑定求值：创建以当前环境为父环境的空环境，在其中添加 <bindings> 指定的变量绑定，再求值 <body> 。
+　　局部绑定求值：创建以当前环境为父环境的空环境，在其中添加 `<bindings>` 指定的变量绑定，再求值 `<body>` 。
 
 `$let* <bindings> <body>`
 
 　　顺序局部绑定求值。
 
-　　同 `$let` ，但 <bindings> 中的被用于绑定的表达式从左到右顺序求值，被用于初始化变量的表达式在求值时可访问 <bindings> 中之前绑定的符号。
+　　同 `$let` ，但 `<bindings>` 中的被用于绑定的表达式从左到右顺序求值，被用于初始化变量的表达式在求值时可访问 `<bindings>` 中之前绑定的符号。
 
 `$letrec <bindings> <body>`
 
@@ -1398,9 +1398,9 @@
 
 `$provide/let! <symbols> <bindings> <body>`
 
-　　在当前环境中提供绑定：蕴含 $let <bindings> <body> ，在求值 <body> 后以结果作为操作数绑定到 <symbols> 的符号。
+　　在当前环境中提供绑定：蕴含 `$let <bindings> <body>` ，在求值 `<body>` 后以结果作为操作数绑定到 `<symbols>` 的符号。
 
-　　<symbols> 应能被作为 <defindend> 使用。
+　　`<symbols>` 应能被作为 `<defindend>` 使用。
 
 　　结果是对这些绑定具有所有权的环境强引用。
 
@@ -1479,56 +1479,56 @@
 
 **注释** `<int>` 对应 C++ 的 `int` 类型。未来可能添加和改变不同数值类型的支持。
 
-`<?` <number> <number>
-`<=?` <number> <number>
-`>=?` <number> <number>
-`>?` <number> <number>
+`<? <number> <number>`
+`<=? <number> <number>`
+`>=? <number> <number>`
+`>? <number> <number>`
 
 　　数值关系操作，分别为：小于、小于等于、大于等于和大于。
 
 　　结果为 \<bool> 类型的比较结果。
 
-`+` <number>...
-`add2` <number> <number>
+`+ <number>...`
+`add2 <number> <number>`
 
 　　加法。
 
 　　参数是加数。
 
-　　结果为 \<number> 类型的和。
+　　结果为 `<number>` 类型的和。
 
-`-` <number> <number>
+`- <number> <number>`
 
 　　减法。
 
 　　参数分别是被减数和减数。
 
-　　结果为 \<number> 类型的差。
+　　结果为 `<number>` 类型的差。
 
-`*` <number>...
-`multiply2` <number> <number>
+`* <number>...`
+`multiply2 <number> <number>`
 
 　　乘法。
 
 　　参数是乘数。
 
-　　结果为 \<number> 类型的积。
+　　结果为 `<number>` 类型的积。
 
-`div` <int> <int>
+`div <int> <int>`
 
 　　整除。
 
 　　参数分别是被除数和除数。若第二参数等于 0 ，则引发错误。
 
-　　结果为 \<int> 类型的商。
+　　结果为 `<int>` 类型的商。
 
-`mod` <int> <int>
+`mod <int> <int>`
 
 　　模。
 
 　　参数分别是被除数和除数。若第二参数等于 0 ，则引发错误。
 
-　　结果为 \<int> 类型的余数。
+　　结果为 `<int>` 类型的余数。
 
 ## 标准 I/O 库
 
