@@ -172,6 +172,16 @@ MakeEnvironmentParent(TNIter first, TNIter last,
 	return parent;
 }
 
+YB_ATTR_nodiscard shared_ptr<Environment>
+CreateEnvironment(TermNode& term)
+{
+	const auto a(term.get_allocator());
+
+	return !term.empty() ? Unilang::AllocateEnvironment(a,
+		MakeEnvironmentParent(term.begin(), term.end(), a, {}))
+		: Unilang::AllocateEnvironment(a);
+}
+
 
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
 {
@@ -673,7 +683,7 @@ public:
 					}
 					else
 					{
-						term.Value = TermReference(tm,
+						term.SetValue(in_place_type<TermReference>, tm,
 							FetchTailEnvironmentReference(*p_ref, ctx));
 						return ReductionStatus::Clean;
 					}
@@ -792,19 +802,15 @@ void
 MakeEnvironment(TermNode& term)
 {
 	Retain(term);
-
-	const auto a(term.get_allocator());
-
-	term.Value = term.size() > 1 ? Unilang::AllocateEnvironment(a,
-		MakeEnvironmentParent(std::next(term.begin()), term.end(), a, {}))
-		: Unilang::AllocateEnvironment(a);
+	RemoveHead(term);
+	term.SetValue(CreateEnvironment(term));
 }
 
 void
 GetCurrentEnvironment(TermNode& term, Context& ctx)
 {
 	RetainN(term, 0);
-	term.Value = ValueObject(ctx.WeakenRecord());
+	term.SetValue(ctx.WeakenRecord());
 }
 
 

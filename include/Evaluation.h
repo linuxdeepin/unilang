@@ -287,7 +287,7 @@ ReduceOrdered(TermNode&, Context&);
 inline ReductionStatus
 ReduceReturnUnspecified(TermNode& term) noexcept
 {
-	term.Value = ValueToken::Unspecified;
+	term.SetValue(ValueToken::Unspecified);
 	return ReductionStatus::Clean;
 }
 
