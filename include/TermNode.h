@@ -187,6 +187,32 @@ public:
 		Tags = nd.Tags;
 	}
 
+	template<typename _tParam>
+	inline yimpl(ystdex::enable_if_same_param_t<ValueObject, _tParam>)
+	SetValue(_tParam&& arg) ynoexcept_spec(yforward(arg))
+	{
+		Value = yforward(arg);
+	}
+	template<typename _tParam, typename... _tParams,
+		yimpl(ystdex::enable_if_t<sizeof...(_tParams) != 0
+		|| !ystdex::is_same_param<ValueObject, _tParam>::value, int> = 0,
+		ystdex::exclude_self_t<std::allocator_arg_t, _tParam, int> = 0)>
+	inline yimpl(ystdex::enable_if_inconvertible_t)<ystdex::decay_t<_tParam>,
+		TermNode::allocator_type, void>
+	SetValue(_tParam&& arg, _tParams&&... args) ynoexcept_spec(Value.assign(
+		std::allocator_arg, std::declval<TermNode::allocator_type&>(),
+		yforward(arg), yforward(args)...))
+	{
+		SetValue(get_allocator(), yforward(arg), yforward(args)...);
+	}
+	template<typename... _tParams>
+	inline void
+	SetValue(TermNode::allocator_type a, _tParams&&... args)
+		ynoexcept_spec(Value.assign(std::allocator_arg, a, yforward(args)...))
+	{
+		Value.assign(std::allocator_arg, a, yforward(args)...);
+	}
+
 	void
 	Add(const TermNode& nd)
 	{
