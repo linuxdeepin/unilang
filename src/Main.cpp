@@ -420,14 +420,16 @@ LoadFunctions(Interpreter& intp, bool jit)
 		$defl! symbols->imports (&symbols)
 			list* () list% (map1 ($lambda (&s) list forward! (desigil s))
 				(forward! symbols));
- 		$defv! $provide/let! (&symbols &bindings .&body) d
+		$defv! $provide/let! (&symbols &bindings .&body) d
 			eval% (list% $let (forward! bindings) $sequence
-				(move! body) (list% $set! d symbols (symbols->imports symbols))
-				(list () lock-current-environment)) d;
- 		$defv! $provide! (&symbols .&body) d
+				(move! body) (list% $set! d (append symbols ((unwrap list%) .))
+				(symbols->imports symbols)) (list () lock-current-environment))
+				d;
+		$defv! $provide! (&symbols .&body) d
 			eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
- 		$defv! $import! (&e .&symbols) d
- 			eval% (list $set! d symbols (symbols->imports symbols)) (eval e d);
+		$defv! $import! (&e .&symbols) d
+			eval% (list $set! d (append symbols ((unwrap list%) .))
+				(symbols->imports symbols)) (eval e d);
 	)Unilang");
 	// NOTE: Arithmetics.
 	// TODO: Use generic types.
@@ -520,7 +522,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.33"
+#define APP_VER "0.7.34"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
