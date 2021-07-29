@@ -272,9 +272,6 @@ private:
 		ctx.GetRecordRef().Parent = parent;
 		AssertNextTerm(ctx, term);
 
-		LiftOtherOrCopy(term, *p_eval_struct, {});
-		return RelayForCall(ctx, term, std::move(gd), NoLifting);
-
 		const bool no_lift(NoLifting);
 
 		if(move)
