@@ -64,7 +64,7 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 }
 
 TermNode
-ParseLeaf(string_view id)
+ParseLeaf(string_view id, TermNode::allocator_type a)
 {
 	assert(id.data());
 
@@ -78,10 +78,10 @@ ParseLeaf(string_view id)
 			YB_ATTR_fallthrough;
 		case LexemeCategory::Symbol:
 			if(CheckReducible(DefaultEvaluateLeaf(term, id)))
-				term.Value = TokenValue(id);
+				term.SetValue(in_place_type<TokenValue>, id, a);
 			break;
 		case LexemeCategory::Data:
-			term.Value = string(Deliteralize(id));
+			term.SetValue(in_place_type<string>, Deliteralize(id), a);
 			YB_ATTR_fallthrough;
 		default:
 			break;
@@ -273,7 +273,8 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 	TermNode term{};
 	const auto& parse_result(parse.GetResult());
 
-	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(), ParseLeaf)
+	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(),
+		std::bind(ParseLeaf, std::placeholders::_1, std::ref(Allocator)))
 		!= parse_result.cend())
 		throw UnilangException("Redundant ')' found.");
 	Preprocess(term);
