@@ -223,6 +223,10 @@ LoadFunctions(Interpreter& intp, bool jit)
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "cons%", ConsRef);
+	RegisterUnary<Strict, const TokenValue>(ctx, "desigil", [](TokenValue s){
+		return TokenValue(!s.empty() && (s.front() == '&' || s.front() == '%')
+			? s.substr(1) : std::move(s));
+	});
 	RegisterStrict(ctx, "eval", Eval);
 	RegisterStrict(ctx, "eval%", EvalRef);
 	RegisterForm(ctx, "$resolve-identifier",
@@ -514,7 +518,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.30"
+#define APP_VER "0.7.31"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
