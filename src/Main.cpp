@@ -20,7 +20,7 @@
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
-#include <regex> // for std::regex, std::regex_match;
+#include <regex> // for std::regex, std::regex_match, std::regex_replace;
 #include "Arithmetic.h" // for Number;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
@@ -195,6 +195,18 @@ LoadModule_std_strings(Interpreter& intp)
 
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
+	});
+	RegisterStrict(renv, "regex-replace", [](TermNode& term){
+		RetainN(term, 3);
+
+		auto i(term.begin());
+		const auto&
+			str(Unilang::ResolveRegular<const string>(Unilang::Deref(++i)));
+		const auto&
+			re(Unilang::ResolveRegular<const std::regex>(Unilang::Deref(++i)));
+
+		return EmplaceCallResultOrReturn(term, string(std::regex_replace(str,
+			re, Unilang::ResolveRegular<const string>(Unilang::Deref(++i)))));
 	});
 }
 
@@ -525,7 +537,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.36"
+#define APP_VER "0.7.38"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
