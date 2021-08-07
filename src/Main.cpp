@@ -252,184 +252,175 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterForm(ctx, "$vau", Vau);
 	RegisterForm(ctx, "$vau%", VauRef);
 	intp.Perform(R"Unilang(
-		$def! id wrap ($vau% (%x) #ignore $move-resolved! x);
-		$def! lock-current-environment (wrap ($vau () d lock-environment d));
-		$def! $lambda $vau (&formals .&body) d wrap
-			(eval (cons $vau (cons formals (cons ignore (move! body)))) d);
-		$def! $lambda% $vau (&formals .&body) d wrap
-			(eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+$def! id wrap ($vau% (%x) #ignore $move-resolved! x);
+$def! lock-current-environment (wrap ($vau () d lock-environment d));
+$def! $lambda $vau (&formals .&body) d
+	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
+$def! $lambda% $vau (&formals .&body) d
+	wrap (eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
 	intp.Perform(R"Unilang(
-		$def! $set! $vau (&e &formals .&expr) d
-			eval (list $def! formals (unwrap eval) expr d) (eval e d);
-		$def! $defv! $vau (&$f &formals &ef .&body) d
-			eval (list $set! d $f $vau formals ef (move! body)) d;
-		$defv! $defv/e%! (&$f &e &formals &ef .&body) d
-			eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
-		$defv! $defl! (f formals .body) d
-			eval (list $set! d f $lambda formals (move! body)) d;
-		$defv! $defl%! (&f &formals .&body) d
-			eval (list $set! d f $lambda% formals (move! body)) d;
-		$def! make-standard-environment
-			$lambda () () lock-current-environment;
-		$def! $lvalue-identifier? $vau (&s) d
-			eval (list bound-lvalue? (list $resolve-identifier s)) d;
-		$defl%! forward! (%x) $if ($lvalue-identifier? x) x (move! x);
+$def! $set! $vau (&e &formals .&expr) d
+	eval (list $def! formals (unwrap eval) expr d) (eval e d);
+$def! $defv! $vau (&$f &formals &ef .&body) d
+	eval (list $set! d $f $vau formals ef (move! body)) d;
+$defv! $defv/e%! (&$f &e &formals &ef .&body) d
+	eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
+$defv! $defl! (f formals .body) d
+	eval (list $set! d f $lambda formals (move! body)) d;
+$defv! $defl%! (&f &formals .&body) d
+	eval (list $set! d f $lambda% formals (move! body)) d;
+$def! make-standard-environment $lambda () () lock-current-environment;
+$def! $lvalue-identifier? $vau (&s) d
+	eval (list bound-lvalue? (list $resolve-identifier s)) d;
+$defl%! forward! (%x) $if ($lvalue-identifier? x) x (move! x);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
-		$defl%! apply (&appv &arg .&opt)
-			eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
-				($if (null? opt) (() make-environment)
-					(($lambda ((&e .&eopt))
-						$if (null? eopt) e
-							(raise-invalid-syntax-error
-								"Syntax error in applying form.")) opt));
-		$defl! list* (&head .&tail)
-			$if (null? tail) (forward! head)
-				(cons (forward! head) (apply list* (move! tail)));
-		$defl! list*% (&head .&tail)
-			$if (null? tail) (forward! head)
-				(cons% (forward! head) (apply list*% (move! tail)));
-		$defv! $lambda/e (&e &formals .&body) d
-			wrap (eval (list* $vau/e e formals ignore (move! body)) d);
-		$defv! $defl/e! (&f &e &formals .&body) d
-			eval (list $set! d f $lambda/e e formals (move! body)) d;
-		$defv! $defw%! (&f &formals &ef .&body) d
-			eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
-		$defw%! forward-first% (&appv (&x .)) d
-			apply (forward! appv) (list% ($move-resolved! x)) d;
-		$defl%! first (%l)
-			($lambda% (fwd) forward-first% forward! (fwd l))
-				($if ($lvalue-identifier? l) id expire);
-		$defl%! first% (%l)
-			($lambda (fwd (@x .)) fwd x)
-				($if ($lvalue-identifier? l) id expire) l;
-		$defl! rest ((#ignore .xs)) xs;
-		$defl! rest% ((#ignore .%xs)) move! xs;
-		$defv! $defv%! (&$f &formals &ef .&body) d
-			eval (list $set! d $f $vau% formals ef (move! body)) d;
-		$defv! $defw! (&f &formals &ef .&body) d
-			eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
-		$defv%! $cond &clauses d
-			$if (null? clauses) #inert
-				(apply ($lambda% ((&test .&body) .&clauses)
-					$if (eval test d) (eval% (move! body) d)
-						(apply (wrap $cond) (move! clauses) d))
-						(move! clauses));
-		$defv%! $when (&test .&exprseq) d
-			$if (eval test d) (eval% (list* () $sequence (move! exprseq)) d);
-		$defv%! $unless (&test .&exprseq) d
-			$if (eval test d) #inert
-				(eval% (list* () $sequence (move! exprseq)) d);
-		$defv%! $while (&test .&exprseq) d
-			$when (eval test d)
-				(eval% (list* () $sequence exprseq) d)
-				(eval% (list* () $while (move! test) (move! exprseq)) d);
-		$defv%! $until (&test .&exprseq) d
-			$unless (eval test d)
-				(eval% (list* () $sequence exprseq) d)
-				(eval% (list* () $until (move! test) (move! exprseq)) d);
-		$defl! not? (x) eqv? x #f;
-		$defv! $and? x d $cond
-			((null? x) #t)
-			((null? (rest x)) eval (first x) d)
-			((eval (first x) d) apply (wrap $and?) (rest x) d)
-			(#t #f);
-		$defv! $or? x d $cond
-			((null? x) #f)
-			((null? (rest x)) eval (first x) d)
-			(#t ($lambda (r) $if r r
-				(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
-		$defw%! accr (&l &pred? &base &head &tail &sum) d
-			$if (apply pred? (list% l) d) (forward! base)
-				(apply sum (list% (apply head (list% l) d)
-					(apply accr (list% (apply tail (list% l) d)
-					pred? (forward! base) head tail sum) d)) d);
-		$defw%! foldr1 (&kons &knil &l) d
-			apply accr (list% (($lambda ((.@xs)) xs) l) null? (forward! knil)
-				($if ($lvalue-identifier? l) ($lambda (&l) first% l)
-				($lambda (&l) expire (first% l))) rest% kons) d;
-		$defw%! map1 (&appv &l) d
-			foldr1 ($lambda (%x &xs) cons%
-				(apply appv (list% ($move-resolved! x)) d) (move! xs)) ()
-				(forward! l);
-		$defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
-		$defl! append (.&ls) foldr1 list-concat () (move! ls);
-		$defl! filter (&accept? &ls) apply append
-			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
-		$defw! derive-current-environment (.&envs) d
-			apply make-environment (append envs (list d)) d;
-		$def! ($let $let* $letrec) ($lambda (&ce)
-		(
-			$def! mods () ($lambda/e ce ()
-			(
-				$def! idv $lambda% (x) $move-resolved! x;
-				$defl%! rulist (&l)
-					$if ($lvalue-identifier? l)
-						(accr (($lambda ((.@xs)) xs) l) null? ()
-							($lambda% (%l) $sequence
-								($def! %x idv (($lambda% ((@x .)) x) l))
-								(($if (uncollapsed? x) idv expire) (expire x)))
-								rest%
-							($lambda (%x &xs)
-								(cons% ($resolve-identifier x) (move! xs))))
-						(idv (forward! l));
-				$defl%! list-extract-first (&l) map1 first l;
-				$defl%! list-extract-rest% (&l) map1 rest% l;
-				$defv%! $lqual (&ls) d
-					($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
-						(eval% ls d);
-				$defv%! $lqual* (&x) d
-					($if (eval (list $lvalue-identifier? x) d) as-const expire)
-						(eval% x d);
-				$defl%! mk-let ($ctor &bindings &body)
-					list* () (list* $ctor (list-extract-first bindings)
-						(list (move! body))) (list-extract-rest% bindings);
-				$defl%! mk-let* ($let $let* &bindings &body)
-					$if (null? bindings) (list* $let () (move! body))
-						(list $let (list (first% ($lqual* bindings)))
-						(list* $let* (rest% ($lqual* bindings)) (move! body)));
-				$defl%! mk-letrec ($let &bindings &body)
-					list $let () $sequence (list $def! (list-extract-first
-						bindings) (list* () list (list-extract-rest% bindings)))
-						(move! body);
-				() lock-current-environment
-			));
-			$defv/e%! $let mods (&bindings .&body) d
-				eval% (mk-let $lambda ($lqual bindings) (move! body)) d;
-			$defv/e%! $let* mods (&bindings .&body) d
-				eval% (mk-let* $let $let* ($lqual* bindings) (move! body)) d;
-			$defv/e%! $letrec mods (&bindings .&body) d
-				eval% (mk-letrec $let ($lqual bindings) (move! body)) d;
-			map1 move! (list% $let $let* $letrec)
-		)) (() get-current-environment);
-		$defv! $as-environment (.&body) d
-			eval (list $let () (list $sequence (move! body)
-				(list () lock-current-environment))) d;
-		$defv! $bindings/p->environment (&parents .&bindings) d $sequence
-			($def! res apply make-environment (map1 ($lambda (x) eval x d)
-				parents))
-			(eval (list $set! res (map1 first bindings)
-				(list* () list (map1 rest bindings))) d)
-			res;
-		$defv! $bindings->environment (.&bindings) d
-			eval (list* $bindings/p->environment () bindings) d;
-		$defl! symbols->imports (&symbols)
-			list* () list% (map1 ($lambda (&s) list forward! (desigil s))
-				(forward! symbols));
-		$defv! $provide/let! (&symbols &bindings .&body) d
-			eval% (list% $let (forward! bindings) $sequence
-				(move! body) (list% $set! d (append symbols ((unwrap list%) .))
-				(symbols->imports symbols)) (list () lock-current-environment))
-				d;
-		$defv! $provide! (&symbols .&body) d
-			eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
-		$defv! $import! (&e .&symbols) d
-			eval% (list $set! d (append symbols ((unwrap list%) .))
-				(symbols->imports symbols)) (eval e d);
+$defl%! apply (&appv &arg .&opt)
+	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
+		($if (null? opt) (() make-environment)
+			(($lambda ((&e .&eopt))
+				$if (null? eopt) e
+					(raise-invalid-syntax-error
+						"Syntax error in applying form.")) opt));
+$defl! list* (&head .&tail)
+	$if (null? tail) (forward! head)
+		(cons (forward! head) (apply list* (move! tail)));
+$defl! list*% (&head .&tail)
+	$if (null? tail) (forward! head)
+		(cons% (forward! head) (apply list*% (move! tail)));
+$defv! $lambda/e (&e &formals .&body) d
+	wrap (eval (list* $vau/e e formals ignore (move! body)) d);
+$defv! $defl/e! (&f &e &formals .&body) d
+	eval (list $set! d f $lambda/e e formals (move! body)) d;
+$defv! $defw%! (&f &formals &ef .&body) d
+	eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
+$defw%! forward-first% (&appv (&x .)) d
+	apply (forward! appv) (list% ($move-resolved! x)) d;
+$defl%! first (%l)
+	($lambda% (fwd) forward-first% forward! (fwd l))
+		($if ($lvalue-identifier? l) id expire);
+$defl%! first% (%l)
+	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
+$defl! rest ((#ignore .xs)) xs;
+$defl! rest% ((#ignore .%xs)) move! xs;
+$defv! $defv%! (&$f &formals &ef .&body) d
+	eval (list $set! d $f $vau% formals ef (move! body)) d;
+$defv! $defw! (&f &formals &ef .&body) d
+	eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
+$defv%! $cond &clauses d
+	$if (null? clauses) #inert
+		(apply ($lambda% ((&test .&body) .&clauses)
+			$if (eval test d) (eval% (move! body) d)
+				(apply (wrap $cond) (move! clauses) d)) (move! clauses));
+$defv%! $when (&test .&exprseq) d
+	$if (eval test d) (eval% (list* () $sequence (move! exprseq)) d);
+$defv%! $unless (&test .&exprseq) d
+	$if (eval test d) #inert (eval% (list* () $sequence (move! exprseq)) d);
+$defv%! $while (&test .&exprseq) d
+	$when (eval test d)
+		(eval% (list* () $sequence exprseq) d)
+		(eval% (list* () $while (move! test) (move! exprseq)) d);
+$defv%! $until (&test .&exprseq) d
+	$unless (eval test d)
+		(eval% (list* () $sequence exprseq) d)
+		(eval% (list* () $until (move! test) (move! exprseq)) d);
+$defl! not? (x) eqv? x #f;
+$defv! $and? x d $cond
+	((null? x) #t)
+	((null? (rest x)) eval (first x) d)
+	((eval (first x) d) apply (wrap $and?) (rest x) d)
+	(#t #f);
+$defv! $or? x d $cond
+	((null? x) #f)
+	((null? (rest x)) eval (first x) d)
+	(#t ($lambda (r) $if r r
+		(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
+$defw%! accr (&l &pred? &base &head &tail &sum) d
+	$if (apply pred? (list% l) d) (forward! base)
+		(apply sum (list% (apply head (list% l) d)
+			(apply accr (list% (apply tail (list% l) d)
+			pred? (forward! base) head tail sum) d)) d);
+$defw%! foldr1 (&kons &knil &l) d
+	apply accr (list% (($lambda ((.@xs)) xs) l) null? (forward! knil)
+		($if ($lvalue-identifier? l) ($lambda (&l) first% l)
+		($lambda (&l) expire (first% l))) rest% kons) d;
+$defw%! map1 (&appv &l) d
+	foldr1 ($lambda (%x &xs) cons%
+		(apply appv (list% ($move-resolved! x)) d) (move! xs)) () (forward! l);
+$defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
+$defl! append (.&ls) foldr1 list-concat () (move! ls);
+$defl! filter (&accept? &ls) apply append
+	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
+$defw! derive-current-environment (.&envs) d
+	apply make-environment (append envs (list d)) d;
+$def! ($let $let* $letrec) ($lambda (&ce)
+(
+	$def! mods () ($lambda/e ce ()
+	(
+		$def! idv $lambda% (x) $move-resolved! x;
+		$defl%! rulist (&l)
+			$if ($lvalue-identifier? l)
+				(accr (($lambda ((.@xs)) xs) l) null? ()
+					($lambda% (%l) $sequence
+						($def! %x idv (($lambda% ((@x .)) x) l))
+						(($if (uncollapsed? x) idv expire) (expire x))) rest%
+					($lambda (%x &xs)
+						(cons% ($resolve-identifier x) (move! xs))))
+				(idv (forward! l));
+		$defl%! list-extract-first (&l) map1 first l;
+		$defl%! list-extract-rest% (&l) map1 rest% l;
+		$defv%! $lqual (&ls) d
+			($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
+				(eval% ls d);
+		$defv%! $lqual* (&x) d
+			($if (eval (list $lvalue-identifier? x) d) as-const expire)
+				(eval% x d);
+		$defl%! mk-let ($ctor &bindings &body)
+			list* () (list* $ctor (list-extract-first bindings)
+				(list (move! body))) (list-extract-rest% bindings);
+		$defl%! mk-let* ($let $let* &bindings &body)
+			$if (null? bindings) (list* $let () (move! body))
+				(list $let (list (first% ($lqual* bindings)))
+				(list* $let* (rest% ($lqual* bindings)) (move! body)));
+		$defl%! mk-letrec ($let &bindings &body)
+			list $let () $sequence (list $def! (list-extract-first bindings)
+				(list* () list (list-extract-rest% bindings))) (move! body);
+		() lock-current-environment
+	));
+	$defv/e%! $let mods (&bindings .&body) d
+		eval% (mk-let $lambda ($lqual bindings) (move! body)) d;
+	$defv/e%! $let* mods (&bindings .&body) d
+		eval% (mk-let* $let $let* ($lqual* bindings) (move! body)) d;
+	$defv/e%! $letrec mods (&bindings .&body) d
+		eval% (mk-letrec $let ($lqual bindings) (move! body)) d;
+	map1 move! (list% $let $let* $letrec)
+)) (() get-current-environment);
+$defv! $as-environment (.&body) d
+	eval (list $let () (list $sequence (move! body)
+		(list () lock-current-environment))) d;
+$defv! $bindings/p->environment (&parents .&bindings) d $sequence
+	($def! res apply make-environment (map1 ($lambda (x) eval x d) parents))
+	(eval (list $set! res (map1 first bindings)
+		(list* () list (map1 rest bindings))) d)
+	res;
+$defv! $bindings->environment (.&bindings) d
+	eval (list* $bindings/p->environment () bindings) d;
+$defl! symbols->imports (&symbols)
+	list* () list% (map1 ($lambda (&s) list forward! (desigil s))
+		(forward! symbols));
+$defv! $provide/let! (&symbols &bindings .&body) d
+	eval% (list% $let (forward! bindings) $sequence
+		(move! body) (list% $set! d (append symbols ((unwrap list%) .))
+		(symbols->imports symbols)) (list () lock-current-environment)) d;
+$defv! $provide! (&symbols .&body) d
+	eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
+$defv! $import! (&e .&symbols) d
+	eval% (list $set! d (append symbols ((unwrap list%) .))
+		(symbols->imports symbols)) (eval e d);
 	)Unilang");
 	// NOTE: Arithmetics.
 	// TODO: Use generic types.
@@ -495,8 +486,8 @@ LoadFunctions(Interpreter& intp, bool jit)
 
 				LiftOtherOrCopy(term, *std::next(nd.begin(),
 					std::iterator_traits<TermNode::iterator>::difference_type(
-					std::uniform_int_distribution<size_t>(0, nd.size()
-					- 1)(mt))), Unilang::IsMovable(p_ref));
+					std::uniform_int_distribution<size_t>(0, nd.size() - 1)(mt)
+					)), Unilang::IsMovable(p_ref));
 				return ReductionStatus::Retained;
 			}
 			ThrowInsufficientTermsError(nd, p_ref);
@@ -522,7 +513,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.34"
+#define APP_VER "0.7.35"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
