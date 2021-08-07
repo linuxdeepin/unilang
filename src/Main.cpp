@@ -122,10 +122,10 @@ SymbolToString(const TokenValue& s) noexcept
 }
 
 void
-LoadModule_std_strings(Context& ctx)
+LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(ctx.GetRecordRef());
+	auto& renv(intp.Root.GetRecordRef());
 
 	RegisterStrict(renv, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
@@ -195,6 +195,34 @@ LoadModule_std_strings(Context& ctx)
 
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
+	});
+}
+
+void
+LoadModule_std_io(Interpreter& intp)
+{
+	using namespace Forms;
+	auto& renv(intp.Root.GetRecordRef());
+
+	RegisterStrict(renv, "newline", [&](TermNode& term){
+		RetainN(term, 0);
+		std::cout << std::endl;
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
+		RetainN(term);
+		ctx.SetupFront([&]{
+			term = intp.ReadFrom(*intp.OpenUnique(std::move(
+				Unilang::ResolveRegular<string>(*std::next(term.begin())))),
+				ctx);
+			return ReduceOnce(term, ctx);
+		});
+	});
+	RegisterStrict(renv, "display", [&](TermNode& term){
+		RetainN(term);
+		LiftOther(term, *std::next(term.begin()));
+		PrintTermNode(std::cout, term);
+		return ReduceReturnUnspecified(term);
 	});
 }
 
@@ -454,27 +482,6 @@ $defv! $import! (&e .&symbols) d
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	// NOTE: The standard I/O library.
-	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
-		RetainN(term);
-		c.SetupFront([&]{
-			term = intp.ReadFrom(*intp.OpenUnique(std::move(
-				Unilang::ResolveRegular<string>(*std::next(term.begin())))),
-				c);
-			return ReduceOnce(term, c);
-		});
-	});
-	RegisterStrict(ctx, "display", [&](TermNode& term){
-		RetainN(term);
-		LiftOther(term, *std::next(term.begin()));
-		PrintTermNode(std::cout, term);
-		return ReduceReturnUnspecified(term);
-	});
-	RegisterStrict(ctx, "newline", [&](TermNode& term){
-		RetainN(term, 0);
-		std::cout << std::endl;
-		return ReduceReturnUnspecified(term);
-	});
 	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
@@ -499,21 +506,26 @@ $defv! $import! (&e .&symbols) d
 
 	auto& rctx(intp.Root);
 	const auto load_std_module([&](string_view module_name,
-		void(&load_module)(Context& ctx)){
+		void(&load_module)(Interpreter& intp)){
 		LoadModuleChecked(rctx, "std." + string(module_name),
-			std::bind(load_module, std::ref(ctx)));
+			std::bind(load_module, std::ref(intp)));
 	});
 
 	load_std_module("strings", LoadModule_std_strings);
+	load_std_module("io", LoadModule_std_io);
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
 	// NOTE: Prevent the ground environment from modification.
 	env.Frozen = true;
 	intp.SaveGround();
+	// NOTE: User environment initialization.
+	intp.Perform(R"Unilang(
+$import! std.io newline load display;
+	)Unilang");
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.35"
+#define APP_VER "0.7.36"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
