@@ -72,6 +72,21 @@ CallUnary(_func&& f, TermNode& term, _tParams&&... args)
 	}, term);
 }
 
+template<typename _type, typename _type2, typename _func, typename... _tParams>
+ReductionStatus
+CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
+{
+	RetainN(term, 2);
+
+	auto i(term.begin());
+	auto& x(Unilang::ResolveRegular<_type>(Unilang::Deref(++i)));
+
+	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
+		ystdex::make_expanded<void(_type&, _type2&, _tParams&&...)>(
+		std::ref(f)), x, Unilang::ResolveRegular<_type2>(Unilang::Deref(++i)),
+		yforward(args)...));
+}
+
 template<typename _type, typename _func, typename... _tParams>
 ReductionStatus
 CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
@@ -200,17 +215,9 @@ struct BinaryAsExpansion : private
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term, 2);
-
-		auto i(term.begin());
-		auto& x(Unilang::ResolveRegular<_type>(Unilang::Deref(++i)));
-
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(_type&, _type2&, _tParams&&...)>(
-			std::ref(Function)), x, Unilang::ResolveRegular<_type2>(
-			Unilang::Deref(++i)), yforward(args)...));
+		return Forms::CallBinaryAs<_type, _type2>(Function, yforward(args)...);
 	}
 };
 
