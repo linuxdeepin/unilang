@@ -6,6 +6,7 @@
 #include "Evaluation.h" // for ReductionStatus, TermNode, IsBranch,
 //	YSLib::EmplaceCallResult, Unilang::Deref, yforward, Strict,
 //	Unilang::RegisterHandler, Context;
+#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <cassert> // for assert;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy,
 //	ystdex::invoke_nonvoid, ystdex::make_expanded, ystdex::bind1,
@@ -35,6 +36,20 @@ size_t
 RetainN(const TermNode&, size_t = 1);
 
 
+[[nodiscard, gnu::const]] constexpr ReductionStatus
+EmplaceCallResultOrReturn(TermNode&, ReductionStatus status) noexcept
+{
+	return status;
+}
+template<typename _tParam, typename... _tParams, yimpl(
+	typename = ystdex::exclude_self_t<ReductionStatus, _tParam>)>
+YB_ATTR_nodiscard inline ReductionStatus
+EmplaceCallResultOrReturn(TermNode& term, _tParam&& arg)
+{
+	YSLib::EmplaceCallResult(term.Value, yforward(arg), term.get_allocator());
+	return ReductionStatus::Clean;
+}
+
 template<typename _func, typename... _tParams>
 inline auto
 CallRawUnary(_func&& f, TermNode& term, _tParams&&... args)
@@ -47,18 +62,18 @@ CallRawUnary(_func&& f, TermNode& term, _tParams&&... args)
 }
 
 template<typename _func, typename... _tParams>
-void
+ReductionStatus
 CallUnary(_func&& f, TermNode& term, _tParams&&... args)
 {
-	Forms::CallRawUnary([&](TermNode& tm){
-		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+	return Forms::CallRawUnary([&](TermNode& tm){
+		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(std::ref(f)),
-			tm, yforward(args)...), term.get_allocator());
+			tm, yforward(args)...));
 	}, term);
 }
 
 template<typename _type, typename _func, typename... _tParams>
-void
+ReductionStatus
 CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
 {
 	const auto n(term.size() - 1);
@@ -67,10 +82,9 @@ CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
 		return Unilang::ResolveRegular<_type>(Unilang::Deref(it));
 	}));
 
-	YSLib::EmplaceCallResult(term.Value, std::accumulate(j, std::next(j,
-		typename std::iterator_traits<decltype(j)>::difference_type(n)), val,
-		ystdex::bind1(f, std::placeholders::_2, yforward(args)...)),
-		term.get_allocator());
+	return Forms::EmplaceCallResultOrReturn(term, std::accumulate(j, std::next(
+		j, typename std::iterator_traits<decltype(j)>::difference_type(n)), val,
+		ystdex::bind1(f, std::placeholders::_2, yforward(args)...)));
 }
 
 
@@ -96,11 +110,10 @@ struct UnaryExpansion
 	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term);
-		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(
 			std::ref(Function)), Unilang::Deref(std::next(term.begin())),
 			yforward(args)...));
-		return ReductionStatus::Clean;
 	}
 };
 
@@ -127,11 +140,10 @@ struct UnaryAsExpansion
 	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term);
-		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(_type&, _tParams&&...)>(
 			std::ref(Function)), Unilang::ResolveRegular<_type>(
 			Unilang::Deref(std::next(term.begin()))), yforward(args)...));
-		return ReductionStatus::Clean;
 	}
 };
 
@@ -154,7 +166,7 @@ struct BinaryExpansion
 	}
 
 	template<typename... _tParams>
-	inline void
+	inline ReductionStatus
 	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term, 2);
@@ -162,10 +174,9 @@ struct BinaryExpansion
 		auto i(term.begin());
 		auto& x(Unilang::Deref(++i));
 
-		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
-			std::ref(Function)), x, Unilang::Deref(++i), yforward(args)...),
-			term.get_allocator());
+			std::ref(Function)), x, Unilang::Deref(++i), yforward(args)...));
 	}
 };
 
@@ -188,7 +199,7 @@ struct BinaryAsExpansion : private
 	}
 
 	template<typename... _tParams>
-	inline void
+	inline ReductionStatus
 	operator()(TermNode& term, _tParams&&... args) const
 	{
 		RetainN(term, 2);
@@ -196,10 +207,10 @@ struct BinaryAsExpansion : private
 		auto i(term.begin());
 		auto& x(Unilang::ResolveRegular<_type>(Unilang::Deref(++i)));
 
-		YSLib::EmplaceCallResult(term.Value, ystdex::invoke_nonvoid(
+		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(_type&, _type2&, _tParams&&...)>(
 			std::ref(Function)), x, Unilang::ResolveRegular<_type2>(
-			Unilang::Deref(++i)), yforward(args)...), term.get_allocator());
+			Unilang::Deref(++i)), yforward(args)...));
 	}
 };
 
