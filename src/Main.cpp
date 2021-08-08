@@ -289,7 +289,8 @@ void
 LoadModule_std_modules(Interpreter& intp)
 {
 	intp.Perform(R"Unilang(
-$provide/let! (registered-requirement? register-requirement!)
+$provide/let! (registered-requirement? register-requirement!
+	unregister-requirement!)
 ((mods $as-environment (
 	$import! std.strings &string-empty? &++ &string->symbol;
 
@@ -310,7 +311,11 @@ $provide/let! (registered-requirement? register-requirement!)
 	$defl/e! &register-requirement! mods (&req)
 		$if (string-empty? req) (() requirement-error)
 			($if (bound-name? req) (raise-error (++ "Requirement '" req
-				"' is already registered.")) (set-value! req req))
+				"' is already registered.")) (set-value! req req)),
+	$defl/e! &unregister-requirement! mods (&req)
+		$if (string-empty? req) (() requirement-error)
+			($if (bound-name? req) (set-value! req "") (raise-error
+				(++ "Requirement '" req "' is not registered.")))
 );
 	)Unilang");
 }
@@ -628,7 +633,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.51"
+#define APP_VER "0.7.52"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
