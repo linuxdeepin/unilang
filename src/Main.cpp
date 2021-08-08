@@ -21,6 +21,8 @@
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
 #include <regex> // for std::regex, std::regex_match, std::regex_replace;
+#include <YSLib/Core/YModules.h>
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists;
 #include "Arithmetic.h" // for Number;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
@@ -29,7 +31,6 @@
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
-#include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions, YSLib::Alert;
 
 namespace Unilang
@@ -220,6 +221,10 @@ LoadModule_std_io(Interpreter& intp)
 		RetainN(term, 0);
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
+	});
+	RegisterUnary<Strict, const string>(renv, "readable-file?",
+		[](const string& str) noexcept{
+		return YSLib::ufexists(str.c_str());
 	});
 	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
@@ -537,7 +542,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.38"
+#define APP_VER "0.7.40"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
