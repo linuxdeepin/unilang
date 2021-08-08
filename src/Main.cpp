@@ -22,7 +22,8 @@
 //	ystdex::minus, ystdex::multiplies;
 #include <regex> // for std::regex, std::regex_match, std::regex_replace;
 #include <YSLib/Core/YModules.h>
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
+//	YSLib::FetchEnvironmentVariable;
 #include "Arithmetic.h" // for Number;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
@@ -244,8 +245,18 @@ LoadModule_std_io(Interpreter& intp)
 }
 
 void
-LoadModule_std_system(Interpreter&)
-{}
+LoadModule_std_system(Interpreter& intp)
+{
+	using namespace Forms;
+	auto& renv(intp.Root.GetRecordRef());
+
+	RegisterUnary<Strict, const string>(renv, "env-get", [](const string& var){
+		string res(var.get_allocator());
+
+		YSLib::FetchEnvironmentVariable(res, var.c_str());
+		return res;
+	});
+}
 
 void
 LoadFunctions(Interpreter& intp, bool jit)
@@ -553,7 +564,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.44"
+#define APP_VER "0.7.45"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
