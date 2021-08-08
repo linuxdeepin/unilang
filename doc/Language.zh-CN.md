@@ -1132,6 +1132,10 @@
 
 　　在动态环境求值第二参数得到的环境中求值第一参数，结果作为函数值。
 
+`$remote-eval% <expression> <environment>`
+
+　　同 `$remote-eval` ，但保留引用值。
+
 `$set! <environment> <formals> <expressions>`
 
 　　修改指定环境的变量绑定。
