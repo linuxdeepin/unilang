@@ -286,8 +286,28 @@ LoadModule_std_system(Interpreter& intp)
 }
 
 void
-LoadModule_std_modules(Interpreter&)
-{}
+LoadModule_std_modules(Interpreter& intp)
+{
+	intp.Perform(R"Unilang(
+$provide/let! (registered-requirement?)
+((mods $as-environment (
+	$import! std.strings &string-empty? &string->symbol;
+
+	$defl! requirement-error ()
+		raise-error "Empty requirement name found.",
+	(
+	$def! registry () make-environment;
+	$defl! bound-name? (&req)
+		$and? (eval (list bound? req) registry)
+			(not? (string-empty? (eval (string->symbol req) registry)))
+	)
+)))
+(
+	$defl/e! &registered-requirement? mods (&req)
+		$if (string-empty? req) (() requirement-error) (bound-name? req)
+);
+	)Unilang");
+}
 
 void
 LoadFunctions(Interpreter& intp, bool jit)
@@ -602,7 +622,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.49"
+#define APP_VER "0.7.50"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
