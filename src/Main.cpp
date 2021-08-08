@@ -312,6 +312,7 @@ $def! $lambda% $vau (&formals .&body) d
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
 	intp.Perform(R"Unilang(
 $def! $remote-eval $vau (&o &e) d eval o (eval e d);
+$def! $remote-eval% $vau% (&o &e) d eval% o (eval e d);
 $def! $set! $vau (&e &formals .&expr) d
 	eval (list $def! formals (unwrap eval) expr d) (eval e d);
 $def! $defv! $vau (&$f &formals &ef .&body) d
@@ -547,7 +548,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.42"
+#define APP_VER "0.7.43"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
