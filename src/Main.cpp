@@ -320,6 +320,12 @@ LoadFunctions(Interpreter& intp, bool jit)
 	});
 	RegisterStrict(ctx, "eval", Eval);
 	RegisterStrict(ctx, "eval%", EvalRef);
+	RegisterUnary<Strict, const string>(ctx, "bound?",
+		[](const string& id, Context& c){
+		return CheckSymbol(id, [&]{
+			return bool(ResolveName(c, id).first);
+		});
+	});
 	RegisterForm(ctx, "$resolve-identifier",
 		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
 	RegisterUnary<Strict, const EnvironmentReference>(ctx, "lock-environment",
@@ -596,7 +602,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.48"
+#define APP_VER "0.7.49"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
