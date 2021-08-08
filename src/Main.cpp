@@ -288,6 +288,10 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
 	RegisterStrict(ctx, "wrap", Wrap);
 	RegisterStrict(ctx, "unwrap", Unwrap);
+	RegisterUnary<Strict, const string>(ctx, "raise-error",
+		[] (const string& str){
+		throw UnilangException(str.c_str());
+	});
 	RegisterUnary<Strict, const string>(ctx, "raise-invalid-syntax-error",
 		[](const string& str){
 		throw InvalidSyntax(str.c_str());
@@ -542,7 +546,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.40"
+#define APP_VER "0.7.41"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
