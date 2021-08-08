@@ -224,6 +224,19 @@ public:
 		container.push_back(std::move(nd));
 	}
 
+	template<typename... _tParams>
+	static inline void
+	AddValueTo(Container& con, _tParams&&... args)
+	{
+		con.emplace_back(NoContainer, yforward(args)...);
+	}
+	template<typename... _tParams>
+	static inline void
+	AddValueTo(const_iterator position, Container& con, _tParams&&... args)
+	{
+		con.emplace(position, NoContainer, yforward(args)...);
+	}
+
 	void
 	Clear() noexcept
 	{
