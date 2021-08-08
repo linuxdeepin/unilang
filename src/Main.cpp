@@ -159,6 +159,33 @@ LoadModule_std_strings(Interpreter& intp)
 	});
 	RegisterBinary<Strict, const string, const string>(renv, "string=?",
 		ystdex::equal_to<>());
+	RegisterStrict(renv, "string-split", [](TermNode& term){
+		return CallBinaryAs<string, const string>(
+			[&](string& x, const string& y) -> ReductionStatus{
+			if(!x.empty())
+			{
+				TermNode::Container con(term.get_allocator());
+				const auto len(y.length());
+
+				if(len != 0)
+				{
+					string::size_type pos(0), orig(0);
+
+					while((pos = x.find(y, pos)) != string::npos)
+					{
+						TermNode::AddValueTo(con, x.substr(orig, pos - orig));
+						orig = (pos += len);
+					}
+					TermNode::AddValueTo(con, x.substr(orig, pos - orig));
+				}
+				else
+					TermNode::AddValueTo(con, std::move(x));
+				con.swap(term.GetContainerRef());
+				return ReductionStatus::Retained;
+			}
+			return ReductionStatus::Clean;
+		}, term);
+	});
 	RegisterBinary<Strict, string, string>(renv, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
@@ -564,7 +591,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.45"
+#define APP_VER "0.7.47"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
