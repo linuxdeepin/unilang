@@ -286,6 +286,10 @@ LoadModule_std_system(Interpreter& intp)
 }
 
 void
+LoadModule_std_modules(Interpreter&)
+{}
+
+void
 LoadFunctions(Interpreter& intp, bool jit)
 {
 	using namespace Forms;
@@ -579,6 +583,7 @@ $defv! $import! (&e .&symbols) d
 	load_std_module("strings", LoadModule_std_strings);
 	load_std_module("io", LoadModule_std_io);
 	load_std_module("system", LoadModule_std_system);
+	load_std_module("modules", LoadModule_std_modules);
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
 	// NOTE: Prevent the ground environment from modification.
@@ -591,7 +596,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.47"
+#define APP_VER "0.7.48"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
