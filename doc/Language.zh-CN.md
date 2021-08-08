@@ -1128,6 +1128,10 @@
 
 　　创建列表（类型为 `<list>` ）对象，且保留参数中的引用值。
 
+`$remote-eval <expression> <environment>`
+
+　　在动态环境求值第二参数得到的环境中求值第一参数，结果作为函数值。
+
 `$set! <environment> <formals> <expressions>`
 
 　　修改指定环境的变量绑定。
