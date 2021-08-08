@@ -290,7 +290,7 @@ LoadModule_std_modules(Interpreter& intp)
 {
 	intp.Perform(R"Unilang(
 $provide/let! (registered-requirement? register-requirement!
-	unregister-requirement!)
+	unregister-requirement! find-requirement-filename)
 ((mods $as-environment (
 	$import! std.strings &string-empty? &++ &string->symbol;
 
@@ -303,6 +303,25 @@ $provide/let! (registered-requirement? register-requirement!
 			(not? (string-empty? (eval (string->symbol req) registry))),
 	$defl! set-value! (&req &v)
 		eval (list $def! (string->symbol req) v) registry
+	),
+	(
+	$def! placeholder ($remote-eval% string->regex std.strings) "\?",
+	$def! pathspecs
+		$let ((spec ($remote-eval% env-get std.system) "UNILANG_PATH"))
+			$if (string-empty? spec) (list "./?" "./?.txt")
+				(($remote-eval% string-split std.strings) spec ";"),
+	$defl%! first& (&l) ($lambda% ((&x .)) x) (forward! l),
+	$defl%! rest& (&l) ($lambda% ((#ignore .&xs)) xs) (forward! l);
+	$defl! get-requirement-filename (&specs &req)
+		$if (null? specs)
+			(raise-error (++ "No module for requirement '" req
+				"' found."))
+			(
+				$let* ((spec first& specs) (path ($remote-eval% regex-replace
+					std.strings) spec placeholder req))
+					$if (($remote-eval% readable-file? std.io) path) path
+						(get-requirement-filename (rest& specs) req)
+			)
 	)
 )))
 (
@@ -315,7 +334,9 @@ $provide/let! (registered-requirement? register-requirement!
 	$defl/e! &unregister-requirement! mods (&req)
 		$if (string-empty? req) (() requirement-error)
 			($if (bound-name? req) (set-value! req "") (raise-error
-				(++ "Requirement '" req "' is not registered.")))
+				(++ "Requirement '" req "' is not registered."))),
+	$defl/e! &find-requirement-filename mods (&req)
+		get-requirement-filename pathspecs req
 );
 	)Unilang");
 }
@@ -633,7 +654,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.52"
+#define APP_VER "0.7.53"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
