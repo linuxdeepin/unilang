@@ -929,6 +929,10 @@
 
 　　同 `eval` ，但保留引用值。
 
+`bound? <string>`
+
+　　判断指定字符串对应的符号是否被绑定。
+
 `$resolve-identifier <symbol>`
 
 　　解析标识符。
