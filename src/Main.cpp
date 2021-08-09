@@ -136,7 +136,7 @@ LoadModule_std_strings(Interpreter& intp)
 		[](const string& str) noexcept{
 			return str.empty();
 		});
-	RegisterBinary<>(renv, "string<-", [](TermNode& x, TermNode& y){
+	RegisterBinary(renv, "string<-", [](TermNode& x, TermNode& y){
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
@@ -201,7 +201,7 @@ LoadModule_std_strings(Interpreter& intp)
 		to_lwr(y);
 		return x.find(y) != string::npos;
 	});
-	RegisterUnary<>(renv, "string->symbol", [](TermNode& term){
+	RegisterUnary(renv, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			auto& s(Unilang::AccessRegular<string>(nd, p_ref));
 
@@ -360,9 +360,9 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
-	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
-	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
-	RegisterUnary<>(ctx, "uncollapsed?", IsUncollapsedTerm);
+	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
+	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
+	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
 	RegisterStrict(ctx, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
 	RegisterStrict(ctx, "expire",
@@ -659,7 +659,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.54"
+#define APP_VER "0.7.55"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
