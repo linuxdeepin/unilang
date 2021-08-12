@@ -1,6 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for string_view, ByteParser, std::getline;
+#include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
+//	std::getline;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
 #include "Arithmetic.h" // for Number;
@@ -8,10 +9,13 @@
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
+#include YFM_YSLib_Core_YException // for YSLib::ExtractException;
 #include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
+#include <functional> // for std::placeholders::_1;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
 #include "Syntax.h" // for ReduceSyntax;
@@ -155,6 +159,47 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 	}
 }
 
+YB_ATTR_nodiscard YB_PURE std::string
+MismatchedTypesToString(const bad_any_cast& e)
+{
+	return ystdex::sfmt("Mismatched types ('%s', '%s') found.", e.from(),
+		e.to());
+}
+
+void
+TraceException(std::exception& e, YSLib::Logger& trace)
+{
+	using namespace YSLib;
+
+	ExtractException([&](const char* str, size_t level){
+		const auto print([&](RecordLevel lv, const char* name, const char* msg){
+			trace.TraceFormat(lv, "%*s%s<%u>: %s", int(level), "", name,
+				unsigned(lv), msg);
+		});
+
+		try
+		{
+			throw;
+		}
+		catch(BadIdentifier& ex)
+		{
+			print(Err, "BadIdentifier", str);
+		}
+		catch(bad_any_cast& ex)
+		{
+			print(Warning, "TypeError", MismatchedTypesToString(ex).c_str());
+		}
+		catch(LoggedEvent& ex)
+		{
+			print(Err, typeid(ex).name(), str);
+		}
+		catch(...)
+		{
+			print(Err, "Error", str);
+		}
+	}, e);
+}
+
 YSLib::unique_ptr<std::istream>
 OpenFile(const char* filename)
 {
@@ -202,10 +247,9 @@ Interpreter::ExecuteOnce(string_view unit, Context& ctx)
 		}
 		catch(std::exception& e)
 		{
-			using namespace std;
+			static YSLib::Logger trace;
 
-			cerr << "Exception[" << typeid(e).name() << "]: "
-				<< e.what() << endl;
+			TraceException(e, trace);
 		}
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
 	if(Echo)
