@@ -61,6 +61,17 @@ CallRawUnary(_func&& f, TermNode& term, _tParams&&... args)
 		Unilang::Deref(std::next(term.begin())), yforward(args)...);
 }
 
+template<typename _func>
+inline auto
+CallResolvedUnary(_func&& f, TermNode& term)
+	-> yimpl(decltype(Unilang::ResolveTerm(yforward(f), term)))
+{
+	return Forms::CallRawUnary([&](TermNode& tm)
+		-> yimpl(decltype(Unilang::ResolveTerm(yforward(f), term))){
+		return Unilang::ResolveTerm(yforward(f), tm);
+	}, term);
+}
+
 template<typename _func, typename... _tParams>
 ReductionStatus
 CallUnary(_func&& f, TermNode& term, _tParams&&... args)
@@ -309,6 +320,10 @@ Wrap(TermNode&);
 
 ReductionStatus
 Unwrap(TermNode&);
+
+
+ReductionStatus
+CheckListReference(TermNode&);
 
 
 ReductionStatus
