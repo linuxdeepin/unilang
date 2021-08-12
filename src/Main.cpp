@@ -336,7 +336,7 @@ $provide/let! (registered-requirement? register-requirement!
 	$defl/e! &find-requirement-filename mods (&req)
 		get-requirement-filename pathspecs req
 );
-$defl%! &require (&req)
+$defl%! require (&req)
 	$if (registered-requirement? req) #inert
 		($let ((filename find-requirement-filename req))
 			$sequence (register-requirement! (move! req))
@@ -662,7 +662,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.65"
+#define APP_VER "0.7.66"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
