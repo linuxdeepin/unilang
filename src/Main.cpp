@@ -466,8 +466,12 @@ $defl%! first (%l)
 		($if ($lvalue-identifier? l) id expire);
 $defl%! first% (%l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
+$defl%! first& (&l)
+	($lambda% ((&x .)) x) (check-list-reference (forward! l));
 $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
+$defl%! rest& (&l)
+	($lambda% ((#ignore .&xs)) xs) (check-list-reference (forward! l));
 $defv! $defv%! (&$f &formals &ef .&body) d
 	eval (list $set! d $f $vau% formals ef (move! body)) d;
 $defv! $defw! (&f &formals &ef .&body) d
@@ -660,7 +664,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.58"
+#define APP_VER "0.7.60"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
