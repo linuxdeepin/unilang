@@ -51,7 +51,7 @@ GetModuleFor(Context& ctx, _fCallable&& f)
 		ValueObject(ctx.WeakenRecord())));
 
 	ystdex::invoke(f);
-	// TODO: Freeze?
+	ctx.GetRecordRef().Frozen = true;
 	return ctx.ShareRecord();
 }
 
@@ -662,7 +662,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.61"
+#define APP_VER "0.7.65"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
