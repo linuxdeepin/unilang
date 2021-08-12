@@ -710,6 +710,27 @@ CheckBindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	BindParameter(p_env, t, o);
 }
 
+
+void
+ThrowValueCategoryError(const TermNode& term)
+{
+	throw ValueCategoryMismatch(ystdex::sfmt("Expected a reference for the 1st "
+		"argument, got '%s'.", TermToString(term).c_str()));
+}
+
+void
+CheckResolvedListReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(!IsBranchedList(nd)))
+			throw ListTypeError(ystdex::sfmt("Expected a non-empty list, got"
+				" '%s'.", TermToStringWithReferenceMark(nd, true).c_str()));
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
 } // unnamed namespace;
 
 
@@ -923,6 +944,17 @@ Unwrap(TermNode& term)
 			ThrowForUnwrappingFailure(h);
 	}, tm);
 	return ReductionStatus::Clean;
+}
+
+
+ReductionStatus
+CheckListReference(TermNode& term)
+{
+	return CallResolvedUnary([&](TermNode& nd, bool has_ref){
+		CheckResolvedListReference(nd, has_ref);
+		LiftTerm(term, Unilang::Deref(std::next(term.begin())));
+		return ReductionStatus::Regular;
+	}, term);
 }
 
 
