@@ -405,6 +405,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 		[](const string& str){
 		throw InvalidSyntax(str.c_str());
 	});
+	RegisterStrict(ctx, "check-list-reference", CheckListReference);
 	RegisterStrict(ctx, "make-encapsulation-type", MakeEncapsulationType);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	RegisterForm(ctx, "$vau", Vau);
@@ -659,7 +660,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.55"
+#define APP_VER "0.7.58"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
