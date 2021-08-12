@@ -1266,6 +1266,12 @@
 
 　　取列表第一个元素以外的元素值经过转发的值构成的列表。
 
+`rest& <list>`
+
+　　取列表第一个元素以外的元素值的引用值构成的列表的子对象引用。
+
+　　首先调用 `check-list-reference` 检查参数是列表引用，对右值抛出异常。
+
 `$defv%! <variable> <formals> <eformal> <body>`
 
 　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
