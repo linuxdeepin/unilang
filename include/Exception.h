@@ -22,6 +22,12 @@ class TypeError : public UnilangException
 };
 
 
+class ValueCategoryMismatch : public TypeError
+{
+	using TypeError::TypeError;
+};
+
+
 class ListReductionFailure : public TypeError
 {
 	using TypeError::TypeError;
