@@ -11,6 +11,7 @@
 #include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
+#include <exception> // for std::throw_with_nested;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
 #include "Syntax.h" // for ReduceSyntax;
@@ -154,6 +155,22 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 	}
 }
 
+YSLib::unique_ptr<std::istream>
+OpenFile(const char* filename)
+{
+	try
+	{
+		return YSLib::Text::OpenSkippedBOMtream<
+			YSLib::IO::SharedInputMappedFileStream>(YSLib::Text::BOM_UTF_8,
+			filename);
+	}
+	catch(...)
+	{
+		std::throw_with_nested(std::invalid_argument(
+			ystdex::sfmt("Failed opening file '%s'.", filename)));
+	}
+}
+
 } // unnamed namespace;
 
 Interpreter::Interpreter()
@@ -211,8 +228,7 @@ YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(string filename)
 {
 	using namespace YSLib;
-	auto p_is(Text::OpenSkippedBOMtream<IO::SharedInputMappedFileStream>(
-		Text::BOM_UTF_8, filename.c_str()));
+	auto p_is(OpenFile(filename.c_str()));
 
 	CurrentSource = YSLib::share_move(filename);
 	return p_is;
