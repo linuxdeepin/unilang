@@ -310,8 +310,6 @@ $provide/let! (registered-requirement? register-requirement!
 		$let ((spec ($remote-eval% env-get std.system) "UNILANG_PATH"))
 			$if (string-empty? spec) (list "./?" "./?.txt")
 				(($remote-eval% string-split std.strings) spec ";"),
-	$defl%! first& (&l) ($lambda% ((&x .)) x) (forward! l),
-	$defl%! rest& (&l) ($lambda% ((#ignore .&xs)) xs) (forward! l);
 	$defl! get-requirement-filename (&specs &req)
 		$if (null? specs)
 			(raise-error (++ "No module for requirement '" req
@@ -664,7 +662,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.60"
+#define APP_VER "0.7.61"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
