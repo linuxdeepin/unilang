@@ -200,11 +200,11 @@ Interpreter::ExecuteOnce(string_view unit, Context& ctx)
 		{
 			Context::DefaultHandleException(std::move(p));
 		}
-		catch(UnilangException& e)
+		catch(std::exception& e)
 		{
 			using namespace std;
 
-			cerr << "UnilangException[" << typeid(e).name() << "]: "
+			cerr << "Exception[" << typeid(e).name() << "]: "
 				<< e.what() << endl;
 		}
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
