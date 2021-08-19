@@ -1118,18 +1118,6 @@
 
 　　其作用等价返回值转换，可能引起对象转移。
 
-`$lambda <formals> <body>`
-
-　　创建 λ 抽象 。
-
-　　和创建 vau 抽象类似，但创建的是调用时对操作数的元素求值一次的应用子，且忽略动态环境。
-
-　　表达式项的用法和 vau 抽象类似。
-
-`$lambda% <formals> <body>`
-
-　　同 `$lambda` ，但创建的操作子调用时保留 `<body>` 求值的引用值。
-
 `list <object>...`
 
 　　创建列表（类型为 `<list>` ）对象。
@@ -1137,6 +1125,18 @@
 `list% <object>...`
 
 　　创建列表（类型为 `<list>` ）对象，且保留参数中的引用值。
+
+`$lvalue-identifier? <symbol>`
+
+　　解析当前环境中的标识符（同 `$resolve-identifier` ）并判断是否为左值（同 `bound-lvalue?` ）。
+
+`forward! <object>`
+
+　　转发可能是引用的值。
+
+　　参数是右值操作数或可修改的临时对象时转移，其它情形复制。
+
+**注释** 被转发的值若是形式参数树中的变量，一般应以带有标记字符 `&` 的形式绑定；否则，转发的不是对应的实际参数，而可能是其按值绑定的副本。
 
 `$remote-eval <expression> <environment>`
 
@@ -1152,37 +1152,27 @@
 
 　　在当前环境求值 `<environment>` 和 `<expressions>` ，再以后者的求值结果修改前者的求值结果指定的环境中的绑定。绑定效果同使用 $def! 。
 
-`$defv! <variable> <formals> <eformal> <body>`
+`$lambda <formals> <body>`
 
-　　绑定 vau 抽象，等价 `$def! <variable> $vau <formals> <eformal> <body>` 。
+　　创建 λ 抽象 。
 
-`$defv/e%! <variable> <parent> <formals> <eformal> <body>`
+　　和创建 vau 抽象类似，但创建的是调用时对操作数的元素求值一次的应用子，且忽略动态环境。
 
-　　绑定指定静态环境的 vau 抽象，等价 `$def! <variable> $vau/e% <parent> <formals> <eformal> <body>` 。
+　　表达式项的用法和 vau 抽象类似。
 
-`$defl! <variable> <formals> <body>`
+`$lambda% <formals> <body>`
 
-　　绑定 λ 抽象，等价 `$def! <variable> $lambda <formals> <body>` 。
+　　同 `$lambda` ，但创建的操作子调用时保留 `<body>` 求值的引用值。
 
-`$defl%! <variable> <formals> <body>`
+`$lambda/e <parent> <formals> <body>`
 
-　　绑定 λ 抽象，等价 `$def! <variable> $lambda% <formals> <body>` 。
+　　创建指定静态环境的 lambda 抽象。
 
-`() make-standard-environment`
+　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
 
-　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
+`$lambda/e% <parent> <formals> <body>`
 
-`$lvalue-identifier? <symbol>`
-
-　　解析当前环境中的标识符（同 `$resolve-identifier` ）并判断是否为左值（同 `bound-lvalue?` ）。
-
-`forward! <object>`
-
-　　转发可能是引用的值。
-
-　　参数是右值操作数或可修改的临时对象时转移，其它情形复制。
-
-**注释** 被转发的值若是形式参数树中的变量，一般应以带有标记字符 `&` 的形式绑定；否则，转发的不是对应的实际参数，而可能是其按值绑定的副本。
+　　同 `$lambda/e` ，但保留引用值。
 
 `$sequence <expression-sequence>`
 
@@ -1216,23 +1206,37 @@
 
 　　同 `list*` ，但创建的列表元素保留引用值。
 
-`$lambda/e <parent> <formals> <body>`
+`$defv! <variable> <formals> <eformal> <body>`
 
-　　创建指定静态环境的 lambda 抽象。
+　　绑定 vau 抽象，等价 `$def! <variable> $vau <formals> <eformal> <body>` 。
 
-　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
+`$defv%! <variable> <formals> <eformal> <body>`
 
-`$lambda/e% <parent> <formals> <body>`
+　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
 
-　　同 `$lambda/e` ，但保留引用值。
+`$defv/e%! <variable> <parent> <formals> <eformal> <body>`
 
-`$defl/e! <variable> <parent> <formals> <body>`
+　　绑定指定静态环境的 vau 抽象，等价 `$def! <variable> $vau/e% <parent> <formals> <eformal> <body>` 。
 
-　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
+`$defw! <variable> <formals> <eformal> <body>`
+
+　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
 
 `$defw%! <variable> <formals> <eformal> <body>`
 
 　　绑定 `wrap` 的 `vau` 抽象，等价 `$def! <variable> wrap ($vau% <formals> <eformal> <body>)` 。
+
+`$defl! <variable> <formals> <body>`
+
+　　绑定 λ 抽象，等价 `$def! <variable> $lambda <formals> <body>` 。
+
+`$defl%! <variable> <formals> <body>`
+
+　　绑定 λ 抽象，等价 `$def! <variable> $lambda% <formals> <body>` 。
+
+`$defl/e! <variable> <parent> <formals> <body>`
+
+　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
 
 `forward-first% <applicative> <list>`
 
@@ -1277,14 +1281,6 @@
 　　取列表第一个元素以外的元素值的引用值构成的列表的子对象引用。
 
 　　首先调用 `check-list-reference` 检查参数是列表引用，对右值抛出异常。
-
-`$defv%! <variable> <formals> <eformal> <body>`
-
-　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
-
-`$defw! <variable> <formals> <eformal> <body>`
-
-　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
 
 `$cond <clauses>...`
 
@@ -1392,6 +1388,10 @@
 　　创建当前环境的派生环境。
 
 　　创建参数指定的环境和当前环境作为父环境的空环境。
+
+`() make-standard-environment`
+
+　　创建*标准环境(standard environment)* ：以基础环境作为唯一父环境的新环境。
 
 `$as-environment <body>`
 
