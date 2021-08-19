@@ -583,7 +583,6 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 (
 	$def! mods () ($lambda/e ce ()
 	(
-		$def! idv $lambda% (x) $move-resolved! x;
 		$defl%! rulist (&l)
 			$if ($lvalue-identifier? l)
 				(accr (($lambda ((.@xs)) xs) l) null? ()
@@ -729,7 +728,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.82"
+#define APP_VER "0.7.83"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
