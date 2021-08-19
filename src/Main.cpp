@@ -124,6 +124,10 @@ SymbolToString(const TokenValue& s) noexcept
 }
 
 void
+LoadModule_std_promises(Interpreter&)
+{}
+
+void
 LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
@@ -646,6 +650,7 @@ $defv! $import! (&e .&symbols) d
 			std::bind(load_module, std::ref(intp)));
 	});
 
+	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("strings", LoadModule_std_strings);
 	load_std_module("io", LoadModule_std_io);
 	load_std_module("system", LoadModule_std_system);
@@ -662,7 +667,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.66"
+#define APP_VER "0.7.67"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
