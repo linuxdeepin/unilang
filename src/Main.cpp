@@ -127,7 +127,7 @@ void
 LoadModule_std_promises(Interpreter& intp)
 {
 	intp.Perform(R"Unilang(
-$provide/let! (promise? memoize $lazy $lazy%)
+$provide/let! (promise? memoize $lazy $lazy% $lazy/d)
 ((mods $as-environment (
 	$def! (encapsulate% promise? decapsulate) () make-encapsulation-type
 )))
@@ -138,7 +138,10 @@ $provide/let! (promise? memoize $lazy $lazy%)
 	$defv/e%! &$lazy mods (.&body) d
 		encapsulate% (list (list (move! body) d) eval),
 	$defv/e%! &$lazy% mods (.&body) d
-		encapsulate% (list (list (move! body) d) eval%)
+		encapsulate% (list (list (move! body) d) eval%),
+	$defv/e%! &$lazy/d mods (&e .&body) d
+		encapsulate%
+			(list (list (move! body) (check-environment (eval e d))) eval)
 );
 	)Unilang");
 }
@@ -690,7 +693,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.74"
+#define APP_VER "0.7.75"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
