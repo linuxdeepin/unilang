@@ -538,6 +538,7 @@ $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
 $defl%! rest& (&l)
 	($lambda% ((#ignore .&xs)) xs) (check-list-reference (forward! l));
+$defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
 		(apply ($lambda% ((&test .&body) .&clauses)
@@ -731,7 +732,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.85"
+#define APP_VER "0.7.86"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

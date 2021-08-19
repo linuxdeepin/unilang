@@ -1308,6 +1308,10 @@
 
 　　首先调用 `check-list-reference` 检查参数是列表引用，对右值抛出异常。
 
+`set-first%! <list> <object>`
+
+　　修改列表的第一个元素，保留引用值。
+
 `$cond <clauses>...`
 
 　　条件选择。
