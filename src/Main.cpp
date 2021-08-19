@@ -491,6 +491,8 @@ $def! $lambda/e% $vau (&p &formals .&body) d
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
+$def! collapse $lambda% (%x)
+	$if (uncollapsed? ($resolve-identifier x)) (idv x) x;
 $def! apply $lambda% (&appv &arg .&opt)
 	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
 		($if (null? opt) (() make-environment)
@@ -728,7 +730,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.83"
+#define APP_VER "0.7.84"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

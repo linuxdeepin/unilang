@@ -1194,6 +1194,10 @@
 
 　　求值每个 `<object>` 的副作用包括其中临时对象的销毁都被顺序限制。
 
+`collapse <object>`
+
+　　折叠可能是引用的值。
+
 `apply <applicative> <object> <environment>`
 
 　　在指定环境中应用。
