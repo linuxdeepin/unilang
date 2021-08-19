@@ -467,6 +467,9 @@ $defl! list*% (&head .&tail)
 		(cons% (forward! head) (apply list*% (move! tail)));
 $defv! $lambda/e (&e &formals .&body) d
 	wrap (eval (list* $vau/e e formals ignore (move! body)) d);
+$defv! $lambda/e% (&p &formals .&body) d
+	wrap (eval
+		(cons $vau/e% (cons p (cons formals (cons ignore (move! body))))) d);
 $defv! $defl/e! (&f &e &formals .&body) d
 	eval (list $set! d f $lambda/e e formals (move! body)) d;
 $defv! $defw%! (&f &formals &ef .&body) d
@@ -677,7 +680,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.68"
+#define APP_VER "0.7.69"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
