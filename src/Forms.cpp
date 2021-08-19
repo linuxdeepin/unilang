@@ -6,10 +6,11 @@
 #include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
-#include "Evaluation.h" // for BindParameterWellFormed;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
+#include "Evaluation.h" // for BindParameterWellFormed;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
+#include "TermAccess.h" // for ThrowValueCategoryError;
 
 namespace Unilang
 {
@@ -710,13 +711,6 @@ CheckBindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	BindParameter(p_env, t, o);
 }
 
-
-void
-ThrowValueCategoryError(const TermNode& term)
-{
-	throw ValueCategoryMismatch(ystdex::sfmt("Expected a reference for the 1st "
-		"argument, got '%s'.", TermToString(term).c_str()));
-}
 
 void
 CheckResolvedListReference(TermNode& nd, bool has_ref)
