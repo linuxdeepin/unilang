@@ -69,6 +69,9 @@ ThrowListTypeErrorForNonlist(const TermNode&, bool);
 YB_NORETURN void
 ThrowTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&, bool);
 
+YB_NORETURN void
+ThrowValueCategoryError(const TermNode&);
+
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessLeaf(TermNode& term)
