@@ -151,9 +151,25 @@ void
 LoadModule_std_promises(Interpreter& intp)
 {
 	intp.Perform(R"Unilang(
-$provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d%)
+$provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d% force)
 ((mods $as-environment (
-	$def! (encapsulate% promise? decapsulate) () make-encapsulation-type
+	$def! (encapsulate% promise? decapsulate) () make-encapsulation-type;
+	$defl%! do-force (&prom fwd) $let% ((((&o &env) evf) decapsulate prom))
+		$if (null? env) (fwd o)
+		(
+			$let*% ((&y evf (fwd o) env) (&x decapsulate prom)
+				(((&o &env) &evf) x))
+				$cond
+					((null? env) first (first (decapsulate (fwd prom))))
+					((promise? y) $sequence
+						($if (eqv? (first (rest& (decapsulate y))) eval)
+							(assign! evf eval))
+						(set-first%! x (first (decapsulate (forward! y))))
+						(do-force prom fwd))
+					(#t $sequence
+						(list% (assign%! o (forward! y)) (assign@! env ()))
+						(first (first (decapsulate (fwd prom)))))
+		)
 )))
 (
 	$import! mods &promise?,
@@ -168,7 +184,10 @@ $provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d%)
 			(list (list (move! body) (check-environment (eval e d))) eval),
 	$defv/e%! &$lazy/d% mods (&e .&body) d
 		encapsulate%
-			(list (list (move! body) (check-environment (eval e d))) eval%)
+			(list (list (move! body) (check-environment (eval e d))) eval%),
+	$defl/e%! &force mods (&x)
+		($lambda% (fwd) $if (promise? x) (do-force x fwd) (fwd x))
+			($if ($lvalue-identifier? x) id move!)
 );
 	)Unilang");
 }
@@ -733,7 +752,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.87"
+#define APP_VER "0.7.88"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
