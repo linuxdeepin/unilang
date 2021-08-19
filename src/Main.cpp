@@ -373,12 +373,12 @@ $provide/let! (registered-requirement? register-requirement!
 	$defl! set-value! (&req &v)
 		eval (list $def! (string->symbol req) v) registry
 	),
-	(
-	$def! placeholder ($remote-eval% string->regex std.strings) "\?",
-	$def! pathspecs
+	$def! prom_pathspecs ($remote-eval% $lazy std.promises)
 		$let ((spec ($remote-eval% env-get std.system) "UNILANG_PATH"))
 			$if (string-empty? spec) (list "./?" "./?.txt")
 				(($remote-eval% string-split std.strings) spec ";"),
+	(
+	$def! placeholder ($remote-eval% string->regex std.strings) "\?",
 	$defl! get-requirement-filename (&specs &req)
 		$if (null? specs)
 			(raise-error (++ "No module for requirement '" req
@@ -403,7 +403,8 @@ $provide/let! (registered-requirement? register-requirement!
 			($if (bound-name? req) (set-value! req "") (raise-error
 				(++ "Requirement '" req "' is not registered."))),
 	$defl/e! &find-requirement-filename mods (&req)
-		get-requirement-filename pathspecs req
+		get-requirement-filename
+			(($remote-eval% force std.promises) prom_pathspecs) req
 );
 $defl%! require (&req)
 	$if (registered-requirement? req) #inert
@@ -752,7 +753,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.88"
+#define APP_VER "0.7.89"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
