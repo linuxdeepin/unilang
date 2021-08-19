@@ -10,13 +10,14 @@
 #include "Forms.h" // for Forms::RetainN, CallBinaryFold;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
 //	ThrowInvalidTokenError;
-#include "BasicReduction.h" // for ReductionStatus;
+#include "BasicReduction.h" // for ReductionStatus, LiftOther;
 #include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
-//	ComposeReferencedTermOp, IsBoundLValueTerm, IsUncollapsedTerm,
-//	EnvironmentReference, TermNode, IsBranchedList;
+//	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
+//	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
+//	ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Lexical.h" // for IsUnilangSymbol;
-#include "Evaluation.h" // for RegisterStrict, ThrowInsufficientTermsError;
+#include "Evaluation.h" // for ValueToken, RegisterStrict;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
@@ -82,6 +83,29 @@ Qualify(TermNode& term, TermTags tag_add)
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
 	}, term);
+}
+
+void
+CheckForAssignment(TermNode& nd, ResolvedTermReferencePtr p_ref)
+{
+	if(p_ref)
+	{
+		if(p_ref->IsModifiable())
+			return;
+		ThrowNonmodifiableErrorForAssignee();
+	}
+	ThrowValueCategoryError(nd);
+}
+
+template<typename _func>
+YB_ATTR_nodiscard ValueToken
+DoAssign(_func f, TermNode& x)
+{
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		CheckForAssignment(nd, p_ref);
+		f(nd);
+	}, x);
+	return ValueToken::Unspecified;
 }
 
 template<typename _func>
@@ -393,6 +417,10 @@ LoadFunctions(Interpreter& intp, bool jit)
 		ystdex::bind1(Qualify, TermTags::Unique));
 	RegisterStrict(ctx, "move!",
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
+	RegisterBinary(ctx, "assign@!", [](TermNode& x, TermNode& y){
+		return DoAssign(ystdex::bind1(static_cast<void(&)(TermNode&,
+			TermNode&)>(LiftOther), std::ref(y)), x);
+	});
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "cons%", ConsRef);
 	RegisterUnary<Strict, const TokenValue>(ctx, "desigil", [](TokenValue s){
@@ -700,7 +728,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.78"
+#define APP_VER "0.7.81"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
