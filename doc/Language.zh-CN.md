@@ -1198,6 +1198,10 @@
 
 　　折叠可能是引用的值。
 
+`assign%! <reference> <object>`
+
+　　同 `assign@!` ，但 `<object>` 是引用时被折叠。
+
 `apply <applicative> <object> <environment>`
 
 　　在指定环境中应用。
