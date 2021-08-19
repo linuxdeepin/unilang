@@ -1238,6 +1238,10 @@
 
 　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e <parent> <formals> <body>` 。
 
+`$defl/e%! <variable> <parent> <formals> <body>`
+
+　　绑定指定静态环境的 λ 抽象，等价 `$def! <variable> $lambda/e% <parent> <formals> <body>` 。
+
 `forward-first% <applicative> <list>`
 
 　　取列表的第一元素并转发给指定的应用子。

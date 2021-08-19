@@ -479,6 +479,8 @@ $defv! $defl%! (&f &formals .&body) d
 	eval (list $set! d f $lambda% formals (move! body)) d;
 $defv! $defl/e! (&f &e &formals .&body) d
 	eval (list $set! d f $lambda/e e formals (move! body)) d;
+$defv! $defl/e%! (&f &p &formals .&body) d
+	eval (list* $def! f $lambda/e% p formals (move! body)) d;
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
 $defl%! first (%l)
@@ -682,7 +684,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.70"
+#define APP_VER "0.7.71"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
