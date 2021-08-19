@@ -423,57 +423,62 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterForm(ctx, "$vau", Vau);
 	RegisterForm(ctx, "$vau%", VauRef);
 	intp.Perform(R"Unilang(
-$def! id wrap ($vau% (%x) #ignore $move-resolved! x);
 $def! lock-current-environment (wrap ($vau () d lock-environment d));
-$def! $lambda $vau (&formals .&body) d
-	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
-$def! $lambda% $vau (&formals .&body) d
-	wrap (eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+$def! id wrap ($vau% (%x) #ignore $move-resolved! x);
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
 	intp.Perform(R"Unilang(
+$def! $lvalue-identifier? $vau (&s) d
+	eval (list bound-lvalue? (list $resolve-identifier s)) d;
+$def! forward! wrap
+	($vau% (%x) #ignore $if ($lvalue-identifier? x) x (move! x));
 $def! $remote-eval $vau (&o &e) d eval o (eval e d);
 $def! $remote-eval% $vau% (&o &e) d eval% o (eval e d);
 $def! $set! $vau (&e &formals .&expr) d
 	eval (list $def! formals (unwrap eval) expr d) (eval e d);
-$def! $defv! $vau (&$f &formals &ef .&body) d
-	eval (list $set! d $f $vau formals ef (move! body)) d;
-$defv! $defv/e%! (&$f &e &formals &ef .&body) d
-	eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
-$defv! $defl! (f formals .body) d
-	eval (list $set! d f $lambda formals (move! body)) d;
-$defv! $defl%! (&f &formals .&body) d
-	eval (list $set! d f $lambda% formals (move! body)) d;
-$def! make-standard-environment $lambda () () lock-current-environment;
-$def! $lvalue-identifier? $vau (&s) d
-	eval (list bound-lvalue? (list $resolve-identifier s)) d;
-$defl%! forward! (%x) $if ($lvalue-identifier? x) x (move! x);
+$def! $lambda $vau (&formals .&body) d
+	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
+$def! $lambda% $vau (&formals .&body) d
+	wrap (eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+$def! $lambda/e $vau (&p &formals .&body) d
+	wrap (eval
+		(cons $vau/e (cons p (cons formals (cons ignore (move! body))))) d);
+$def! $lambda/e% $vau (&p &formals .&body) d
+	wrap (eval
+		(cons $vau/e% (cons p (cons formals (cons ignore (move! body))))) d);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
-$defl%! apply (&appv &arg .&opt)
+$def! apply $lambda% (&appv &arg .&opt)
 	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
 		($if (null? opt) (() make-environment)
 			(($lambda ((&e .&eopt))
 				$if (null? eopt) e
 					(raise-invalid-syntax-error
 						"Syntax error in applying form.")) opt));
-$defl! list* (&head .&tail)
+$def! list* $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
 		(cons (forward! head) (apply list* (move! tail)));
-$defl! list*% (&head .&tail)
+$def! list*% $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
 		(cons% (forward! head) (apply list*% (move! tail)));
-$defv! $lambda/e (&e &formals .&body) d
-	wrap (eval (list* $vau/e e formals ignore (move! body)) d);
-$defv! $lambda/e% (&p &formals .&body) d
-	wrap (eval
-		(cons $vau/e% (cons p (cons formals (cons ignore (move! body))))) d);
-$defv! $defl/e! (&f &e &formals .&body) d
-	eval (list $set! d f $lambda/e e formals (move! body)) d;
+$def! $defv! $vau (&$f &formals &ef .&body) d
+	eval (list $set! d $f $vau formals ef (move! body)) d;
+$defv! $defv%! (&$f &formals &ef .&body) d
+	eval (list $set! d $f $vau% formals ef (move! body)) d;
+$defv! $defv/e%! (&$f &e &formals &ef .&body) d
+	eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
+$defv! $defw! (&f &formals &ef .&body) d
+	eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
 $defv! $defw%! (&f &formals &ef .&body) d
 	eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
+$defv! $defl! (f formals .body) d
+	eval (list $set! d f $lambda formals (move! body)) d;
+$defv! $defl%! (&f &formals .&body) d
+	eval (list $set! d f $lambda% formals (move! body)) d;
+$defv! $defl/e! (&f &e &formals .&body) d
+	eval (list $set! d f $lambda/e e formals (move! body)) d;
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
 $defl%! first (%l)
@@ -487,10 +492,6 @@ $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
 $defl%! rest& (&l)
 	($lambda% ((#ignore .&xs)) xs) (check-list-reference (forward! l));
-$defv! $defv%! (&$f &formals &ef .&body) d
-	eval (list $set! d $f $vau% formals ef (move! body)) d;
-$defv! $defw! (&f &formals &ef .&body) d
-	eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
 		(apply ($lambda% ((&test .&body) .&clauses)
@@ -535,8 +536,6 @@ $defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
 $defl! append (.&ls) foldr1 list-concat () (move! ls);
 $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
-$defw! derive-current-environment (.&envs) d
-	apply make-environment (append envs (list d)) d;
 $def! ($let $let* $letrec) ($lambda (&ce)
 (
 	$def! mods () ($lambda/e ce ()
@@ -582,6 +581,9 @@ $def! ($let $let* $letrec) ($lambda (&ce)
 $defv! $as-environment (.&body) d
 	eval (list $let () (list $sequence (move! body)
 		(list () lock-current-environment))) d;
+$defw! derive-current-environment (.&envs) d
+	apply make-environment (append envs (list d)) d;
+$defl! make-standard-environment () () lock-current-environment;
 $defv! $bindings/p->environment (&parents .&bindings) d $sequence
 	($def! res apply make-environment (map1 ($lambda (x) eval x d) parents))
 	(eval (list $set! res (map1 first bindings)
@@ -680,7 +682,7 @@ $import! std.io newline load display;
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.69"
+#define APP_VER "0.7.70"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
