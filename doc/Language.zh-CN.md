@@ -45,12 +45,16 @@
 * ISO/IEC 2382 (all parts), Information technology — Vocabulary
 * ISO/IEC 14882:2017, Information technology — Programming languages — C++
 * [Fexprs as the basis of Lisp function application or $vau : the ultimate abstraction](http://www.wpi.edu/Pubs/ETD/Available/etd-090110-124904/unrestricted/jshutt.pdf) ([Shu10])
+* [Revised<sup>-1</sup> Report on the
+Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf) ([RnRK])
+
+　　对文献的引用以 [] 包含的形式标记。除以上列表中 () 备注的部分外，包括：
 
 * [ISO C++] ISO/IEC 14882
 * [ISO C] ISO/IEC 9899
 * [ISO 2382] ISO/IEC 2382
 
-**原理** Unilang 预期实现和 C++ 语言的实现能进行一定程度上的互操作；设计上，和 C++ 等语言也共享一些相似的基本概念。没有在本文档定义的术语可直接引用这些外部参考文献中的定义。
+**原理** Unilang 预期实现和 C++ 语言的实现能进行一定程度上的互操作；设计上，和 C++ 等语言也共享一些相似的基本概念。没有在本文档定义的术语可直接引用这些外部参考文献中的定义。[RnRK] 作为本文档中的一些 API 的参考设计来源，也在此一并列出。
 
 # 术语和定义(Terms and Definitions)
 
@@ -788,6 +792,8 @@
 
 　　若函数提供结果无条件保留引用值和不保留引用值的不同版本且保留引用值的函数是不安全函数，保留引用值的函数名以 `%` 作为（在可能的 `!` 之前的）后缀。
 
+**原理** 关于 `$`、`?` 和 `!` 的原理，参见 [RnRK] 1.3.7 。
+
 ## 不安全操作
 
 　　不安全(unsafe) 操作是可能在程序的执行中引入未定义行为的操作。
@@ -979,7 +985,9 @@
 
 `$vau/e <parent> <formals> <eformal> <body>`
 
-　　创建指定静态环境的 vau 抽象（关于 vau 抽象，参见 [Shu10] ）。
+　　创建指定静态环境的 vau 抽象。
+
+**原理** 关于 vau 抽象，参见 [Shu10] 。[RnRK] 提供和本文档中的 vau 抽象构造器类似的操作，但不包含 `<parent>` 的支持。
 
 　　创建的抽象是操作子，作为求值 `$vau/e` 的调用结果。
 
@@ -1095,6 +1103,10 @@
 　　结果是三个合并子组成的列表，其元素分别表示用于构造封装类型对象的封装(encapsulate) 构造器、判断封装类型的谓词和用于解封装(decapsulate) 的访问器。
 
 　　封装构造器保留参数中的引用值。
+
+　　创建的封装类型的相等性（以 `eqv?` 判断）同被封装的对象。
+
+**原理** 关于 API 的设计，参见 [RnRK] 8.1.1 。相等性判断的规则与之不同，以允许更好地支持和宿主语言中非特定对象类型的值之间的互操作。另见 [SRFI-137](https://srfi.schemers.org/srfi-137/srfi-137.html) 引用的关于[对唯一类型的讨论](https://small.r7rs.org/wiki/UniqueTypesSnellPym/)。
 
 ## 核心库函数
 
@@ -1520,6 +1532,10 @@
 
 * `<promise>` 求值代理：表示可被求值取得结果的对象。
 	* 保存待求值的表达式和环境，或已求值的结果。
+
+**注释** 在 `<promise>` 上的并发访问并不具有特别的同步保证和要求。
+
+**原理** 代理求值的原语可实现[惰性求值](https://en.wikipedia.org/wiki/Lazy_evaluation)和透明的[记忆化](https://en.wikipedia.org/wiki/Memoization)求值。和一些流行的误解不同，尽管[原始设计](https://en.wikipedia.org/wiki/Futures_and_promises)是关于并行处理的，这不必然蕴含并发的[投机执行](https://en.wikipedia.org/wiki/Speculative_execution)，只是因为*解析(resolve)* 内部状态并不在用户程序中可见，而蕴含必要的最小同步。由于当前语言不支持并发访问，即使是对 `<promise>` 的修改操作导致变化，在语言中其状态也不可见，没有要求支持这种同步；未来可能会附加要求以提供更完善的并发支持。关于 API 的设计，参见 [RnRK] 9 和 [SRFI-45](https://srfi.schemers.org/srfi-45/) 。
 	
 `promise? <object>`
 
