@@ -13,7 +13,10 @@
 #include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
+#include <cassert> // for assert;
 #include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
+#include <ystdex/swap.hpp> // for ystdex::swap_depedent;
+#include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <exception> // for std::exception_ptr;
 
 namespace Unilang
@@ -184,8 +187,6 @@ ToReducer(const _tAlloc& a, _tParam&& arg, _tParams&&... args)
 #endif
 }
 
-using ReducerSequence = forward_list<Reducer>;
-
 using ContextAllocator = pmr::polymorphic_allocator<byte>;
 
 // NOTE: This is the host type for combiners.
@@ -239,6 +240,54 @@ public:
 
 class Context final
 {
+private:
+	using ReducerSequenceBase = YSLib::forward_list<Reducer>;
+
+public:
+	class ReducerSequence : public ReducerSequenceBase,
+		private ystdex::equality_comparable<ReducerSequence>
+	{
+	public:
+		ValueObject Parent{};
+
+		using ReducerSequenceBase::ReducerSequenceBase;
+		ReducerSequence(const ReducerSequence& act)
+			: ReducerSequenceBase(act, act.get_allocator())
+		{}
+		ReducerSequence(ReducerSequence&& rs) = default;
+		~ReducerSequence()
+		{
+			clear();
+		}
+
+		ReducerSequence&
+		operator=(ReducerSequence&) = default;
+		ReducerSequence&
+		operator=(ReducerSequence&&) = default;
+
+		void
+		clear() ynothrow
+		{
+			while(!empty())
+				pop_front();
+		}
+
+		friend void
+		swap(ReducerSequence& x, ReducerSequence& y) noexcept
+		{
+			assert(x.get_allocator() == y.get_allocator()
+				&& "Invalid allocator found.");
+			x.swap(y);
+			ystdex::swap_dependent(x.Parent, y.Parent);
+		}
+
+		YB_ATTR_nodiscard YB_PURE friend bool
+		operator==(const ReducerSequence& x, const ReducerSequence& y) noexcept
+		{
+			return ystdex::ref_eq<>()(x, y);
+		}
+	};
+
 public:
 	using ExceptionHandler = function<void(std::exception_ptr)>;
 	class ReductionGuard

@@ -237,8 +237,8 @@ ReductionStatus
 Interpreter::ExecuteOnce(string_view unit, Context& ctx)
 {
 	ctx.SaveExceptionHandler();
-	ctx.HandleException = std::bind(
-		[&](std::exception_ptr p, const ReducerSequence::const_iterator& i){
+	ctx.HandleException = std::bind([&](std::exception_ptr p,
+		const Context::ReducerSequence::const_iterator& i){
 		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
 		try
