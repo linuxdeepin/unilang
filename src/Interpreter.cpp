@@ -15,6 +15,7 @@
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <functional> // for std::placeholders::_1;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
@@ -247,6 +248,9 @@ Interpreter::ExecuteOnce(string_view unit, Context& ctx)
 		}
 		catch(std::exception& e)
 		{
+			const auto gd(ystdex::make_guard([&]() noexcept{
+				Backtrace.clear();
+			}));
 			static YSLib::Logger trace;
 
 			TraceException(e, trace);
