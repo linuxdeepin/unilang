@@ -82,7 +82,7 @@ public:
 	Context Root{resource};
 	SeparatorPass Preprocess{Allocator};
 	TermNode Term{Allocator};
-	ReducerSequence Backtrace{Allocator};
+	Context::ReducerSequence Backtrace{Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
