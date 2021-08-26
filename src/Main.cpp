@@ -413,6 +413,22 @@ $defl%! require (&req)
 	)Unilang");
 }
 
+[[gnu::nonnull(2)]] void
+PreloadExternal(Interpreter& intp, const char* filename)
+{
+	try
+	{
+		auto term(intp.ReadFrom(*intp.OpenUnique(filename)));
+
+		intp.Evaluate(term);
+	}
+	catch(...)
+	{
+		std::throw_with_nested(UnilangException(
+			ystdex::sfmt("Failed loading external unit '%s'.", filename)));
+	}
+}
+
 void
 LoadFunctions(Interpreter& intp, bool jit)
 {
@@ -746,13 +762,11 @@ $defv! $import! (&e .&symbols) d
 	env.Frozen = true;
 	intp.SaveGround();
 	// NOTE: User environment initialization.
-	intp.Perform(R"Unilang(
-$import! std.io newline load display;
-	)Unilang");
+	PreloadExternal(intp, "init.txt");
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.92"
+#define APP_VER "0.7.93"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
