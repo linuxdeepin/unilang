@@ -309,7 +309,7 @@ Interpreter::Read(string_view unit)
 }
 
 TermNode
-Interpreter::ReadFrom(std::streambuf& buf, Context&) const
+Interpreter::ReadFrom(std::streambuf& buf) const
 {
 	using s_it_t = std::istreambuf_iterator<char>;
 	ByteParser parse{};
@@ -319,12 +319,12 @@ Interpreter::ReadFrom(std::streambuf& buf, Context&) const
 	return ReadParserResult(parse);
 }
 TermNode
-Interpreter::ReadFrom(std::istream& is, Context& ctx) const
+Interpreter::ReadFrom(std::istream& is) const
 {
 	if(is)
 	{
 		if(const auto p = is.rdbuf())
-			return ReadFrom(*p, ctx);
+			return ReadFrom(*p);
 		throw std::invalid_argument("Invalid stream buffer found.");
 	}
 	else

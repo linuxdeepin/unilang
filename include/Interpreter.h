@@ -114,9 +114,9 @@ public:
 	Read(string_view);
 
 	YB_ATTR_nodiscard TermNode
-	ReadFrom(std::streambuf&, Context&) const;
+	ReadFrom(std::streambuf&) const;
 	YB_ATTR_nodiscard TermNode
-	ReadFrom(std::istream&, Context&) const;
+	ReadFrom(std::istream&) const;
 
 	YB_ATTR_nodiscard TermNode
 	ReadParserResult(const ByteParser&) const;
