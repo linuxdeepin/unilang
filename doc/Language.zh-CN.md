@@ -1753,6 +1753,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　输出字符串。
 
+`puts <string>`
+
+　　输出字符串和换行并刷新缓冲。
+
 ## 系统库
 
 　　系统库的操作加载为基础环境下的 `std.system` 环境。
