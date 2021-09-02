@@ -7,17 +7,17 @@
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <functional> // for std::bind, std::placeholders;
-#include "Forms.h" // for Forms::RetainN, CallBinaryFold;
+#include "BasicReduction.h" // for ReductionStatus, LiftOther;
+#include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
 //	ThrowInvalidTokenError;
-#include "BasicReduction.h" // for ReductionStatus, LiftOther;
-#include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
+#include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
 //	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
 //	ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
+#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold;
 #include "Lexical.h" // for IsUnilangSymbol;
-#include "Evaluation.h" // for ValueToken, RegisterStrict;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
@@ -67,8 +67,8 @@ LoadModuleChecked(Context& ctx, string_view module_name, _fCallable&& f)
 YB_ATTR_nodiscard ReductionStatus
 DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 {
-	Forms::RetainN(term);
-	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+	RetainN(term);
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		f(term, nd, !p_ref || p_ref->IsModifiable());
 	}, *std::next(term.begin()));
 	return ReductionStatus::Retained;
@@ -121,7 +121,7 @@ YB_ATTR_nodiscard ReductionStatus
 DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 	const Context& c)
 {
-	Forms::RetainN(term);
+	RetainN(term);
 	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		const string_view id(Unilang::AccessRegular<TokenValue>(nd, p_ref));
 
@@ -766,7 +766,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.93"
+#define APP_VER "0.7.99"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

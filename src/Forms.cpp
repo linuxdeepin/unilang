@@ -7,7 +7,7 @@
 //	UnilangException, ListTypeError;
 #include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
 //	TermToNamePtr, ThrowValueCategoryError;
-#include "Evaluation.h" // for IsIgnore, BindParameterWellFormed,
+#include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
@@ -140,7 +140,7 @@ ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 ReductionStatus
 EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 {
-	Forms::RetainN(term, 2);
+	RetainN(term, 2);
 
 	const auto i(std::next(term.begin()));
 	auto p_env(ResolveEnvironment(*std::next(i)).first);
@@ -319,16 +319,6 @@ public:
 
 
 template<typename _func>
-ReductionStatus
-CreateFunction(TermNode& term, _func f, size_t n)
-{
-	Forms::Retain(term);
-	if(term.size() > n)
-		return f();
-	ThrowInsufficientTermsErrorFor(MakeFunctionAbstractionError(), term);
-}
-
-template<typename _func>
 inline auto
 CheckFunctionCreation(_func f) -> decltype(f())
 {
@@ -412,7 +402,7 @@ template<typename _fComp, typename _func>
 void
 EqualTerm(TermNode& term, _fComp f, _func g)
 {
-	Forms::RetainN(term, 2);
+	RetainN(term, 2);
 
 	auto i(term.begin());
 	const auto& x(*++i);
@@ -466,7 +456,7 @@ ConsItem(TermNode& term, TermNode& y)
 ReductionStatus
 ConsImpl(TermNode& term)
 {
-	Forms::RetainN(term, 2);
+	RetainN(term, 2);
 	RemoveHead(term);
 
 	const auto i(std::next(term.begin()));
@@ -568,7 +558,7 @@ public:
 	void
 	operator()(TermNode& term) const
 	{
-		Forms::RetainN(term);
+		RetainN(term);
 
 		auto& tm(*std::next(term.begin()));
 
@@ -603,7 +593,7 @@ public:
 	void
 	operator()(TermNode& term) const
 	{
-		Forms::RetainN(term);
+		RetainN(term);
 
 		auto& tm(*std::next(term.begin()));
 
@@ -638,7 +628,7 @@ public:
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
-		Forms::RetainN(term);
+		RetainN(term);
 
 		return Unilang::ResolveTerm(
 			[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
@@ -707,19 +697,6 @@ CheckResolvedListReference(TermNode& nd, bool has_ref)
 
 namespace Forms
 {
-
-size_t
-RetainN(const TermNode& term, size_t m)
-{
-	assert(IsBranch(term));
-
-	const auto n(term.size() - 1);
-
-	if(n == m)
-		return n;
-	throw ArityMismatch(m, n);
-}
-
 
 void
 Eq(TermNode& term)

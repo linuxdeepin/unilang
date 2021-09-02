@@ -3,7 +3,7 @@
 #ifndef INC_Unilang_Forms_h_
 #define INC_Unilang_Forms_h_ 1
 
-#include "Evaluation.h" // for ReductionStatus, TermNode, IsBranch,
+#include "Evaluation.h" // for ReductionStatus, TermNode,
 //	YSLib::EmplaceCallResult, Unilang::Deref, yforward, Strict,
 //	Unilang::RegisterHandler, Context;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
@@ -23,18 +23,6 @@ namespace Unilang
 
 namespace Forms
 {
-
-inline ReductionStatus
-Retain(const TermNode& term) noexcept
-{
-	static_cast<void>(term);
-	assert(IsBranch(term));
-	return ReductionStatus::Retained;
-}
-
-size_t
-RetainN(const TermNode&, size_t = 1);
-
 
 [[nodiscard, gnu::const]] constexpr ReductionStatus
 EmplaceCallResultOrReturn(TermNode&, ReductionStatus status) noexcept
