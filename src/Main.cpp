@@ -451,6 +451,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
+	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
 	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
 	RegisterStrict(ctx, "as-const",
@@ -773,7 +774,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.103"
+#define APP_VER "0.7.104"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

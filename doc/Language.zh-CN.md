@@ -886,7 +886,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `eqv? <object1> <object2>`
 
-　　判断非列表的值相等关系。当且对象转换的右值相等时比较结果为 `#t` 。比较列表对象是否相等未指定。
+　　判断非列表的值相等关系。当且对象转换的右值相等时比较结果为 `#t` 。比较具有枝节点表示的操作数是否相等未指定。
 
 `$if <test> <consequent> <alternate>`
 
@@ -899,6 +899,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 `null? <object>`
 
 　　判断操作数是否为空列表。
+
+`branch? <object>`
+
+　　判断操作数是否具有枝节点表示。非空列表和其它由派生实现定义的数据的内部表示具有枝节点表示。
 
 `bound-lvalue? <object>`
 
