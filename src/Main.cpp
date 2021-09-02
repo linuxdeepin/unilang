@@ -374,7 +374,7 @@ $provide/let! (registered-requirement? register-requirement!
 	),
 	$def! prom_pathspecs ($remote-eval% $lazy std.promises)
 		$let ((spec ($remote-eval% env-get std.system) "UNILANG_PATH"))
-			$if (string-empty? spec) (list "./?" "./?.txt")
+			$if (string-empty? spec) (list "./?" "./?.u" "./?.txt")
 				(($remote-eval% string-split std.strings) spec ";"),
 	(
 	$def! placeholder ($remote-eval% string->regex std.strings) "\?",
@@ -766,7 +766,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.99"
+#define APP_VER "0.7.101"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
