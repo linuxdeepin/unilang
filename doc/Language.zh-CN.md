@@ -1561,11 +1561,13 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `memoize <object>`
 
-　　记忆化求值。
+　　记忆化求值：以参数作为已被求值的结果创建 `<promise>` 对象。
+
+　　在结果中保留参数的引用值。
 
 `$lazy <body>`
 
-　　创建求值代理对象，延迟求值。
+　　延迟求值：以参数为待求值的表达式，以当前环境作为这个表达式被求值的动态环境，创建 `<promise>` 对象。
 
 `$lazy% <body>`
 
@@ -1584,6 +1586,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　立即求值指定的 `<promise>` 对象。
 
 　　若参数在求值时修改为非 `<promise>` 类型的对象，需要继续迭代求值时，引起类型错误。
+
+**注释** 通过 `force` 引起 `<promise>` 对象的求值可能蕴含修改这个对象而使其中的状态失效的操作（如通过 `assign!` ）。因此，实现中需要重新访问状态，而重新进行类型检查。
 
 ## 字符串操作
 
