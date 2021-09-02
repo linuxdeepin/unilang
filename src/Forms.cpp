@@ -300,33 +300,6 @@ private:
 			return p_env;
 		return EnvironmentReference(p_env);
 	}
-
-	static void
-	SaveNothing(const VauHandler&, TCOAction&)
-	{}
-
-	static void
-	SaveList(const VauHandler& vau, TCOAction& act)
-	{
-		for(auto& vo : vau.parent.GetObject<EnvironmentList>())
-		{
-			if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-				SaveOwningPtr(*p, act);
-		}
-	}
-
-	static void
-	SaveOwning(const VauHandler& vau, TCOAction& act)
-	{
-		SaveOwningPtr(vau.parent.GetObject<shared_ptr<Environment>>(), act);
-	}
-
-	static void
-	SaveOwningPtr(shared_ptr<Environment>& p_static, TCOAction& act)
-	{
-		if(p_static.use_count() == 1)
-			act.RecordList.emplace_front(ContextHandler(), std::move(p_static));
-	}
 };
 
 
