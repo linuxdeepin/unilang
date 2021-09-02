@@ -7,7 +7,7 @@
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
-#include "Evaluation.h" // for BindParameterWellFormed;
+#include "Evaluation.h" // for BindParameterWellFormed, Unilang::MakeForm;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
 #include "TermAccess.h" // for ThrowValueCategoryError;
@@ -197,20 +197,10 @@ public:
 	bool NoLifting = {};
 
 	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
-		shared_ptr<Environment>&& p_env, bool owning, TermNode& term, bool nl)
-		: eformal(std::move(ename)), p_formals((CheckParameterTree(*p_fm),
-		std::move(p_fm))), parent(MakeParentSingle(p_env, owning)),
-		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())))),
-		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
-	{}
-	VauHandler(int, string&& ename, shared_ptr<TermNode>&& p_fm,
 		ValueObject&& vo, TermNode& term, bool nl)
-		: eformal(std::move(ename)),
-		p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
-		parent((Environment::CheckParent(vo), std::move(vo))),
-		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())))),
+		: eformal(std::move(ename)), p_formals((CheckParameterTree(Deref(p_fm)),
+		std::move(p_fm))), parent(std::move(vo)), p_eval_struct(ShareMoveTerm(
+		ystdex::exchange(term, Unilang::AsTermNode(term.get_allocator())))),
 		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 
@@ -292,13 +282,36 @@ private:
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
 
+public:
 	YB_ATTR_nodiscard YB_PURE static ValueObject
-	MakeParentSingle(const shared_ptr<Environment>& p_env, bool owning)
+	MakeParent(ValueObject&& vo)
+	{
+		Environment::CheckParent(vo);
+		return std::move(vo);
+	}
+
+	YB_ATTR_nodiscard YB_PURE static ValueObject
+	MakeParentSingle(TermNode::allocator_type a,
+		pair<shared_ptr<Environment>, bool> pr)
+	{
+		auto& p_env(pr.first);
+
+		Environment::EnsureValid(p_env);
+		if(pr.second)
+			return ValueObject(std::allocator_arg, a,
+				in_place_type<shared_ptr<Environment>>, std::move(p_env));
+		return ValueObject(std::allocator_arg, a,
+			in_place_type<EnvironmentReference>, std::move(p_env));
+	}
+
+
+	YB_ATTR_nodiscard YB_PURE static ValueObject
+	MakeParentSingleNonOwning(TermNode::allocator_type a,
+		const shared_ptr<Environment>& p_env)
 	{
 		Environment::EnsureValid(p_env);
-		if(owning)
-			return p_env;
-		return EnvironmentReference(p_env);
+		return ValueObject(std::allocator_arg, a,
+			in_place_type<EnvironmentReference>, p_env);
 	}
 };
 
@@ -327,73 +340,62 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 }
 
-YB_ATTR_nodiscard ContextHandler
-CreateVau(TermNode& term, bool no_lift, TNIter i,
-	shared_ptr<Environment>&& p_env, bool owning)
-{
-	auto formals(ShareMoveTerm(*++i));
-	auto eformal(CheckEnvFormal(*++i));
-
-	term.erase(term.begin(), ++i);
-	return FormContextHandler(VauHandler(std::move(eformal), std::move(formals),
-		std::move(p_env), owning, term, no_lift));
-}
-
-YB_ATTR_nodiscard ContextHandler
-CreateVauWithParent(TermNode& term, bool no_lift, TNIter i,
-	ValueObject&& parent)
+YB_ATTR_nodiscard VauHandler
+MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 {
 	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
 	auto eformal(CheckEnvFormal(Unilang::Deref(++i)));
 
 	term.erase(term.begin(), ++i);
-	return FormContextHandler(VauHandler(0, std::move(eformal),
-		std::move(formals), std::move(parent), term, no_lift));
+	return VauHandler(std::move(eformal), std::move(formals), std::move(vo),
+		term, no_lift);
+}
+
+template<typename _func>
+inline ReductionStatus
+ReduceCreateFunction(TermNode& term, _func f, size_t wrap)
+{
+	term.Value = Unilang::MakeForm(term, CheckFunctionCreation(f), wrap);
+	return ReductionStatus::Clean;
 }
 
 ReductionStatus
 VauImpl(TermNode& term, Context& ctx, bool no_lift)
 {
-	return CreateFunction(term, [&, no_lift]{
-		term.Value = CheckFunctionCreation([&]{
-			return
-				CreateVau(term, no_lift, term.begin(), ctx.ShareRecord(), {});
-		});
-		return ReductionStatus::Clean;
-	}, 2);
+	CheckVariadicArity(term, 1);
+	return ReduceCreateFunction(term, [&]{
+		return MakeVau(term, no_lift, term.begin(),
+			VauHandler::MakeParentSingleNonOwning(term.get_allocator(),
+			ctx.GetRecordPtr()));
+	}, Form);
 }
 
 ReductionStatus
 VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 {
-	return CreateFunction(term, [&, no_lift]{
-		auto i(term.begin());
-		auto& tm(Unilang::Deref(++i));
+	CheckVariadicArity(term, 2);
 
-		return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
-			term.Value = CheckFunctionCreation([&]{
-				return ResolveTerm([&](TermNode& nd,
-					ResolvedTermReferencePtr p_ref) -> ContextHandler{
-					if(!IsExtendedList(nd))
-					{
-						auto p_env_pr(ResolveEnvironment(nd.Value,
-							Unilang::IsMovable(p_ref)));
+	auto i(term.begin());
+	auto& tm(Unilang::Deref(++i));
 
-						Environment::EnsureValid(p_env_pr.first);
-						return CreateVau(term, no_lift, i,
-							std::move(p_env_pr.first), p_env_pr.second);
-					}
+	return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
+		return ReduceCreateFunction(term, [&]{
+			return
+				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+				return MakeVau(term, no_lift, i, [&]() -> ValueObject{
 					if(IsList(nd))
-						return CreateVauWithParent(term, no_lift, i,
-							MakeEnvironmentParent(nd.begin(),
-							nd.end(), nd.get_allocator(),
+						return VauHandler::MakeParent(MakeEnvironmentParent(
+							nd.begin(), nd.end(), nd.get_allocator(),
 							!Unilang::IsMovable(p_ref)));
+					if(IsLeaf(nd))
+						return VauHandler::MakeParentSingle(
+							term.get_allocator(), ResolveEnvironment(
+							nd.Value, Unilang::IsMovable(p_ref)));
 					ThrowInvalidEnvironmentType(nd, p_ref);
-				}, tm);
-			});
-			return ReductionStatus::Clean;
-		});
-	}, 3);
+				}());
+			}, tm);
+		}, Form);
+	});
 }
 
 YB_NORETURN ReductionStatus
