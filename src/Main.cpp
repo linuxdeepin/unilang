@@ -582,6 +582,10 @@ $defl! rest% ((#ignore .%xs)) move! xs;
 $defl%! rest& (&l)
 	($lambda% ((#ignore .&xs)) xs) (check-list-reference (forward! l));
 $defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
+$defl! equal? (&x &y)
+	$if ($if (branch? x) (branch? y) #f)
+		($if (equal? (first& x) (first& y))
+		(equal? (rest& x) (rest& y)) #f) (eqv? x y);
 $defl%! check-environment (&e) $sequence (eval% #inert e) (forward! e);
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
@@ -774,7 +778,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.104"
+#define APP_VER "0.7.105"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
