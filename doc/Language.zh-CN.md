@@ -1349,6 +1349,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　修改列表的第一个元素，保留引用值。
 
+`equal? <object> <object>`
+
+　　判断一般相等关系。对不具有枝节点表示的对象，同 `eqv?` ，否则相等定义为其中所有的子对象相等。
+
 `check-environment <object>`
 
 　　检查环境。
