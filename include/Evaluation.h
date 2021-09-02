@@ -239,6 +239,20 @@ private:
 	CallN(size_t, TermNode&, Context&) const;
 };
 
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline ContextHandler
+MakeForm(TermNode::allocator_type a, _tParams&&... args)
+{
+	return ContextHandler(std::allocator_arg, a,
+		FormContextHandler(yforward(args)...));
+}
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline ContextHandler
+MakeForm(const TermNode& term, _tParams&&... args)
+{
+	return Unilang::MakeForm(term.get_allocator(), yforward(args)...);
+}
+
 
 enum WrappingKind : decltype(FormContextHandler::Wrapping)
 {
@@ -268,6 +282,21 @@ inline void
 RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 {
 	Unilang::RegisterHandler<>(target, name, yforward(args)...);
+}
+
+
+YB_ATTR_nodiscard YB_PURE inline size_t
+FetchArgumentN(const TermNode& term) noexcept
+{
+	assert(IsBranchedList(term) && "Invalid term found.");
+	return term.size() - 1;
+}
+
+inline void
+CheckVariadicArity(TermNode& term, size_t n)
+{
+	return FetchArgumentN(term) > n ? void()
+		: (RemoveHead(term), ThrowInsufficientTermsError(term, {}));
 }
 
 
