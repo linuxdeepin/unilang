@@ -657,36 +657,36 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　未求值的操作数：
 
-* `<symbol>` 符号。
-* `<symbols>` 元素为 <symbol> 的列表，形式为 (<symbol>...) 。
-* `<eformal>` 表示可选提供的环境名称或 `#ignore` 的符号。使用和 <symbol> 相同的表示。通常为动态环境。
-* `<expression>` 待求值的表达式。
-* `<expressions>` 形式为 `<expression>...` 的待求值形式。
+* `<symbol>` ：符号。
+* `<symbols>` ：元素为 `<symbol>` 的列表，形式为 `(<symbol>...)` 。
+* `<eformal>` ：表示可选提供的环境名称或 `#ignore` 的符号。使用和 `<symbol>` 相同的表示。通常为动态环境。
+* `<expression>` ：待求值的表达式。
+* `<expressions>` ：形式为 `<expression>...` 的待求值形式。
 	* 求值时被作为单一表达式，代替 `<expression>` 可避免语法中要求谁过多的括号及 `eval` 等求值形式中显式构造列表的需要。
-* `<binding>` 绑定列表，形式为 <symbol> <expressions> ，用于指定被求值的表达式和绑定参数的符号。
-* `<bindings>` 元素为 <binding> 的列表，形式为 (<binding>...) 。
-* `<body>` 出现在元素的末尾 `<expressions>?` 形式，用于函数体等替换求值的目标。
+* `<binding>` 绑定列表，形式为 `<symbol> <expressions>` ，用于指定被求值的表达式和绑定参数的符号。
+* `<bindings>` ：元素为 `<binding>` 的列表，形式为 `(<binding>...)` 。
+* `<body>`： 出现在元素的末尾 `<expressions>?` 形式，用于函数体等替换求值的目标。
 * `<expression-sequence>` ：同 `<body>` 但蕴含顺序求值。
 	* 求值 `<expression-sequence>` 的结果被定义为求值其最后一个子表达式（若存在）的结果，或当不存在子表达式时为 `#inert` 。
-* `<consequent>` 同 `<expression>` 仅用于 `<test>` 求值为 `#t` 时。
-* `<alternate>` 同 `<expression>` ，仅用于 `<test>` 求值不为 `#t` 时。
-* `<definiend>` 被绑定项的目标，是包含符号的有向无环图表达式。
-* `<formals>` 形式参数形式。同 `<definiend>` 但允许派生实现定义更多检查。
-* `<clauses>` 元素为条件分支的列表，形式为 `(<test> <body>)...` 。
-* `<variable>` 变量。用于表示被定义的名称。同 `<symbol>` ，其中的处理与作为非列表的 `<formals>` 相同。
+* `<consequent>` ：同 `<expression>` 仅用于 `<test>` 求值为 `#t` 时。
+* `<alternate>` ：同 `<expression>` ，仅用于 `<test>` 求值不为 `#t` 时。
+* `<definiend>` ：被绑定项的目标，是包含符号的有向无环图表达式。
+* `<formals>` ：形式参数形式。同 `<definiend>` 但允许派生实现定义更多检查。
+* `<clauses>` ：元素为条件分支的列表，形式为 `(<test> <body>)...` 。
+* `<variable>` ：变量。用于表示被定义的名称。同 `<symbol>` ，其中的处理与作为非列表的 `<formals>` 相同。
 
 　　求值得到的操作数：
 
-* `<object>` 一般对象，包括引用对象的引用值。
-* `<reference>` 对象引用值。
-* `<list>` 列表。
-* `<lists>` 元素都是列表的列表。
-* `<bool>` 布尔值，值为 `#t` 或 `#f` 的集合。
-* `<test>` 类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
+* `<object>` ：一般对象，包括引用对象的引用值。
+* `<reference>` ：对象引用值。
+* `<list>` ：列表。
+* `<lists>` ：元素都是列表的列表。
+* `<bool>` ：布尔值，值为 `#t` 或 `#f` 的集合。
+* `<test>` ：类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
 	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果为 `#inert` 。
-* `<combiner>` 合并子。
-* `<applicative>` 应用子。
-* `<predicate>` 谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
+* `<combiner>` ：合并子。
+* `<applicative>` ：应用子。
+* `<predicate>` ：谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
 * `<environment>` 一等环境。
 * `<parent>` ：指定环境的父环境的值，包括 `<environment>` 或元素为 `<environment>` 的 `<list>` 。
 
