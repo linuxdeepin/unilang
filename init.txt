@@ -1,1 +1,32 @@
-﻿$import! std.io newline load display;
+﻿$import! std.io newline load display puts;
+$import! std.strings ++;
+
+$defl! putss (.&xs) puts (apply ++ xs);
+$defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
+$defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
+
+$def! Unilang_TestOpts_QuickFail #t;
+$def! report-failure $if Unilang_TestOpts_QuickFail raise-error puts;
+$defl! pass (.) puts "PASS.";
+$defl! fail-on-check (&expr &res) $sequence
+	(puts "FAIL: Check failed, with the expression:")
+	(display expr)
+	(puts "  with the result:")
+	(display res)
+	(report-failure "Test case failed.");
+$defl! fail-on-expect (&expr &res &expected) $sequence
+	(puts "FAIL: Check failed, with the expression:")
+	(display expr)
+	(puts "  with the result:")
+	(display (forward! res))
+	(puts "  expected result:")
+	(display (forward! expected))
+	(report-failure "Test case failed.");
+$defv! $check (.&expr) d
+	$let ((res eval expr d))
+		$if (res) (pass res) (fail-on-check expr res);
+$defv! $expect (&expected-expr .&expr) d
+	$let ((&res eval expr d) (&expected eval expected-expr d))
+		$if (equal? res expected) (pass res)
+			(fail-on-expect expr (forward! res) (forward! expected));
+
