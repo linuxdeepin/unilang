@@ -1230,7 +1230,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `assign%! <reference> <object>`
 
-　　同 `assign@!` ，但 `<object>` 是引用时被折叠。
+　　同 `assign@!` ，但 `<object>` 是引用值时赋值的源操作数是 `<object>` 折叠后的值。
 
 `apply <applicative> <object> <environment>`
 
