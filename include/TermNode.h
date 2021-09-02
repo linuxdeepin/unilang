@@ -380,6 +380,13 @@ IsList(const TermNode& nd) noexcept
 }
 
 template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline bool
+HasValue(const TermNode& nd, const _type& x)
+{
+	return nd.Value == x;
+}
+
+template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type&
 Access(TermNode& nd)
 {
@@ -392,16 +399,30 @@ Access(const TermNode& nd)
 	return nd.Value.Access<const _type&>();
 }
 
+inline void
+AssertBranch(const TermNode& nd) noexcept
+{
+	yunused(nd);
+	assert(IsBranch(nd) && "Invalid term found.");
+}
+
+inline void
+AssertBranchedList(const TermNode& nd) noexcept
+{
+	yunused(nd);
+	assert(IsBranchedList(nd) && "Invalid term found.");
+}
+
 YB_ATTR_nodiscard YB_PURE inline TermNode&
 AccessFirstSubterm(TermNode& nd) noexcept
 {
-	assert(IsBranch(nd));
+	AssertBranch(nd);
 	return Unilang::Deref(nd.begin());
 }
 YB_ATTR_nodiscard YB_PURE inline const TermNode&
 AccessFirstSubterm(const TermNode& nd) noexcept
 {
-	assert(IsBranch(nd));
+	AssertBranch(nd);
 	return Unilang::Deref(nd.begin());
 }
 
@@ -443,14 +464,6 @@ YB_ATTR_nodiscard YB_PURE inline TermNode
 AsTermNode(TermNode::allocator_type a, _tParams&&... args)
 {
 	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
-}
-
-
-template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline bool
-HasValue(const TermNode& nd, const _type& x)
-{
-	return nd.Value == x;
 }
 
 } // namespace Unilang;
