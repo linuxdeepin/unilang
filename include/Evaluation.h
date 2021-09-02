@@ -288,7 +288,7 @@ RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 YB_ATTR_nodiscard YB_PURE inline size_t
 FetchArgumentN(const TermNode& term) noexcept
 {
-	assert(IsBranchedList(term) && "Invalid term found.");
+	AssertBranchedList(term);
 	return term.size() - 1;
 }
 
@@ -297,6 +297,23 @@ CheckVariadicArity(TermNode& term, size_t n)
 {
 	return FetchArgumentN(term) > n ? void()
 		: (RemoveHead(term), ThrowInsufficientTermsError(term, {}));
+}
+
+inline ReductionStatus
+Retain(const TermNode& term) noexcept
+{
+	AssertBranchedList(term);
+	return ReductionStatus::Regular;
+}
+
+inline size_t
+RetainN(const TermNode& term, size_t m = 1)
+{
+	const auto n(FetchArgumentN(term));
+
+	if(n == m)
+		return n;
+	throw ArityMismatch(m, n);
 }
 
 
