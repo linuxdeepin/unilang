@@ -1729,7 +1729,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `() newline`
 
-　　输出换行。
+　　输出换行并刷新缓冲。
 
 `readable-file? <string>`
 
