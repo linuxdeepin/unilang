@@ -3,14 +3,18 @@
 #include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
 //	Unilang::TryAccessReferencedTerm;
 #include <exception> // for std::throw_with_nested;
-#include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
+#include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError,
+//	UnilangException, ListTypeError;
+#include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
+//	TermToNamePtr, ThrowValueCategoryError;
+#include "Evaluation.h" // for IsIgnore, BindParameterWellFormed,
+//	Unilang::MakeForm;
+#include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
-#include "Evaluation.h" // for BindParameterWellFormed, Unilang::MakeForm;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
-#include "TermAccess.h" // for ThrowValueCategoryError;
 
 namespace Unilang
 {
@@ -40,39 +44,37 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 	}
 }
 
-
-[[gnu::nonnull(2)]] void
-CheckVauSymbol(const TokenValue& s, const char* target, bool is_valid)
+[[noreturn]] inline void
+ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
-	if(!is_valid)
-		throw InvalidSyntax(ystdex::sfmt("Token '%s' is not a symbol or"
-			" '#ignore' expected for %s.", s.data(), target));
-}
-
-[[noreturn, gnu::nonnull(2)]] void
-ThrowInvalidSymbolType(const TermNode& term, const char* n)
-{
-	throw InvalidSyntax(ystdex::sfmt("Invalid %s type '%s' found.", n,
-		term.Value.type().name()));
+	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
 }
 
 YB_ATTR_nodiscard YB_PURE string
-CheckEnvFormal(const TermNode& eterm)
+CheckEnvironmentFormal(const TermNode& term)
 {
-	const auto& term(ReferenceTerm(eterm));
-
-	if(const auto p = TermToNamePtr(term))
+	try
 	{
-		if(!IsIgnore(*p))
-		{
-			CheckVauSymbol(*p, "environment formal parameter",
-				CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
-			return *p;
-		}
+		return ResolveTerm([&](const TermNode& nd, bool has_ref) -> string{
+			if(const auto p = TermToNamePtr(nd))
+			{
+				if(!IsIgnore(*p))
+				{
+					if(IsUnilangSymbol(*p))
+						return string(*p, term.get_allocator());
+					ThrowInvalidTokenError(*p);
+				}
+			}
+			else
+				ThrowFormalParameterTypeError(nd, has_ref);
+			return string(term.get_allocator());
+		}, term);
 	}
-	else
-		ThrowInvalidSymbolType(term, "environment formal parameter");
-	return {};
+	catch(...)
+	{
+		std::throw_with_nested(InvalidSyntax("Failed checking for"
+			" environment formal parameter (expected a symbol)."));
+	}
 }
 
 
@@ -344,7 +346,7 @@ YB_ATTR_nodiscard VauHandler
 MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 {
 	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
-	auto eformal(CheckEnvFormal(Unilang::Deref(++i)));
+	auto eformal(CheckEnvironmentFormal(Unilang::Deref(++i)));
 
 	term.erase(term.begin(), ++i);
 	return VauHandler(std::move(eformal), std::move(formals), std::move(vo),
