@@ -8,7 +8,7 @@
 #include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
 //	TermToNamePtr, ThrowValueCategoryError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
-//	Unilang::MakeForm;
+//	Unilang::MakeForm, CheckVariadicArity, Form, Strict;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
@@ -663,6 +663,17 @@ public:
 	}
 };
 
+
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline TermNode
+AsForm(TermNode::allocator_type a, _tParams&&... args)
+{
+	return Unilang::AsTermNode(a, std::allocator_arg, a,
+		in_place_type<ContextHandler>, std::allocator_arg, a,
+		FormContextHandler(yforward(args)...));
+}
+
+
 void
 CheckFrozenEnvironment(const shared_ptr<Environment>& p_env)
 {
@@ -909,16 +920,16 @@ CheckListReference(TermNode& term)
 ReductionStatus
 MakeEncapsulationType(TermNode& term)
 {
-	const auto tag(in_place_type<ContextHandler>);
 	const auto a(term.get_allocator());
-	shared_ptr<void> p_type(new byte);
+	{
+		TermNode::Container tcon(a);
+		shared_ptr<void> p_type(new yimpl(byte));
 
-	term.GetContainerRef() = {Unilang::AsTermNode(a, tag, std::allocator_arg, a,
-		FormContextHandler(Encapsulate(p_type), 1)),
-		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
-		FormContextHandler(Encapsulated(p_type), 1)),
-		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
-		FormContextHandler(Decapsulate(p_type), 1))};
+		tcon.push_back(Unilang::AsForm(a, Encapsulate(p_type), Strict));
+		tcon.push_back(Unilang::AsForm(a, Encapsulated(p_type), Strict));
+		tcon.push_back(Unilang::AsForm(a, Decapsulate(p_type), Strict));
+		tcon.swap(term.GetContainerRef());
+	}
 	return ReductionStatus::Retained;
 }
 
