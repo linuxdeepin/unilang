@@ -40,15 +40,16 @@
 
 ## 正式引用
 
-　　本章引用本文档使用的外部参考(external reference) ，包含不被局部术语涵盖的一般解释。包括：
+　　本章引用本文档使用的外部参考(external reference) ，包含不被局部术语涵盖的一般解释。对没有指定版本的多版本文献，使用最新的版本。这些引用包括：
 
 * ISO/IEC 2382 (all parts), Information technology — Vocabulary
+* ISO/IEC 10646, Information technology — Universal Coded Character Set (UCS)
 * ISO/IEC 14882:2017, Information technology — Programming languages — C++
 * [Fexprs as the basis of Lisp function application or $vau : the ultimate abstraction](http://www.wpi.edu/Pubs/ETD/Available/etd-090110-124904/unrestricted/jshutt.pdf) ([Shu10])
 * [Revised<sup>-1</sup> Report on the
 Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf) ([RnRK])
 
-　　对文献的引用以 [] 包含的形式标记。除以上列表中 () 备注的部分外，包括：
+　　对文献的引用以 [] 包含的形式标记。除以上列表中结尾 () 备注的部分外，包括：
 
 * [ISO C++] ISO/IEC 14882
 * [ISO C] ISO/IEC 9899
@@ -688,6 +689,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<applicative>` ：应用子。
 * `<predicate>` ：谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
 * `<environment>` 一等环境。
+* `<string>` ：字符串。
+	* 字符串是包括字符串字面量求值的结果类型，能以 [ISO C++] 兼容的方式表示。除非另行指定，使用 ISO/IEC 10646 定义的 UCS 的 UTF-8 编码，其值不包含空字符（编码数值为 0 的 UCS 代码点）。
 * `<parent>` ：指定环境的父环境的值，包括 `<environment>` 或元素为 `<environment>` 的 `<list>` 。
 
 　　操作数在操作的描述中作为约束。
