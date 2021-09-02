@@ -337,6 +337,10 @@ LoadModule_std_io(Interpreter& intp)
 		PrintTermNode(std::cout, term);
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterUnary<Strict, const string>(renv, "put", [&](const string& str){
+		YSLib::IO::StreamPut(std::cout, str.c_str());
+		return ValueToken::Unspecified;
+	});
 }
 
 void
@@ -766,7 +770,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.101"
+#define APP_VER "0.7.102"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

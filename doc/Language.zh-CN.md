@@ -1749,6 +1749,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　输出对象的外部表示。
 
+`put <string>`
+
+　　输出字符串。
+
 ## 系统库
 
 　　系统库的操作加载为基础环境下的 `std.system` 环境。
