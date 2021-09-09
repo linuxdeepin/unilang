@@ -1,0 +1,54 @@
+﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
+"Unilang test script.";
+
+"Documented examples.";
+
+$let ()
+(
+	display "Hello, world!";
+	display (display "Hello, world!");
+	(display "Hello, world!");
+	() newline;
+	() display "Hello, world!";
+	display "Hello, world!";
+	$sequence display "Hello, world!";
+	display "Hello, "; display "world!";
+	$sequence (display "Hello, ") (display "world!");
+	$def! x "hello";
+	list "hello" "world";
+	cons "x" ();
+	list "x";
+	cons "x" (cons "y" ());
+	list "x" "y";
+	$lambda (x) display x;
+	$lambda (x) x;
+	($lambda (x) display x);
+	($lambda (x) (display x));
+	$lambda (x y) $sequence (display x) (display y);
+	$def! id $lambda (x) x;
+	display (($lambda ((x y)) x) (list "hello" "world"));
+	$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;
+	eval (list display "Hello, world!") (() get-current-environment);
+	$def! (x y) list "hello" "world"; display x; display y;
+	$def! id $lambda (x) x;
+	$defl! id (x) x;
+	$def! x (); display "x is "; display ($if (null? x) "empty" "not empty")
+);
+
+"Test case on parent environment search.";
+
+$let ()
+(
+	$def! e make-environment (() get-current-environment);
+	eval ((unwrap ($lambda (x) x)) e) e
+);
+
+"Test case on std.strings.";
+$let ()
+(
+	$import! std.strings string-empty?; display (string-empty? "");
+	$import! std.strings string-empty?; display (string-empty? "x");
+	$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123");
+	$def! $rem $vau . #ignore "";
+);
+
