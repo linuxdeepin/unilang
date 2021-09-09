@@ -192,7 +192,7 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
 
-　　当前测试用例直接在脚本中指定。
+　　测试用例直接在脚本中指定，包括调用解释器运行测试程序 `test.txt`。在 REPL 中 `load "test.txt"` 也可以调用测试程序。
 
 　　脚本以下支持环境变量：
 
