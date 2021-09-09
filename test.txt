@@ -28,6 +28,19 @@ $let ()
 	$expect () ($def! l list (); ($lambda ((&x .)) x) l)
 );
 
+info "recursive function calls";
+$let ()
+(
+	subinfo "Fibonacci";
+	$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
+	$expect 8 fib 5;
+	subinfo "Hofstadter Female and Male sequences";
+	$def! (F M) (list ($lambda (&n) $if (eqv? n 0) 1 (- n (M (F (- n 1)))))
+		($lambda (&n) $if (eqv? n 0) 0 (- n (F (M (- n 1))))));
+	$expect 5 F 7;
+	$expect 4 M 7
+);
+
 info "Documented examples.";
 $let ()
 (
