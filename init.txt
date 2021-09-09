@@ -11,16 +11,21 @@ $defl! pass (.) puts "PASS.";
 $defl! fail-on-check (&expr &res) $sequence
 	(puts "FAIL: Check failed, with the expression:")
 	(display expr)
+	(() newline)
 	(puts "  with the result:")
 	(display res)
+	(() newline)
 	(report-failure "Test case failed.");
 $defl! fail-on-expect (&expr &res &expected) $sequence
 	(puts "FAIL: Check failed, with the expression:")
 	(display expr)
+	(() newline)
 	(puts "  with the result:")
 	(display (forward! res))
+	(() newline)
 	(puts "  expected result:")
 	(display (forward! expected))
+	(() newline)
 	(report-failure "Test case failed.");
 $defv! $check (.&expr) d
 	$let ((res eval expr d))
