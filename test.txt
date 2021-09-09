@@ -51,6 +51,21 @@ $let ()
 			(fwd? (idv fwd?));
 );
 
+info "logical operations";
+$let ()
+(
+	subinfo "logical not";
+	$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
+	subinfo "non-strict logical operations";
+	$expect #t () $and?;
+	$expect #f () $or?;
+	$expect #f $and? #f #f;
+	$expect #t $or? #f #t;
+	$expect 2 $and? 1 2;
+	$expect 1 $or? 1 #f;
+	$expect 2 $or? #f 2 #f 3
+);
+
 info "Documented examples.";
 $let ()
 (
