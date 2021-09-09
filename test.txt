@@ -1,6 +1,9 @@
 ﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
 "Unilang test script.";
 
+info "sanity";
+$expect ();
+
 info "Documented examples.";
 $let ()
 (
