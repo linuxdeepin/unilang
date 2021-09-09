@@ -12,6 +12,20 @@ $let ()
 	$defv! $g fm #ignore eval (list* - fm) (() get-current-environment);
 	$expect (- 0 1) g 2 3;
 	$expect (- 0 1) $g 3 4;
+	subinfo "combiner rvalue calls";
+	$expect () ($lambda (x) forward! x) ();
+	$expect () ($lambda (x) ($lambda (y) idv y) x) ();
+	$expect () ($lambda (x) ($lambda (y) id y) x) ();
+	$expect "" ($lambda (x) ($lambda (y) ++ y) x) "";
+	$expect () ($lambda (x) ($lambda (y)) x) ();
+	$expect () ($lambda (x) ($lambda (.)) x) ();
+	$expect () ($lambda (x) ($lambda (.) ()) x) ();
+	$expect () ($lambda (x) ($lambda (y) y) x) ();
+	$expect () ($lambda (x) ($lambda (y) (idv y)) x) ();
+	$expect ()
+		($def! foo $lambda (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
+	$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
+	$expect () ($def! l list (); ($lambda ((&x .)) x) l)
 );
 
 info "Documented examples.";
