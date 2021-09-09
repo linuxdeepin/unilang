@@ -41,6 +41,16 @@ $let ()
 	$expect 4 M 7
 );
 
+info "basic object operations";
+$let ()
+(
+	$def! fwd? $vau% (&x) d
+		($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d);
+	$expect (list% #f #f #t #t #f)
+		list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
+			(fwd? (idv fwd?));
+);
+
 info "Documented examples.";
 $let ()
 (
