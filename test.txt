@@ -66,6 +66,19 @@ $let ()
 	$expect 2 $or? #f 2 #f 3
 );
 
+info "list operations";
+$let ()
+(
+	$expect () list* ();
+	$expect () list*% ();
+	$def! a list 2 3;
+	subinfo "list lvalue elements read and move";
+	$expect 2 first (id a);
+	$expect 2 first a;
+	$expect 2 first (as-const (expire a));
+	$expect 2 first (expire a)
+);
+
 info "Documented examples.";
 $let ()
 (
