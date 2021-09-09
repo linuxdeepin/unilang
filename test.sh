@@ -50,40 +50,5 @@ fi
 run_case 'display'
 
 # Documented examples.
-run_case 'display "Hello, world!"'
-run_case 'display (display "Hello, world!")'
-run_case '(display "Hello, world!")'
-run_case '() newline'
-run_case '() display "Hello, world!"'
-run_case 'display "Hello, world!";'
-run_case '$sequence display "Hello, world!"'
-run_case 'display "Hello, "; display "world!"'
-run_case '$sequence (display "Hello, ") (display "world!")'
-run_case '$def! x "hello"'
-run_case 'list "hello" "world"'
-run_case 'cons "x" ()'
-run_case 'list "x"'
-run_case 'cons "x" (cons "y" ())'
-run_case 'list "x" "y"'
-run_case '$lambda (x) display x'
-run_case '$lambda (x) x'
-run_case '($lambda (x) display x)'
-run_case '($lambda (x) (display x))'
-run_case '$lambda (x y) $sequence (display x) (display y)'
-run_case '$def! id $lambda (x) x;'
-run_case 'display (($lambda ((x y)) x) (list "hello" "world"))'
-run_case '$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;'
-run_case 'eval (list display "Hello, world!") (() get-current-environment)'
-run_case '$def! (x y) list "hello" "world"; display x; display y;'
-run_case '$def! id $lambda (x) x;'
-run_case '$defl! id (x) x;'
-run_case \
-'$def! x (); display "x is "; display ($if (null? x) "empty" "not empty");'
-# NOTE: Test case on parent environment search.
-run_case "\$def! e make-environment (() get-current-environment); \
-eval ((unwrap (\$lambda (x) x)) e) e"
-# NOTE: Test case on std.strings.
-run_case '$import! std.strings string-empty?; display (string-empty? "")'
-run_case '$import! std.strings string-empty?; display (string-empty? "x")'
-run_case '$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123")'
+run_case 'load "test.txt"'
 
