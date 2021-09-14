@@ -51,15 +51,6 @@ public:
 	}
 };
 
-ReductionStatus
-ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
-	const EnvironmentReference&);
-
-ReductionStatus
-ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
-	size_t);
-
-
 
 YB_ATTR_nodiscard YB_PURE inline TermReference
 EnsureLValueReference(TermReference&& ref)
