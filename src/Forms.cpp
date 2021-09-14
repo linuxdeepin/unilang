@@ -399,6 +399,14 @@ ThrowForUnwrappingFailure(const ContextHandler& h)
 		h.target_type().name()));
 }
 
+ReductionStatus
+WrapH(TermNode& term, FormContextHandler h)
+{
+	term.Value = ContextHandler(std::allocator_arg, term.get_allocator(),
+		std::move(h));
+	return ReductionStatus::Clean;
+}
+
 template<typename _func, typename _func2>
 ReductionStatus
 WrapUnwrap(TermNode& term, _func f, _func2 f2)
@@ -411,7 +419,7 @@ WrapUnwrap(TermNode& term, _func f, _func2 f2)
 		auto& h(nd.Value.Access<ContextHandler>());
 
 		if(const auto p = h.target<FormContextHandler>())
-			return f(nd, *p, has_ref);
+			return f(*p, has_ref);
 		return f2(h, has_ref);
 	}, tm);
 }
@@ -861,15 +869,14 @@ VauWithEnvironmentRef(TermNode& term, Context& ctx)
 ReductionStatus
 Wrap(TermNode& term)
 {
-	return WrapUnwrap(term,
-		[&](TermNode& nd, FormContextHandler& fch, bool has_ref){
+	return WrapUnwrap(term, [&](FormContextHandler& fch, bool has_ref){
 		if(has_ref)
 			term.Value = ContextHandler(FormContextHandler(fch.Handler,
 				fch.Wrapping + 1));
 		else
 		{
 			++fch.Wrapping;
-			LiftOther(term, nd);
+			return WrapH(term, std::move(fch));
 		}
 		return ReductionStatus::Clean;
 	}, [&](ContextHandler& h, bool has_ref){
@@ -885,15 +892,14 @@ Wrap(TermNode& term)
 ReductionStatus
 Unwrap(TermNode& term)
 {
-	return WrapUnwrap(term,
-		[&](TermNode& nd, FormContextHandler& fch, bool has_ref){
+	return WrapUnwrap(term, [&](FormContextHandler& fch, bool has_ref){
 		if(has_ref)
 			term.Value = ContextHandler(FormContextHandler(fch.Handler,
 				fch.Wrapping - 1));
 		else if(fch.Wrapping != 0)
 		{
 			--fch.Wrapping;
-			LiftOther(term, nd);
+			return WrapH(term, std::move(fch));
 		}
 		else
 			throw TypeError("Unwrapping failed on an operative argument.");
