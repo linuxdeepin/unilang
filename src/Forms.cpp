@@ -1,14 +1,15 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
-//	Unilang::TryAccessReferencedTerm;
+//	Unilang::TryAccessReferencedTerm, YSLib::EmplaceCallResult,
+//	FormContextHandler;
 #include <exception> // for std::throw_with_nested;
-#include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError,
+#include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError, TypeError,
 //	UnilangException, ListTypeError;
 #include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
-//	TermToNamePtr, ThrowValueCategoryError;
+//	TermToNamePtr, ResolvedTermReferencePtr, ThrowValueCategoryError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
-//	Unilang::MakeForm, CheckVariadicArity, Form, Strict;
+//	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
@@ -390,11 +391,29 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 	});
 }
 
+
 YB_NORETURN ReductionStatus
 ThrowForUnwrappingFailure(const ContextHandler& h)
 {
 	throw TypeError(ystdex::sfmt("Unwrapping failed with type '%s'.",
 		h.target_type().name()));
+}
+
+template<typename _func, typename _func2>
+ReductionStatus
+WrapUnwrap(TermNode& term, _func f, _func2 f2)
+{
+	RetainN(term);
+
+	auto& tm(*std::next(term.begin()));
+
+	return Unilang::ResolveTerm([&](TermNode& nd, bool has_ref){
+		auto& h(nd.Value.Access<ContextHandler>());
+
+		if(const auto p = h.target<FormContextHandler>())
+			return f(nd, *p, has_ref);
+		return f2(h, has_ref);
+	}, tm);
 }
 
 
@@ -842,67 +861,46 @@ VauWithEnvironmentRef(TermNode& term, Context& ctx)
 ReductionStatus
 Wrap(TermNode& term)
 {
-	RetainN(term);
-
-	auto& tm(*std::next(term.begin()));
-
-	ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(nd.Value.Access<ContextHandler>());
-
-		if(const auto p = h.target<FormContextHandler>())
-		{
-			auto& fch(*p);
-
-			if(has_ref)
-				term.Value = ContextHandler(FormContextHandler(fch.Handler,
-					fch.Wrapping + 1));
-			else
-			{
-				++fch.Wrapping;
-				LiftOther(term, nd);
-			}
-		}
+	return WrapUnwrap(term,
+		[&](TermNode& nd, FormContextHandler& fch, bool has_ref){
+		if(has_ref)
+			term.Value = ContextHandler(FormContextHandler(fch.Handler,
+				fch.Wrapping + 1));
 		else
 		{
-			if(has_ref)
-				term.Value = ContextHandler(FormContextHandler(h, 1));
-			else
-				term.Value
-					= ContextHandler(FormContextHandler(std::move(h), 1));
+			++fch.Wrapping;
+			LiftOther(term, nd);
 		}
-	}, tm);
-	return ReductionStatus::Clean;
+		return ReductionStatus::Clean;
+	}, [&](ContextHandler& h, bool has_ref){
+		if(has_ref)
+			term.Value = ContextHandler(FormContextHandler(h, 1));
+		else
+			term.Value
+				= ContextHandler(FormContextHandler(std::move(h), 1));
+		return ReductionStatus::Clean;
+	});
 }
 
 ReductionStatus
 Unwrap(TermNode& term)
 {
-	RetainN(term);
-
-	auto& tm(*std::next(term.begin()));
-
-	ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(nd.Value.Access<ContextHandler>());
-
-		if(const auto p = h.target<FormContextHandler>())
+	return WrapUnwrap(term,
+		[&](TermNode& nd, FormContextHandler& fch, bool has_ref){
+		if(has_ref)
+			term.Value = ContextHandler(FormContextHandler(fch.Handler,
+				fch.Wrapping - 1));
+		else if(fch.Wrapping != 0)
 		{
-			auto& fch(*p);
-
-			if(has_ref)
-				term.Value = ContextHandler(FormContextHandler(fch.Handler,
-					fch.Wrapping - 1));
-			else if(fch.Wrapping != 0)
-			{
-				--fch.Wrapping;
-				LiftOther(term, nd);
-			}
-			else
-				throw TypeError("Unwrapping failed on an operative argument.");
+			--fch.Wrapping;
+			LiftOther(term, nd);
 		}
 		else
-			ThrowForUnwrappingFailure(h);
-	}, tm);
-	return ReductionStatus::Clean;
+			throw TypeError("Unwrapping failed on an operative argument.");
+		return ReductionStatus::Clean;
+	}, [&](ContextHandler& h, bool) -> ReductionStatus{
+		ThrowForUnwrappingFailure(h);
+	});
 }
 
 
