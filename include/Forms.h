@@ -12,8 +12,9 @@
 //	ystdex::invoke_nonvoid, ystdex::make_expanded, ystdex::bind1,
 //	std::placeholders::_2, std::ref;
 #include <iterator> // for std::next;
+#include "TermAccess.h" // for ResolvedTermReferencePtr,
+//	Unilang::ResolveRegular;
 #include <ystdex/iterator.hpp> // for ystdex::make_transform;
-#include "TermAccess.h" // for Unilang::ResolveRegular;
 #include <numeric> // for std::accumulate;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
@@ -57,6 +58,25 @@ CallResolvedUnary(_func&& f, TermNode& term)
 	return Forms::CallRawUnary([&](TermNode& tm)
 		-> yimpl(decltype(Unilang::ResolveTerm(yforward(f), term))){
 		return Unilang::ResolveTerm(yforward(f), tm);
+	}, term);
+}
+
+template<typename _type, typename _func, typename... _tParams>
+inline auto
+CallRegularUnaryAs(_func&& f, TermNode& term, _tParams&&... args)
+	-> yimpl(decltype(ystdex::expand_proxy<void(_type&, const
+	ResolvedTermReferencePtr&, _tParams&&...)>::call(f, Unilang::Access<_type>(
+	term), ResolvedTermReferencePtr(), std::forward<_tParams>(args)...)))
+{
+	using handler_t
+		= yimpl(void)(_type&, const ResolvedTermReferencePtr&, _tParams&&...);
+
+	return Forms::CallResolvedUnary(
+		[&](TermNode& nd, ResolvedTermReferencePtr p_ref)
+		-> decltype(ystdex::expand_proxy<handler_t>::call(f,
+		std::declval<_type&>(), p_ref)){
+		return ystdex::expand_proxy<handler_t>::call(f, Unilang::AccessRegular<
+			_type>(nd, p_ref), p_ref, std::forward<_tParams>(args)...);
 	}, term);
 }
 
