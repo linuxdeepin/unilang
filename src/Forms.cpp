@@ -411,17 +411,13 @@ template<typename _func, typename _func2>
 ReductionStatus
 WrapUnwrap(TermNode& term, _func f, _func2 f2)
 {
-	RetainN(term);
-
-	auto& tm(*std::next(term.begin()));
-
-	return Unilang::ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(nd.Value.Access<ContextHandler>());
-
+	return Forms::CallRegularUnaryAs<ContextHandler>([&](ContextHandler& h,
+		ResolvedTermReferencePtr p_ref) -> ReductionStatus{
 		if(const auto p = h.target<FormContextHandler>())
-			return f(*p, has_ref);
-		return f2(h, has_ref);
-	}, tm);
+			return f(*p, p_ref);
+		return ystdex::expand_proxy<ReductionStatus(ContextHandler&,
+			const ResolvedTermReferencePtr&)>::call(f2, h, p_ref);
+	}, term);
 }
 
 
