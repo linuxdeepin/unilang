@@ -1103,6 +1103,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　包装合并子为应用子。
 
+　　若无法为包装的合并子分配资源，则引起错误。
+
 `unwrap <applicative>`
 
 　　解包装应用子为底层合并子。
