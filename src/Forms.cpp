@@ -865,23 +865,22 @@ VauWithEnvironmentRef(TermNode& term, Context& ctx)
 ReductionStatus
 Wrap(TermNode& term)
 {
-	return WrapUnwrap(term, [&](FormContextHandler& fch, bool has_ref){
-		if(has_ref)
-			term.Value = ContextHandler(FormContextHandler(fch.Handler,
-				fch.Wrapping + 1));
-		else
-		{
-			++fch.Wrapping;
-			return WrapH(term, std::move(fch));
-		}
-		return ReductionStatus::Clean;
-	}, [&](ContextHandler& h, bool has_ref){
-		if(has_ref)
-			term.Value = ContextHandler(FormContextHandler(h, 1));
-		else
-			term.Value
-				= ContextHandler(FormContextHandler(std::move(h), 1));
-		return ReductionStatus::Clean;
+	return WrapUnwrap(term,
+		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
+		const auto n(fch.Wrapping + 1);
+
+		return WrapH(term, MakeValueOrMove(p_ref, [&]{
+			return FormContextHandler(fch.Handler, n);
+		}, [&]{
+			return
+				FormContextHandler(std::move(fch.Handler), n);
+		}));
+	}, [&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
+		return WrapH(term, MakeValueOrMove(p_ref, [&]{
+			return FormContextHandler(h, 1);
+		}, [&]{
+			return FormContextHandler(std::move(h), 1);
+		}));
 	});
 }
 
