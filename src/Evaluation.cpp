@@ -1,7 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Evaluation.h" // for TermTags, ReductionStatus, TermNode, Context,
-//	TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
+#include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
+//	Context, TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
 //	TermReference, ContextHandler, yunseq, std::prev, GetLValueTagsOf,
 //	EnvironmentReference, in_place_type, ThrowTypeErrorForInvalidType,
 //	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with,
@@ -22,6 +22,44 @@ namespace Unilang
 
 namespace
 {
+
+class RefContextHandler final
+	: private ystdex::equality_comparable<RefContextHandler>
+{
+private:
+	AnchorPtr anchor_ptr;
+
+public:
+	lref<const ContextHandler> HandlerRef;
+
+	RefContextHandler(const ContextHandler& h,
+		const EnvironmentReference& env_ref) ynothrow
+		: anchor_ptr(env_ref.GetAnchorPtr()), HandlerRef(h)
+	{}
+	DefDeCopyMoveCtorAssignment(RefContextHandler)
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const RefContextHandler& x, const RefContextHandler& y)
+	{
+		return x.HandlerRef.get() == y.HandlerRef.get();
+	}
+
+	ReductionStatus
+	operator()(TermNode& term, Context& ctx) const
+	{
+		return HandlerRef.get()(term, ctx);
+	}
+};
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
+	const EnvironmentReference&);
+
+ReductionStatus
+ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
+	size_t);
+
+
 
 YB_ATTR_nodiscard YB_PURE inline TermReference
 EnsureLValueReference(TermReference&& ref)
@@ -781,6 +819,42 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 		ctx);
 	return ReductionStatus::Partial;
 }
+
+
+inline namespace Internals
+{
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
+	const EnvironmentReference& r_env)
+{
+	assert(bool(p_sub)
+		&& "Invalid subterm to form a subobject reference found.");
+
+	const auto a(term.get_allocator());
+	auto& sub(Unilang::Deref(p_sub));
+
+	TermNode tm(std::allocator_arg, a, {Unilang::AsTermNode(a,
+		std::move(p_sub))}, std::allocator_arg, a, TermReference(sub, r_env));
+
+	term.SetContent(std::move(tm));
+	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+ReduceForCombinerRef(TermNode& term, const TermReference& ref,
+	const ContextHandler& h, size_t n)
+{
+	const auto& r_env(ref.GetEnvironmentReference());
+	const auto a(term.get_allocator());
+
+	return ReduceAsSubobjectReference(term, YSLib::allocate_shared<TermNode>(a,
+		Unilang::AsTermNode(a, ContextHandler(std::allocator_arg, a,
+		FormContextHandler(RefContextHandler(h, r_env), n)))),
+		ref.GetEnvironmentReference());
+}
+
+} // inline namespace Internals;
 
 
 void

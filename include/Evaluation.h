@@ -254,6 +254,20 @@ MakeForm(const TermNode& term, _tParams&&... args)
 }
 
 
+inline namespace Internals
+{
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
+	const EnvironmentReference&);
+
+ReductionStatus
+ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
+	size_t);
+
+} // inline namespace Internals;
+
+
 enum WrappingKind : decltype(FormContextHandler::Wrapping)
 {
 	Form = 0,
