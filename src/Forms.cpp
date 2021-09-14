@@ -869,12 +869,14 @@ Wrap(TermNode& term)
 		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
 		const auto n(fch.Wrapping + 1);
 
-		return WrapH(term, MakeValueOrMove(p_ref, [&]{
-			return FormContextHandler(fch.Handler, n);
-		}, [&]{
-			return
-				FormContextHandler(std::move(fch.Handler), n);
-		}));
+		if(n != 0)
+			return WrapH(term, MakeValueOrMove(p_ref, [&]{
+				return FormContextHandler(fch.Handler, n);
+			}, [&]{
+				return
+					FormContextHandler(std::move(fch.Handler), n);
+			}));
+		throw UnilangException("Wrapping count overflow detected.");
 	}, [&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
 		return WrapH(term, MakeValueOrMove(p_ref, [&]{
 			return FormContextHandler(h, 1);
