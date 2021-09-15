@@ -203,6 +203,7 @@ WrapContextHandler(_func&& h, const _tAlloc& a)
 
 
 class FormContextHandler
+	: private ystdex::equality_comparable<FormContextHandler>
 {
 public:
 	ContextHandler Handler;
@@ -228,6 +229,12 @@ public:
 	FormContextHandler&
 	operator=(FormContextHandler&&) = default;
 
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const FormContextHandler& x, const FormContextHandler& y)
+	{
+		return x.Equals(y);
+	}
+
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
@@ -237,6 +244,9 @@ public:
 private:
 	ReductionStatus
 	CallN(size_t, TermNode&, Context&) const;
+
+	YB_ATTR_nodiscard YB_PURE bool
+	Equals(const FormContextHandler&) const;
 };
 
 template<typename... _tParams>

@@ -811,6 +811,21 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 	return ReductionStatus::Partial;
 }
 
+bool
+FormContextHandler::Equals(const FormContextHandler& fch) const
+{
+	if(Wrapping == fch.Wrapping)
+	{
+		if(Handler == fch.Handler)
+			return true;
+		if(const auto p = Handler.target<RefContextHandler>())
+			return p->HandlerRef.get() == fch.Handler;
+		if(const auto p = fch.Handler.target<RefContextHandler>())
+			return Handler == p->HandlerRef.get();
+	}
+	return {};
+}
+
 
 inline namespace Internals
 {
