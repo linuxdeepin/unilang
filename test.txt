@@ -1,6 +1,8 @@
 ﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
 "Unilang test script.";
 
+$def! $rem $vau . #ignore "";
+
 info "sanity";
 $expect ();
 
@@ -49,6 +51,22 @@ $let ()
 	$expect (list% #f #f #t #t #f)
 		list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
 			(fwd? (idv fwd?));
+);
+
+info "combiner operations";
+subinfo "combiner equality";
+$let ()
+(
+	$check eqv? (idv idv) idv;
+	$check not? (eqv? (wrap idv) idv);
+	$check eqv? (wrap idv) (wrap idv);
+	$check eqv? (unwrap unwrap) (unwrap unwrap);
+	$def! $quote $vau% (x) #ignore $move-resolved! x;
+	$def! idv wrap $quote;
+	$check eqv? (unwrap idv) $quote;
+	$check eqv? (unwrap (idv idv)) $quote;
+	$check eqv? (unwrap idv) (unwrap (idv idv));
+	$check eqv? (wrap (unwrap idv)) idv;
 );
 
 info "logical operations";
