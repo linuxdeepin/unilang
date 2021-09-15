@@ -46,6 +46,12 @@ PropagateTo(TermTags dst, TermTags tags) noexcept
 	return dst | (tags & TermTags::Nonmodifying);
 }
 
+inline void
+EnsureValueTags(TermTags& tags) noexcept
+{
+	tags &= ~TermTags::Temporary;
+}
+
 
 constexpr const struct NoContainerTag{} NoContainer{};
 
