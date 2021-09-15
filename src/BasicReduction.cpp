@@ -1,7 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "BasicReduction.h"
-#include "TermAccess.h" // for Unilang::TryAccessLeaf;
+#include "TermAccess.h" // for Unilang::TryAccessLeaf, TermReference;
 #include "Exception.h" // for ListTypeError;
 
 namespace Unilang
@@ -37,11 +37,23 @@ LiftOtherOrCopy(TermNode& term, TermNode& tm, bool move)
 }
 
 
+namespace
+{
+
+void
+LiftMovedOther(TermNode& term, const TermReference& ref, bool move)
+{
+	LiftOtherOrCopy(term, ref.get(), move);
+	EnsureValueTags(term.Tags);
+}
+
+} // unnamed namespace;
+
 void
 LiftToReturn(TermNode& term)
 {
 	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
-		term = p->get();
+		LiftMovedOther(term, *p, p->IsMovable());
 }
 
 ReductionStatus
