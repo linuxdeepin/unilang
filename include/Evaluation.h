@@ -3,8 +3,9 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "Context.h" // for ReductionStatus, TermNode, Context, ContextHandler,
-//	 YSLib::AreEqualHeld, YSLib::GHEvent, ystdex::sfmt;
+#include "Context.h" // for ReductionStatus, TermNode, Context,
+//	YSLib::AreEqualHeld, YSLib::GHEvent, ContextHandler, std::allocator_arg_t;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
@@ -37,7 +38,7 @@ enum class ValueToken
 struct SeparatorTransformer
 {
 	template<typename _func, class _tTerm, class _fPred>
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	operator()(_func trans, _tTerm&& term, const ValueObject& pfx,
 		_fPred filter) const
 	{
@@ -68,7 +69,7 @@ struct SeparatorTransformer
 	}
 
 	template<typename _func, class _tTerm, class _fPred>
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	AddRange(_func add_range, _tTerm&& term, const ValueObject& pfx,
 		_fPred filter) const
 	{
@@ -89,7 +90,7 @@ struct SeparatorTransformer
 	}
 
 	template<class _tTerm, class _fPred>
-	[[nodiscard]] static TermNode
+	YB_ATTR_nodiscard static TermNode
 	Process(_tTerm&& term, const ValueObject& pfx, _fPred filter)
 	{
 		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
@@ -136,7 +137,7 @@ public:
 		return ReductionStatus::Clean;
 	}
 
-	[[nodiscard]] friend bool
+	YB_ATTR_nodiscard friend bool
 	operator==(const WrappedContextHandler& x, const WrappedContextHandler& y)
 	{
 		return YSLib::AreEqualHeld(x.Handler, y.Handler);
@@ -150,7 +151,7 @@ public:
 };
 
 template<class _tDst, typename _func>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h, ystdex::false_)
 {
 	return WrappedContextHandler<YSLib::GHEvent<ystdex::make_function_type_t<
@@ -158,13 +159,13 @@ WrapContextHandler(_func&& h, ystdex::false_)
 		yforward(h));
 }
 template<class, typename _func>
-[[nodiscard, gnu::pure]] inline _func
+YB_ATTR_nodiscard YB_PURE inline _func
 WrapContextHandler(_func&& h, ystdex::true_)
 {
 	return yforward(h);
 }
 template<class _tDst, typename _func>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h)
 {
 	using BaseType = typename _tDst::BaseType;
@@ -175,7 +176,7 @@ WrapContextHandler(_func&& h)
 		typename _tDst::FuncType, ystdex::decay_t<_func>>>>());
 }
 template<class _tDst, typename _func, class _tAlloc>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h, const _tAlloc& a, ystdex::false_)
 {
 	return WrappedContextHandler<YSLib::GHEvent<ystdex::make_function_type_t<
@@ -183,13 +184,13 @@ WrapContextHandler(_func&& h, const _tAlloc& a, ystdex::false_)
 		std::allocator_arg, a, yforward(h));
 }
 template<class, typename _func, class _tAlloc>
-[[nodiscard, gnu::pure]] inline _func
+YB_ATTR_nodiscard YB_PURE inline _func
 WrapContextHandler(_func&& h, const _tAlloc&, ystdex::true_)
 {
 	return yforward(h);
 }
 template<class _tDst, typename _func, class _tAlloc>
-[[nodiscard, gnu::pure]] inline _tDst
+YB_ATTR_nodiscard YB_PURE inline _tDst
 WrapContextHandler(_func&& h, const _tAlloc& a)
 {
 	using BaseType = typename _tDst::BaseType;
@@ -202,6 +203,7 @@ WrapContextHandler(_func&& h, const _tAlloc& a)
 
 
 class FormContextHandler
+	: private ystdex::equality_comparable<FormContextHandler>
 {
 public:
 	ContextHandler Handler;
@@ -227,6 +229,12 @@ public:
 	FormContextHandler&
 	operator=(FormContextHandler&&) = default;
 
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const FormContextHandler& x, const FormContextHandler& y)
+	{
+		return x.Equals(y);
+	}
+
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
@@ -236,7 +244,38 @@ public:
 private:
 	ReductionStatus
 	CallN(size_t, TermNode&, Context&) const;
+
+	YB_ATTR_nodiscard YB_PURE bool
+	Equals(const FormContextHandler&) const;
 };
+
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline ContextHandler
+MakeForm(TermNode::allocator_type a, _tParams&&... args)
+{
+	return ContextHandler(std::allocator_arg, a,
+		FormContextHandler(yforward(args)...));
+}
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline ContextHandler
+MakeForm(const TermNode& term, _tParams&&... args)
+{
+	return Unilang::MakeForm(term.get_allocator(), yforward(args)...);
+}
+
+
+inline namespace Internals
+{
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
+	const EnvironmentReference&);
+
+ReductionStatus
+ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
+	size_t);
+
+} // inline namespace Internals;
 
 
 enum WrappingKind : decltype(FormContextHandler::Wrapping)
@@ -270,6 +309,38 @@ RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 }
 
 
+YB_ATTR_nodiscard YB_PURE inline size_t
+FetchArgumentN(const TermNode& term) noexcept
+{
+	AssertBranchedList(term);
+	return term.size() - 1;
+}
+
+inline void
+CheckVariadicArity(TermNode& term, size_t n)
+{
+	return FetchArgumentN(term) > n ? void()
+		: (RemoveHead(term), ThrowInsufficientTermsError(term, {}));
+}
+
+inline ReductionStatus
+Retain(const TermNode& term) noexcept
+{
+	AssertBranchedList(term);
+	return ReductionStatus::Regular;
+}
+
+inline size_t
+RetainN(const TermNode& term, size_t m = 1)
+{
+	const auto n(FetchArgumentN(term));
+
+	if(n == m)
+		return n;
+	throw ArityMismatch(m, n);
+}
+
+
 using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
 
 
@@ -286,12 +357,12 @@ ReduceOrdered(TermNode&, Context&);
 inline ReductionStatus
 ReduceReturnUnspecified(TermNode& term) noexcept
 {
-	term.Value = ValueToken::Unspecified;
+	term.SetValue(ValueToken::Unspecified);
 	return ReductionStatus::Clean;
 }
 
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsIgnore(const TokenValue& s) noexcept
 {
 	return s == "#ignore";

@@ -44,40 +44,43 @@ public:
 	operator=(TokenValue&&) = default;
 };
 
-[[nodiscard, gnu::pure]] string
+YB_ATTR_nodiscard YB_PURE string
 TermToString(const TermNode&);
 
-[[nodiscard, gnu::pure]] string
+YB_ATTR_nodiscard YB_PURE string
 TermToStringWithReferenceMark(const TermNode&, bool);
 
-[[nodiscard, gnu::pure]] inline const TokenValue*
+YB_ATTR_nodiscard YB_PURE inline const TokenValue*
 TermToNamePtr(const TermNode&);
 
-[[nodiscard, gnu::pure]] TermTags
+YB_ATTR_nodiscard YB_PURE TermTags
 TermToTags(TermNode&);
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowInsufficientTermsError(const TermNode&, bool);
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
 	bool);
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowListTypeErrorForNonlist(const TermNode&, bool);
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&, bool);
 
+YB_NORETURN void
+ThrowValueCategoryError(const TermNode&);
+
 template<typename _type>
-[[nodiscard, gnu::pure]] inline _type*
+YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessLeaf(TermNode& term)
 {
 	return term.Value.type() == ystdex::type_id<_type>()
 		? std::addressof(term.Value.GetObject<_type>()) : nullptr;
 }
 template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type*
+YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessLeaf(const TermNode& term)
 {
 	return term.Value.type() == ystdex::type_id<_type>()
@@ -85,19 +88,19 @@ TryAccessLeaf(const TermNode& term)
 }
 
 template<typename _type>
-[[nodiscard, gnu::pure]] inline _type*
+YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessTerm(TermNode& term)
 {
 	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
 }
 template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type*
+YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessTerm(const TermNode& term)
 {
 	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
 }
 
-[[nodiscard, gnu::pure]] inline const TokenValue*
+YB_ATTR_nodiscard YB_PURE inline const TokenValue*
 TermToNamePtr(const TermNode& term)
 {
 	return Unilang::TryAccessTerm<TokenValue>(term);
@@ -131,20 +134,20 @@ public:
 	EnvironmentReference&
 	operator=(EnvironmentReference&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const EnvironmentReference& x, const EnvironmentReference& y)
 		noexcept
 	{
 		return x.p_weak.lock() == y.p_weak.lock();
 	}
 
-	[[nodiscard, gnu::pure]] const AnchorPtr&
+	YB_ATTR_nodiscard YB_PURE const AnchorPtr&
 	GetAnchorPtr() const noexcept
 	{
 		return p_anchor;
 	}
 
-	[[nodiscard, gnu::pure]] const weak_ptr<Environment>&
+	YB_ATTR_nodiscard YB_PURE const weak_ptr<Environment>&
 	GetPtr() const noexcept
 	{
 		return p_weak;
@@ -191,42 +194,42 @@ public:
 	TermReference&
 	operator=(const TermReference&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const TermReference& x, const TermReference& y) noexcept
 	{
 		return &x.term_ref.get() == &y.term_ref.get();
 	}
 
-	[[nodiscard, gnu::pure]] explicit
+	YB_ATTR_nodiscard YB_PURE explicit
 	operator TermNode&() const noexcept
 	{
 		return term_ref;
 	}
 
-	[[nodiscard, gnu::pure]] bool
+	YB_ATTR_nodiscard YB_PURE bool
 	IsModifiable() const noexcept
 	{
 		return !bool(tags & TermTags::Nonmodifying);
 	}
-	[[nodiscard, gnu::pure]] bool
+	YB_ATTR_nodiscard YB_PURE bool
 	IsMovable() const noexcept
 	{
 		return (tags & (TermTags::Unique | TermTags::Nonmodifying))
 			== TermTags::Unique;
 	}
-	[[nodiscard, gnu::pure]] bool
+	YB_ATTR_nodiscard YB_PURE bool
 	IsReferencedLValue() const noexcept
 	{
 		return !(bool(tags & TermTags::Unique)
 			|| bool(tags & TermTags::Temporary));
 	}
 
-	[[nodiscard, gnu::pure]] TermTags
+	YB_ATTR_nodiscard YB_PURE TermTags
 	GetTags() const noexcept
 	{
 		return tags;
 	}
-	[[nodiscard, gnu::pure]] const EnvironmentReference&
+	YB_ATTR_nodiscard YB_PURE const EnvironmentReference&
 	GetEnvironmentReference() const noexcept
 	{
 		return r_env;
@@ -239,10 +242,10 @@ public:
 	}
 
 #if Unilang_CheckTermReferenceIndirection
-	[[nodiscard, gnu::pure]] TermNode&
+	YB_ATTR_nodiscard YB_PURE TermNode&
 	get() const;
 #else
-	[[nodiscard, gnu::pure]] TermNode&
+	YB_ATTR_nodiscard YB_PURE TermNode&
 	get() const noexcept
 	{
 		return term_ref.get();
@@ -252,17 +255,17 @@ public:
 };
 
 
-[[nodiscard]] TermNode
+YB_ATTR_nodiscard TermNode
 PrepareCollapse(TermNode&, const shared_ptr<Environment>&);
 
-[[nodiscard, gnu::pure]] inline TermNode&
+YB_ATTR_nodiscard YB_PURE inline TermNode&
 ReferenceTerm(TermNode& term)
 {
 	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
 		return p->get();
 	return term;
 }
-[[nodiscard, gnu::pure]] inline const TermNode&
+YB_ATTR_nodiscard YB_PURE inline const TermNode&
 ReferenceTerm(const TermNode& term)
 {
 	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
@@ -273,20 +276,20 @@ ReferenceTerm(const TermNode& term)
 
 using ResolvedTermReferencePtr = const TermReference*;
 
-[[nodiscard, gnu::pure]] constexpr ResolvedTermReferencePtr
+YB_ATTR_nodiscard YB_PURE constexpr ResolvedTermReferencePtr
 ResolveToTermReferencePtr(const TermReference* p) noexcept
 {
 	return p;
 }
 
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsMovable(const TermReference& ref) noexcept
 {
 	return ref.IsMovable();
 }
 template<typename _tPointer>
-[[nodiscard, gnu::pure]] inline auto
+YB_ATTR_nodiscard YB_PURE inline auto
 IsMovable(_tPointer p) noexcept
 	-> decltype(!bool(p) || Unilang::IsMovable(Unilang::Deref(p)))
 {
@@ -295,13 +298,13 @@ IsMovable(_tPointer p) noexcept
 
 
 template<typename _type>
-[[nodiscard, gnu::pure]] inline _type*
+YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessReferencedLeaf(TermNode& term)
 {
 	return Unilang::TryAccessLeaf<_type>(ReferenceTerm(term));
 }
 template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type*
+YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessReferencedLeaf(const TermNode& term)
 {
 	return Unilang::TryAccessLeaf<_type>(ReferenceTerm(term));
@@ -309,25 +312,25 @@ TryAccessReferencedLeaf(const TermNode& term)
 
 
 template<typename _type>
-[[nodiscard, gnu::pure]] inline _type*
+YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessReferencedTerm(TermNode& term)
 {
 	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
 }
 template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type*
+YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessReferencedTerm(const TermNode& term)
 {
 	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
 }
 
-[[nodiscard, gnu::pure]] bool
+YB_ATTR_nodiscard YB_PURE bool
 IsReferenceTerm(const TermNode&);
 
-[[nodiscard, gnu::pure]] bool
+YB_ATTR_nodiscard YB_PURE bool
 IsBoundLValueTerm(const TermNode&);
 
-[[nodiscard, gnu::pure]] bool
+YB_ATTR_nodiscard YB_PURE bool
 IsUncollapsedTerm(const TermNode&);
 
 template<typename _func, class _tTerm>
@@ -356,7 +359,7 @@ CheckRegular(_tTerm& term, bool has_ref)
 }
 
 template<typename _type, class _tTerm>
-[[nodiscard, gnu::pure]] inline auto
+YB_ATTR_nodiscard YB_PURE inline auto
 AccessRegular(_tTerm& term, bool has_ref)
 	-> decltype(Unilang::Access<_type>(term))
 {
@@ -365,7 +368,7 @@ AccessRegular(_tTerm& term, bool has_ref)
 }
 
 template<typename _type, class _tTerm>
-[[nodiscard, gnu::pure]] inline auto
+YB_ATTR_nodiscard YB_PURE inline auto
 ResolveRegular(_tTerm& term) -> decltype(Unilang::Access<_type>(term))
 {
 	return Unilang::ResolveTerm([&](_tTerm& nd, bool has_ref)
@@ -388,7 +391,7 @@ struct ReferenceTermOp
 };
 
 template<typename _func>
-[[gnu::const]] auto
+YB_STATELESS auto
 ComposeReferencedTermOp(_func f)
 	-> decltype(ystdex::compose_n(f, ReferenceTermOp()))
 {

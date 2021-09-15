@@ -1,6 +1,6 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Context.h" // for lref;
+#include "Context.h" // for Unilang::allocate_shared, lref;
 #include <cassert> // for assert;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
@@ -8,6 +8,7 @@
 #include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/utility.hpp> // ystdex::exchange;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include "TermAccess.h" // for Unilang::IsMovable;
 
 namespace Unilang
@@ -106,7 +107,7 @@ Environment::EnsureValid(const shared_ptr<Environment>& p_env)
 AnchorPtr
 Environment::InitAnchor() const
 {
-	return std::allocate_shared<AnchorData>(Bindings.get_allocator());
+	return Unilang::allocate_shared<AnchorData>(Bindings.get_allocator());
 }
 
 Environment::NameResolution::first_type
@@ -138,28 +139,33 @@ Context::GetNextTermRef() const
 ReductionStatus
 Context::ApplyTail()
 {
-	assert(IsAlive());
+	assert(IsAlive() && "No tail action found.");
 	TailAction = std::move(current.front());
 	current.pop_front();
 	try
 	{
 		LastStatus = TailAction(*this);
 	}
+	catch(...)
+	{
+		HandleException(std::current_exception());
+	}
+	return LastStatus;
+}
+
+void
+Context::DefaultHandleException(std::exception_ptr p)
+{
+	assert(bool(p));
+	try
+	{
+		std::rethrow_exception(std::move(p));
+	}
 	catch(bad_any_cast& ex)
 	{
 		std::throw_with_nested(TypeError(ystdex::sfmt("Mismatched types ('%s',"
 			" '%s') found.", ex.from(), ex.to()).c_str()));
 	}
-	return LastStatus;
-}
-
-ReductionStatus
-Context::Evaluate(TermNode& term)
-{
-	next_term_ptr = &term;
-	return Rewrite([this](Context& ctx){
-		return Unilang::ReduceOnce(ctx.GetNextTermRef(), ctx);
-	});
 }
 
 Environment::NameResolution
@@ -242,6 +248,33 @@ Context::Rewrite(Reducer reduce)
 	return LastStatus;
 }
 
+ReductionStatus
+Context::RewriteGuarded(TermNode&, Reducer reduce)
+{
+	// XXX: The term is not used.
+	const auto unwind(ystdex::make_guard([this]() noexcept{
+		TailAction = nullptr;
+		UnwindCurrent();
+	}));
+
+	return Rewrite(std::move(reduce));
+}
+
+ReductionStatus
+Context::RewriteTerm(TermNode& term)
+{
+	next_term_ptr = &term;
+	return Rewrite(Unilang::ToReducer(get_allocator(), std::ref(ReduceOnce)));
+}
+
+ReductionStatus
+Context::RewriteTermGuarded(TermNode& term)
+{
+	next_term_ptr = &term;
+	return RewriteGuarded(term,
+		Unilang::ToReducer(get_allocator(), std::ref(ReduceOnce)));
+}
+
 shared_ptr<Environment>
 Context::ShareRecord() const noexcept
 {
@@ -285,8 +318,11 @@ MoveResolved(const Context& ctx, string_view id)
 	auto pr(ResolveName(ctx, id));
 
 	if(const auto p = pr.first)
-		// TODO: Avoid moving for frozen environments.
+	{
+		if(Unilang::Deref(pr.second).Frozen)
+			return *p;
 		return std::move(*p);
+	}
 	throw BadIdentifier(id);
 }
 

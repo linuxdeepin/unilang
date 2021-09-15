@@ -42,16 +42,12 @@ else
 
 	# XXX: Currently OSDN does not always successfully select the optimal
 	#	mirror. Use hard-coded TUNA mirror to get better performance.
-	URL_Lib_Archive_D=\
-'https://osdn.net/frs/redir.php?m=tuna&f=yslib%2F73798%2FExternal-0.9.7z'
 	URL_Lib_Archive=\
-'https://osdn.net/frs/redir.php?m=tuna&f=yslib%2F73798%2FExternal-0.9-b902.7z'
+'https://osdn.net/frs/redir.php?m=tuna&f=yslib%2F73798%2FExternal-0.9-b916.7z'
 
 	# XXX: Currently p7zip does not support '-si' for 7z archives.
-	wget -O /tmp/External-0.9.7z "$URL_Lib_Archive_D"
-	7za x -y -bsp0 -bso0 /tmp/External-0.9.7z -o"$LIB"
-	wget -O /tmp/External-0.9-b902.7z "$URL_Lib_Archive"
-	7za x -y -bsp0 -bso0 /tmp/External-0.9-b902.7z -o"$LIB"
+	wget -O /tmp/External-0.9-b916.7z "$URL_Lib_Archive"
+	7za x -y -bsp0 -bso0 /tmp/External-0.9-b916.7z -o"$LIB"
 
 	echo 'Archive files prepared.'
 fi

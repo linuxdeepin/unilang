@@ -1,25 +1,30 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter, ValueObject;
+#include <cstdlib> // for std::getenv;
 #include "Context.h" // for EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <functional> // for std::bind, std::placeholders;
-#include "Forms.h" // for Forms::RetainN, CallBinaryFold;
+#include "BasicReduction.h" // for ReductionStatus, LiftOther;
+#include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
 //	ThrowInvalidTokenError;
-#include "BasicReduction.h" // for ReductionStatus;
-#include "TermAccess.h" // for ResolvedTermReferencePtr, Unilang::ResolveTerm,
-//	ComposeReferencedTermOp, IsBoundLValueTerm, IsUncollapsedTerm,
-//	EnvironmentReference, TermNode, IsBranchedList;
+#include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
+//	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
+//	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
+//	ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
+#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold;
 #include "Lexical.h" // for IsUnilangSymbol;
-#include "Evaluation.h" // for RegisterStrict, ThrowInsufficientTermsError;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
-#include <regex> // for std::regex, std::regex_match;
+#include <regex> // for std::regex, std::regex_match, std::regex_replace;
+#include <YSLib/Core/YModules.h>
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
+//	YSLib::FetchEnvironmentVariable;
 #include "Arithmetic.h" // for Number;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
@@ -27,6 +32,8 @@
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
+#include "JIT.h"
+#include YFM_YSLib_Core_YException // for YSLib::FilterExceptions, YSLib::Alert;
 #include "UnilangQt.h"
 
 namespace Unilang
@@ -34,6 +41,8 @@ namespace Unilang
 
 namespace
 {
+
+const bool Unilang_UseJIT(!std::getenv("UNILANG_NO_JIT"));
 
 template<typename _fCallable>
 shared_ptr<Environment>
@@ -44,7 +53,7 @@ GetModuleFor(Context& ctx, _fCallable&& f)
 		ValueObject(ctx.WeakenRecord())));
 
 	ystdex::invoke(f);
-	// TODO: Freeze?
+	ctx.GetRecordRef().Frozen = true;
 	return ctx.ShareRecord();
 }
 
@@ -56,17 +65,17 @@ LoadModuleChecked(Context& ctx, string_view module_name, _fCallable&& f)
 		Unilang::GetModuleFor(ctx, yforward(f)));
 }
 
-[[nodiscard]] ReductionStatus
+YB_ATTR_nodiscard ReductionStatus
 DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 {
-	Forms::RetainN(term);
-	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+	RetainN(term);
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		f(term, nd, !p_ref || p_ref->IsModifiable());
 	}, *std::next(term.begin()));
 	return ReductionStatus::Retained;
 }
 
-[[nodiscard]] ReductionStatus
+YB_ATTR_nodiscard ReductionStatus
 Qualify(TermNode& term, TermTags tag_add)
 {
 	return Forms::CallRawUnary([&](TermNode& tm){
@@ -75,6 +84,29 @@ Qualify(TermNode& term, TermTags tag_add)
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
 	}, term);
+}
+
+void
+CheckForAssignment(TermNode& nd, ResolvedTermReferencePtr p_ref)
+{
+	if(p_ref)
+	{
+		if(p_ref->IsModifiable())
+			return;
+		ThrowNonmodifiableErrorForAssignee();
+	}
+	ThrowValueCategoryError(nd);
+}
+
+template<typename _func>
+YB_ATTR_nodiscard ValueToken
+DoAssign(_func f, TermNode& x)
+{
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		CheckForAssignment(nd, p_ref);
+		f(nd);
+	}, x);
+	return ValueToken::Unspecified;
 }
 
 template<typename _func>
@@ -86,11 +118,11 @@ CheckSymbol(string_view id, _func f) -> decltype(f())
 	ThrowInvalidTokenError(id);
 }
 
-[[nodiscard]] ReductionStatus
+YB_ATTR_nodiscard ReductionStatus
 DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 	const Context& c)
 {
-	Forms::RetainN(term);
+	RetainN(term);
 	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		const string_view id(Unilang::AccessRegular<TokenValue>(nd, p_ref));
 
@@ -117,10 +149,55 @@ SymbolToString(const TokenValue& s) noexcept
 }
 
 void
-LoadModule_std_strings(Context& ctx)
+LoadModule_std_promises(Interpreter& intp)
+{
+	intp.Perform(R"Unilang(
+$provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d% force)
+((mods $as-environment (
+	$def! (encapsulate% promise? decapsulate) () make-encapsulation-type;
+	$defl%! do-force (&prom fwd) $let% ((((&o &env) evf) decapsulate prom))
+		$if (null? env) (fwd o)
+		(
+			$let*% ((&y evf (fwd o) env) (&x decapsulate prom)
+				(((&o &env) &evf) x))
+				$cond
+					((null? env) first (first (decapsulate (fwd prom))))
+					((promise? y) $sequence
+						($if (eqv? (first (rest& (decapsulate y))) eval)
+							(assign! evf eval))
+						(set-first%! x (first (decapsulate (forward! y))))
+						(do-force prom fwd))
+					(#t $sequence
+						(list% (assign%! o (forward! y)) (assign@! env ()))
+						(first (first (decapsulate (fwd prom)))))
+		)
+)))
+(
+	$import! mods &promise?,
+	$defl/e%! &memoize mods (&x)
+		encapsulate% (list (list% (forward! x) ()) #inert),
+	$defv/e%! &$lazy mods (.&body) d
+		encapsulate% (list (list (move! body) d) eval),
+	$defv/e%! &$lazy% mods (.&body) d
+		encapsulate% (list (list (move! body) d) eval%),
+	$defv/e%! &$lazy/d mods (&e .&body) d
+		encapsulate%
+			(list (list (move! body) (check-environment (eval e d))) eval),
+	$defv/e%! &$lazy/d% mods (&e .&body) d
+		encapsulate%
+			(list (list (move! body) (check-environment (eval e d))) eval%),
+	$defl/e%! &force mods (&x)
+		($lambda% (fwd) $if (promise? x) (do-force x fwd) (fwd x))
+			($if ($lvalue-identifier? x) id move!)
+);
+	)Unilang");
+}
+
+void
+LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(ctx.GetRecordRef());
+	auto& renv(intp.Root.GetRecordRef());
 
 	RegisterStrict(renv, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
@@ -129,7 +206,7 @@ LoadModule_std_strings(Context& ctx)
 		[](const string& str) noexcept{
 			return str.empty();
 		});
-	RegisterBinary<>(renv, "string<-", [](TermNode& x, TermNode& y){
+	RegisterBinary(renv, "string<-", [](TermNode& x, TermNode& y){
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
@@ -152,6 +229,33 @@ LoadModule_std_strings(Context& ctx)
 	});
 	RegisterBinary<Strict, const string, const string>(renv, "string=?",
 		ystdex::equal_to<>());
+	RegisterStrict(renv, "string-split", [](TermNode& term){
+		return CallBinaryAs<string, const string>(
+			[&](string& x, const string& y) -> ReductionStatus{
+			if(!x.empty())
+			{
+				TermNode::Container con(term.get_allocator());
+				const auto len(y.length());
+
+				if(len != 0)
+				{
+					string::size_type pos(0), orig(0);
+
+					while((pos = x.find(y, pos)) != string::npos)
+					{
+						TermNode::AddValueTo(con, x.substr(orig, pos - orig));
+						orig = (pos += len);
+					}
+					TermNode::AddValueTo(con, x.substr(orig, pos - orig));
+				}
+				else
+					TermNode::AddValueTo(con, std::move(x));
+				con.swap(term.GetContainerRef());
+				return ReductionStatus::Retained;
+			}
+			return ReductionStatus::Clean;
+		}, term);
+	});
 	RegisterBinary<Strict, string, string>(renv, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
@@ -167,7 +271,7 @@ LoadModule_std_strings(Context& ctx)
 		to_lwr(y);
 		return x.find(y) != string::npos;
 	});
-	RegisterUnary<>(renv, "string->symbol", [](TermNode& term){
+	RegisterUnary(renv, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			auto& s(Unilang::AccessRegular<string>(nd, p_ref));
 
@@ -191,32 +295,190 @@ LoadModule_std_strings(Context& ctx)
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
 	});
+	RegisterStrict(renv, "regex-replace", [](TermNode& term){
+		RetainN(term, 3);
+
+		auto i(term.begin());
+		const auto&
+			str(Unilang::ResolveRegular<const string>(Unilang::Deref(++i)));
+		const auto&
+			re(Unilang::ResolveRegular<const std::regex>(Unilang::Deref(++i)));
+
+		return EmplaceCallResultOrReturn(term, string(std::regex_replace(str,
+			re, Unilang::ResolveRegular<const string>(Unilang::Deref(++i)))));
+	});
 }
 
 void
-LoadFunctions(Interpreter& intp, int& argc, char* argv[])
+LoadModule_std_io(Interpreter& intp)
+{
+	using namespace Forms;
+	auto& renv(intp.Root.GetRecordRef());
+
+	RegisterStrict(renv, "newline", [&](TermNode& term){
+		RetainN(term, 0);
+		std::cout << std::endl;
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterUnary<Strict, const string>(renv, "readable-file?",
+		[](const string& str) noexcept{
+		return YSLib::ufexists(str.c_str());
+	});
+	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
+		RetainN(term);
+		ctx.SetupFront([&]{
+			term = intp.ReadFrom(*intp.OpenUnique(std::move(
+				Unilang::ResolveRegular<string>(*std::next(term.begin())))));
+			return ReduceOnce(term, ctx);
+		});
+	});
+	RegisterStrict(renv, "display", [&](TermNode& term){
+		RetainN(term);
+		LiftOther(term, *std::next(term.begin()));
+		PrintTermNode(std::cout, term);
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterUnary<Strict, const string>(renv, "put", [&](const string& str){
+		YSLib::IO::StreamPut(std::cout, str.c_str());
+		return ValueToken::Unspecified;
+	});
+	intp.Perform(R"Unilang(
+$defl! puts (&s) $sequence (put s) (() newline);
+	)Unilang");
+}
+
+void
+LoadModule_std_system(Interpreter& intp)
+{
+	using namespace Forms;
+	auto& renv(intp.Root.GetRecordRef());
+
+	RegisterUnary<Strict, const string>(renv, "env-get", [](const string& var){
+		string res(var.get_allocator());
+
+		YSLib::FetchEnvironmentVariable(res, var.c_str());
+		return res;
+	});
+}
+
+void
+LoadModule_std_modules(Interpreter& intp)
+{
+	intp.Perform(R"Unilang(
+$provide/let! (registered-requirement? register-requirement!
+	unregister-requirement! find-requirement-filename)
+((mods $as-environment (
+	$import! std.strings &string-empty? &++ &string->symbol;
+
+	$defl! requirement-error ()
+		raise-error "Empty requirement name found.",
+	(
+	$def! registry () make-environment;
+	$defl! bound-name? (&req)
+		$and? (eval (list bound? req) registry)
+			(not? (string-empty? (eval (string->symbol req) registry))),
+	$defl! set-value! (&req &v)
+		eval (list $def! (string->symbol req) v) registry
+	),
+	$def! prom_pathspecs ($remote-eval% $lazy std.promises)
+		$let ((spec ($remote-eval% env-get std.system) "UNILANG_PATH"))
+			$if (string-empty? spec) (list "./?" "./?.u" "./?.txt")
+				(($remote-eval% string-split std.strings) spec ";"),
+	(
+	$def! placeholder ($remote-eval% string->regex std.strings) "\?",
+	$defl! get-requirement-filename (&specs &req)
+		$if (null? specs)
+			(raise-error (++ "No module for requirement '" req
+				"' found."))
+			(
+				$let* ((spec first& specs) (path ($remote-eval% regex-replace
+					std.strings) spec placeholder req))
+					$if (($remote-eval% readable-file? std.io) path) path
+						(get-requirement-filename (rest& specs) req)
+			)
+	)
+)))
+(
+	$defl/e! &registered-requirement? mods (&req)
+		$if (string-empty? req) (() requirement-error) (bound-name? req),
+	$defl/e! &register-requirement! mods (&req)
+		$if (string-empty? req) (() requirement-error)
+			($if (bound-name? req) (raise-error (++ "Requirement '" req
+				"' is already registered.")) (set-value! req req)),
+	$defl/e! &unregister-requirement! mods (&req)
+		$if (string-empty? req) (() requirement-error)
+			($if (bound-name? req) (set-value! req "") (raise-error
+				(++ "Requirement '" req "' is not registered."))),
+	$defl/e! &find-requirement-filename mods (&req)
+		get-requirement-filename
+			(($remote-eval% force std.promises) prom_pathspecs) req
+);
+$defl%! require (&req)
+	$if (registered-requirement? req) #inert
+		($let ((filename find-requirement-filename req))
+			$sequence (register-requirement! (move! req))
+				(($remote-eval% load std.io) filename));
+	)Unilang");
+}
+
+[[gnu::nonnull(2)]] void
+PreloadExternal(Interpreter& intp, const char* filename)
+{
+	try
+	{
+		auto term(intp.ReadFrom(*intp.OpenUnique(filename)));
+
+		intp.Evaluate(term);
+	}
+	catch(...)
+	{
+		std::throw_with_nested(UnilangException(
+			ystdex::sfmt("Failed loading external unit '%s'.", filename)));
+	}
+}
+
+void
+LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 {
 	using namespace Forms;
 	using namespace std::placeholders;
 	auto& ctx(intp.Root);
+	auto& env(ctx.GetRecordRef());
 
-	ctx.GetRecordRef().Bindings["ignore"].Value = TokenValue("#ignore");
+	if(jit)
+		SetupJIT(ctx);
+	env.Bindings["ignore"].Value = TokenValue("#ignore");
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
-	RegisterUnary<>(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
-	RegisterUnary<>(ctx, "bound-lvalue?", IsBoundLValueTerm);
-	RegisterUnary<>(ctx, "uncollapsed?", IsUncollapsedTerm);
+	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
+	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
+	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
 	RegisterStrict(ctx, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
 	RegisterStrict(ctx, "expire",
 		ystdex::bind1(Qualify, TermTags::Unique));
 	RegisterStrict(ctx, "move!",
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
+	RegisterBinary(ctx, "assign@!", [](TermNode& x, TermNode& y){
+		return DoAssign(ystdex::bind1(static_cast<void(&)(TermNode&,
+			TermNode&)>(LiftOther), std::ref(y)), x);
+	});
 	RegisterStrict(ctx, "cons", Cons);
 	RegisterStrict(ctx, "cons%", ConsRef);
+	RegisterUnary<Strict, const TokenValue>(ctx, "desigil", [](TokenValue s){
+		return TokenValue(!s.empty() && (s.front() == '&' || s.front() == '%')
+			? s.substr(1) : std::move(s));
+	});
 	RegisterStrict(ctx, "eval", Eval);
 	RegisterStrict(ctx, "eval%", EvalRef);
+	RegisterUnary<Strict, const string>(ctx, "bound?",
+		[](const string& id, Context& c){
+		return CheckSymbol(id, [&]{
+			return bool(ResolveName(c, id).first);
+		});
+	});
 	RegisterForm(ctx, "$resolve-identifier",
 		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
 	RegisterUnary<Strict, const EnvironmentReference>(ctx, "lock-environment",
@@ -230,189 +492,217 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
 	RegisterStrict(ctx, "wrap", Wrap);
+	RegisterStrict(ctx, "wrap%", WrapRef);
 	RegisterStrict(ctx, "unwrap", Unwrap);
+	RegisterUnary<Strict, const string>(ctx, "raise-error",
+		[] (const string& str){
+		throw UnilangException(str.c_str());
+	});
 	RegisterUnary<Strict, const string>(ctx, "raise-invalid-syntax-error",
 		[](const string& str){
 		throw InvalidSyntax(str.c_str());
 	});
+	RegisterStrict(ctx, "check-list-reference", CheckListReference);
 	RegisterStrict(ctx, "make-encapsulation-type", MakeEncapsulationType);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	RegisterForm(ctx, "$vau", Vau);
 	RegisterForm(ctx, "$vau%", VauRef);
 	intp.Perform(R"Unilang(
-		$def! id wrap ($vau% (%x) #ignore $move-resolved! x);
-		$def! lock-current-environment (wrap ($vau () d lock-environment d));
-		$def! $lambda $vau (&formals .&body) d wrap
-			(eval (cons $vau (cons formals (cons ignore (move! body)))) d);
-		$def! $lambda% $vau (&formals .&body) d wrap
-			(eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+$def! lock-current-environment (wrap ($vau () d lock-environment d));
+$def! id wrap ($vau% (%x) #ignore $move-resolved! x);
+$def! idv wrap ($vau% (x) #ignore $move-resolved! x);
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
 	intp.Perform(R"Unilang(
-		$def! $set! $vau (&e &formals .&expr) d
-			eval (list $def! formals (unwrap eval) expr d) (eval e d);
-		$def! $defv! $vau (&$f &formals &ef .&body) d
-			eval (list $set! d $f $vau formals ef (move! body)) d;
-		$defv! $defv/e%! (&$f &e &formals &ef .&body) d
-			eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
-		$defv! $defl! (f formals .body) d
-			eval (list $set! d f $lambda formals (move! body)) d;
-		$defv! $defl%! (&f &formals .&body) d
-			eval (list $set! d f $lambda% formals (move! body)) d;
-		$def! make-standard-environment
-			$lambda () () lock-current-environment;
-		$def! $lvalue-identifier? $vau (&s) d
-			eval (list bound-lvalue? (list $resolve-identifier s)) d;
-		$defl%! forward! (%x) $if ($lvalue-identifier? x) x (move! x);
+$def! $lvalue-identifier? $vau (&s) d
+	eval (list bound-lvalue? (list $resolve-identifier s)) d;
+$def! forward! wrap
+	($vau% (%x) #ignore $if ($lvalue-identifier? x) x (move! x));
+$def! $remote-eval $vau (&o &e) d eval o (eval e d);
+$def! $remote-eval% $vau% (&o &e) d eval% o (eval e d);
+$def! $set! $vau (&e &formals .&expr) d
+	eval (list $def! formals (unwrap eval) expr d) (eval e d);
+$def! $lambda $vau (&formals .&body) d
+	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
+$def! $lambda% $vau (&formals .&body) d
+	wrap (eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+$def! $lambda/e $vau (&p &formals .&body) d
+	wrap (eval
+		(cons $vau/e (cons p (cons formals (cons ignore (move! body))))) d);
+$def! $lambda/e% $vau (&p &formals .&body) d
+	wrap (eval
+		(cons $vau/e% (cons p (cons formals (cons ignore (move! body))))) d);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
-		$defl%! apply (&appv &arg .&opt)
-			eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
-				($if (null? opt) (() make-environment)
-					(($lambda ((&e .&eopt))
-						$if (null? eopt) e
-							(raise-invalid-syntax-error
-								"Syntax error in applying form.")) opt));
-		$defl! list* (&head .&tail)
-			$if (null? tail) (forward! head)
-				(cons (forward! head) (apply list* (move! tail)));
-		$defl%! list*% (&head .&tail) $if (null? tail) (forward! head)
-			(cons% (forward! head) (apply list*% tail));
-		$defv! $lambda/e (&e &formals .&body) d
-			wrap (eval (list* $vau/e e formals ignore (move! body)) d);
-		$defv! $defl/e! (&f &e &formals .&body) d
-			eval (list $set! d f $lambda/e e formals (move! body)) d;
-		$defv! $defw%! (&f &formals &ef .&body) d
-			eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
-		$defw%! forward-first% (&appv (&x .)) d
-			apply (forward! appv) (list% ($move-resolved! x)) d;
-		$defl%! first (%l)
-			($lambda% (fwd) forward-first% forward! (fwd l))
-				($if ($lvalue-identifier? l) id expire);
-		$defl%! first% (%l)
-			($lambda (fwd (@x .)) fwd x)
-				($if ($lvalue-identifier? l) id expire) l;
-		$defl! rest ((#ignore .xs)) xs;
-		$defl! rest% ((#ignore .%xs)) move! xs;
-		$defv! $defv%! (&$f &formals &ef .&body) d
-			eval (list $set! d $f $vau% formals ef (move! body)) d;
-		$defv! $defw! (&f &formals &ef .&body) d
-			eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
-		$defv%! $cond &clauses d
-			$if (null? clauses) #inert
-				(apply ($lambda% ((&test .&body) .&clauses)
-					$if (eval test d) (eval% (move! body) d)
-						(apply (wrap $cond) (move! clauses) d))
-						(move! clauses));
-		$defv%! $when (&test .&exprseq) d
-			$if (eval test d) (eval% (list* () $sequence (move! exprseq)) d);
-		$defv%! $unless (&test .&exprseq) d
-			$if (eval test d) #inert
-				(eval% (list* () $sequence (move! exprseq)) d);
-		$defv%! $while (&test .&exprseq) d
-			$when (eval test d)
-				(eval% (list* () $sequence exprseq) d)
-				(eval% (list* () $while (move! test) (move! exprseq)) d);
-		$defv%! $until (&test .&exprseq) d
-			$unless (eval test d)
-				(eval% (list* () $sequence exprseq) d)
-				(eval% (list* () $until (move! test) (move! exprseq)) d);
-		$defl! not? (x) eqv? x #f;
-		$defv! $and? x d $cond
-			((null? x) #t)
-			((null? (rest x)) eval (first x) d)
-			((eval (first x) d) apply (wrap $and?) (rest x) d)
-			(#t #f);
-		$defv! $or? x d $cond
-			((null? x) #f)
-			((null? (rest x)) eval (first x) d)
-			(#t ($lambda (r) $if r r
-				(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
-		$defw%! accr (&l &pred? &base &head &tail &sum) d
-			$if (apply pred? (list% l) d) (forward! base)
-				(apply sum (list% (apply head (list% l) d)
-					(apply accr (list% (apply tail (list% l) d)
-					pred? (forward! base) head tail sum) d)) d);
-		$defw%! foldr1 (&kons &knil &l) d
-			apply accr (list% (($lambda ((.@xs)) xs) l) null? (forward! knil)
-				($if ($lvalue-identifier? l) ($lambda (&l) first% l)
-				($lambda (&l) expire (first% l))) rest% kons) d;
-		$defw%! map1 (&appv &l) d
-			foldr1 ($lambda (%x &xs) cons%
-				(apply appv (list% ($move-resolved! x)) d) (move! xs)) ()
-				(forward! l);
-		$defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
-		$defl! append (.&ls) foldr1 list-concat () (move! ls);
-		$defl! filter (&accept? &ls) apply append
-			(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
-		$defw! derive-current-environment (.&envs) d
-			apply make-environment (append envs (list d)) d;
-		$def! ($let $let* $letrec) ($lambda (&ce)
-		(
-			$def! mods () ($lambda/e ce ()
-			(
-				$def! idv $lambda% (x) $move-resolved! x;
-				$defl%! rulist (&l)
-					$if ($lvalue-identifier? l)
-						(accr (($lambda ((.@xs)) xs) l) null? ()
-							($lambda% (%l) $sequence
-								($def! %x idv (($lambda% ((@x .)) x) l))
-								(($if (uncollapsed? x) idv expire) (expire x)))
-								rest%
-							($lambda (%x &xs)
-								(cons% ($resolve-identifier x) (move! xs))))
-						(idv (forward! l));
-				$defl%! list-extract-first (&l) map1 first l;
-				$defl%! list-extract-rest% (&l) map1 rest% l;
-				$defv%! $lqual (&ls) d
-					($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
-						(eval% ls d);
-				$defv%! $lqual* (&x) d
-					($if (eval (list $lvalue-identifier? x) d) as-const expire)
-						(eval% x d);
-				$defl%! mk-let ($ctor &bindings &body)
-					list* () (list* $ctor (list-extract-first bindings)
-						(list (move! body))) (list-extract-rest% bindings);
-				$defl%! mk-let* ($let $let* &bindings &body)
-					$if (null? bindings) (list* $let () (move! body))
-						(list $let (list (first% ($lqual* bindings)))
-						(list* $let* (rest% ($lqual* bindings)) (move! body)));
-				$defl%! mk-letrec ($let &bindings &body)
-					list $let () $sequence (list $def! (list-extract-first
-						bindings) (list* () list (list-extract-rest% bindings)))
-						(move! body);
-				() lock-current-environment
-			));
-			$defv/e%! $let mods (&bindings .&body) d
-				eval% (mk-let $lambda ($lqual bindings) (move! body)) d;
-			$defv/e%! $let* mods (&bindings .&body) d
-				eval% (mk-let* $let $let* ($lqual* bindings) (move! body)) d;
-			$defv/e%! $letrec mods (&bindings .&body) d
-				eval% (mk-letrec $let ($lqual bindings) (move! body)) d;
-			map1 move! (list% $let $let* $letrec)
-		)) (() get-current-environment);
-		$defv! $as-environment (.&body) d
-			eval (list $let () (list $sequence (move! body)
-				(list () lock-current-environment))) d;
-		$defv! $bindings/p->environment (&parents .&bindings) d $sequence
-			($def! res apply make-environment (map1 ($lambda (x) eval x d)
-				parents))
-			(eval (list $set! res (map1 first bindings)
-				(list* () list (map1 rest bindings))) d)
-			res;
-		$defv! $bindings->environment (.&bindings) d
-			eval (list* $bindings/p->environment () bindings) d;
-		$defv! $provide/let! (&symbols &bindings .&body) d
-			$sequence (eval% (list% $def! symbols (list $let bindings $sequence
-				(list% ($vau% (&e) d $set! e res (lock-environment d))
-				(() get-current-environment)) (move! body)
-				(list* () list symbols))) d) res;
-		$defv! $provide! (&symbols .&body) d
-			eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
-		$defv! $import! (&e .&symbols) d
-			eval (list $set! d symbols (list* () list symbols)) (eval e d);
+$def! collapse $lambda% (%x)
+	$if (uncollapsed? ($resolve-identifier x)) (idv x) x;
+$def! assign%! $lambda (&x &y) assign@! (forward! x) (forward! (collapse y));
+$def! apply $lambda% (&appv &arg .&opt)
+	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
+		($if (null? opt) (() make-environment)
+			(($lambda ((&e .&eopt))
+				$if (null? eopt) e
+					(raise-invalid-syntax-error
+						"Syntax error in applying form.")) opt));
+$def! list* $lambda (&head .&tail)
+	$if (null? tail) (forward! head)
+		(cons (forward! head) (apply list* (move! tail)));
+$def! list*% $lambda (&head .&tail)
+	$if (null? tail) (forward! head)
+		(cons% (forward! head) (apply list*% (move! tail)));
+$def! $defv! $vau (&$f &formals &ef .&body) d
+	eval (list $set! d $f $vau formals ef (move! body)) d;
+$defv! $defv%! (&$f &formals &ef .&body) d
+	eval (list $set! d $f $vau% formals ef (move! body)) d;
+$defv! $defv/e%! (&$f &e &formals &ef .&body) d
+	eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
+$defv! $defw! (&f &formals &ef .&body) d
+	eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
+$defv! $defw%! (&f &formals &ef .&body) d
+	eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
+$defv! $defl! (f formals .body) d
+	eval (list $set! d f $lambda formals (move! body)) d;
+$defv! $defl%! (&f &formals .&body) d
+	eval (list $set! d f $lambda% formals (move! body)) d;
+$defv! $defl/e! (&f &e &formals .&body) d
+	eval (list $set! d f $lambda/e e formals (move! body)) d;
+$defv! $defl/e%! (&f &p &formals .&body) d
+	eval (list* $def! f $lambda/e% p formals (move! body)) d;
+$defw%! forward-first% (&appv (&x .)) d
+	apply (forward! appv) (list% ($move-resolved! x)) d;
+$defl%! first (%l)
+	($lambda% (fwd) forward-first% forward! (fwd l))
+		($if ($lvalue-identifier? l) id expire);
+$defl%! first% (%l)
+	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
+$defl%! first& (&l)
+	($lambda% ((&x .)) x) (check-list-reference (forward! l));
+$defl! rest ((#ignore .xs)) xs;
+$defl! rest% ((#ignore .%xs)) move! xs;
+$defl%! rest& (&l)
+	($lambda% ((#ignore .&xs)) xs) (check-list-reference (forward! l));
+$defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
+$defl! equal? (&x &y)
+	$if ($if (branch? x) (branch? y) #f)
+		($if (equal? (first& x) (first& y))
+		(equal? (rest& x) (rest& y)) #f) (eqv? x y);
+$defl%! check-environment (&e) $sequence (eval% #inert e) (forward! e);
+$defv%! $cond &clauses d
+	$if (null? clauses) #inert
+		(apply ($lambda% ((&test .&body) .&clauses)
+			$if (eval test d) (eval% (move! body) d)
+				(apply (wrap $cond) (move! clauses) d)) (move! clauses));
+$defv%! $when (&test .&exprseq) d
+	$if (eval test d) (eval% (list* () $sequence (move! exprseq)) d);
+$defv%! $unless (&test .&exprseq) d
+	$if (eval test d) #inert (eval% (list* () $sequence (move! exprseq)) d);
+$defv%! $while (&test .&exprseq) d
+	$when (eval test d)
+		(eval% (list* () $sequence exprseq) d)
+		(eval% (list* () $while (move! test) (move! exprseq)) d);
+$defv%! $until (&test .&exprseq) d
+	$unless (eval test d)
+		(eval% (list* () $sequence exprseq) d)
+		(eval% (list* () $until (move! test) (move! exprseq)) d);
+$defl! not? (x) eqv? x #f;
+$defv! $and? x d $cond
+	((null? x) #t)
+	((null? (rest x)) eval (first x) d)
+	((eval (first x) d) apply (wrap $and?) (rest x) d)
+	(#t #f);
+$defv! $or? x d $cond
+	((null? x) #f)
+	((null? (rest x)) eval (first x) d)
+	(#t ($lambda (r) $if r r
+		(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
+$defw%! accr (&l &pred? &base &head &tail &sum) d
+	$if (apply pred? (list% l) d) (forward! base)
+		(apply sum (list% (apply head (list% l) d)
+			(apply accr (list% (apply tail (list% l) d)
+			pred? (forward! base) head tail sum) d)) d);
+$defw%! foldr1 (&kons &knil &l) d
+	apply accr (list% (($lambda ((.@xs)) xs) l) null? (forward! knil)
+		($if ($lvalue-identifier? l) ($lambda (&l) first% l)
+		($lambda (&l) expire (first% l))) rest% kons) d;
+$defw%! map1 (&appv &l) d
+	foldr1 ($lambda (%x &xs) cons%
+		(apply appv (list% ($move-resolved! x)) d) (move! xs)) () (forward! l);
+$defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
+$defl! append (.&ls) foldr1 list-concat () (move! ls);
+$defl! filter (&accept? &ls) apply append
+	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
+$def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
+(
+	$def! mods () ($lambda/e ce ()
+	(
+		$defl%! rulist (&l)
+			$if ($lvalue-identifier? l)
+				(accr (($lambda ((.@xs)) xs) l) null? ()
+					($lambda% (%l) $sequence
+						($def! %x idv (($lambda% ((@x .)) x) l))
+						(($if (uncollapsed? x) idv expire) (expire x))) rest%
+					($lambda (%x &xs)
+						(cons% ($resolve-identifier x) (move! xs))))
+				(idv (forward! l));
+		$defl%! list-extract-first (&l) map1 first l;
+		$defl%! list-extract-rest% (&l) map1 rest% l;
+		$defv%! $lqual (&ls) d
+			($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
+				(eval% ls d);
+		$defv%! $lqual* (&x) d
+			($if (eval (list $lvalue-identifier? x) d) as-const expire)
+				(eval% x d);
+		$defl%! mk-let ($ctor &bindings &body)
+			list* () (list* $ctor (list-extract-first bindings)
+				(list (move! body))) (list-extract-rest% bindings);
+		$defl%! mk-let* ($let $let* &bindings &body)
+			$if (null? bindings) (list* $let () (move! body))
+				(list $let (list (first% ($lqual* bindings)))
+				(list* $let* (rest% ($lqual* bindings)) (move! body)));
+		$defl%! mk-letrec ($let &bindings &body)
+			list $let () $sequence (list $def! (list-extract-first bindings)
+				(list* () list (list-extract-rest% bindings))) (move! body);
+		() lock-current-environment
+	));
+	$defv/e%! $let mods (&bindings .&body) d
+		eval% (mk-let $lambda ($lqual bindings) (move! body)) d;
+	$defv/e%! $let% mods (&bindings .&body) d
+		eval% (mk-let $lambda% ($lqual bindings) (move! body)) d;
+	$defv/e%! $let* mods (&bindings .&body) d
+		eval% (mk-let* $let $let* ($lqual* bindings) (move! body)) d;
+	$defv/e%! $let*% mods (&bindings .&body) d
+		eval% (mk-let* $let% $let*% ($lqual* bindings) (move! body)) d;
+	$defv/e%! $letrec mods (&bindings .&body) d
+		eval% (mk-letrec $let ($lqual bindings) (move! body)) d;
+	map1 move! (list% $let $let% $let* $let*% $letrec)
+)) (() get-current-environment);
+$defv! $as-environment (.&body) d
+	eval (list $let () (list $sequence (move! body)
+		(list () lock-current-environment))) d;
+$defw! derive-current-environment (.&envs) d
+	apply make-environment (append envs (list d)) d;
+$defl! make-standard-environment () () lock-current-environment;
+$defv! $bindings/p->environment (&parents .&bindings) d $sequence
+	($def! res apply make-environment (map1 ($lambda (x) eval x d) parents))
+	(eval (list $set! res (map1 first bindings)
+		(list* () list (map1 rest bindings))) d)
+	res;
+$defv! $bindings->environment (.&bindings) d
+	eval (list* $bindings/p->environment () bindings) d;
+$defl! symbols->imports (&symbols)
+	list* () list% (map1 ($lambda (&s) list forward! (desigil s))
+		(forward! symbols));
+$defv! $provide/let! (&symbols &bindings .&body) d
+	eval% (list% $let (forward! bindings) $sequence
+		(move! body) (list% $set! d (append symbols ((unwrap list%) .))
+		(symbols->imports symbols)) (list () lock-current-environment)) d;
+$defv! $provide! (&symbols .&body) d
+	eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
+$defv! $import! (&e .&symbols) d
+	eval% (list $set! d (append symbols ((unwrap list%) .))
+		(symbols->imports symbols)) (eval e d);
 	)Unilang");
 	// NOTE: Arithmetics.
 	// TODO: Use generic types.
@@ -446,27 +736,6 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	// NOTE: The standard I/O library.
-	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
-		RetainN(term);
-		c.SetupFront([&]{
-			term = intp.ReadFrom(*intp.OpenUnique(std::move(
-				Unilang::ResolveRegular<string>(*std::next(term.begin())))),
-				c);
-			return ReduceOnce(term, c);
-		});
-	});
-	RegisterStrict(ctx, "display", [&](TermNode& term){
-		RetainN(term);
-		LiftOther(term, *std::next(term.begin()));
-		PrintTermNode(std::cout, term);
-		return ReduceReturnUnspecified(term);
-	});
-	RegisterStrict(ctx, "newline", [&](TermNode& term){
-		RetainN(term, 0);
-		std::cout << std::endl;
-		return ReduceReturnUnspecified(term);
-	});
 	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
@@ -478,8 +747,8 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 
 				LiftOtherOrCopy(term, *std::next(nd.begin(),
 					std::iterator_traits<TermNode::iterator>::difference_type(
-					std::uniform_int_distribution<size_t>(0, nd.size()
-					- 1)(mt))), Unilang::IsMovable(p_ref));
+					std::uniform_int_distribution<size_t>(0, nd.size() - 1)(mt)
+					)), Unilang::IsMovable(p_ref));
 				return ReductionStatus::Retained;
 			}
 			ThrowInsufficientTermsError(nd, p_ref);
@@ -491,21 +760,29 @@ LoadFunctions(Interpreter& intp, int& argc, char* argv[])
 
 	auto& rctx(intp.Root);
 	const auto load_std_module([&](string_view module_name,
-		void(&load_module)(Context& ctx)){
+		void(&load_module)(Interpreter& intp)){
 		LoadModuleChecked(rctx, "std." + string(module_name),
-			std::bind(load_module, std::ref(ctx)));
+			std::bind(load_module, std::ref(intp)));
 	});
 
+	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("strings", LoadModule_std_strings);
+	load_std_module("io", LoadModule_std_io);
+	load_std_module("system", LoadModule_std_system);
+	load_std_module("modules", LoadModule_std_modules);
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
 	// NOTE: Qt support.
 	InitializeQt(intp, argc, argv);
+	// NOTE: Prevent the ground environment from modification.
+	env.Frozen = true;
 	intp.SaveGround();
+	// NOTE: User environment initialization.
+	PreloadExternal(intp, "init.txt");
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.0"
+#define APP_VER "0.7.121"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -519,12 +796,40 @@ main(int argc, char* argv[])
 {
 	using namespace Unilang;
 	using namespace std;
-	Interpreter intp{};
+	using YSLib::LoggedEvent;
 
-	cout << title << endl << "Initializing...";
-	LoadFunctions(intp, argc, argv);
-	cout << "Initialization finished." << endl;
-	cout << "Type \"exit\" to exit." << endl << endl;
-	intp.Run();
+	return YSLib::FilterExceptions([&]{
+		if(argc > 1)
+		{
+			if(std::strcmp(argv[1], "-e") == 0)
+			{
+				if(argc == 3)
+				{
+					Interpreter intp{};
+
+					LoadFunctions(intp, Unilang_UseJIT, argc, argv);
+					llvm_main();
+					intp.RunLine(argv[2]);
+				}
+				else
+					throw LoggedEvent("Option '-e' expect exact one argument.");
+			}
+			else
+				throw LoggedEvent("Too many arguments.");
+		}
+		else if(argc == 1)
+		{
+			Interpreter intp{};
+
+			cout << title << endl << "Initializing the interpreter "
+				<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]")
+				<< " ..." << endl;
+			LoadFunctions(intp, Unilang_UseJIT, argc, argv);
+			llvm_main();
+			cout << "Initialization finished." << endl;
+			cout << "Type \"exit\" to exit." << endl << endl;
+			intp.Run();
+		}
+	}, yfsig, YSLib::Alert) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 

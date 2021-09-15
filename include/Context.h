@@ -5,14 +5,19 @@
 
 #include "TermAccess.h" // for ValueObject, vector, string, TermNode,
 //	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
-//	EnvironmentReference;
-#include "BasicReduction.h" // for ReductionStatus;
+//	Unilang::allocate_shared, EnvironmentReference;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include <ystdex/typeinfo.h> // for ystdex::type_info;
+#include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
+#include <cassert> // for assert;
+#include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
+#include <ystdex/swap.hpp> // for ystdex::swap_depedent;
+#include <ystdex/functor.hpp> // for ystdex::ref_eq;
+#include <exception> // for std::exception_ptr;
 
 namespace Unilang
 {
@@ -39,6 +44,7 @@ public:
 
 	mutable BindingMap Bindings;
 	ValueObject Parent{};
+	bool Frozen = {};
 
 private:
 	AnchorPtr p_anchor{InitAnchor()};
@@ -78,26 +84,26 @@ public:
 	Environment&
 	operator=(Environment&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Environment& x, const Environment& y) noexcept
 	{
 		return &x == &y;
 	}
 
-	[[nodiscard, gnu::pure]]
+	YB_ATTR_nodiscard YB_PURE
 	bool
 	IsOrphan() const noexcept
 	{
 		return p_anchor.use_count() == 1;
 	}
 
-	[[nodiscard, gnu::pure]] size_t
+	YB_ATTR_nodiscard YB_PURE size_t
 	GetAnchorCount() const noexcept
 	{
 		return size_t(p_anchor.use_count());
 	}
 
-	[[nodiscard, gnu::pure]] const AnchorPtr&
+	YB_ATTR_nodiscard YB_PURE const AnchorPtr&
 	GetAnchorPtr() const noexcept
 	{
 		return p_anchor;
@@ -137,21 +143,20 @@ public:
 	EnsureValid(const shared_ptr<Environment>&);
 
 private:
-	[[nodiscard, gnu::pure]] AnchorPtr
+	YB_ATTR_nodiscard YB_PURE AnchorPtr
 	InitAnchor() const;
 
 public:
-	[[nodiscard, gnu::pure]] NameResolution::first_type
+	YB_ATTR_nodiscard YB_PURE NameResolution::first_type
 	LookupName(string_view) const;
 
-	[[nodiscard, gnu::pure]] TermTags
+	YB_ATTR_nodiscard YB_PURE TermTags
 	MakeTermTags(const TermNode& term) const noexcept
 	{
-		// TODO: Support freezing environments.
-		return term.Tags;
+		return Frozen ? term.Tags | TermTags::Nonmodifying : term.Tags;
 	}
 
-	[[noreturn]] static void
+	YB_NORETURN static void
 	ThrowForInvalidType(const ystdex::type_info&);
 };
 
@@ -162,7 +167,25 @@ using ReducerFunctionType = ReductionStatus(Context&);
 
 using Reducer = ystdex::expanded_function<ReducerFunctionType>;
 
-using ReducerSequence = forward_list<Reducer>;
+template<class _tAlloc, class _func,
+	yimpl(typename = ystdex::enable_if_same_param_t<Reducer, _func>)>
+inline _func&&
+ToReducer(const _tAlloc&, _func&& f)
+{
+	return yforward(f);
+}
+template<class _tAlloc, typename _tParam, typename... _tParams>
+inline
+	yimpl(ystdex::exclude_self_t)<Reducer, _tParam, Reducer>
+ToReducer(const _tAlloc& a, _tParam&& arg, _tParams&&... args)
+{
+#if true
+	return Reducer(std::allocator_arg, a, yforward(arg), yforward(args)...);
+#else
+	return ystdex::make_obj_using_allocator<Reducer>(a, yforward(arg),
+		yforward(args)...);
+#endif
+}
 
 using ContextAllocator = pmr::polymorphic_allocator<byte>;
 
@@ -174,6 +197,7 @@ class Continuation
 {
 public:
 	using allocator_type = ContextAllocator;
+
 	ContextHandler Handler;
 
 	template<typename _func, typename
@@ -203,7 +227,7 @@ public:
 	Continuation&
 	operator=(Continuation&&) = default;
 
-	[[nodiscard, gnu::const]] friend bool
+	YB_ATTR_nodiscard YB_STATELESS friend bool
 	operator==(const Continuation& x, const Continuation& y) noexcept
 	{
 		return ystdex::ref_eq<>()(x, y);
@@ -216,7 +240,56 @@ public:
 
 class Context final
 {
+private:
+	using ReducerSequenceBase = YSLib::forward_list<Reducer>;
+
 public:
+	class ReducerSequence : public ReducerSequenceBase,
+		private ystdex::equality_comparable<ReducerSequence>
+	{
+	public:
+		ValueObject Parent{};
+
+		using ReducerSequenceBase::ReducerSequenceBase;
+		ReducerSequence(const ReducerSequence& act)
+			: ReducerSequenceBase(act, act.get_allocator())
+		{}
+		ReducerSequence(ReducerSequence&& rs) = default;
+		~ReducerSequence()
+		{
+			clear();
+		}
+
+		ReducerSequence&
+		operator=(ReducerSequence&) = default;
+		ReducerSequence&
+		operator=(ReducerSequence&&) = default;
+
+		void
+		clear() ynothrow
+		{
+			while(!empty())
+				pop_front();
+		}
+
+		friend void
+		swap(ReducerSequence& x, ReducerSequence& y) noexcept
+		{
+			assert(x.get_allocator() == y.get_allocator()
+				&& "Invalid allocator found.");
+			x.swap(y);
+			ystdex::swap_dependent(x.Parent, y.Parent);
+		}
+
+		YB_ATTR_nodiscard YB_PURE friend bool
+		operator==(const ReducerSequence& x, const ReducerSequence& y) noexcept
+		{
+			return ystdex::ref_eq<>()(x, y);
+		}
+	};
+
+public:
+	using ExceptionHandler = function<void(std::exception_ptr)>;
 	class ReductionGuard
 	{
 	private:
@@ -249,7 +322,7 @@ public:
 
 private:
 	lref<pmr::memory_resource> memory_rsrc;
-	shared_ptr<Environment> p_record{std::allocate_shared<Environment>(
+	shared_ptr<Environment> p_record{Unilang::allocate_shared<Environment>(
 		Environment::allocator_type(&memory_rsrc.get()))};
 	TermNode* next_term_ptr = {};
 	ReducerSequence
@@ -258,6 +331,7 @@ private:
 
 public:
 	Reducer TailAction{};
+	ExceptionHandler HandleException{DefaultHandleException};
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
 	Continuation ReduceOnce{DefaultReduceOnce, *this};
 
@@ -271,19 +345,24 @@ public:
 		return !current.empty();
 	}
 
-	[[nodiscard]] Environment::BindingMap&
+	YB_ATTR_nodiscard Environment::BindingMap&
 	GetBindingsRef() const noexcept
 	{
 		return p_record->Bindings;
 	}
-	[[nodiscard, gnu::pure]] TermNode&
+	const ReducerSequence&
+	GetCurrent() const noexcept
+	{
+		return current;
+	}
+	YB_ATTR_nodiscard YB_PURE TermNode&
 	GetNextTermRef() const;
-	[[nodiscard, gnu::pure]] const shared_ptr<Environment>&
+	YB_ATTR_nodiscard YB_PURE const shared_ptr<Environment>&
 	GetRecordPtr() const noexcept
 	{
 		return p_record;
 	}
-	[[nodiscard]] Environment&
+	YB_ATTR_nodiscard Environment&
 	GetRecordRef() const noexcept
 	{
 		return *p_record;
@@ -296,7 +375,7 @@ public:
 	}
 
 	template<typename _type>
-	[[nodiscard, gnu::pure]] _type*
+	YB_ATTR_nodiscard YB_PURE _type*
 	AccessCurrentAs()
 	{
 		return IsAlive() ? current.front().template target<_type>() : nullptr;
@@ -305,21 +384,36 @@ public:
 	ReductionStatus
 	ApplyTail();
 
+	YB_NORETURN static void
+	DefaultHandleException(std::exception_ptr);
+
 	// NOTE: See Evaluation.cpp for the definition.
 	static ReductionStatus
 	DefaultReduceOnce(TermNode&, Context&);
 
 	ReductionStatus
-	Evaluate(TermNode&);
+	Rewrite(Reducer);
 
 	ReductionStatus
-	Rewrite(Reducer);
+	RewriteGuarded(TermNode&, Reducer);
 
 	ReductionStatus
 	RewriteTerm(TermNode&);
 
-	[[nodiscard]] Environment::NameResolution
+	ReductionStatus
+	RewriteTermGuarded(TermNode&);
+
+	YB_ATTR_nodiscard Environment::NameResolution
 	Resolve(shared_ptr<Environment>, string_view) const;
+
+	void
+	SaveExceptionHandler()
+	{
+		return SetupFront(std::bind([this](ExceptionHandler& h) noexcept{
+			HandleException = std::move(h);
+			return LastStatus;
+		}, std::move(HandleException)));
+	}
 
 	template<typename... _tParams>
 	inline void
@@ -333,11 +427,19 @@ public:
 	inline void
 	SetupFront(_tParams&&... args)
 	{
-		current.emplace_front(yforward(args)...);
+		current.push_front(
+			Unilang::ToReducer(get_allocator(), yforward(args)...));
 	}
 
-	[[nodiscard, gnu::pure]] shared_ptr<Environment>
+	YB_ATTR_nodiscard YB_PURE shared_ptr<Environment>
 	ShareRecord() const noexcept;
+
+	void
+	Shift(ReducerSequence& rs, ReducerSequence::const_iterator i) noexcept
+	{
+		rs.splice_after(rs.cbefore_begin(), current, current.cbefore_begin(),
+			i);
+	}
 
 	shared_ptr<Environment>
 	SwitchEnvironment(const shared_ptr<Environment>&);
@@ -348,10 +450,10 @@ public:
 	void
 	UnwindCurrent() noexcept;
 
-	[[nodiscard, gnu::pure]] EnvironmentReference
+	YB_ATTR_nodiscard YB_PURE EnvironmentReference
 	WeakenRecord() const noexcept;
 
-	[[nodiscard, gnu::pure]] ContextAllocator
+	YB_ATTR_nodiscard YB_PURE ContextAllocator
 	get_allocator() const noexcept
 	{
 		return ContextAllocator(&memory_rsrc.get());
@@ -376,7 +478,7 @@ template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(const Environment::allocator_type& a, _tParams&&... args)
 {
-	return std::allocate_shared<Environment>(a, yforward(args)...);
+	return Unilang::allocate_shared<Environment>(a, yforward(args)...);
 }
 template<typename... _tParams>
 inline shared_ptr<Environment>
@@ -438,26 +540,26 @@ EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
 }
 
-[[nodiscard]] inline Environment::NameResolution
+YB_ATTR_nodiscard inline Environment::NameResolution
 ResolveName(const Context& ctx, string_view id)
 {
 	assert(id.data());
 	return ctx.Resolve(ctx.GetRecordPtr(), id);
 }
 
-[[nodiscard]] TermNode
+YB_ATTR_nodiscard TermNode
 MoveResolved(const Context&, string_view);
 
-[[nodiscard]] TermNode
+YB_ATTR_nodiscard TermNode
 ResolveIdentifier(const Context&, string_view);
 
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const ValueObject&);
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(ValueObject&, bool);
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode&);
-[[nodiscard]] pair<shared_ptr<Environment>, bool>
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(TermNode&);
 
 struct EnvironmentSwitcher

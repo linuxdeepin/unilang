@@ -9,6 +9,8 @@ Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 [[ "$1" != '' ]] || (echo \
 	"ERROR: The configuration name should not be empty." >& 2; exit 1)
 
+. "$Unilang_BaseDir/detect-llvm.sh"
+
 CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
 
@@ -22,21 +24,19 @@ case $(uname) in
 #	and https://sourceware.org/bugzilla/show_bug.cgi?id=26659.
 	LDFLAGS_LOWBASE_=-Wl,--default-image-base-low
 	;;
-*)
-	SHBuild_LIBS='-lffi -ldl'
 esac
 case $(uname) in
 *MSYS* | *MINGW*)
-	SHBuild_LIBS="$LIBS_Qt -lffi"
+	LIBS_EXTRA="$LIBS_Qt $LIBS_EXTRA"
 	;;
 *)
-	SHBuild_LIBS="$LIBS_Qt -lffi -ldl"
+	LIBS_EXTRA="$LIBS_Qt $LIBS_EXTRA -ldl"
 esac
 mkdir -p "$Unilang_BaseDir/build"
-(cd "$Unilang_BaseDir/build" \
-	&& SHBuild_NoAdjustSubsystem=true SHBuild_LDFLAGS="$LDFLAGS_LOWBASE_" \
-	SHBuild_LIBS="$SHBuild_LIBS" SHBuild-BuildPkg.sh "$@" \
-	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include\"" \
+(cd "$Unilang_BaseDir/build" && SHBuild_NoAdjustSubsystem=true \
+	SHBuild_CXXFLAGS="$CXXFLAGS_EXTRA" SHBuild_LDFLAGS="$LDFLAGS_LOWBASE_" \
+	SHBuild_LIBS="$LIBS_EXTRA" SHBuild-BuildPkg.sh "$@" \
+	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include"\" \
 	"$CXXFLAGS_Qt")
 
 echo "Done."

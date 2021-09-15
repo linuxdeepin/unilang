@@ -1,6 +1,7 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for string_view, ByteParser, std::getline;
+#include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
+//	std::getline;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
 #include "Arithmetic.h" // for Number;
@@ -8,10 +9,14 @@
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
-#include "Arithmetic.h" // for Number;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
+#include YFM_YSLib_Core_YException // for YSLib::ExtractException;
+#include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
-#include <ios> // for std::ios_base::eofbit;
+#include <exception> // for std::throw_with_nested;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
+#include <functional> // for std::placeholders::_1;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
 #include "Syntax.h" // for ReduceSyntax;
@@ -65,7 +70,7 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 }
 
 TermNode
-ParseLeaf(string_view id)
+ParseLeaf(string_view id, TermNode::allocator_type a)
 {
 	assert(id.data());
 
@@ -76,14 +81,14 @@ ParseLeaf(string_view id)
 		{
 		case LexemeCategory::Code:
 			id = DeliteralizeUnchecked(id);
-			[[fallthrough]];
+			YB_ATTR_fallthrough;
 		case LexemeCategory::Symbol:
 			if(CheckReducible(DefaultEvaluateLeaf(term, id)))
-				term.Value = TokenValue(id);
+				term.SetValue(in_place_type<TokenValue>, id, a);
 			break;
 		case LexemeCategory::Data:
-			term.Value = string(Deliteralize(id));
-			[[fallthrough]];
+			term.SetValue(in_place_type<string>, Deliteralize(id), a);
+			YB_ATTR_fallthrough;
 		default:
 			break;
 		}
@@ -125,7 +130,7 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 				}();
 				return {tm, true};
 			}
-		catch(bad_any_cast&)
+			catch(bad_any_cast&)
 			{}
 			return {tm, false};
 		}, subterm);
@@ -155,6 +160,63 @@ PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
 	}
 }
 
+YB_ATTR_nodiscard YB_PURE std::string
+MismatchedTypesToString(const bad_any_cast& e)
+{
+	return ystdex::sfmt("Mismatched types ('%s', '%s') found.", e.from(),
+		e.to());
+}
+
+void
+TraceException(std::exception& e, YSLib::Logger& trace)
+{
+	using namespace YSLib;
+
+	ExtractException([&](const char* str, size_t level){
+		const auto print([&](RecordLevel lv, const char* name, const char* msg){
+			trace.TraceFormat(lv, "%*s%s<%u>: %s", int(level), "", name,
+				unsigned(lv), msg);
+		});
+
+		try
+		{
+			throw;
+		}
+		catch(BadIdentifier& ex)
+		{
+			print(Err, "BadIdentifier", str);
+		}
+		catch(bad_any_cast& ex)
+		{
+			print(Warning, "TypeError", MismatchedTypesToString(ex).c_str());
+		}
+		catch(LoggedEvent& ex)
+		{
+			print(Err, typeid(ex).name(), str);
+		}
+		catch(...)
+		{
+			print(Err, "Error", str);
+		}
+	}, e);
+}
+
+YSLib::unique_ptr<std::istream>
+OpenFile(const char* filename)
+{
+	try
+	{
+		return YSLib::Text::OpenSkippedBOMtream<
+			YSLib::IO::SharedInputMappedFileStream>(YSLib::Text::BOM_UTF_8,
+			filename);
+	}
+	catch(...)
+	{
+		std::throw_with_nested(std::invalid_argument(
+			ystdex::sfmt("Failed opening file '%s'.", filename)));
+	}
+}
+
 } // unnamed namespace;
 
 Interpreter::Interpreter()
@@ -163,15 +225,58 @@ Interpreter::Interpreter()
 void
 Interpreter::Evaluate(TermNode& term)
 {
-	Root.Evaluate(term);
+	Root.RewriteTermGuarded(term);
+}
+
+ReductionStatus
+Interpreter::EvaluateOnceIn(Context& ctx)
+{
+	return ReduceOnce(Term, ctx);
+}
+
+ReductionStatus
+Interpreter::ExecuteOnce(string_view unit, Context& ctx)
+{
+	ctx.SaveExceptionHandler();
+	ctx.HandleException = std::bind([&](std::exception_ptr p,
+		const Context::ReducerSequence::const_iterator& i){
+		ctx.TailAction = nullptr;
+		ctx.Shift(Backtrace, i);
+		try
+		{
+			Context::DefaultHandleException(std::move(p));
+		}
+		catch(std::exception& e)
+		{
+			const auto gd(ystdex::make_guard([&]() noexcept{
+				Backtrace.clear();
+			}));
+			static YSLib::Logger trace;
+
+			TraceException(e, trace);
+		}
+	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
+	if(Echo)
+		RelaySwitched(ctx, [&]{
+			Print(Term);
+			return ReductionStatus::Neutral;
+		});
+	Term = Read(unit);
+	return EvaluateOnceIn(ctx);
+}
+
+ReductionStatus
+Interpreter::Exit()
+{
+	Root.UnwindCurrent();
+	return ReductionStatus::Neutral;
 }
 
 YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(string filename)
 {
 	using namespace YSLib;
-	auto p_is(Text::OpenSkippedBOMtream<IO::SharedInputMappedFileStream>(
-		Text::BOM_UTF_8, filename.c_str()));
+	auto p_is(OpenFile(filename.c_str()));
 
 	CurrentSource = YSLib::share_move(filename);
 	return p_is;
@@ -193,38 +298,6 @@ Interpreter::Perform(string_view unit)
 	return term;
 }
 
-bool
-Interpreter::Process()
-{
-	if(line == "exit")
-		return {};
-	else if(!line.empty())
-		try
-		{
-			struct Guard final
-			{
-				Context& C;
-
-				~Guard()
-				{
-					C.UnwindCurrent();
-				}
-			} gd{Root};
-			Term = Read(line);
-			Evaluate(Term);
-			if(Echo)
-				Print(Term);
-		}
-		catch(UnilangException& e)
-		{
-			using namespace std;
-
-			cerr << "UnilangException[" << typeid(e).name() << "]: "
-				<< e.what() << endl;
-		}
-	return true;
-}
-
 TermNode
 Interpreter::Read(string_view unit)
 {
@@ -236,7 +309,7 @@ Interpreter::Read(string_view unit)
 }
 
 TermNode
-Interpreter::ReadFrom(std::streambuf& buf, Context&) const
+Interpreter::ReadFrom(std::streambuf& buf) const
 {
 	using s_it_t = std::istreambuf_iterator<char>;
 	ByteParser parse{};
@@ -246,12 +319,12 @@ Interpreter::ReadFrom(std::streambuf& buf, Context&) const
 	return ReadParserResult(parse);
 }
 TermNode
-Interpreter::ReadFrom(std::istream& is, Context& ctx) const
+Interpreter::ReadFrom(std::istream& is) const
 {
 	if(is)
 	{
 		if(const auto p = is.rdbuf())
-			return ReadFrom(*p, ctx);
+			return ReadFrom(*p);
 		throw std::invalid_argument("Invalid stream buffer found.");
 	}
 	else
@@ -264,7 +337,8 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 	TermNode term{};
 	const auto& parse_result(parse.GetResult());
 
-	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(), ParseLeaf)
+	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(),
+		std::bind(ParseLeaf, std::placeholders::_1, std::ref(Allocator)))
 		!= parse_result.cend())
 		throw UnilangException("Redundant ')' found.");
 	Preprocess(term);
@@ -274,8 +348,30 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 void
 Interpreter::Run()
 {
-	while(WaitForLine() && Process())
-		;
+	Root.Rewrite(Unilang::ToReducer(Allocator, std::bind(
+		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
+}
+
+void
+Interpreter::RunLine(string_view unit)
+{
+	if(!unit.empty() && unit != "exit")
+		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+			return ExecuteOnce(unit, ctx);
+		}));
+}
+
+ReductionStatus
+Interpreter::RunLoop(Context& ctx)
+{
+	if(WaitForLine())
+	{
+		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
+			std::placeholders::_1));
+		return !line.empty() ? (line != "exit" ? ExecuteOnce(line, ctx)
+			: Exit()) : ReductionStatus::Partial;
+	}
+	return ReductionStatus::Retained;
 }
 
 bool

@@ -4,8 +4,12 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
+. "$Unilang_BaseDir/detect-llvm.sh"
+
 CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
+
+echo "Building ..."
 
 case $(uname) in
 *MSYS* | *MINGW*)
@@ -23,6 +27,7 @@ esac
 
 # shellcheck disable=2086
 g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
+$CXXFLAGS_EXTRA \
 -Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/cassert.cpp" \
@@ -40,10 +45,13 @@ g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
 "$YSLib_BaseDir/YFramework/source/YCLib/FileSystem.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/MemoryMapping.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/NativeAPI.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/YCommon.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YCoreUtilities.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
-$CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT -lffi
+$CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT $LIBS_EXTRA
+
+echo "Done."
 
