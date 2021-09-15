@@ -147,12 +147,12 @@ $let ()
 	eval ((unwrap ($lambda (x) x)) e) e
 );
 
-info "Test case on std.strings.";
+info "std.strings tests";
 $let ()
 (
-	$import! std.strings string-empty?; display (string-empty? "");
-	$import! std.strings string-empty?; display (string-empty? "x");
-	$import! std.strings ++; display (eqv? (++ "a" "bc" "123") "abc123");
-	$def! $rem $vau . #ignore "";
+	$import! std.strings string-empty? ++;
+	$expect #t string-empty? "";
+	$expect #f string-empty? "x";
+	$expect "abc123" ++ "a" "bc" "123"
 );
 
