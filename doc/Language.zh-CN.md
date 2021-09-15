@@ -1115,6 +1115,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　解包装应用子为底层合并子。
 
+　　左值参数解包装的结果是合并子的子对象引用。
+
 `raise-error <string>`
 
 　　引起包含参数指定的字符串内容的错误。
