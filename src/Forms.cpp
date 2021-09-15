@@ -407,6 +407,27 @@ WrapH(TermNode& term, FormContextHandler h)
 	return ReductionStatus::Clean;
 }
 
+ReductionStatus
+WrapN(TermNode& term, ResolvedTermReferencePtr p_ref,
+	FormContextHandler& fch, size_t n)
+{
+	return WrapH(term, MakeValueOrMove(p_ref, [&]{
+		return FormContextHandler(fch.Handler, n);
+	}, [&]{
+		return
+			FormContextHandler(std::move(fch.Handler), n);
+	}));
+}
+
+ReductionStatus
+WrapRefN(TermNode& term, ResolvedTermReferencePtr p_ref,
+	FormContextHandler& fch, size_t n)
+{
+	if(p_ref)
+		return ReduceForCombinerRef(term, *p_ref, fch.Handler, n);
+	return WrapH(term, FormContextHandler(std::move(fch.Handler), n));
+}
+
 template<typename _func, typename _func2>
 ReductionStatus
 WrapUnwrap(TermNode& term, _func f, _func2 f2)
@@ -418,6 +439,21 @@ WrapUnwrap(TermNode& term, _func f, _func2 f2)
 		return ystdex::expand_proxy<ReductionStatus(ContextHandler&,
 			const ResolvedTermReferencePtr&)>::call(f2, h, p_ref);
 	}, term);
+}
+
+template<ReductionStatus(&_rWrap)(TermNode&,
+	ResolvedTermReferencePtr, FormContextHandler&, size_t), typename _func>
+ReductionStatus
+WrapOrRef(TermNode& term, _func f)
+{
+	return WrapUnwrap(term,
+		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
+		const auto n(fch.Wrapping + 1);
+
+		if(n != 0)
+			return _rWrap(term, p_ref, fch, n);
+		throw UnilangException("Wrapping count overflow detected.");
+	}, f);
 }
 
 
@@ -865,24 +901,23 @@ VauWithEnvironmentRef(TermNode& term, Context& ctx)
 ReductionStatus
 Wrap(TermNode& term)
 {
-	return WrapUnwrap(term,
-		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
-		const auto n(fch.Wrapping + 1);
-
-		if(n != 0)
-			return WrapH(term, MakeValueOrMove(p_ref, [&]{
-				return FormContextHandler(fch.Handler, n);
-			}, [&]{
-				return
-					FormContextHandler(std::move(fch.Handler), n);
-			}));
-		throw UnilangException("Wrapping count overflow detected.");
-	}, [&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
+	return WrapOrRef<WrapN>(term,
+		[&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
 		return WrapH(term, MakeValueOrMove(p_ref, [&]{
 			return FormContextHandler(h, 1);
 		}, [&]{
 			return FormContextHandler(std::move(h), 1);
 		}));
+	});
+}
+
+ReductionStatus
+WrapRef(TermNode& term)
+{
+	return WrapOrRef<WrapRefN>(term,
+		[&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
+		return p_ref ? ReduceForCombinerRef(term, *p_ref, h, 1)
+			: WrapH(term, FormContextHandler(std::move(std::move(h)), 1));
 	});
 }
 
