@@ -889,21 +889,18 @@ Wrap(TermNode& term)
 ReductionStatus
 Unwrap(TermNode& term)
 {
-	return WrapUnwrap(term, [&](FormContextHandler& fch, bool has_ref){
-		if(has_ref)
-			term.Value = ContextHandler(FormContextHandler(fch.Handler,
-				fch.Wrapping - 1));
-		else if(fch.Wrapping != 0)
-		{
-			--fch.Wrapping;
-			return WrapH(term, std::move(fch));
-		}
-		else
-			throw TypeError("Unwrapping failed on an operative argument.");
-		return ReductionStatus::Clean;
-	}, [&](ContextHandler& h, bool) -> ReductionStatus{
-		ThrowForUnwrappingFailure(h);
-	});
+	return WrapUnwrap(term,
+		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
+		if(fch.Wrapping != 0)
+			return MakeValueOrMove(p_ref, [&]{
+				return ReduceForCombinerRef(term, Unilang::Deref(p_ref),
+					fch.Handler, fch.Wrapping - 1);
+			}, [&]{
+				--fch.Wrapping;
+				return WrapH(term, std::move(fch));
+			});
+		throw TypeError("Unwrapping failed on an operative argument.");
+	}, ThrowForUnwrappingFailure);
 }
 
 
