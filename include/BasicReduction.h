@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_BasicReduction_h_
 #define INC_Unilang_BasicReduction_h_ 1
@@ -19,7 +19,7 @@ enum class ReductionStatus : size_t
 	Retrying = 0x10
 };
 
-[[nodiscard, gnu::const]] constexpr bool
+YB_ATTR_nodiscard YB_STATELESS constexpr bool
 CheckReducible(ReductionStatus status) noexcept
 {
 	return status == ReductionStatus::Partial

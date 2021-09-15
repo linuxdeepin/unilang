@@ -3,7 +3,8 @@
 #ifndef INC_Unilang_TermNode_h_
 #define INC_Unilang_TermNode_h_ 1
 
-#include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward;
+#include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward,
+//	std::allocator_arg_t;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
@@ -33,16 +34,22 @@ enum class TermTags
 
 DefBitmaskEnum(TermTags)
 
-[[nodiscard, gnu::const]] constexpr TermTags
+YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
 GetLValueTagsOf(const TermTags& tags) noexcept
 {
 	return tags & ~TermTags::Temporary;
 }
 
-[[nodiscard, gnu::const]] constexpr TermTags
+YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
 PropagateTo(TermTags dst, TermTags tags) noexcept
 {
 	return dst | (tags & TermTags::Nonmodifying);
+}
+
+inline void
+EnsureValueTags(TermTags& tags) noexcept
+{
+	tags &= ~TermTags::Temporary;
 }
 
 
@@ -138,25 +145,25 @@ public:
 	TermNode&
 	operator=(TermNode&&) = default;
 
-	[[nodiscard, gnu::pure]] bool
+	YB_ATTR_nodiscard YB_PURE bool
 	operator!() const noexcept
 	{
 		return !bool(*this);
 	}
 
-	[[nodiscard, gnu::pure]] explicit
+	YB_ATTR_nodiscard YB_PURE explicit
 	operator bool() const noexcept
 	{
 		return Value || !empty();
 	}
 
-	[[nodiscard, gnu::pure]] const Container&
+	YB_ATTR_nodiscard YB_PURE const Container&
 	GetContainer() const noexcept
 	{
 		return container;
 	}
 
-	[[nodiscard, gnu::pure]] Container&
+	YB_ATTR_nodiscard YB_PURE Container&
 	GetContainerRef() noexcept
 	{
 		return container;
@@ -186,6 +193,32 @@ public:
 		Tags = nd.Tags;
 	}
 
+	template<typename _tParam>
+	inline yimpl(ystdex::enable_if_same_param_t<ValueObject, _tParam>)
+	SetValue(_tParam&& arg) ynoexcept_spec(yforward(arg))
+	{
+		Value = yforward(arg);
+	}
+	template<typename _tParam, typename... _tParams,
+		yimpl(ystdex::enable_if_t<sizeof...(_tParams) != 0
+		|| !ystdex::is_same_param<ValueObject, _tParam>::value, int> = 0,
+		ystdex::exclude_self_t<std::allocator_arg_t, _tParam, int> = 0)>
+	inline yimpl(ystdex::enable_if_inconvertible_t)<ystdex::decay_t<_tParam>,
+		TermNode::allocator_type, void>
+	SetValue(_tParam&& arg, _tParams&&... args) ynoexcept_spec(Value.assign(
+		std::allocator_arg, std::declval<TermNode::allocator_type&>(),
+		yforward(arg), yforward(args)...))
+	{
+		SetValue(get_allocator(), yforward(arg), yforward(args)...);
+	}
+	template<typename... _tParams>
+	inline void
+	SetValue(TermNode::allocator_type a, _tParams&&... args)
+		ynoexcept_spec(Value.assign(std::allocator_arg, a, yforward(args)...))
+	{
+		Value.assign(std::allocator_arg, a, yforward(args)...);
+	}
+
 	void
 	Add(const TermNode& nd)
 	{
@@ -195,6 +228,19 @@ public:
 	Add(TermNode&& nd)
 	{
 		container.push_back(std::move(nd));
+	}
+
+	template<typename... _tParams>
+	static inline void
+	AddValueTo(Container& con, _tParams&&... args)
+	{
+		con.emplace_back(NoContainer, yforward(args)...);
+	}
+	template<typename... _tParams>
+	static inline void
+	AddValueTo(const_iterator position, Container& con, _tParams&&... args)
+	{
+		con.emplace(position, NoContainer, yforward(args)...);
 	}
 
 	void
@@ -225,29 +271,29 @@ public:
 		Value = ValueObject(nd.Value);
 	}
 
-	[[nodiscard, gnu::pure]] iterator
+	YB_ATTR_nodiscard YB_PURE iterator
 	begin() noexcept
 	{
 		return container.begin();
 	}
-	[[nodiscard, gnu::pure]] const_iterator
+	YB_ATTR_nodiscard YB_PURE const_iterator
 	begin() const noexcept
 	{
 		return container.begin();
 	}
 
-	[[nodiscard, gnu::pure]] bool
+	YB_ATTR_nodiscard YB_PURE bool
 	empty() const noexcept
 	{
 		return container.empty();
 	}
 
-	[[nodiscard, gnu::pure]] iterator
+	YB_ATTR_nodiscard YB_PURE iterator
 	end() noexcept
 	{
 		return container.end();
 	}
-	[[nodiscard, gnu::pure]] const_iterator
+	YB_ATTR_nodiscard YB_PURE const_iterator
 	end() const noexcept
 	{
 		return container.end();
@@ -264,36 +310,36 @@ public:
 		return container.erase(first, last);
 	}
 
-	[[nodiscard, gnu::pure]]
+	YB_ATTR_nodiscard YB_PURE
 	allocator_type
 	get_allocator() const noexcept
 	{
 		return container.get_allocator();
 	}
 
-	[[nodiscard, gnu::pure]] reverse_iterator
+	YB_ATTR_nodiscard YB_PURE reverse_iterator
 	rbegin() noexcept
 	{
 		return container.rbegin();
 	}
-	[[nodiscard, gnu::pure]] const_reverse_iterator
+	YB_ATTR_nodiscard YB_PURE const_reverse_iterator
 	rbegin() const noexcept
 	{
 		return container.rbegin();
 	}
 
-	[[nodiscard, gnu::pure]] reverse_iterator
+	YB_ATTR_nodiscard YB_PURE reverse_iterator
 	rend() noexcept
 	{
 		return container.rend();
 	}
-	[[nodiscard, gnu::pure]] const_reverse_iterator
+	YB_ATTR_nodiscard YB_PURE const_reverse_iterator
 	rend() const noexcept
 	{
 		return container.rend();
 	}
 
-	[[nodiscard, gnu::pure]] size_t
+	YB_ATTR_nodiscard YB_PURE size_t
 	size() const noexcept
 	{
 		return container.size();
@@ -303,80 +349,101 @@ public:
 using TNIter = TermNode::iterator;
 using TNCIter = TermNode::const_iterator;
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsBranch(const TermNode& nd) noexcept
 {
 	return !nd.empty();
 }
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsBranchedList(const TermNode& nd) noexcept
 {
 	return !(nd.empty() || nd.Value);
 }
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsEmpty(const TermNode& nd) noexcept
 {
 	return !nd;
 }
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsExtendedList(const TermNode& nd) noexcept
 {
 	return !(nd.empty() && nd.Value);
 }
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsLeaf(const TermNode& nd) noexcept
 {
 	return nd.empty();
 }
 
-[[nodiscard, gnu::pure]] inline bool
+YB_ATTR_nodiscard YB_PURE inline bool
 IsList(const TermNode& nd) noexcept
 {
 	return !nd.Value;
 }
 
 template<typename _type>
-[[nodiscard, gnu::pure]] inline _type&
+YB_ATTR_nodiscard YB_PURE inline bool
+HasValue(const TermNode& nd, const _type& x)
+{
+	return nd.Value == x;
+}
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline _type&
 Access(TermNode& nd)
 {
 	return nd.Value.Access<_type&>();
 }
 template<typename _type>
-[[nodiscard, gnu::pure]] inline const _type&
+YB_ATTR_nodiscard YB_PURE inline const _type&
 Access(const TermNode& nd)
 {
 	return nd.Value.Access<const _type&>();
 }
 
-[[nodiscard, gnu::pure]] inline TermNode&
+inline void
+AssertBranch(const TermNode& nd) noexcept
+{
+	yunused(nd);
+	assert(IsBranch(nd) && "Invalid term found.");
+}
+
+inline void
+AssertBranchedList(const TermNode& nd) noexcept
+{
+	yunused(nd);
+	assert(IsBranchedList(nd) && "Invalid term found.");
+}
+
+YB_ATTR_nodiscard YB_PURE inline TermNode&
 AccessFirstSubterm(TermNode& nd) noexcept
 {
-	assert(IsBranch(nd));
+	AssertBranch(nd);
 	return Unilang::Deref(nd.begin());
 }
-[[nodiscard, gnu::pure]] inline const TermNode&
+YB_ATTR_nodiscard YB_PURE inline const TermNode&
 AccessFirstSubterm(const TermNode& nd) noexcept
 {
-	assert(IsBranch(nd));
+	AssertBranch(nd);
 	return Unilang::Deref(nd.begin());
 }
 
-[[nodiscard, gnu::pure]] inline TermNode&&
+YB_ATTR_nodiscard YB_PURE inline TermNode&&
 MoveFirstSubterm(TermNode& nd)
 {
 	return std::move(AccessFirstSubterm(nd));
 }
 
-[[nodiscard]] inline shared_ptr<TermNode>
+YB_ATTR_nodiscard inline shared_ptr<TermNode>
 ShareMoveTerm(TermNode& nd)
 {
 	return ystdex::share_move(nd.get_allocator(), nd);
 }
-[[nodiscard]] inline shared_ptr<TermNode>
+YB_ATTR_nodiscard inline shared_ptr<TermNode>
 ShareMoveTerm(TermNode&& nd)
 {
 	return ystdex::share_move(nd.get_allocator(), nd);
@@ -390,7 +457,7 @@ RemoveHead(TermNode& nd) noexcept
 }
 
 template<typename... _tParam, typename... _tParams>
-[[nodiscard, gnu::pure]] inline
+YB_ATTR_nodiscard YB_PURE inline
 ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
 	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
 	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
@@ -399,18 +466,10 @@ AsTermNode(_tParams&&... args)
 	return TermNode(NoContainer, yforward(args)...);
 }
 template<typename... _tParams>
-[[nodiscard, gnu::pure]] inline TermNode
+YB_ATTR_nodiscard YB_PURE inline TermNode
 AsTermNode(TermNode::allocator_type a, _tParams&&... args)
 {
 	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
-}
-
-
-template<typename _type>
-[[nodiscard, gnu::pure]] inline bool
-HasValue(const TermNode& nd, const _type& x)
-{
-	return nd.Value == x;
 }
 
 } // namespace Unilang;

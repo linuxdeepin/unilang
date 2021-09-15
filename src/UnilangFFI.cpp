@@ -1,10 +1,11 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #if __GNUC__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
-#include "UnilangFFI.h" // for YSLib::unique_ptr_from;
+#include "UnilangFFI.h" // for Unilang::allocate_shared;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::unique_ptr_from;
 #if __GNUC__
 #	pragma GCC diagnostic pop
 #endif
@@ -63,10 +64,10 @@ private:
 	UniqueLibraryHandle h_library;
 
 public:
-	[[gnu::nonnull(2)]]
+	YB_NONNULL(2)
 	DynamicLibrary(const char*);
 
-	[[nodiscard, gnu::returns_nonnull]] FPtr
+	YB_ATTR_nodiscard YB_ATTR_returns_nonnull FPtr
 	LookupFunctionPtr(const string&) const;
 };
 
@@ -132,7 +133,7 @@ struct FFICodec final
 };
 
 
-[[nodiscard, gnu::nonnull(2)]] ReductionStatus
+YB_ATTR_nodiscard YB_NONNULL(2) ReductionStatus
 FFI_Decode_string(TermNode& term, const void* buf)
 {
 	if(const auto s = *static_cast<const char* const*>(buf))
@@ -141,20 +142,20 @@ FFI_Decode_string(TermNode& term, const void* buf)
 	return ReductionStatus::Clean;
 }
 
-[[gnu::nonnull(2)]] void
+YB_NONNULL(2) void
 FFI_Encode_string(const TermNode& term, void* buf)
 {
 	*static_cast<const void**>(buf)
 		= &Unilang::ResolveRegular<const string>(term)[0];
 }
 
-[[nodiscard, gnu::nonnull(2)]] ReductionStatus
+YB_ATTR_nodiscard YB_NONNULL(2) ReductionStatus
 FFI_Decode_void(TermNode& term, const void*)
 {
 	return ReduceReturnUnspecified(term);
 }
 
-[[gnu::nonnull(2)]] void
+YB_NONNULL(2) void
 FFI_Encode_void(const TermNode& term, void*)
 {
 	if(!(Unilang::ResolveRegular<const ValueToken>(term)
@@ -165,21 +166,21 @@ FFI_Encode_void(const TermNode& term, void*)
 template<typename _type>
 struct FFI_Codec_Direct final
 {
-	[[nodiscard, gnu::nonnull(2)]] static ReductionStatus
+	YB_ATTR_nodiscard YB_NONNULL(2) static ReductionStatus
 	Decode(TermNode& term, const void* buf)
 	{
 		term.Value = *static_cast<const _type*>(buf);
 		return ReductionStatus::Clean;
 	}
 
-	[[gnu::nonnull(2)]] static void
+	YB_NONNULL(2) static void
 	Encode(const TermNode& term, void* buf)
 	{
 		*static_cast<_type*>(buf) = Unilang::ResolveRegular<const _type>(term);
 	}
 };
 
-[[nodiscard, gnu::nonnull(2)]] ReductionStatus
+YB_ATTR_nodiscard YB_NONNULL(2) ReductionStatus
 FFI_Decode_pointer(TermNode& term, const void* buf)
 {
 	if(const auto p = *static_cast<const void* const*>(buf))
@@ -189,7 +190,7 @@ FFI_Decode_pointer(TermNode& term, const void* buf)
 	return ReductionStatus::Clean;
 }
 
-[[gnu::nonnull(2)]] void
+YB_NONNULL(2) void
 FFI_Encode_pointer(const TermNode& term, void* buf)
 {
 	Unilang::ResolveTerm([&](const TermNode& nd, bool has_ref){
@@ -391,7 +392,7 @@ public:
 			throw std::bad_alloc();
 	}
 
-	[[nodiscard, gnu::pure]] const CallInterface&
+	YB_ATTR_nodiscard YB_PURE const CallInterface&
 	GetCallInterface() const noexcept
 	{
 		return *cif_ptr;
@@ -405,7 +406,7 @@ FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
 	const auto& cb(*static_cast<FFICallback*>(user_data));
 	auto& ctx(*cb.ContextPtr);
 	const auto a(ctx.get_allocator());
-	auto p_term(YSLib::allocate_shared<TermNode>(a));
+	auto p_term(Unilang::allocate_shared<TermNode>(a));
 	auto& term(*p_term);
 
 	ctx.SetupFront([&, args, ret, p_term](Context& c){
@@ -428,7 +429,7 @@ FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
 	});
 	EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-	ctx.Evaluate(term);
+	ctx.RewriteTerm(term);
 }
 
 } // unnamed namespace;

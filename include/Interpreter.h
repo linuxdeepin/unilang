@@ -71,22 +71,35 @@ private:
 class Interpreter final
 {
 private:
+	pmr::pool_resource resource{pmr::new_delete_resource()};
 	string line{};
 	shared_ptr<Environment> p_ground{};
 
 public:
 	shared_ptr<string> CurrentSource{};
 	bool Echo = std::getenv("ECHO");
-	TermNode::allocator_type Allocator{pmr::new_delete_resource()};
-	Context Root{Unilang::Deref(Allocator.resource())};
+	TermNode::allocator_type Allocator{&resource};
+	Context Root{resource};
 	SeparatorPass Preprocess{Allocator};
 	TermNode Term{Allocator};
+	Context::ReducerSequence Backtrace{Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
 
 	void
 	Evaluate(TermNode&);
+
+	ReductionStatus
+	EvaluateOnceIn(Context&);
+
+private:
+	ReductionStatus
+	ExecuteOnce(string_view, Context&);
+
+public:
+	ReductionStatus
+	Exit();
 
 	YSLib::unique_ptr<std::istream>
 	OpenUnique(string);
@@ -97,23 +110,28 @@ public:
 	static void
 	Print(const TermNode&);
 
-	bool
-	Process();
-
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	Read(string_view);
 
-	[[nodiscard]] TermNode
-	ReadFrom(std::streambuf&, Context&) const;
-	[[nodiscard]] TermNode
-	ReadFrom(std::istream&, Context&) const;
+	YB_ATTR_nodiscard TermNode
+	ReadFrom(std::streambuf&) const;
+	YB_ATTR_nodiscard TermNode
+	ReadFrom(std::istream&) const;
 
-	[[nodiscard]] TermNode
+	YB_ATTR_nodiscard TermNode
 	ReadParserResult(const ByteParser&) const;
 
 	void
 	Run();
 
+	void
+	RunLine(string_view);
+
+private:
+	ReductionStatus
+	RunLoop(Context&);
+
+public:
 	bool
 	SaveGround();
 

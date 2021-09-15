@@ -1,12 +1,18 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
-//	Unilang::TryAccessReferencedTerm;
+//	Unilang::TryAccessReferencedTerm, YSLib::EmplaceCallResult,
+//	FormContextHandler;
 #include <exception> // for std::throw_with_nested;
-#include "Exception.h" // for InvalidSyntax, UnilangException, ListTypeError;
+#include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError, TypeError,
+//	UnilangException, ListTypeError;
+#include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
+//	TermToNamePtr, ResolvedTermReferencePtr, ThrowValueCategoryError;
+#include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
+//	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
+#include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for MoveGuard, ReduceSubsequent;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
-#include "Evaluation.h" // for BindParameterWellFormed;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
@@ -17,7 +23,7 @@ namespace Unilang
 namespace
 {
 
-[[nodiscard, gnu::pure]] bool
+YB_ATTR_nodiscard YB_PURE bool
 ExtractBool(const TermNode& term)
 {
 	if(const auto p = Unilang::TryAccessReferencedTerm<bool>(term))
@@ -26,7 +32,7 @@ ExtractBool(const TermNode& term)
 }
 
 
-[[noreturn]] inline void
+YB_NORETURN inline void
 ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 {
 	try
@@ -39,39 +45,37 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 	}
 }
 
-
-[[gnu::nonnull(2)]] void
-CheckVauSymbol(const TokenValue& s, const char* target, bool is_valid)
+[[noreturn]] inline void
+ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
-	if(!is_valid)
-		throw InvalidSyntax(ystdex::sfmt("Token '%s' is not a symbol or"
-			" '#ignore' expected for %s.", s.data(), target));
+	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
 }
 
-[[noreturn, gnu::nonnull(2)]] void
-ThrowInvalidSymbolType(const TermNode& term, const char* n)
+YB_ATTR_nodiscard YB_PURE string
+CheckEnvironmentFormal(const TermNode& term)
 {
-	throw InvalidSyntax(ystdex::sfmt("Invalid %s type '%s' found.", n,
-		term.Value.type().name()));
-}
-
-[[nodiscard, gnu::pure]] string
-CheckEnvFormal(const TermNode& eterm)
-{
-	const auto& term(ReferenceTerm(eterm));
-
-	if(const auto p = TermToNamePtr(term))
+	try
 	{
-		if(!IsIgnore(*p))
-		{
-			CheckVauSymbol(*p, "environment formal parameter",
-				CategorizeBasicLexeme(*p) == LexemeCategory::Symbol);
-			return *p;
-		}
+		return ResolveTerm([&](const TermNode& nd, bool has_ref) -> string{
+			if(const auto p = TermToNamePtr(nd))
+			{
+				if(!IsIgnore(*p))
+				{
+					if(IsUnilangSymbol(*p))
+						return string(*p, term.get_allocator());
+					ThrowInvalidTokenError(*p);
+				}
+			}
+			else
+				ThrowFormalParameterTypeError(nd, has_ref);
+			return string(term.get_allocator());
+		}, term);
 	}
-	else
-		ThrowInvalidSymbolType(term, "environment formal parameter");
-	return {};
+	catch(...)
+	{
+		std::throw_with_nested(InvalidSyntax("Failed checking for"
+			" environment formal parameter (expected a symbol)."));
+	}
 }
 
 
@@ -103,14 +107,14 @@ RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
 
 
 template<typename _fCopy, typename _fMove>
-[[nodiscard]] auto
+YB_ATTR_nodiscard auto
 MakeValueOrMove(ResolvedTermReferencePtr p_ref, _fCopy cp, _fMove mv)
 	-> decltype(Unilang::IsMovable(p_ref) ? mv() : cp())
 {
 	return Unilang::IsMovable(p_ref) ? mv() : cp();
 }
 
-[[nodiscard, gnu::pure]] inline InvalidSyntax
+YB_ATTR_nodiscard YB_PURE inline InvalidSyntax
 MakeFunctionAbstractionError() noexcept
 {
 	return InvalidSyntax("Invalid syntax found in function abstraction.");
@@ -126,7 +130,7 @@ FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
 }
 
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 {
 	throw TypeError(ystdex::sfmt("Invalid environment formed from object '%s'"
@@ -137,7 +141,7 @@ ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 ReductionStatus
 EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 {
-	Forms::RetainN(term, 2);
+	RetainN(term, 2);
 
 	const auto i(std::next(term.begin()));
 	auto p_env(ResolveEnvironment(*std::next(i)).first);
@@ -151,7 +155,7 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 }
 
 
-[[nodiscard]] ValueObject
+YB_ATTR_nodiscard ValueObject
 MakeEnvironmentParent(TNIter first, TNIter last,
 	const TermNode::allocator_type& a, bool nonmodifying)
 {
@@ -172,6 +176,16 @@ MakeEnvironmentParent(TNIter first, TNIter last,
 	return parent;
 }
 
+YB_ATTR_nodiscard shared_ptr<Environment>
+CreateEnvironment(TermNode& term)
+{
+	const auto a(term.get_allocator());
+
+	return !term.empty() ? Unilang::AllocateEnvironment(a,
+		MakeEnvironmentParent(term.begin(), term.end(), a, {}))
+		: Unilang::AllocateEnvironment(a);
+}
+
 
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
 {
@@ -186,20 +200,10 @@ public:
 	bool NoLifting = {};
 
 	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
-		shared_ptr<Environment>&& p_env, bool owning, TermNode& term, bool nl)
-		: eformal(std::move(ename)), p_formals((CheckParameterTree(*p_fm),
-		std::move(p_fm))), parent(MakeParentSingle(p_env, owning)),
-		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())))),
-		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
-	{}
-	VauHandler(int, string&& ename, shared_ptr<TermNode>&& p_fm,
 		ValueObject&& vo, TermNode& term, bool nl)
-		: eformal(std::move(ename)),
-		p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
-		parent((Environment::CheckParent(vo), std::move(vo))),
-		p_eval_struct(ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())))),
+		: eformal(std::move(ename)), p_formals((CheckParameterTree(Deref(p_fm)),
+		std::move(p_fm))), parent(std::move(vo)), p_eval_struct(ShareMoveTerm(
+		ystdex::exchange(term, Unilang::AsTermNode(term.get_allocator())))),
 		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 
@@ -262,9 +266,6 @@ private:
 		ctx.GetRecordRef().Parent = parent;
 		AssertNextTerm(ctx, term);
 
-		LiftOtherOrCopy(term, *p_eval_struct, {});
-		return RelayForCall(ctx, term, std::move(gd), NoLifting);
-
 		const bool no_lift(NoLifting);
 
 		if(move)
@@ -284,53 +285,39 @@ private:
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
 
-	[[nodiscard, gnu::pure]] static ValueObject
-	MakeParentSingle(const shared_ptr<Environment>& p_env, bool owning)
+public:
+	YB_ATTR_nodiscard YB_PURE static ValueObject
+	MakeParent(ValueObject&& vo)
+	{
+		Environment::CheckParent(vo);
+		return std::move(vo);
+	}
+
+	YB_ATTR_nodiscard YB_PURE static ValueObject
+	MakeParentSingle(TermNode::allocator_type a,
+		pair<shared_ptr<Environment>, bool> pr)
+	{
+		auto& p_env(pr.first);
+
+		Environment::EnsureValid(p_env);
+		if(pr.second)
+			return ValueObject(std::allocator_arg, a,
+				in_place_type<shared_ptr<Environment>>, std::move(p_env));
+		return ValueObject(std::allocator_arg, a,
+			in_place_type<EnvironmentReference>, std::move(p_env));
+	}
+
+
+	YB_ATTR_nodiscard YB_PURE static ValueObject
+	MakeParentSingleNonOwning(TermNode::allocator_type a,
+		const shared_ptr<Environment>& p_env)
 	{
 		Environment::EnsureValid(p_env);
-		if(owning)
-			return p_env;
-		return EnvironmentReference(p_env);
-	}
-
-	static void
-	SaveNothing(const VauHandler&, TCOAction&)
-	{}
-
-	static void
-	SaveList(const VauHandler& vau, TCOAction& act)
-	{
-		for(auto& vo : vau.parent.GetObject<EnvironmentList>())
-		{
-			if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-				SaveOwningPtr(*p, act);
-		}
-	}
-
-	static void
-	SaveOwning(const VauHandler& vau, TCOAction& act)
-	{
-		SaveOwningPtr(vau.parent.GetObject<shared_ptr<Environment>>(), act);
-	}
-
-	static void
-	SaveOwningPtr(shared_ptr<Environment>& p_static, TCOAction& act)
-	{
-		if(p_static.use_count() == 1)
-			act.RecordList.emplace_front(ContextHandler(), std::move(p_static));
+		return ValueObject(std::allocator_arg, a,
+			in_place_type<EnvironmentReference>, p_env);
 	}
 };
 
-
-template<typename _func>
-ReductionStatus
-CreateFunction(TermNode& term, _func f, size_t n)
-{
-	Forms::Retain(term);
-	if(term.size() > n)
-		return f();
-	ThrowInsufficientTermsErrorFor(MakeFunctionAbstractionError(), term);
-}
 
 template<typename _func>
 inline auto
@@ -346,80 +333,127 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 }
 
-[[nodiscard]] ContextHandler
-CreateVau(TermNode& term, bool no_lift, TNIter i,
-	shared_ptr<Environment>&& p_env, bool owning)
-{
-	auto formals(ShareMoveTerm(*++i));
-	auto eformal(CheckEnvFormal(*++i));
-
-	term.erase(term.begin(), ++i);
-	return FormContextHandler(VauHandler(std::move(eformal), std::move(formals),
-		std::move(p_env), owning, term, no_lift));
-}
-
-[[nodiscard]] ContextHandler
-CreateVauWithParent(TermNode& term, bool no_lift, TNIter i,
-	ValueObject&& parent)
+YB_ATTR_nodiscard VauHandler
+MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 {
 	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
-	auto eformal(CheckEnvFormal(Unilang::Deref(++i)));
+	auto eformal(CheckEnvironmentFormal(Unilang::Deref(++i)));
 
 	term.erase(term.begin(), ++i);
-	return FormContextHandler(VauHandler(0, std::move(eformal),
-		std::move(formals), std::move(parent), term, no_lift));
+	return VauHandler(std::move(eformal), std::move(formals), std::move(vo),
+		term, no_lift);
+}
+
+template<typename _func>
+inline ReductionStatus
+ReduceCreateFunction(TermNode& term, _func f, size_t wrap)
+{
+	term.Value = Unilang::MakeForm(term, CheckFunctionCreation(f), wrap);
+	return ReductionStatus::Clean;
 }
 
 ReductionStatus
 VauImpl(TermNode& term, Context& ctx, bool no_lift)
 {
-	return CreateFunction(term, [&, no_lift]{
-		term.Value = CheckFunctionCreation([&]{
-			return
-				CreateVau(term, no_lift, term.begin(), ctx.ShareRecord(), {});
-		});
-		return ReductionStatus::Clean;
-	}, 2);
+	CheckVariadicArity(term, 1);
+	return ReduceCreateFunction(term, [&]{
+		return MakeVau(term, no_lift, term.begin(),
+			VauHandler::MakeParentSingleNonOwning(term.get_allocator(),
+			ctx.GetRecordPtr()));
+	}, Form);
 }
 
 ReductionStatus
 VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 {
-	return CreateFunction(term, [&, no_lift]{
-		auto i(term.begin());
-		auto& tm(Unilang::Deref(++i));
+	CheckVariadicArity(term, 2);
 
-		return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
-			term.Value = CheckFunctionCreation([&]{
-				return ResolveTerm([&](TermNode& nd,
-					ResolvedTermReferencePtr p_ref) -> ContextHandler{
-					if(!IsExtendedList(nd))
-					{
-						auto p_env_pr(ResolveEnvironment(nd.Value,
-							Unilang::IsMovable(p_ref)));
+	auto i(term.begin());
+	auto& tm(Unilang::Deref(++i));
 
-						Environment::EnsureValid(p_env_pr.first);
-						return CreateVau(term, no_lift, i,
-							std::move(p_env_pr.first), p_env_pr.second);
-					}
+	return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
+		return ReduceCreateFunction(term, [&]{
+			return
+				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+				return MakeVau(term, no_lift, i, [&]() -> ValueObject{
 					if(IsList(nd))
-						return CreateVauWithParent(term, no_lift, i,
-							MakeEnvironmentParent(nd.begin(),
-							nd.end(), nd.get_allocator(),
+						return VauHandler::MakeParent(MakeEnvironmentParent(
+							nd.begin(), nd.end(), nd.get_allocator(),
 							!Unilang::IsMovable(p_ref)));
+					if(IsLeaf(nd))
+						return VauHandler::MakeParentSingle(
+							term.get_allocator(), ResolveEnvironment(
+							nd.Value, Unilang::IsMovable(p_ref)));
 					ThrowInvalidEnvironmentType(nd, p_ref);
-				}, tm);
-			});
-			return ReductionStatus::Clean;
-		});
-	}, 3);
+				}());
+			}, tm);
+		}, Form);
+	});
 }
 
-[[noreturn]] ReductionStatus
+
+YB_NORETURN ReductionStatus
 ThrowForUnwrappingFailure(const ContextHandler& h)
 {
 	throw TypeError(ystdex::sfmt("Unwrapping failed with type '%s'.",
 		h.target_type().name()));
+}
+
+ReductionStatus
+WrapH(TermNode& term, FormContextHandler h)
+{
+	term.Value = ContextHandler(std::allocator_arg, term.get_allocator(),
+		std::move(h));
+	return ReductionStatus::Clean;
+}
+
+ReductionStatus
+WrapN(TermNode& term, ResolvedTermReferencePtr p_ref,
+	FormContextHandler& fch, size_t n)
+{
+	return WrapH(term, MakeValueOrMove(p_ref, [&]{
+		return FormContextHandler(fch.Handler, n);
+	}, [&]{
+		return
+			FormContextHandler(std::move(fch.Handler), n);
+	}));
+}
+
+ReductionStatus
+WrapRefN(TermNode& term, ResolvedTermReferencePtr p_ref,
+	FormContextHandler& fch, size_t n)
+{
+	if(p_ref)
+		return ReduceForCombinerRef(term, *p_ref, fch.Handler, n);
+	return WrapH(term, FormContextHandler(std::move(fch.Handler), n));
+}
+
+template<typename _func, typename _func2>
+ReductionStatus
+WrapUnwrap(TermNode& term, _func f, _func2 f2)
+{
+	return Forms::CallRegularUnaryAs<ContextHandler>([&](ContextHandler& h,
+		ResolvedTermReferencePtr p_ref) -> ReductionStatus{
+		if(const auto p = h.target<FormContextHandler>())
+			return f(*p, p_ref);
+		return ystdex::expand_proxy<ReductionStatus(ContextHandler&,
+			const ResolvedTermReferencePtr&)>::call(f2, h, p_ref);
+	}, term);
+}
+
+template<ReductionStatus(&_rWrap)(TermNode&,
+	ResolvedTermReferencePtr, FormContextHandler&, size_t), typename _func>
+ReductionStatus
+WrapOrRef(TermNode& term, _func f)
+{
+	return WrapUnwrap(term,
+		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
+		const auto n(fch.Wrapping + 1);
+
+		if(n != 0)
+			return _rWrap(term, p_ref, fch, n);
+		throw UnilangException("Wrapping count overflow detected.");
+	}, f);
 }
 
 
@@ -427,7 +461,7 @@ template<typename _fComp, typename _func>
 void
 EqualTerm(TermNode& term, _fComp f, _func g)
 {
-	Forms::RetainN(term, 2);
+	RetainN(term, 2);
 
 	auto i(term.begin());
 	const auto& x(*++i);
@@ -459,7 +493,7 @@ MakeValueListOrMove(TermNode& term, TermNode& nd,
 }
 
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowConsError(TermNode& nd, ResolvedTermReferencePtr p_ref)
 {
 	throw ListTypeError(ystdex::sfmt(
@@ -481,7 +515,7 @@ ConsItem(TermNode& term, TermNode& y)
 ReductionStatus
 ConsImpl(TermNode& term)
 {
-	Forms::RetainN(term, 2);
+	RetainN(term, 2);
 	RemoveHead(term);
 
 	const auto i(std::next(term.begin()));
@@ -509,7 +543,7 @@ public:
 	EncapsulationBase&
 	operator=(EncapsulationBase&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const EncapsulationBase& x, const EncapsulationBase& y) noexcept
 	{
 		return x.p_type == y.p_type;
@@ -549,7 +583,7 @@ public:
 	Encapsulation&
 	operator=(Encapsulation&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -574,7 +608,7 @@ public:
 	Encapsulate&
 	operator=(Encapsulate&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulate& x, const Encapsulate& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -583,7 +617,7 @@ public:
 	void
 	operator()(TermNode& term) const
 	{
-		Forms::RetainN(term);
+		RetainN(term);
 
 		auto& tm(*std::next(term.begin()));
 
@@ -609,7 +643,7 @@ public:
 	Encapsulated&
 	operator=(Encapsulated&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulated& x, const Encapsulated& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -618,7 +652,7 @@ public:
 	void
 	operator()(TermNode& term) const
 	{
-		Forms::RetainN(term);
+		RetainN(term);
 
 		auto& tm(*std::next(term.begin()));
 
@@ -644,7 +678,7 @@ public:
 	Decapsulate&
 	operator=(Decapsulate&&) = default;
 
-	[[nodiscard, gnu::pure]] friend bool
+	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Decapsulate& x, const Decapsulate& y) noexcept
 	{
 		return x.Get() == y.Get();
@@ -653,7 +687,7 @@ public:
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
-		Forms::RetainN(term);
+		RetainN(term);
 
 		return Unilang::ResolveTerm(
 			[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
@@ -673,7 +707,7 @@ public:
 					}
 					else
 					{
-						term.Value = TermReference(tm,
+						term.SetValue(in_place_type<TermReference>, tm,
 							FetchTailEnvironmentReference(*p_ref, ctx));
 						return ReductionStatus::Clean;
 					}
@@ -688,24 +722,51 @@ public:
 	}
 };
 
+
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline TermNode
+AsForm(TermNode::allocator_type a, _tParams&&... args)
+{
+	return Unilang::AsTermNode(a, std::allocator_arg, a,
+		in_place_type<ContextHandler>, std::allocator_arg, a,
+		FormContextHandler(yforward(args)...));
+}
+
+
+void
+CheckFrozenEnvironment(const shared_ptr<Environment>& p_env)
+{
+	if(YB_UNLIKELY(Unilang::Deref(p_env).Frozen))
+		throw TypeError("Cannot define variables in a frozen environment.");
+}
+
+void
+CheckBindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
+	TermNode& o)
+{
+	CheckFrozenEnvironment(p_env);
+	BindParameter(p_env, t, o);
+}
+
+
+void
+CheckResolvedListReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(!IsBranchedList(nd)))
+			throw ListTypeError(ystdex::sfmt("Expected a non-empty list, got"
+				" '%s'.", TermToStringWithReferenceMark(nd, true).c_str()));
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
 } // unnamed namespace;
 
 
 namespace Forms
 {
-
-size_t
-RetainN(const TermNode& term, size_t m)
-{
-	assert(IsBranch(term));
-
-	const auto n(term.size() - 1);
-
-	if(n == m)
-		return n;
-	throw ArityMismatch(m, n);
-}
-
 
 void
 Eq(TermNode& term)
@@ -777,19 +838,15 @@ void
 MakeEnvironment(TermNode& term)
 {
 	Retain(term);
-
-	const auto a(term.get_allocator());
-
-	term.Value = term.size() > 1 ? Unilang::AllocateEnvironment(a,
-		MakeEnvironmentParent(std::next(term.begin()), term.end(), a, {}))
-		: Unilang::AllocateEnvironment(a);
+	RemoveHead(term);
+	term.SetValue(CreateEnvironment(term));
 }
 
 void
 GetCurrentEnvironment(TermNode& term, Context& ctx)
 {
 	RetainN(term, 0);
-	term.Value = ValueObject(ctx.WeakenRecord());
+	term.SetValue(ctx.WeakenRecord());
 }
 
 
@@ -807,7 +864,7 @@ Define(TermNode& term, Context& ctx)
 		return ReduceSubsequent(term, ctx,
 			std::bind([&](Context&, const TermNode& saved,
 			const shared_ptr<Environment>& p_e){
-			BindParameter(p_e, saved, term);
+			CheckBindParameter(p_e, saved, term);
 			term.Value = ValueToken::Unspecified;
 			return ReductionStatus::Clean;
 		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()));
@@ -844,83 +901,68 @@ VauWithEnvironmentRef(TermNode& term, Context& ctx)
 ReductionStatus
 Wrap(TermNode& term)
 {
-	RetainN(term);
+	return WrapOrRef<WrapN>(term,
+		[&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
+		return WrapH(term, MakeValueOrMove(p_ref, [&]{
+			return FormContextHandler(h, 1);
+		}, [&]{
+			return FormContextHandler(std::move(h), 1);
+		}));
+	});
+}
 
-	auto& tm(*std::next(term.begin()));
-
-	ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(nd.Value.Access<ContextHandler>());
-
-		if(const auto p = h.target<FormContextHandler>())
-		{
-			auto& fch(*p);
-
-			if(has_ref)
-				term.Value = ContextHandler(FormContextHandler(fch.Handler,
-					fch.Wrapping + 1));
-			else
-			{
-				++fch.Wrapping;
-				LiftOther(term, nd);
-			}
-		}
-		else
-		{
-			if(has_ref)
-				term.Value = ContextHandler(FormContextHandler(h, 1));
-			else
-				term.Value
-					= ContextHandler(FormContextHandler(std::move(h), 1));
-		}
-	}, tm);
-	return ReductionStatus::Clean;
+ReductionStatus
+WrapRef(TermNode& term)
+{
+	return WrapOrRef<WrapRefN>(term,
+		[&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
+		return p_ref ? ReduceForCombinerRef(term, *p_ref, h, 1)
+			: WrapH(term, FormContextHandler(std::move(std::move(h)), 1));
+	});
 }
 
 ReductionStatus
 Unwrap(TermNode& term)
 {
-	RetainN(term);
-
-	auto& tm(*std::next(term.begin()));
-
-	ResolveTerm([&](TermNode& nd, bool has_ref){
-		auto& h(nd.Value.Access<ContextHandler>());
-
-		if(const auto p = h.target<FormContextHandler>())
-		{
-			auto& fch(*p);
-
-			if(has_ref)
-				term.Value = ContextHandler(FormContextHandler(fch.Handler,
-					fch.Wrapping - 1));
-			else if(fch.Wrapping != 0)
-			{
+	return WrapUnwrap(term,
+		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
+		if(fch.Wrapping != 0)
+			return MakeValueOrMove(p_ref, [&]{
+				return ReduceForCombinerRef(term, Unilang::Deref(p_ref),
+					fch.Handler, fch.Wrapping - 1);
+			}, [&]{
 				--fch.Wrapping;
-				LiftOther(term, nd);
-			}
-			else
-				throw TypeError("Unwrapping failed on an operative argument.");
-		}
-		else
-			ThrowForUnwrappingFailure(h);
-	}, tm);
-	return ReductionStatus::Clean;
+				return WrapH(term, std::move(fch));
+			});
+		throw TypeError("Unwrapping failed on an operative argument.");
+	}, ThrowForUnwrappingFailure);
+}
+
+
+ReductionStatus
+CheckListReference(TermNode& term)
+{
+	return CallResolvedUnary([&](TermNode& nd, bool has_ref){
+		CheckResolvedListReference(nd, has_ref);
+		LiftTerm(term, Unilang::Deref(std::next(term.begin())));
+		return ReductionStatus::Regular;
+	}, term);
 }
 
 
 ReductionStatus
 MakeEncapsulationType(TermNode& term)
 {
-	const auto tag(in_place_type<ContextHandler>);
 	const auto a(term.get_allocator());
-	shared_ptr<void> p_type(new byte);
+	{
+		TermNode::Container tcon(a);
+		shared_ptr<void> p_type(new yimpl(byte));
 
-	term.GetContainerRef() = {Unilang::AsTermNode(a, tag, std::allocator_arg, a,
-		FormContextHandler(Encapsulate(p_type), 1)),
-		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
-		FormContextHandler(Encapsulated(p_type), 1)),
-		Unilang::AsTermNode(a, tag, std::allocator_arg, a,
-		FormContextHandler(Decapsulate(p_type), 1))};
+		tcon.push_back(Unilang::AsForm(a, Encapsulate(p_type), Strict));
+		tcon.push_back(Unilang::AsForm(a, Encapsulated(p_type), Strict));
+		tcon.push_back(Unilang::AsForm(a, Decapsulate(p_type), Strict));
+		tcon.swap(term.GetContainerRef());
+	}
 	return ReductionStatus::Retained;
 }
 

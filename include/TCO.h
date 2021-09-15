@@ -3,8 +3,8 @@
 #ifndef INC_Unilang_TCO_h_
 #define INC_Unilang_TCO_h_ 1
 
-#include "Evaluation.h" // for lref, map, set, weak_ptr, shared_ptr,
-//	Environment, ContextHandler, list, TermNode, EnvironmentGuard,
+#include "Evaluation.h" // for map, lref, Environment, size_t, set, weak_ptr,
+//	shared_ptr, ContextHandler, list, TermNode, EnvironmentGuard,
 //	ReductionStatus, Context, Unilang::Deref;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
@@ -35,10 +35,10 @@ struct RecordCompressor final
 	void
 	Compress();
 
-	[[nodiscard, gnu::pure]] static size_t
+	YB_ATTR_nodiscard YB_PURE static size_t
 	CountReferences(const shared_ptr<Environment>&) noexcept;
 
-	[[nodiscard, gnu::pure]] static size_t
+	YB_ATTR_nodiscard YB_PURE static size_t
 	CountStrong(const shared_ptr<Environment>&) noexcept;
 
 	template<typename _fTracer>
@@ -137,7 +137,7 @@ public:
 		RecordList.emplace_front(MoveFunction(), std::move(p_env));
 	}
 
-	[[nodiscard]] lref<const ContextHandler>
+	YB_ATTR_nodiscard lref<const ContextHandler>
 	AttachFunction(ContextHandler&&);
 
 	void
@@ -153,7 +153,7 @@ public:
 	void
 	CompressForGuard(Context&, EnvironmentGuard&&);
 
-	[[nodiscard]] ContextHandler
+	YB_ATTR_nodiscard ContextHandler
 	MoveFunction();
 
 	void
@@ -166,16 +166,16 @@ public:
 	}
 };
 
-[[nodiscard, gnu::pure]] inline TCOAction*
+YB_ATTR_nodiscard YB_PURE inline TCOAction*
 AccessTCOAction(Context& ctx) noexcept
 {
 	return ctx.AccessCurrentAs<TCOAction>();
 }
 
-[[nodiscard]] TCOAction&
+YB_ATTR_nodiscard TCOAction&
 EnsureTCOAction(Context&, TermNode&);
 
-[[nodiscard]] inline TCOAction&
+YB_ATTR_nodiscard inline TCOAction&
 RefTCOAction(Context& ctx)
 {
 	return Unilang::Deref(AccessTCOAction(ctx));
@@ -195,7 +195,7 @@ MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept;
 using MoveGuardAction = decltype(std::bind(MoveGuard,
 	std::declval<EnvironmentGuard>(), std::placeholders::_1));
 
-[[nodiscard]] inline
+YB_ATTR_nodiscard inline
 MoveGuardAction
 MakeMoveGuard(EnvironmentGuard& gd)
 {

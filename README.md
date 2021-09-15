@@ -14,19 +14,34 @@
 
 ## 构建环境依赖
 
-　　除 `git` 外，构建环境依赖和支持 ISO C++ 11 的 G++、`bash` 和 GNU coreutils 。源代码在版本库及 git 子模块中提供，除此之外需要 libffi 的包。
+　　一些外部依赖项的源代码在版本库及 git 子模块中提供。
 
-　　构建 Qt demo 需要依赖 Qt5 和 `pkg-config` 。
+　　构建环境依赖以下环境工具：
+
+* `git`
+* `bash`
+* GNU coreutils
+* 支持 ISO C++ 11 的 G++ 和与之兼容的 GNU binutils
+
+　　构建使用外部二进制依赖和相关工具：
+
+* libffi
+* LLVM 7
+	* `llvm-config`
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```
-# MSYS
-pacman -Syu mingw-w64-x86_64-gcc mingw-w64-x86_64-libffi mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5 --needed
+# Some dependencies may have been preinstalled.
+# MSYS2
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm
 # Arch Linux
-sudo pacman -Syu gcc libffi pkgconf qt5-base --needed
-# Debian/Ubuntu/UOS
-sudo apt install g++ libffi-dev pkg-config qtbase5-dev # Some may have been preinstalled.
+sudo pacman -S --needed bash coreutils git gcc binutils libffi
+yay -S llvm70 # Or some other AUR frontend command.
+# Debian (strech/buster)/Ubuntu (bionic-updates/focal)
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
+# UOS
+sudo apt install bash coreutils git g++ libffi-dev llvm-dev
 ```
 
 ### Qt 环境要求和假设
@@ -93,7 +108,9 @@ sudo pacman -S freetype2 --needed
 sudo apt install libfreetype6-dev
 ```
 
-　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具。
+　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具和库。其中，二进制依赖直接被部署到源码树中。当前二进制依赖只支持 `x86_64-linux-gnu` 。本项目构建输出的文件分发时不需要依赖其中的二进制文件。
+
+**注释** 脚本安装的二进制依赖可能会随构建环境更新改变，但当前本项目保证不依赖其中可能存在的二进制不兼容的部分。因此，二进制依赖的更新是可选的。但是，在构建环境更新后，一般仍需再次运行脚本配置环境，以确保覆盖安装外部工具和（非二进制依赖形式分发的）库的最新版本。其中，若二进制依赖文件不再在脚本预期的部署位置中存在，脚本会重新获取最新版本的二进制依赖。
 
 　　以下环境变量控制脚本的行为：
 
@@ -137,9 +154,9 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 # 运行
 
-## 运行环境配置
+## 运行环境
 
-　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含）：
+　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含），如：
 
 ```
 # MinGW32
@@ -151,23 +168,29 @@ export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　使用静态链接构建的版本不需要这样的运行环境配置。
+　　若使用系统包管理器以外的方式安装 LLVM 运行时库到非默认位置，类似添加 LLVM 的路径，如：
+
+```
+# Linux
+export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
+```
+
+　　以上 Linux 配置的 `LD_LIBRARY_PATH` 也可通过 [`ldconfig`](https://man7.org/linux/man-pages/man8/ldconfig.8.html) 等其它方式代替。
+
+　　使用静态链接构建的版本不需要这样的运行环境配置；不过 LLVM 通常使用动态库。
+
+**注意** 非脚本配置的外部二进制依赖项可能不兼容，需要通过系统包管理器等方式部署，依赖这些库导致解释器最终的二进制文件不保证跨系统环境（如不同 Linux 发行版）之间可移植。
 
 ## 运行解释器
 
-　　经过可能需要的配置后，直接运行即可：
-
-```
-./unilang
-```
-
-　　进入解释器 REPL 。
+　　运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
 
 　　可选环境变量：
 
 * `ECHO`：启用 REPL 回显。
+* `UNILANG_NO_JIT`：停用代码执行时 JIT 编译，使用纯解释器。
 
-　　配合 `echo` 命令，可支持非交互式输入，如：
+　　除使用选项 `-e` ，配合 `echo` 命令，也可支持非交互式输入，如：
 
 ```
 echo 'display "Hello world."; () newline' | ./unilang
@@ -189,7 +212,7 @@ echo 'load "quicksort.txt"' | ./unilang
 
 　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
 
-　　当前测试用例直接在脚本中指定。
+　　测试用例直接在脚本中指定，包括调用解释器运行测试程序 `test.txt`。在 REPL 中 `load "test.txt"` 也可以调用测试程序。
 
 　　脚本以下支持环境变量：
 
@@ -407,7 +430,8 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 			* `$let`
 			* `$let*`
 			* `$letrec`
-		* 修复解释器中可能由用户程序中构造的深度过大的嵌套列表引起的未定义行为，包括列表对象被销毁时和形式参数树被检查时。 
+		* 修复解释器中可能由用户程序中构造的深度过大的嵌套列表引起的未定义行为，包括列表对象被销毁时和形式参数树被检查时。
+	* 确保符号求值为左值。
 	* 优化实现：
 		* 支持合并子右值调用转移而不是复制内部资源。
 		* 省略合并子调用时对形式参数的冗余检查。

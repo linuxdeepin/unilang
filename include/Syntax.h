@@ -1,10 +1,11 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Syntax_h_
 #define INC_Unilang_Syntax_h_ 1
 
-#include "TermNode.h" // for TermNode;
+#include "TermNode.h" // for TermNode, stack;
 #include "Exception.h" // for UnilangException;
+#include <cassert> // for assert;
 
 namespace Unilang
 {
@@ -16,7 +17,7 @@ struct LexemeTokenizer final
 	{}
 
 	template<class _type>
-	[[nodiscard, gnu::pure]] inline TermNode
+	YB_ATTR_nodiscard YB_PURE inline TermNode
 	operator()(const _type& val) const
 	{
 		return AsTermNode(val);
@@ -24,14 +25,14 @@ struct LexemeTokenizer final
 };
 
 template<typename _tIn>
-[[nodiscard]] inline _tIn
+YB_ATTR_nodiscard inline _tIn
 ReduceSyntax(TermNode& term, _tIn first, _tIn last)
 {
 	return ReduceSyntax(term, first, last,
 		LexemeTokenizer{term.get_allocator()});
 }
 template<typename _tIn, typename _fTokenize>
-[[nodiscard]] _tIn
+YB_ATTR_nodiscard _tIn
 ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 {
 	const auto a(term.get_allocator());

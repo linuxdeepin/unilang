@@ -22,7 +22,7 @@ Number::operator+=(const Number& n)
 Number&
 Number::operator-=(const Number& n)
 {
-	value *= n.value;
+	value -= n.value;
 	return *this;
 }
 

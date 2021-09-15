@@ -1,0 +1,158 @@
+﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
+"Unilang test script.";
+
+$def! $rem $vau . #ignore "";
+
+info "sanity";
+$expect ();
+
+info "function calls";
+$let ()
+(
+	subinfo "basic combiner calls";
+	$defl! g fm apply - fm;
+	$defv! $g fm #ignore eval (list* - fm) (() get-current-environment);
+	$expect (- 0 1) g 2 3;
+	$expect (- 0 1) $g 3 4;
+	subinfo "combiner rvalue calls";
+	$expect () ($lambda (x) forward! x) ();
+	$expect () ($lambda (x) ($lambda (y) idv y) x) ();
+	$expect () ($lambda (x) ($lambda (y) id y) x) ();
+	$expect "" ($lambda (x) ($lambda (y) ++ y) x) "";
+	$expect () ($lambda (x) ($lambda (y)) x) ();
+	$expect () ($lambda (x) ($lambda (.)) x) ();
+	$expect () ($lambda (x) ($lambda (.) ()) x) ();
+	$expect () ($lambda (x) ($lambda (y) y) x) ();
+	$expect () ($lambda (x) ($lambda (y) (idv y)) x) ();
+	$expect ()
+		($def! foo $lambda (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
+	$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
+	$expect () ($def! l list (); ($lambda ((&x .)) x) l)
+);
+
+info "recursive function calls";
+$let ()
+(
+	subinfo "Fibonacci";
+	$defl! fib (&n) $if (<=? n 1) 1 (+ (fib (- n 1)) (fib (- n 2)));
+	$expect 8 fib 5;
+	subinfo "Hofstadter Female and Male sequences";
+	$def! (F M) (list ($lambda (&n) $if (eqv? n 0) 1 (- n (M (F (- n 1)))))
+		($lambda (&n) $if (eqv? n 0) 0 (- n (F (M (- n 1))))));
+	$expect 5 F 7;
+	$expect 4 M 7
+);
+
+info "basic object operations";
+$let ()
+(
+	$def! fwd? $vau% (&x) d
+		($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d);
+	$expect (list% #f #f #t #t #f)
+		list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
+			(fwd? (idv fwd?));
+);
+
+info "combiner operations";
+subinfo "combiner equality";
+$let ()
+(
+	$check eqv? (idv idv) idv;
+	$check not? (eqv? (wrap idv) idv);
+	$check eqv? (wrap idv) (wrap idv);
+	$check eqv? (unwrap unwrap) (unwrap unwrap);
+	$def! $quote $vau% (x) #ignore $move-resolved! x;
+	$def! idv wrap $quote;
+	$check eqv? (unwrap idv) $quote;
+	$check eqv? (unwrap (idv idv)) $quote;
+	$check eqv? (unwrap idv) (unwrap (idv idv));
+	$check eqv? (wrap (unwrap idv)) idv;
+);
+
+info "logical operations";
+$let ()
+(
+	subinfo "logical not";
+	$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
+	subinfo "non-strict logical operations";
+	$expect #t () $and?;
+	$expect #f () $or?;
+	$expect #f $and? #f #f;
+	$expect #t $or? #f #t;
+	$expect 2 $and? 1 2;
+	$expect 1 $or? 1 #f;
+	$expect 2 $or? #f 2 #f 3
+);
+
+info "list operations";
+$let ()
+(
+	$expect () list* ();
+	$expect () list*% ();
+	$def! a list 2 3;
+	subinfo "list lvalue elements read and move";
+	$expect 2 first (id a);
+	$expect 2 first a;
+	$expect 2 first (as-const (expire a));
+	$expect 2 first (expire a)
+);
+
+info "local bindings";
+$let ()
+(
+	$expect () $let ();
+	$expect 5 $let ((&x 2) (&y 3)) + x y;
+	$expect 4 $let* ((&x 2) (&y x)) + x y;
+	$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
+	$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z
+);
+
+info "Documented examples.";
+$let ()
+(
+	display "Hello, world!";
+	display (display "Hello, world!");
+	(display "Hello, world!");
+	() newline;
+	() display "Hello, world!";
+	display "Hello, world!";
+	$sequence display "Hello, world!";
+	display "Hello, "; display "world!";
+	$sequence (display "Hello, ") (display "world!");
+	$def! x "hello";
+	list "hello" "world";
+	cons "x" ();
+	list "x";
+	cons "x" (cons "y" ());
+	list "x" "y";
+	$lambda (x) display x;
+	$lambda (x) x;
+	($lambda (x) display x);
+	($lambda (x) (display x));
+	$lambda (x y) $sequence (display x) (display y);
+	$def! id $lambda (x) x;
+	display (($lambda ((x y)) x) (list "hello" "world"));
+	$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;
+	eval (list display "Hello, world!") (() get-current-environment);
+	$def! (x y) list "hello" "world"; display x; display y;
+	$def! id $lambda (x) x;
+	$defl! id (x) x;
+	$def! x (); display "x is "; display ($if (null? x) "empty" "not empty")
+);
+
+info "Test case on parent environment search.";
+$let ()
+(
+	$def! e make-environment (() get-current-environment);
+	eval ((unwrap ($lambda (x) x)) e) e
+);
+
+info "std.strings tests";
+$let ()
+(
+	$import! std.strings string-empty? ++;
+	$expect #t string-empty? "";
+	$expect #f string-empty? "x";
+	$expect "abc123" ++ "a" "bc" "123"
+);
+

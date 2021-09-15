@@ -1,10 +1,11 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Evaluation.h" // for TermTags, ReductionStatus, TermNode, Context,
-//	TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
+#include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
+//	Context, TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
 //	TermReference, ContextHandler, yunseq, std::prev, GetLValueTagsOf,
 //	EnvironmentReference, in_place_type, ThrowTypeErrorForInvalidType,
-//	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with;
+//	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with,
+//	Unilang::allocate_shared;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
@@ -22,7 +23,36 @@ namespace Unilang
 namespace
 {
 
-[[nodiscard, gnu::pure]] inline TermReference
+class RefContextHandler final
+	: private ystdex::equality_comparable<RefContextHandler>
+{
+private:
+	AnchorPtr anchor_ptr;
+
+public:
+	lref<const ContextHandler> HandlerRef;
+
+	RefContextHandler(const ContextHandler& h,
+		const EnvironmentReference& env_ref) noexcept
+		: anchor_ptr(env_ref.GetAnchorPtr()), HandlerRef(h)
+	{}
+	DefDeCopyMoveCtorAssignment(RefContextHandler)
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const RefContextHandler& x, const RefContextHandler& y)
+	{
+		return x.HandlerRef.get() == y.HandlerRef.get();
+	}
+
+	ReductionStatus
+	operator()(TermNode& term, Context& ctx) const
+	{
+		return HandlerRef.get()(term, ctx);
+	}
+};
+
+
+YB_ATTR_nodiscard YB_PURE inline TermReference
 EnsureLValueReference(TermReference&& ref)
 {
 	return TermReference(ref.GetTags() & ~TermTags::Unique, std::move(ref));
@@ -177,26 +207,26 @@ CopyTermTags(TermNode& term, const TermNode& tm) noexcept
 	term.Tags = GetLValueTagsOf(tm.Tags);
 }
 
-[[nodiscard, gnu::const]] constexpr TermTags
+YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
 BindReferenceTags(TermTags ref_tags) noexcept
 {
 	return bool(ref_tags & TermTags::Unique) ? ref_tags | TermTags::Temporary
 		: ref_tags;
 }
-[[nodiscard, gnu::pure]] inline TermTags
+YB_ATTR_nodiscard YB_PURE inline TermTags
 BindReferenceTags(const TermReference& ref) noexcept
 {
 	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
 }
 
 
-[[noreturn]] inline void
+YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
 	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
 }
 
-[[noreturn]] void
+YB_NORETURN void
 ThrowNestedParameterTreeCheckError()
 {
 	std::throw_with_nested(InvalidSyntax("Failed checking for parameter in a"
@@ -285,7 +315,7 @@ private:
 };
 
 template<typename _fBindValue>
-[[nodiscard]] inline GParameterValueMatcher<_fBindValue>
+YB_ATTR_nodiscard inline GParameterValueMatcher<_fBindValue>
 MakeParameterValueMatcher(_fBindValue bind_value)
 {
 	return GParameterValueMatcher<_fBindValue>(std::move(bind_value));
@@ -615,7 +645,7 @@ private:
 };
 
 template<class _tTraits, typename _fBindTrailing, typename _fBindValue>
-[[nodiscard]] inline GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>
+YB_ATTR_nodiscard inline GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>
 MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 {
 	return GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>(
@@ -678,7 +708,7 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 						});
 					if(sigil == '&')
 					{
-						auto p_sub(YSLib::allocate_shared<TermNode>(a,
+						auto p_sub(Unilang::allocate_shared<TermNode>(a,
 							std::move(con)));
 						auto& sub(Unilang::Deref(p_sub));
 
@@ -780,6 +810,57 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 		ctx);
 	return ReductionStatus::Partial;
 }
+
+bool
+FormContextHandler::Equals(const FormContextHandler& fch) const
+{
+	if(Wrapping == fch.Wrapping)
+	{
+		if(Handler == fch.Handler)
+			return true;
+		if(const auto p = Handler.target<RefContextHandler>())
+			return p->HandlerRef.get() == fch.Handler;
+		if(const auto p = fch.Handler.target<RefContextHandler>())
+			return Handler == p->HandlerRef.get();
+	}
+	return {};
+}
+
+
+inline namespace Internals
+{
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
+	const EnvironmentReference& r_env)
+{
+	assert(bool(p_sub)
+		&& "Invalid subterm to form a subobject reference found.");
+
+	const auto a(term.get_allocator());
+	auto& sub(Unilang::Deref(p_sub));
+
+	TermNode tm(std::allocator_arg, a, {Unilang::AsTermNode(a,
+		std::move(p_sub))}, std::allocator_arg, a, TermReference(sub, r_env));
+
+	term.SetContent(std::move(tm));
+	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+ReduceForCombinerRef(TermNode& term, const TermReference& ref,
+	const ContextHandler& h, size_t n)
+{
+	const auto& r_env(ref.GetEnvironmentReference());
+	const auto a(term.get_allocator());
+
+	return ReduceAsSubobjectReference(term, YSLib::allocate_shared<TermNode>(a,
+		Unilang::AsTermNode(a, ContextHandler(std::allocator_arg, a,
+		FormContextHandler(RefContextHandler(h, r_env), n)))),
+		ref.GetEnvironmentReference());
+}
+
+} // inline namespace Internals;
 
 
 void
