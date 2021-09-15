@@ -491,6 +491,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
 	RegisterStrict(ctx, "wrap", Wrap);
+	RegisterStrict(ctx, "wrap%", WrapRef);
 	RegisterStrict(ctx, "unwrap", Unwrap);
 	RegisterUnary<Strict, const string>(ctx, "raise-error",
 		[] (const string& str){
@@ -778,7 +779,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.105"
+#define APP_VER "0.7.121"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

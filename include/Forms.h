@@ -327,6 +327,9 @@ ReductionStatus
 Wrap(TermNode&);
 
 ReductionStatus
+WrapRef(TermNode&);
+
+ReductionStatus
 Unwrap(TermNode&);
 
 
