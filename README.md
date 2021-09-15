@@ -310,7 +310,6 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 			* `make-encapsulation-type`
 			* `load`
 * **V0.6**
-	* README.md: 补充说明。
 	* 新增支持特性：
 		* **实验性** FFI 支持。
 		* 支持绑定的变量（包括函数参数）以引用传递。
@@ -415,5 +414,55 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 	* 优化实现：
 		* 支持合并子右值调用转移而不是复制内部资源。
 		* 省略合并子调用时对形式参数的冗余检查。
+* **V0.8**
+	* 调整和优化解释器实现：
+		* 启用内存池。
+		* 命令行添加 `-e` 选项支持。
+		* 增强异常处理。
+		* 新增可选的 LLVM 代码生成。
+	* 修复实现问题（除非另行指定，自从 V0.7 ）：
+		* 修复用户定义的函数右值调用转移资源未生效的问题。
+		* 修复以下函数中的非预期对象复制：
+			* `list%*`
+		* 修复 Unilang 解释器数值减法操作（自从 V0.6 ）
+	* 新增支持特性：
+		* 新增标准库函数：
+			* `desigil`
+			* `symbols->imports`
+			* 标准库模块 `std.strings` 中：
+				* `string-split`
+				* `regex-replace`
+			* `raise-error`
+			* `$remove-eval`
+			* `$remove-eval%`
+			* 标准库模块 `std.system` 中：
+				* `env-get`
+			* 标准库模块 `std.modules`
+			* `check-list-reference`
+			* `first&`
+			* `rest&`
+			* `$lambda/e%`
+			* `$defl/e%!`
+			* `$let%`
+			* `$let*%`
+			* `assign@!`
+			* `idv`
+			* `collapse`
+			* `assign%!`
+			* `set-first%!`
+			* `check-environment`
+			* 标准库模块 `std.promises`
+			* `wrap%`
+		* 调整标准库函数：
+			* `$provide/let!` 、`$provide!` 和 `$import!` 支持指定引用标记字符。
+			* 函数 `load` 移至标准库模块 `std.io` 。
+			* 涉及形式参数树的检查中支持递归检查和符号类型错误。
+			* 函数 `wrap` 和 `unwrap` 避免冗余复制，并添加合并子的子对象引用支持。
+	* 修复实现问题：
+		* 修复标准库函数 `$provide/let!` 和 `$provide!` 修复最后的符号以 `.` 起始时错误地被忽略。
+		* 修复返回值转换的实现中缺失对象转移支持。
+		* 修复标准库函数 `wrap` 和 `unwrap` 操作对操作数的表示的检查。
+	* 分离启动脚本 `init.txt` 。
+	* 添加测试脚本 `test.txt`，添加测试用例。
+	* 修复语言规范中一些等价谓词的比较规则不够充分及相关的解释器实现中关于合并子的子对象引用的相等操作。
 
-	
