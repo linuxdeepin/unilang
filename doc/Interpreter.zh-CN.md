@@ -775,3 +775,31 @@ using string = basic_string<char>;
 * [LLVM Tutorial](https://llvm.org/docs/tutorial/)
 * [LLVM Language Reference Manual](https://llvm.org/docs/LangRef.html)
 
+# 构建和包管理
+
+　　本章描述 Unilang 项目中支持的可复用的程序组件相关的功能特性支持。
+
+## 概述
+
+　　构建和包管理需在 Unilang 语言中支持以下方面的特性：
+
+* 模块管理：
+	* 模块抽象和约定。
+	* 模块的调用接口。
+	* 模块的使用。
+* 依赖管理。
+	* 依赖实体抽象和约定。
+	* 依赖实体管理。
+* 构建管理：
+	* 构建元数据约定。
+	* 构建目录布局约定。
+	* 构建命令调用。
+* 软件包管理：
+	* 持久存储格式相关实体的约定。
+	* 包数据维护。
+	* 仓库维护。
+
+　　除存储格式的约定，以上特性需以 Unilang API 的形式提供，主要为 Unilang 库函数。
+
+　　在此基础上，进一步实现包管理命令行前端工具，对以上 Unilang 库提供的软件包管理功能进行封装，允许从命令行调用维护仓库的功能。
+
