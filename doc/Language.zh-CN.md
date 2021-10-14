@@ -1749,6 +1749,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　结果为 `<int>` 类型的余数。
 
+`itos <int>`
+
+　　转换整数为字符串表示。
+
 ## 标准 I/O 库
 
 　　标准 I/O 库的操作加载为基础环境下的 `std.io` 环境。
