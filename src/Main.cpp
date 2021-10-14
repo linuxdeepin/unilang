@@ -29,7 +29,7 @@
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
 #include YFM_YSLib_Core_YShellDefinition // for std::to_string,
-//	YSLib::make_string_view;
+//	YSLib::make_string_view, YSLib::to_std::string;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
@@ -740,6 +740,9 @@ $defv! $import! (&e .&symbols) d
 	RegisterUnary<Strict, const Number&>(ctx, "itos", [](const Number& x){
 		return string(YSLib::make_string_view(std::to_string(int(x))));
 	});
+	RegisterUnary<Strict, const string>(ctx, "stoi", [](const string& x){
+		return Number(std::stoi(YSLib::to_std_string(x)));
+	});
 	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
@@ -784,7 +787,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.7.124"
+#define APP_VER "0.7.125"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

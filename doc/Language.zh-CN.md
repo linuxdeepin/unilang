@@ -1753,6 +1753,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　转换整数为字符串表示。
 
+`stoi <string>`
+
+　　转换整数的字符串表示为整数。若失败，则引起错误。
+
 ## 标准 I/O 库
 
 　　标准 I/O 库的操作加载为基础环境下的 `std.io` 环境。
