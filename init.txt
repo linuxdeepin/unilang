@@ -35,3 +35,28 @@ $defv! $expect (&expected-expr .&expr) d
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
 
+$provide/let! (string->version version->string version?)
+((mods $as-environment (
+	$import! std.strings &++ &string-split;
+
+	$def! (encapsulate% version? decapsulate)
+		() make-encapsulation-type,
+	$defl! semver->string (&x)
+		$let (((xmajor xminor xpatch) x))
+			++ (itos xmajor) "." (itos xminor) "." (itos xpatch);
+	$defl! semver<? (&x &y)
+		$let (((xmajor xminor xpatch) x) ((ymajor yminor ypatch) y))
+			$or? (<? xmajor ymajor) ($and? (=? xmajor ymajor)
+				($or? (<? xminor yminor) ($and? (=? xminor yminor)
+				(<? xpatch ypatch))));
+	$defl! semver-parse (&x)
+		$let* ((ls string-split x ".") ((smajor sminor spatch) ls))
+			map1 stoi ls
+)))
+(
+	$import! mods &version?,
+	$defl/e! string->version mods (&x) encapsulate% (idv (semver-parse x)),
+	$defl/e! version->string mods (&x) semver->string (decapsulate x),
+	$defl/e! version<? mods (&x &y) semver<? (decapsulate x) (decapsulate y)
+);
+
