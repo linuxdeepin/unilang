@@ -35,7 +35,7 @@ $defv! $expect (&expected-expr .&expr) d
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
 
-$provide/let! (string->version version->string version?)
+$provide/let! (version? string->version version->string version<?)
 ((mods $as-environment (
 	$import! std.strings &++ &string-split;
 
