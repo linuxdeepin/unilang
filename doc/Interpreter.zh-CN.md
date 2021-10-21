@@ -831,6 +831,7 @@ using string = basic_string<char>;
 	* 所有预期依赖名称作为值的公开 API 在使用指定依赖名称的参数前蕴含按以上要求对依赖名称进行的合规检查。若检查失败，则引起错误。
 * 类型 `<version>` ：版本。
 	* `<version>` 类型的值具有全序关系，可使用 `eqv?` 比较其中的相等。
+* 函数 `version?` ：`<version>` 的类型谓词。
 * 函数 `string->version <string>` ：转换语义版本的字符串描述为对应的版本对象。
 	* 结果为 `<version>` 右值。
 	* 描述应为[语义化版本](https://semver.org/lang/zh-CN/)指定的语法的版本号，其中可选的后缀被忽略。若参数不具有可被解析为版本描述的格式，则引起错误。
@@ -842,6 +843,7 @@ using string = basic_string<char>;
 	* 依赖对象由名称、版本和约束检查谓词构成。其中，约束检查谓词应是参数为 `<dependency>...` ，返回 `<bool>` 值的应用子。
 	* 构造的依赖可包含不符合上述要求的应用子。若约束检查谓词不满足上述要求，则公开 API 中的操作引起约束检查谓词被调用时程序的行为未定义。
 	* 约束检查谓词的结果非 `#f` 时，约束被*满足(satisfied)* 。提供约束的输入的实体 *蕴含(imply)* 具有对应约束检查谓词的依赖。
+* 函数 `dependency?` ：`<dependency>` 的类型谓词。
 * 函数 `make-dependency <string> <version> <applicative>` ：使用参数指定的实体名称、版本和作为约束检查谓词的应用子创建 `<dependency>` 右值。
 * 函数 `name-of <dependency>` ：取参数指定的依赖中的实体名称。
 	* 结果为 `<string>` 右值。
