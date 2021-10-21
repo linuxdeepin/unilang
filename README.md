@@ -122,7 +122,7 @@ export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bashrc` ）中而不需重复配置。
+　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bash_profile` ）中而不需重复配置。
 
 ### 构建命令
 

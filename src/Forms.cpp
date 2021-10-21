@@ -862,6 +862,13 @@ Define(TermNode& term, Context& ctx)
 
 		RemoveHead(term);
 		return ReduceSubsequent(term, ctx,
+			// XXX: This is certainly unsafe for the type initializing the
+			//	handler in 'any' due to the 'TermNode' is not trivially
+			//	swappable (since the 'list' data member is not trivially
+			//	swappable) if the target object is stored in-place. However, it
+			//	is known that in the supported platform configurations, the ABI
+			//	makes it not in-place storable in
+			//	'ystdex::any_ops::any_storage', so there is no need to change.
 			std::bind([&](Context&, const TermNode& saved,
 			const shared_ptr<Environment>& p_e){
 			CheckBindParameter(p_e, saved, term);
