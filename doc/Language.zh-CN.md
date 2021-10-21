@@ -1257,6 +1257,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　同 `assign@!` ，但 `<object>` 是引用值时赋值的源操作数是 `<object>` 折叠后的值。
 
+`assign! <reference> <object>`
+
+　　同 `assign%!` ，但 `<object>` 隐含左值到右值转换。
+
+**注释** 因为左值到右值转换，即便 `<object>` 指定的值来自 `<reference>` ，也可赋值而不因此引起未定义行为。
+
 `apply <applicative> <object> <environment>`
 
 　　在指定环境中应用。
