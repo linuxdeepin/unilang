@@ -60,3 +60,18 @@ $provide/let! (version? string->version version->string version<?)
 	$defl/e! version<? mods (&x &y) semver<? (decapsulate x) (decapsulate y)
 );
 
+$provide/let! (dependency? make-dependency name-of version-of check-of validate)
+((mods $as-environment (
+	$def! (encapsulate% dependency? decapsulate)
+		() make-encapsulation-type
+)))
+(
+	$import! mods &dependency?,
+	$defl/e! make-dependency mods (&name &ver &check)
+		encapsulate% (list name ver check),
+	$defl/e! name-of mods (&dep) idv (first (decapsulate dep)),
+	$defl/e! version-of mods (&dep) idv (first (rest& (decapsulate dep))),
+	$defl/e! check-of mods (&dep) idv (first (rest& (rest& (decapsulate dep)))),
+	$defl/e! validate mods (&dep .&deps) apply (check-of dep) deps
+);
+
