@@ -10,7 +10,8 @@
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
-#include YFM_YSLib_Core_YException // for YSLib::ExtractException;
+#include YFM_YSLib_Core_YException // for YSLib::ExtractException,
+//	YSLib::stringstream;
 #include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
@@ -150,6 +151,14 @@ StringifyValueObject(const ValueObject& vo)
 	if(t != typeid(void))
 		return "#[" + string(t.name()) + ']';
 	throw bad_any_cast();
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForDisplay(const ValueObject& vo)
+{
+	if(const auto p = vo.AccessPtr<string>())
+		return *p;
+	return StringifyValueObject(vo);
 }
 
 YB_ATTR_nodiscard YB_PURE std::string
@@ -389,6 +398,17 @@ Interpreter::WaitForLine()
 	return getline(cin, line);
 }
 
+
+void
+DisplayTermValue(std::ostream& os, const TermNode& term)
+{
+	YSLib::stringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObjectForDisplay(nd.Value);
+	});
+	os << oss.str().c_str();
+}
 
 void
 PrintTermNode(std::ostream& os, const TermNode& term)

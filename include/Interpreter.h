@@ -141,6 +141,9 @@ public:
 
 
 void
+DisplayTermValue(std::ostream&, const TermNode&);
+
+void
 PrintTermNode(std::ostream&, const TermNode&);
 
 } // namespace Unilang;
