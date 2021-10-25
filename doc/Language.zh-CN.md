@@ -1789,6 +1789,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　输出对象的外部表示。
 
+　　输出字符串没有字面量的引号。
+
 `put <string>`
 
 　　输出字符串。
