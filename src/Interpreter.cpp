@@ -161,6 +161,13 @@ StringifyValueObjectForDisplay(const ValueObject& vo)
 	return StringifyValueObject(vo);
 }
 
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForWrite(const ValueObject& vo)
+{
+	// XXX: At current, this is just same to the "print" routine.
+	return StringifyValueObject(vo);
+}
+
 YB_ATTR_nodiscard YB_PURE std::string
 MismatchedTypesToString(const bad_any_cast& e)
 {
@@ -416,6 +423,17 @@ PrintTermNode(std::ostream& os, const TermNode& term)
 	PrintTermNode(os, term, [](std::ostream& os0, const TermNode& nd){
 		os0 << StringifyValueObject(nd.Value);
 	});
+}
+
+void
+WriteTermValue(std::ostream& os, const TermNode& term)
+{
+	YSLib::stringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObjectForWrite(nd.Value);
+	});
+	os << oss.str().c_str();
 }
 
 } // namespace Unilang;

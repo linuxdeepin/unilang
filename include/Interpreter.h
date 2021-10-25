@@ -146,6 +146,9 @@ DisplayTermValue(std::ostream&, const TermNode&);
 void
 PrintTermNode(std::ostream&, const TermNode&);
 
+void
+WriteTermValue(std::ostream&, const TermNode&);
+
 } // namespace Unilang;
 
 #endif
