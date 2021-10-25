@@ -95,69 +95,61 @@ ParseLeaf(string_view id, TermNode::allocator_type a)
 	return term;
 }
 
+template<typename _func>
 void
-PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
-	size_t i = 0)
+PrintTermNode(std::ostream& os, const TermNode& term, _func f, size_t depth = 0,
+	size_t idx = 0)
 {
-	const auto print_node_str([&](const TermNode& subterm){
-		return ResolveTerm(
-			[&](const TermNode& tm) -> pair<lref<const TermNode>, bool>{
-			try
-			{
-				const auto& vo(tm.Value);
-
-				os << [&]() -> string{
-					if(const auto p = vo.AccessPtr<string>())
-						return ystdex::quote(*p);
-					if(const auto p = vo.AccessPtr<TokenValue>())
-						return *p;
-					if(const auto p = vo.AccessPtr<bool>())
-						return *p ? "#t" : "#f";
-					if(const auto p = vo.AccessPtr<int>())
-						return ystdex::sfmt<string>("%d", *p);
-					if(const auto p = vo.AccessPtr<Number>())
-						// TODO: Support different internal representations.
-						return ystdex::sfmt<string>("%d", int(*p));
-					if(const auto p = vo.AccessPtr<ValueToken>())
-						if(*p == ValueToken::Unspecified)
-							return "#inert";
-
-					const auto& t(vo.type());
-
-					if(t != typeid(void))
-						return "#[" + string(t.name()) + ']';
-					throw bad_any_cast();
-				}();
-				return {tm, true};
-			}
-			catch(bad_any_cast&)
-			{}
-			return {tm, false};
-		}, subterm);
-	});
-
-	if(depth != 0 && i != 0)
+	if(depth != 0 && idx != 0)
 		os << ' ';
-
-	const auto pr(print_node_str(term));
-
-	if(!pr.second)
-	{
-		size_t n(0);
-
-		os << '(';
-		for(const auto& nd : pr.first.get())
+	ResolveTerm([&](const TermNode& tm){
+		try
 		{
-			try
-			{
-				PrintTermNodeImpl(os, nd, depth + 1, n);
-			}
-			catch(std::out_of_range&)
-			{}
-			++n;
+			f(os, tm);
+			return;
 		}
+		catch(bad_any_cast&)
+		{}
+		os << '(';
+		try
+		{
+			size_t i(0);
+
+			for(const auto& nd : tm)
+			{
+				PrintTermNode(os, nd, f, depth + 1, i);
+				++i;
+			}
+		}
+		catch(std::out_of_range&)
+		{}
 		os << ')';
-	}
+	}, term);
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObject(const ValueObject& vo)
+{
+	if(const auto p = vo.AccessPtr<string>())
+		return ystdex::quote(*p);
+	if(const auto p = vo.AccessPtr<TokenValue>())
+		return *p;
+	if(const auto p = vo.AccessPtr<bool>())
+		return *p ? "#t" : "#f";
+	if(const auto p = vo.AccessPtr<int>())
+		return ystdex::sfmt<string>("%d", *p);
+	if(const auto p = vo.AccessPtr<Number>())
+		// TODO: Support different internal representations.
+		return ystdex::sfmt<string>("%d", int(*p));
+	if(const auto p = vo.AccessPtr<ValueToken>())
+		if(*p == ValueToken::Unspecified)
+			return "#inert";
+
+	const auto& t(vo.type());
+
+	if(t != typeid(void))
+		return "#[" + string(t.name()) + ']';
+	throw bad_any_cast();
 }
 
 YB_ATTR_nodiscard YB_PURE std::string
@@ -401,7 +393,9 @@ Interpreter::WaitForLine()
 void
 PrintTermNode(std::ostream& os, const TermNode& term)
 {
-	PrintTermNodeImpl(os, term);
+	PrintTermNode(os, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObject(nd.Value);
+	});
 }
 
 } // namespace Unilang;
