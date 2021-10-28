@@ -860,7 +860,7 @@ using string = basic_string<char>;
 	* 第一个参数应指定依赖名称。
 	* 每个字符串格式形式应符合语法 `<neg><op><ver>` ，其中：
 		* 可选的 `<neg>` 是 `!` ，表示要求排除特定版本；否则，表示要求依赖特定版本。
-		* 可选的 `<op>` 是 `<`、`>=`、`^`、`~` 、`=` 之一，其中 `=` 表示依赖指定版本号的特定版本，其余的 `<op>` 或不存在 `<op>` 的情形同 [Cargo 要求的约定](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html)。
+		* 可选的 `<op>` 是 `<`、`>`、`<=`、`>=`、`^`、`~` 、`=` 之一，含义同 [Cargo 要求的约定](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html)。
 		* 字符串格式中不支持其它字符（如空白符）。
 	* 若存在不符合上述语法的字符串，则引起错误。
 	* 得到的约束检查谓词中蕴含同时符合每个字符串表达的对版本的逻辑约束。
