@@ -43,15 +43,23 @@ $provide/let! (version? string->version version->string version<?)
 		() make-encapsulation-type,
 	$defl! semver->string (&x)
 		$let (((xmajor xminor xpatch) x))
-			++ (itos xmajor) "." (itos xminor) "." (itos xpatch);
+			++ (itos xmajor) "." (itos xminor) "." (itos xpatch),
 	$defl! semver<? (&x &y)
 		$let (((xmajor xminor xpatch) x) ((ymajor yminor ypatch) y))
 			$or? (<? xmajor ymajor) ($and? (=? xmajor ymajor)
 				($or? (<? xminor yminor) ($and? (=? xminor yminor)
-				(<? xpatch ypatch))));
+				(<? xpatch ypatch)))),
+	(
+	$defl! stoi-exact (&x)
+		$let ((&r stoi x))
+			$if (eqv? (itos r) x) (forward! r)
+				(raise-error "Invalid integer representation found.");
 	$defl! semver-parse (&x)
-		$let* ((ls string-split x ".") ((smajor sminor spatch) ls))
-			map1 stoi ls
+		$let* ((normalized string-split x "-")
+			(ls string-split (first normalized) ".")
+			((smajor sminor spatch) ls))
+			map1 stoi-exact ls
+	)
 )))
 (
 	$import! mods &version?,
