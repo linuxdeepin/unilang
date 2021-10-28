@@ -156,3 +156,21 @@ $let ()
 	$expect "abc123" ++ "a" "bc" "123"
 );
 
+info "dependency library tests";
+$let ()
+(
+	$expect "1.2.3" version->string (string->version "1.2.3");
+
+	$def! dep-core
+		make-dependency "core" (string->version "0.0.1") ($lambda (.) #t);
+
+	$expect "core" name-of dep-core;
+	$expect "0.0.1" version->string (version-of dep-core);
+
+	$def! dep-comp1
+		make-dependency "comp1" (string->version "0.0.2")
+		(strings->dependency-contract "core" ">0.0.0" "<0.0.4" "0.0" "=0.0.1");
+
+	$expect #t validate dep-comp1 dep-core
+);
+
