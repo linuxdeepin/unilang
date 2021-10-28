@@ -30,6 +30,8 @@
 * 提供扩展标准库的函数定义。
 	* 函数 `putss <string>...` ：串接参数并输出（同标准库模块 `std.io` 的 `puts` ）。
 	* 函数 `stoi-exact <string>` ：同 `stoi` ，但若结果应用 `itos` 得到的结果和参数不相等，则引起错误。
+	* 函数 `rmatch? <string1> <string2>` ：使用标准库模块 `std.strings` 的操作：
+设参数列表 `(&x &r)` ，结果同求值 `regex-match? x (string->regex r)` 。
 * 提供测试接口的定义。
 	* 函数 `info <string>...` ：输出测试用例标题，包含串接的参数。
 	* 函数 `subinfo <string>...` ：输出子测试用例标题，包含串接的参数。

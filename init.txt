@@ -8,6 +8,8 @@ $defl! stoi-exact (&x)
 		$if (eqv? (itos r) x) (forward! r)
 			(raise-error "Invalid integer representation found.");
 
+$defl/e! rmatch? std.strings (&x &r) regex-match? x (string->regex r);
+
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 
