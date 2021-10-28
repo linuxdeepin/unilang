@@ -53,7 +53,7 @@ $provide/let! (version? string->version version->string version<?)
 		$let (((xmajor xminor xpatch) x))
 			++ (itos xmajor) "." (itos xminor) "." (itos xpatch),
 	$defl! semver<? (&x &y)
-		$let (((xmajor xminor xpatch) x) ((ymajor yminor ypatch) y))
+		$let ((=? eqv?) ((xmajor xminor xpatch) x) ((ymajor yminor ypatch) y))
 			$or? (<? xmajor ymajor) ($and? (=? xmajor ymajor)
 				($or? (<? xminor yminor) ($and? (=? xminor yminor)
 				(<? xpatch ypatch)))),
