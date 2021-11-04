@@ -260,3 +260,46 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	)
 );
 
+$provide/let! (dependency-set? make-dependency-set has-dependency?)
+((mods $as-environment (
+	$import! std.strings &++ &string-split;
+
+	$def! (encapsulate% dependency-set? decapsulate)
+		() make-encapsulation-type,
+	$defl! mk-dependency-set (&deps)
+	(
+		map1 ($lambda (&x) $unless (dependency? x)
+			(raise-error "Non-dependency object found.")) deps;
+		encapsulate% (move! deps)
+	),
+	(
+	$defl! match-dependency? (&dep &name) eqv? (name-of dep) name;
+	$defl! match-dependencies? (&deps &name)
+		$if (null? deps) #f
+			($or? (match-dependency? (first deps) name)
+				(match-dependencies? (rest& deps) name)),
+	(
+	$defl! match-ver-dependency? (&dep &name &ver)
+		$and? (match-dependency? dep name)
+			(eqv? (version->string (version-of dep)) (version->string ver));
+	$defl! match-ver-dependencies? (&deps &name &ver)
+		$if (null? deps) #f
+			($or? (match-ver-dependency? (first deps) name ver)
+				(match-ver-dependencies? (rest& deps) name ver))
+	)
+	)
+)))
+(
+	$import! mods &dependency-set?,
+	$defl/e! make-dependency-set mods (.&deps) mk-dependency-set deps,
+	$defl/e! has-dependency? mods (&depset &name .&opt)
+		$if (null? opt)
+			(match-dependencies? (decapsulate depset) name)
+			(match-ver-dependencies? (decapsulate depset) name
+				($let (((&ver .&vopt) opt))
+					$if (null? vopt) ($if (version? ver) ver
+						(raise-error (++ "has-dependency?:"
+							" Invalid version object found in the argument.")))
+						(raise-error "has-dependency?: Syntax error.")))
+);
+
