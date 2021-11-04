@@ -141,16 +141,18 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	),
 	$defl! carry-tilde-vstr (&vstr)
 	(
+		$import! std.strings &++ &regex-replace &string->regex;
+
 		$cond
 			((rmatch? vstr "0|[1-9]\d*") ++ (str-add1 vstr) ".0.0")
 			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)")
 				++ (str-add1
 					(regex-replace vstr (string->regex "(\d+\.)\d+") "$1"))
 					(regex-replace vstr (string->regex "\d+\.(\d+)") "$1") ".0")
-			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)" vstr)
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 				++ (regex-replace vstr (string->regex "(\d+\.)\d+\.\d+") "$1")
 					(str-add1 (regex-replace vstr
-						(string->regex "\d+\.(\d+\.)\d+") "$1")) "0")
+						(string->regex "\d+\.(\d+)\d+") "$1")) ".0")
 			(#t raise-error (++ "Invalid version string found: '" vstr "'."))
 	);
 	$defl! vstr-caret->version (&vstr)
