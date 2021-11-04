@@ -867,6 +867,7 @@ using string = basic_string<char>;
 	* 若存在不符合上述语法的字符串，则引起错误。
 	* 得到的约束检查谓词中蕴含同时符合每个字符串表达的对版本的逻辑约束。
 * 类型 `<dependency-set>` ：依赖集合。
+* 函数 `dependency-set?` ：`<dependency-set>` 的类型谓词。
 * 函数 `make-dependency-set <dependency>...` ：创建蕴含参数指定的所有依赖集合。
 	* **注释** 实现可能进行优化，以减小结果上的其它操作的开销。
 * 函数 `has-dependency? <dependency-set> <string> <version>?` ：在第一参数指定的依赖集中查询第二参数指定依赖名称的依赖，判断是否存在。若指定了第三参数且不存在和第三参数相同版本的依赖，则视为不存在。
