@@ -861,7 +861,9 @@ using string = basic_string<char>;
 	* 每个字符串格式形式应符合语法 `<neg><op><ver>` ，其中：
 		* 可选的 `<neg>` 是 `!` ，表示要求排除特定版本；否则，表示要求依赖特定版本。
 		* 可选的 `<op>` 是 `<`、`>`、`<=`、`>=`、`^`、`~` 、`=` 之一，含义同 [Cargo 要求的约定](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html)。
-		* 字符串格式中不支持其它字符（如空白符）。
+		* `<op>` 和 `<ver>` 之间可添加有限个水平空白符（空格或水平制表符），不影响含义。
+			* 字符串格式中不支持其它字符（如空白符）。
+		* **原理** 兼容 Cargo 的语法和 [Cargo 使用的实际实现](https://docs.rs/cargo_metadata/0.14.1/cargo_metadata/struct.VersionReq.html) 原则上一致，但考虑实际可能的用例限制空白符为水平空白符，且作为单一依赖的约束不支持逗号分隔的字符串。而 Cargo 不支持的 `<neg>` 在逻辑上被视为和 `<op>` 整体上构成一个逻辑操作符，因此不支持 `<neg>` 和 `<op>` 之间内部具有空白符。
 	* 若存在不符合上述语法的字符串，则引起错误。
 	* 得到的约束检查谓词中蕴含同时符合每个字符串表达的对版本的逻辑约束。
 * 类型 `<dependency-set>` ：依赖集合。
