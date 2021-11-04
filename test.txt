@@ -169,8 +169,8 @@ $let ()
 
 	$def! dep-comp1
 		make-dependency "comp1" (string->version "0.0.2")
-		(strings->dependency-contract "core"
-			"> 0.0.0" "<	0.0.4" "0.0" "=0.0.1");
+		(strings->dependency-contract "core" "> 0.0.0" "<	0.0.4" "0.0"
+			"=0.0.1" "= 0" "	*" "0.*");
 
 	$expect #t validate dep-comp1 dep-core
 );
