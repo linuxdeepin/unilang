@@ -82,14 +82,30 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	(
 	$defl! parse-ver-con (&ver-con)
 	(
-		$import! std.strings &string->regex &++ &regex-match? &regex-replace;
+		$import! std.strings
+			&string->regex &++ &regex-match? &regex-replace &string-empty?;
 
 		$let ((pattern
 			string->regex (++ "(\!)?(\!?\<|>|\<\=|\>\=|\^|\~|\=)?[ \t]*"
-				"((0|[1-9]\d*)(\.(0|[1-9]\d*)){0,2})")))
+				"((\*|0|[1-9]\d*)(\.(\*|0|[1-9]\d*)){0,2})")))
 			$if (regex-match? ver-con pattern)
-				(list (regex-replace ver-con pattern "$1$2")
-					(regex-replace ver-con pattern "$3"))
+				(
+					$let ((op regex-replace ver-con pattern "$1$2")
+						(vstr regex-replace ver-con pattern "$3"))
+					(
+						$cond
+							(($and? (not? (string-empty? op))
+								(rmatch? vstr ".*\*.*"))
+								raise-error (++ "Unexpected operator '" op
+									"' found for wildcard requirement string '"
+									vstr "'."))
+							((rmatch? vstr "\*\..*")
+								raise-error (++
+									"Invalid wildcard requirement string '"
+									vstr "' found."))
+							(#t list op vstr)
+					)
+				)
 				(raise-error (++
 					"Invalid version constraint string found: '" ver-con "'."))
 	),
@@ -162,11 +178,21 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	),
 	$defl! version-in-range? (&ver &x &y)
 		$and? ($or? (eqv? ver x) (version<? x ver)) (version<? ver y);
-	$defl! check-eq-req (&ver &vstr) eqv? ver (vstr->version vstr),
 	$defl! check-caret-req (&ver &vstr)
 		version-in-range? ver (vstr->version vstr) (vstr-caret->version vstr),
+	(
 	$defl! check-tilde-req (&ver &vstr)
 		version-in-range? ver (vstr->version vstr) (vstr-tilde->version vstr);
+	$defl! check-eq-req (&ver &vstr)
+	(
+		$if (rmatch? vstr "\d+\*\d+\*\d+")
+			(eqv? ver (vstr->version vstr))
+			(check-tilde-req ver vstr)
+	)
+	),
+	$defl! check-ge-req (&ver &vstr)
+		$let ((nver vstr->version vstr))
+			$or? (eqv? ver nver) (version<? nver ver);
 	$defl! check-ver-con (&ver &ver-con)
 		$let (((op vstr) parse-ver-con ver-con))
 			$cond
@@ -178,11 +204,28 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 					$let ((nver vstr->version vstr))
 						$or? (eqv? ver nver) (version<? ver nver))
 				(($or? (eqv? op ">=") (eqv? op "!<"))
-					$let ((nver vstr->version vstr))
-						$or? (eqv? ver nver) (version<? nver ver))
+					check-ge-req ver vstr)
 				((eqv? op "=") check-eq-req ver vstr)
-				((eqv? op "!=") not? (check-eq-req ver vstr))
-				(($or? (eqv? op "") (eqv? op "^")) check-caret-req ver vstr)
+				((eqv? op "!=") not? (eqv? ver (vstr->version vstr)))
+				((eqv? op "")
+				(
+					$import! std.strings &regex-replace &string->regex;
+
+					$cond
+						((eqv? vstr "*") check-ge-req ver "0.0.0")
+						((rmatch? vstr "\d+\.\*(\.\*)?")
+							check-eq-req ver (regex-replace vstr
+								(string->regex "(\d+).+") "$1"))
+						((rmatch? vstr "\d+\.\d+\.\*")
+							check-eq-req ver (regex-replace vstr
+								(string->regex "(\d+\.\d+).+") "$1"))
+						((rmatch? vstr ".\*")
+							raise-error (++
+								"Invalid wildcard version string found: '" vstr
+								"'."))
+						(#t check-caret-req ver vstr)
+				))
+				((eqv? op "^") check-caret-req ver vstr)
 				((eqv? op "!^") not? (check-caret-req ver vstr))
 				((eqv? op "~") check-tilde-req ver vstr)
 				((eqv? op "!~") not? (check-tilde-req ver vstr))
