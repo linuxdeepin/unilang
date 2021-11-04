@@ -160,6 +160,11 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	),
 	$defl! version-in-range? (&ver &x &y)
 		$and? ($or? (eqv? ver x) (version<? x ver)) (version<? ver y);
+	$defl! check-eq-req (&ver &vstr) eqv? ver (vstr->version vstr),
+	$defl! check-caret-req (&ver &vstr)
+		version-in-range? ver (vstr->version vstr) (vstr-caret->version vstr),
+	$defl! check-tilde-req (&ver &vstr)
+		version-in-range? ver (vstr->version vstr) (vstr-tilde->version vstr);
 	$defl! check-ver-con (&ver &ver-con)
 		$let (((op vstr) parse-ver-con ver-con))
 			$cond
@@ -173,20 +178,12 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 				(($or? (eqv? op ">=") (eqv? op "!<"))
 					$let ((nver vstr->version vstr))
 						$or? (eqv? ver nver) (version<? nver ver))
-				((eqv? op "=") eqv? ver (vstr->version vstr))
-				((eqv? op "!=") not? (eqv? ver (vstr->version vstr)))
-				(($or? (eqv? op "") (eqv? op "^"))
-					version-in-range? ver (vstr->version vstr)
-						(vstr-caret->version vstr))
-				((eqv? op "!^")
-					not? (version-in-range? ver (vstr->version vstr)
-						(vstr-caret->version vstr)))
-				((eqv? op "~")
-					version-in-range? ver (vstr->version vstr)
-						(vstr-tilde->version vstr))
-				((eqv? op "!~")
-					not? (version-in-range? ver (vstr->version vstr)
-						(vstr-tilde->version vstr)))
+				((eqv? op "=") check-eq-req ver vstr)
+				((eqv? op "!=") not? (check-eq-req ver vstr))
+				(($or? (eqv? op "") (eqv? op "^")) check-caret-req ver vstr)
+				((eqv? op "!^") not? (check-caret-req ver vstr))
+				((eqv? op "~") check-tilde-req ver vstr)
+				((eqv? op "!~") not? (check-tilde-req ver vstr))
 				(#t raise-error (++ "Unexpected operator '" op
 					"' found in the version constrait."));
 	$defl! check-ver-cons (&ver &ver-cons)
