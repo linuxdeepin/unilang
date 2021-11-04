@@ -187,8 +187,8 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 				((eqv? op "!~")
 					not? (version-in-range? ver (vstr->version vstr)
 						(vstr-tilde->version vstr)))
-				(#t raise-error
-					"Unexpected operator found in the version constrait.");
+				(#t raise-error (++ "Unexpected operator '" op
+					"' found in the version constrait."));
 	$defl! check-ver-cons (&ver &ver-cons)
 		$if (null? ver-cons) #t
 			($and? (check-ver-con ver (first ver-cons))
