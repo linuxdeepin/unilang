@@ -163,7 +163,7 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 			((rmatch? vstr "0|[1-9]\d*") ++ (str-add1 vstr) ".0.0")
 			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)")
 				++ (str-add1
-					(regex-replace vstr (string->regex "(\d+\.)\d+") "$1"))
+					(regex-replace vstr (string->regex "(\d+)\.\d+") "$1")) "."
 					(regex-replace vstr (string->regex "\d+\.(\d+)") "$1") ".0")
 			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
 				++ (regex-replace vstr (string->regex "(\d+\.)\d+\.\d+") "$1")
