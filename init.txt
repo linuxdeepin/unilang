@@ -85,7 +85,7 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 		$import! std.strings &string->regex &++ &regex-match? &regex-replace;
 
 		$let ((pattern
-			string->regex (++ "(\!)?(\!?\<|>|\<\=|\>\=|\^|\~|\=)?"
+			string->regex (++ "(\!)?(\!?\<|>|\<\=|\>\=|\^|\~|\=)?[ \t]*"
 				"((0|[1-9]\d*)(\.(0|[1-9]\d*)){0,2})")))
 			$if (regex-match? ver-con pattern)
 				(list (regex-replace ver-con pattern "$1$2")
