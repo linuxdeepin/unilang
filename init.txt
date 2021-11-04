@@ -184,7 +184,7 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 				((eqv? op "~")
 					version-in-range? ver (vstr->version vstr)
 						(vstr-tilde->version vstr))
-				((eqv? op "!^")
+				((eqv? op "!~")
 					not? (version-in-range? ver (vstr->version vstr)
 						(vstr-tilde->version vstr)))
 				(#t raise-error
