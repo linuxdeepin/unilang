@@ -22,10 +22,152 @@
 namespace Unilang
 {
 
+class EncapsulationBase
+{
+private:
+	shared_ptr<void> p_type;
+
+public:
+	EncapsulationBase(shared_ptr<void> p) noexcept
+		: p_type(std::move(p))
+	{}
+	EncapsulationBase(const EncapsulationBase&) = default;
+	EncapsulationBase(EncapsulationBase&&) = default;
+
+	EncapsulationBase&
+	operator=(const EncapsulationBase&) = default;
+	EncapsulationBase&
+	operator=(EncapsulationBase&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const EncapsulationBase& x, const EncapsulationBase& y) noexcept
+	{
+		return x.p_type == y.p_type;
+	}
+
+	const EncapsulationBase&
+	Get() const noexcept
+	{
+		return *this;
+	}
+	EncapsulationBase&
+	GetEncapsulationBaseRef() noexcept
+	{
+		return *this;
+	}
+	const shared_ptr<void>&
+	GetType() const noexcept
+	{
+		return p_type;
+	}
+};
+
+
+class Encapsulation final : private EncapsulationBase
+{
+public:
+	mutable TermNode TermRef;
+
+	Encapsulation(shared_ptr<void> p, TermNode term)
+		: EncapsulationBase(std::move(p)), TermRef(std::move(term))
+	{}
+	Encapsulation(const Encapsulation&) = default;
+	Encapsulation(Encapsulation&&) = default;
+
+	Encapsulation&
+	operator=(const Encapsulation&) = default;
+	Encapsulation&
+	operator=(Encapsulation&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	using EncapsulationBase::Get;
+	using EncapsulationBase::GetType;
+};
+
+
+class Encapsulate final : private EncapsulationBase
+{
+public:
+	Encapsulate(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Encapsulate(const Encapsulate&) = default;
+	Encapsulate(Encapsulate&&) = default;
+
+	Encapsulate&
+	operator=(const Encapsulate&) = default;
+	Encapsulate&
+	operator=(Encapsulate&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Encapsulate& x, const Encapsulate& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode&) const;
+};
+
+
+class Encapsulated final : private EncapsulationBase
+{
+public:
+	Encapsulated(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Encapsulated(const Encapsulated&) = default;
+	Encapsulated(Encapsulated&&) = default;
+
+	Encapsulated&
+	operator=(const Encapsulated&) = default;
+	Encapsulated&
+	operator=(Encapsulated&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Encapsulated& x, const Encapsulated& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode&) const;
+};
+
+
+class Decapsulate final : private EncapsulationBase
+{
+public:
+	Decapsulate(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Decapsulate(const Decapsulate&) = default;
+	Decapsulate(Decapsulate&&) = default;
+
+	Decapsulate&
+	operator=(const Decapsulate&) = default;
+	Decapsulate&
+	operator=(Decapsulate&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Decapsulate& x, const Decapsulate& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode&, Context&) const;
+};
+
 namespace Forms
 {
 
-[[nodiscard, gnu::const]] constexpr ReductionStatus
+YB_ATTR_nodiscard YB_STATELESS constexpr ReductionStatus
 EmplaceCallResultOrReturn(TermNode&, ReductionStatus status) noexcept
 {
 	return status;
