@@ -35,6 +35,9 @@
 * 提供测试接口的定义。
 	* 函数 `info <string>...` ：输出测试用例标题，包含串接的参数。
 	* 函数 `subinfo <string>...` ：输出子测试用例标题，包含串接的参数。
+	* 函数 `moved?` <object> ：判断对象具有转移后的状态。不排除假阳性结果。
+		* **原理** 语言显式指定转移后的状态具有未指定值。具体的值和实现相关。
+	* 对象 `unit` ：作为一个和其它类型的值不同的[单元类型](https://en.wikipedia.org/wiki/Unit_type)的值，用于需要左值的测试用例。
 	* 对象 `Unilang_TestOpts_QuickFail` ：指定是否错误停止测试。
 		* 初始值为 `#t` 。
 	* 函数 `report-failure <string>` ：报告测试错误。
@@ -46,7 +49,8 @@
 	* 函数 `fail-on-check <object> <object>` ：报告测试检查失败。参数分别表示表达式和测试结果。
 	* 函数 `fail-on-check <object> <object> <object>` ：报告预期结果不符的检查失败。参数分别表示表达式、测试结果和预期结果。
 	* 函数 `$check <expression>...` ：在当前环境中求值参数整体构成的表达式，求值结果为 `#t` 则测试通过，否则调用 `fail-on-check` 。
-	* 函数 `$check <expression> <expression>...` ：在当前环境求值第一参数和其余参数整体构成的表达式，其求值结果分别为预期结果和测试结果；以 `equal?` 比较，若结果为 `t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+	* 函数 `$expect <expression> <expression>...` ：在当前环境求值第一参数和其余参数整体构成的表达式，其求值结果分别为预期结果和测试结果；以 `equal?` 比较，若结果为 `t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+	* 函数 `$expect-moved <expression>...` ：在当前环境求值参数整体构成的表达式，其求值结果为测试结果；以 `moved?` 测试，若结果为 `t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
 
 # 整体设计
 
