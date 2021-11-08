@@ -147,6 +147,45 @@ $let ()
 	eval ((unwrap ($lambda (x) x)) e) e
 );
 
+info "make-encapsulation-type";
+subinfo "encapsulation values";
+$let ()
+(
+	$def! (e p? d) () make-encapsulation-type;
+	p? 1;
+	$def! enc e 1;
+	$expect #t p? enc;
+	$expect #f p? "str";
+	$expect 1 d enc;
+	$expect 2 d (e 2);
+	$expect #t eqv? (e (list 1 2)) (e (list 1 2));
+	$expect #f eqv? (e (list 1 2)) (e (list 3 4))
+);
+subinfo "encapsulation temporary values";
+$let ((u unit) (&lt unit) (&t (idv unit)))
+(
+	$def! (e% #ignore d) () make-encapsulation-type;
+	$def! o e% u;
+	forward! (d o);
+	$expect unit d o;
+	$def! o e% lt;
+	forward! (d o);
+	$expect unit d o;
+	$def! o e% t;
+	forward! (d o);
+	$expect-moved d o
+);
+subinfo "encapsulation equality";
+$let ()
+(
+	$def! (e #ignore d) () make-encapsulation-type;
+	$def! x e 1;
+	$def! y e 2;
+	$def! z e 2;
+	$expect #f eqv? x y;
+	$expect #t eqv? y z
+);
+
 info "std.strings tests";
 $let ()
 (
