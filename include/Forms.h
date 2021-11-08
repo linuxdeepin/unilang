@@ -3,7 +3,7 @@
 #ifndef INC_Unilang_Forms_h_
 #define INC_Unilang_Forms_h_ 1
 
-#include "Evaluation.h" // for ReductionStatus, TermNode,
+#include "Evaluation.h" // for ReductionStatus, TermNode, ReferenceTerm,
 //	YSLib::EmplaceCallResult, Unilang::Deref, yforward, Strict,
 //	Unilang::RegisterHandler, Context;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
@@ -82,11 +82,15 @@ public:
 	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
 	{
-		return x.Get() == y.Get();
+		return x.Get() == y.Get()
+			&& Equal(ReferenceTerm(x.TermRef), ReferenceTerm(y.TermRef));
 	}
 
 	using EncapsulationBase::Get;
 	using EncapsulationBase::GetType;
+
+	static bool
+	Equal(const TermNode&, const TermNode&);
 };
 
 
