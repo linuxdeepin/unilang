@@ -280,8 +280,7 @@ $provide/let! (dependency-set? make-dependency-set has-dependency?)
 				(match-dependencies? (rest& deps) name)),
 	(
 	$defl! match-ver-dependency? (&dep &name &ver)
-		$and? (match-dependency? dep name)
-			(eqv? (version->string (version-of dep)) (version->string ver));
+		$and? (match-dependency? dep name) (eqv? (version-of dep) ver);
 	$defl! match-ver-dependencies? (&deps &name &ver)
 		$if (null? deps) #f
 			($or? (match-ver-dependency? (first deps) name ver)
