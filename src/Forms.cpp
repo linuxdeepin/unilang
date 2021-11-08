@@ -1,21 +1,21 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
-//	Unilang::TryAccessReferencedTerm, YSLib::EmplaceCallResult,
-//	FormContextHandler;
+#include "Forms.h" // for Unilang::TryAccessReferencedTerm,
+//	ThrowTypeErrorForInvalidType, ResolveTerm, TermToNamePtr,
+//	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
+//	FormContextHandler, ReferenceTerm, ThrowValueCategoryError;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError, TypeError,
 //	UnilangException, ListTypeError;
-#include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
-//	TermToNamePtr, ResolvedTermReferencePtr, ThrowValueCategoryError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
 #include "Lexical.h" // for IsUnilangSymbol;
-#include "TCO.h" // for MoveGuard, ReduceSubsequent;
-#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
+#include "TCO.h" // for MoveGuard, ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
+#include "TermNode.h" // for TNCIter;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
+#include <ystdex/functional.hpp> // for ystdex::update_thunk;
 
 namespace Unilang
 {
@@ -479,6 +479,38 @@ EqTermReference(TermNode& term, _func f)
 	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
 }
 
+YB_ATTR_nodiscard YB_PURE inline bool
+TermUnequal(const TermNode& x, const TermNode& y)
+{
+	return x.size() != y.size() || x.Value != y.Value;
+}
+
+void
+EqualSubterm(bool& r, Action& act, TermNode::allocator_type a, TNCIter first1,
+	TNCIter first2, TNCIter last1)
+{
+	if(first1 != last1)
+	{
+		auto& x(ReferenceTerm(*first1));
+		auto& y(ReferenceTerm(*first2));
+
+		if(TermUnequal(x, y))
+			r = {};
+		else
+		{
+			yunseq(++first1, ++first2);
+			ystdex::update_thunk(act, a, [&, a, first1, first2, last1]{
+				if(r)
+					EqualSubterm(r, act, a, first1, first2, last1);
+			});
+			ystdex::update_thunk(act, a, [&, a]{
+				if(r)
+					EqualSubterm(r, act, a, x.begin(), y.begin(), x.end());
+			});
+		}
+	}
+}
+
 
 void
 MakeValueListOrMove(TermNode& term, TermNode& nd,
@@ -566,6 +598,26 @@ CheckResolvedListReference(TermNode& nd, bool has_ref)
 }
 
 } // unnamed namespace;
+
+bool
+Encapsulation::Equal(const TermNode& x, const TermNode& y)
+{
+	if(TermUnequal(x, y))
+		return {};
+
+	bool r(true);
+	Action act{};
+
+	EqualSubterm(r, act, x.get_allocator(), x.begin(), y.begin(), x.end());
+	while(act)
+	{
+		const auto a(std::move(act));
+
+		a();
+	}
+	return r;
+}
+
 
 ReductionStatus
 Encapsulate::operator()(TermNode& term) const
