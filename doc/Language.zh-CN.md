@@ -1143,9 +1143,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建封装类型。
 
-　　结果是三个合并子组成的列表，其元素分别表示用于构造封装类型对象的封装(encapsulate) 构造器、判断封装类型的谓词和用于解封装(decapsulate) 的访问器。
+　　结果是三个合并子组成的列表，其元素分别表示用于构造封装类型对象的*封装(encapsulate)* 构造器、判断封装类型的谓词和用于*解封装(decapsulate)* 的访问器。
 
 　　封装构造器保留参数中的引用值。
+
+　　解封装访问器转发参数。
 
 　　创建的封装类型的相等性（以 `eqv?` 判断）同被封装的对象。
 
