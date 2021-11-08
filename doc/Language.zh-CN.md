@@ -1016,6 +1016,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建的环境是强引用。
 
+`weaken-environment <environment>`
+
+　　使用环境强引用创建环境弱引用。
+
+　　检查参数类型是环境强引用，若失败则引起类型错误。
+
 `$def! <definiend> <expressions>`
 
 　　修改当前环境中的绑定。

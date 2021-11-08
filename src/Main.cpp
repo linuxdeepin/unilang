@@ -491,6 +491,10 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterForm(ctx, "$move-resolved!",
 		std::bind(DoResolve, std::ref(MoveResolved), _1, _2));
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
+	RegisterUnary<Strict, const shared_ptr<Environment>>(ctx,
+		"weaken-environment", [](const shared_ptr<Environment>& p_env) noexcept{
+		return EnvironmentReference(p_env);
+	});
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
@@ -790,7 +794,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.11"
+#define APP_VER "0.8.29"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
