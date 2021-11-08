@@ -13,6 +13,8 @@ $defl/e! rmatch? std.strings (&x &r) regex-match? x (string->regex r);
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 
+$def! unit (first (() make-encapsulation-type)) #inert;
+
 $def! Unilang_TestOpts_QuickFail #t;
 $def! report-failure $if Unilang_TestOpts_QuickFail raise-error puts;
 $defl! pass (.) puts "PASS.";
