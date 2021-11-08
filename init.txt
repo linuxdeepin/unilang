@@ -251,8 +251,7 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	$defl/e! check-of mods (&dep) idv (first (rest& (rest& (decapsulate dep)))),
 	$defl/e! validate mods (&dep .&deps) apply (check-of dep) deps,
 	(
-	$let ((weaken-environment id))
-		$set! mods pmods weaken-environment mods;
+	$set! mods pmods weaken-environment mods;
 	$defl/e! strings->dependency-contract mods (&name .&ver-cons)
 		$lambda/e ($bindings/p->environment (pmods)
 			(name forward! name) (ver-cons forward! ver-cons))
