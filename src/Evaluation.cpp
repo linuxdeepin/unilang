@@ -14,8 +14,8 @@
 #include "Lexical.h" // for IsUnilangSymbol;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include <ystdex/typeinfo.h> // for ystdex::type_id;
+#include "TCO.h" // for Action, RelayDirect;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
-#include "TCO.h" // for RelayDirect;
 
 namespace Unilang
 {
@@ -233,8 +233,6 @@ ThrowNestedParameterTreeCheckError()
 		" parameter tree (expected a symbol or '#ignore')."));
 }
 
-
-using Action = function<void()>;
 
 template<typename _fBindValue>
 class GParameterValueMatcher final
