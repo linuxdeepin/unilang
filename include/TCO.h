@@ -396,6 +396,10 @@ struct Combine final
 	}
 };
 
+
+using Action = function<void()>;
+
+
 } // namespace Unilang;
 
 #endif
