@@ -13,6 +13,11 @@ $defl/e! rmatch? std.strings (&x &r) regex-match? x (string->regex r);
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 
+"XXX", "Assume the move-after state is deterministic of a stable value,",
+	" which is the empty list at current.";
+$def! moved? null?;
+"XXX", "Assume moved-after states are not the unit value,",
+	"otherwise the expectations on equality to the value is false negative.";
 $def! unit (first (() make-encapsulation-type)) #inert;
 
 $def! Unilang_TestOpts_QuickFail #t;
@@ -44,6 +49,9 @@ $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
+$defv! $expect-moved (.&expr) d
+	$let ((&res eval expr d))
+		$if (moved? res) (pass res) (fail-on-expect expr (forward! res) ());
 
 $provide/let! (version? string->version version->string version<?)
 ((mods $as-environment (
