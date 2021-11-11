@@ -525,7 +525,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　一个存在求值结构的合并子被调用、所有的参数都匹配成功且参数传递成功后，（参数传递确定的）形式参数的值替换求值结构中的副本中和形式参数树的子表达式相同的符号。
 
-　　合并子的*正常(normal)* 调用总是可确定一个计算结果，作为求值的结果。除非另行指定，若求值结果为引用值，则*提升(lift)* 为被引用对象的值。这避免返回*悬空引用(danling reference)* 。
+　　合并子的*正常(normal)* 调用总是可确定一个计算结果，作为求值的结果。除非另行指定，若求值结果是引用值，则*提升(lift)* 为被引用对象的值。这避免返回*悬空引用(danling reference)* 。
 
 　　合并子的*非正常(abnormal)* 调用不确保调用结果。
 
@@ -541,8 +541,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　以被求值的表达式和所在的环境作为参数，基础语言使用以下统一的求值算法：
 
-1. *自求值(self-evaluation)* ：若被求值的表达式不是符号或不是非空列表，则求值结果为自身。
-2. 名称解析：若被求值的表达式是一个符号，则这个符号被视为*变量名(variable name)* ，求值结果为该符号在上下文（当前环境确定的词法作用域）中变量绑定确定的对象的经引用折叠的引用值。
+1. *自求值(self-evaluation)* ：若被求值的表达式不是符号或不是非空列表，则求值结果是自身。
+2. 名称解析：若被求值的表达式是一个符号，则这个符号被视为*变量名(variable name)* ，求值结果是该符号在上下文（当前环境确定的词法作用域）中变量绑定确定的对象的经引用折叠的引用值。
 3. 否则，被求值的表达式是一个非空列表，则：
 	1. 若第一个子表达式是空表（这里不需要是字面上的语法表示 `()` ），则移除；
 	2. 对第一个子表达式求值；
@@ -684,7 +684,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<lists>` ：元素都是列表的列表。
 * `<bool>` ：布尔值，值为 `#t` 或 `#f` 的集合。
 * `<test>` ：类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
-	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果为 `#inert` 。
+	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果是 `#inert` 。
 * `<combiner>` ：合并子。
 * `<applicative>` ：应用子。
 * `<predicate>` ：谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
@@ -853,7 +853,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 操作结果约定
 
-　　若以下关于操作的描述中未指定调用的求值结果，则结果为右值 `#inert` 。
+　　若以下关于操作的描述中未指定调用的求值结果，则结果是右值 `#inert` 。
 
 　　除非另行指定，没有明确在操作结果中保留引用值的其它一些操作的结果进行返回值转换：一次引用值提升转换和可选的临时对象实质化转换的复合。
 
@@ -888,18 +888,18 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `eq? <object1> <object2>`
 
-　　判断引用相等关系。当且仅当对象同一时引用相等，结果为 `#t` ，否则为 `#f` 。
+　　判断引用相等关系。当且仅当对象同一时引用相等，结果是 `#t` ，否则为 `#f` 。
 
 `eqv? <object1> <object2>`
 
-　　判断非列表的值相等关系。当且对象转换的右值相等时，结果为 `#t` ，否则为 `#f` 。
+　　判断非列表的值相等关系。当且对象转换的右值相等时，结果是 `#t` ，否则为 `#f` 。
 
 　　`eqv?` 确定的相等关系的比较结果应满足：
 
 * 当参数都具有枝节点表示（参见 `branch?` ）时，同 `eq?` 的比较结果。
-* 若这两个参数的内部表示相同，则结果为 `#t` 。
-* 若两个参数的 `eqv?` 比较结果为 `#f` ，则这两个参数以 `eq?` 比较结果总是 `#f` 。
-* 不等价的函数的 `eqv?` 比较结果为 `#f` 。
+* 若这两个参数的内部表示相同，则结果是 `#t` 。
+* 若两个参数的 `eqv?` 比较结果是 `#f` ，则这两个参数以 `eq?` 比较结果总是 `#f` 。
+* 不等价的函数的 `eqv?` 比较结果是 `#f` 。
 	* 这里的等价关系定义为：仅当一个函数或其作为子表达式的任意表达式和对应把这个函数替换为另一个函数的表达式的求值的可观察行为总是相同，则两个函数等价。
 
 `$if <test> <consequent> <alternate>`
@@ -972,7 +972,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　移除符号中的引用标记字符 `&` 或 `%` 。
 
-　　判断符号非空且以 `&` 或 `%` 起始，结果为移除起始字符的参数。否则，结果为参数。
+　　判断符号非空且以 `&` 或 `%` 起始，结果是移除起始字符的参数。否则，结果是参数。
 
 　　不处理引用标记字符 `@` 。
 
@@ -1006,7 +1006,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　锁定环境：创建环境强引用。
 
-　　检查操作数的环境弱引用，结果为对应的环境强引用。
+　　检查操作数的环境弱引用，结果是对应的环境强引用。
 
 **注释** 强引用可能引起环境之间的不被检查的[循环引用](#引用值和初始化)，用户应自行避免未定义行为。
 
@@ -1185,13 +1185,13 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `id <object>`
 
-　　结果为不隐含左值到右值转换的参数，在结果保留引用值。
+　　结果是不隐含左值到右值转换的参数，在结果保留引用值。
 
 　　其作用等价返回值转换，可能引起对象转移。
 
 `idv <object>`
 
-　　同 `id` ，但结果为返回值转换后的值。
+　　同 `id` ，但结果是返回值转换后的值。
 
 **注释** 使用 `idv` 可指定在返回值中保留引用值的不安全操作的个别操作数不再保留引用值。
 
@@ -1397,7 +1397,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　条件选择。
 
-　　顺序求值 `<clause>` 中每个子项的 `<test>` ，以 `<test>` 求值结果作为条件，当条件成立时求值再求值对应的 `<body>` ，结果为求值 `<body>` 的结果。
+　　顺序求值 `<clause>` 中每个子项的 `<test>` ，以 `<test>` 求值结果作为条件，当条件成立时求值再求值对应的 `<body>` ，结果是求值 `<body>` 的结果。
 
 `$when <test> <expression-sequence>`
 
@@ -1427,19 +1427,19 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　逻辑非。
 
-　　若参数非 `#f` 时结果为 `#f` ，否则结果为 `#t` 。
+　　若参数非 `#f` 时结果是 `#f` ，否则结果是 `#t` 。
 
 `$and? <test>...`
 
 　　逻辑与。
 
-　　顺序短路求值。操作数为空时结果为 `#t` ；参数求值存在 `#f` 时结果为 `#f` ；否则结果为最后一个参数的值。
+　　顺序短路求值。操作数为空时结果是 `#t` ；参数求值存在 `#f` 时结果是 `#f` ；否则结果是最后一个参数的值。
 
 `$or? <test>...`
 
 　　逻辑或。
 
-　　顺序短路求值。操作数为空时结果为 `#f` ，参数求值存在不是 `#f` 的值时结果为第一个这样的值；否则结果为 `#t` 。
+　　顺序短路求值。操作数为空时结果是 `#f` ，参数求值存在不是 `#f` 的值时结果是第一个这样的值；否则结果是 `#t` 。
 
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
@@ -1447,7 +1447,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　对 `<object1>` 指定的抽象列表进行处理，取得部分和。
 
-　　当谓词 `<predicate>` 成立时结果为参数指定的对象，否则继续处理抽象列表中余下的元素。
+　　当谓词 `<predicate>` 成立时结果是参数指定的对象，否则继续处理抽象列表中余下的元素。
 
 　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
 
@@ -1472,7 +1472,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `map1 <applicative> <list>`
 
-　　单列表映射操作，使用指定应用子对列表中每个参数进行调用，结果为调用结果的列表。
+　　单列表映射操作，使用指定应用子对列表中每个参数进行调用，结果是调用结果的列表。
 
 　　参数 `<applicative>` 应接受一个参数，否则引起错误。
 
@@ -1717,7 +1717,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　数值关系操作，分别为：小于、小于等于、大于等于和大于。
 
-　　结果为 \<bool> 类型的比较结果。
+　　结果是 \<bool> 类型的比较结果。
 
 `+ <number>...`
 
@@ -1727,7 +1727,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　参数是加数。
 
-　　结果为 `<number>` 类型的和。
+　　结果是 `<number>` 类型的和。
 
 `- <number> <number>`
 
@@ -1735,7 +1735,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　参数分别是被减数和减数。
 
-　　结果为 `<number>` 类型的差。
+　　结果是 `<number>` 类型的差。
 
 `* <number>...`
 
@@ -1745,7 +1745,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　参数是乘数。
 
-　　结果为 `<number>` 类型的积。
+　　结果是 `<number>` 类型的积。
 
 `div <int> <int>`
 
@@ -1753,7 +1753,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　参数分别是被除数和除数。若第二参数等于 0 ，则引起错误。
 
-　　结果为 `<int>` 类型的商。
+　　结果是 `<int>` 类型的商。
 
 `mod <int> <int>`
 
@@ -1761,7 +1761,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　参数分别是被除数和除数。若第二参数等于 0 ，则引起错误。
 
-　　结果为 `<int>` 类型的余数。
+　　结果是 `<int>` 类型的余数。
 
 `itos <int>`
 
