@@ -1,0 +1,5 @@
+﻿"Hello world demo.";
+
+display "hello, world";
+() newline;
+
