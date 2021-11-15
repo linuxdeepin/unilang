@@ -682,8 +682,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<reference>` ：对象引用值。
 * `<list>` ：列表。
 * `<lists>` ：元素都是列表的列表。
-* `<bool>` ：布尔值，值为 `#t` 或 `#f` 的集合。
-* `<test>` ：类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
+* `<boolean>` ：布尔值，值为 `#t` 或 `#f` 的集合。
+* `<test>` ：类似 `<object>` ，通常预期为 `<boolean>` ，作为条件。当值非 `#f` 时条件成立。 
 	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果是 `#inert` 。
 * `<combiner>` ：合并子。
 * `<applicative>` ：应用子。
@@ -1717,7 +1717,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　数值关系操作，分别为：小于、小于等于、大于等于和大于。
 
-　　结果是 \<bool> 类型的比较结果。
+　　结果是 \<boolean> 类型的比较结果。
 
 `+ <number>...`
 
