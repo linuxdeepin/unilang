@@ -37,6 +37,7 @@ $CXXFLAGS_EXTRA \
 -I$YSLib_BaseDir/YFramework/include \
 "$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp" \
 "$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/YCommon.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/FileIO.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/FileSystem.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/MemoryMapping.cpp" \
