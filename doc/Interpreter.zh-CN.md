@@ -49,8 +49,8 @@
 	* 函数 `fail-on-check <object> <object>` ：报告测试检查失败。参数分别表示表达式和测试结果。
 	* 函数 `fail-on-check <object> <object> <object>` ：报告预期结果不符的检查失败。参数分别表示表达式、测试结果和预期结果。
 	* 函数 `$check <expression>...` ：在当前环境中求值参数整体构成的表达式，求值结果是 `#t` 则测试通过，否则调用 `fail-on-check` 。
-	* 函数 `$expect <expression> <expression>...` ：在当前环境求值第一参数和其余参数整体构成的表达式，其求值结果分别为预期结果和测试结果；以 `equal?` 比较，若结果是 `t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
-	* 函数 `$expect-moved <expression>...` ：在当前环境求值参数整体构成的表达式，其求值结果是测试结果；以 `moved?` 测试，若结果是 `t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+	* 函数 `$expect <expression> <expression>...` ：在当前环境求值第一参数和其余参数整体构成的表达式，其求值结果分别为预期结果和测试结果；以 `equal?` 比较，若结果是 `#t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+	* 函数 `$expect-moved <expression>...` ：在当前环境求值参数整体构成的表达式，其求值结果是测试结果；以 `moved?` 测试，若结果是 `#t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
 
 # 整体设计
 
