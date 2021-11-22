@@ -1977,6 +1977,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `newline`
 	* `load`
 	* `display`
+	* `puts`
 
 　　实现可提供其它形式的、由实现定义的用户环境初始化操作替代上述的默认用户环境初始化。
 
