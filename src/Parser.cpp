@@ -50,7 +50,7 @@ ByteParser::operator()(char c)
 			}
 		}
 		else if(update_current)
-			lexemes.back() += buffer.substr(0, len);
+			lexemes.back() += std::move(buffer);
 		else
 			add(std::move(buffer));
 		buffer.clear();
