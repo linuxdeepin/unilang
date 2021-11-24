@@ -1,9 +1,44 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Lexical.h"
 
 namespace Unilang
 {
+
+bool
+LexicalAnalyzer::UpdateBack(char& b, char c)
+{
+	switch(c)
+	{
+		case '\'':
+		case '"':
+			if(ld == char())
+			{
+				ld = c;
+				return true;
+			}
+			else if(ld == c)
+			{
+				ld = char();
+				return true;
+			}
+			break;
+		case '\f':
+		case '\n':
+		case '\t':
+		case '\v':
+			if(ld == char())
+			{
+				b = ' ';
+				break;
+			}
+			YB_ATTR_fallthrough;
+		default:
+			break;
+	}
+	return {};
+}
+
 
 char
 CheckLiteral(string_view sv) noexcept
