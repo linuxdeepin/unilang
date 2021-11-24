@@ -10,6 +10,19 @@
 namespace Unilang
 {
 
+class LexicalAnalyzer final
+{
+public:
+	char Delimiter = {};
+
+	YB_ATTR_nodiscard char
+	GetDelimiter() const noexcept
+	{
+		return Delimiter;
+	}
+};
+
+
 YB_ATTR_nodiscard YB_PURE char
 CheckLiteral(string_view) noexcept;
 
