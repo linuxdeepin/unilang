@@ -39,6 +39,9 @@ public:
 
 
 YB_ATTR_nodiscard bool
+HandleBackslashPrefix(string_view, UnescapeContext&);
+
+YB_ATTR_nodiscard bool
 Unescape(string&, char, UnescapeContext&, char);
 
 
