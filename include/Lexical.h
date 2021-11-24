@@ -38,6 +38,10 @@ public:
 };
 
 
+YB_ATTR_nodiscard bool
+Unescape(string&, char, UnescapeContext&, char);
+
+
 class LexicalAnalyzer final
 {
 private:
