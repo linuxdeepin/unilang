@@ -18,7 +18,7 @@ ByteParser::operator()(char c)
 
 	cbuf += c;
 
-	const bool got_delim(UpdateBack(c));
+	const bool got_delim(lexer.UpdateBack(GetBackRef(), c));
 	const auto len(cbuf.length());
 
 	assert(!(lexemes.empty() && update_current) && "Invalid state found.");
@@ -58,43 +58,6 @@ ByteParser::operator()(char c)
 			add(std::move(cbuf));
 		cbuf.clear();
 	}
-}
-
-bool
-ByteParser::UpdateBack(char c)
-{
-	auto& b(GetBackRef());
-	auto& ld(GetLexerRef().Delimiter);
-
-	switch(c)
-	{
-		case '\'':
-		case '"':
-			if(ld == char())
-			{
-				ld = c;
-				return true;
-			}
-			else if(ld == c)
-			{
-				ld = char();
-				return true;
-			}
-			break;
-		case '\f':
-		case '\n':
-		case '\t':
-		case '\v':
-			if(ld == char())
-			{
-				b = ' ';
-				break;
-			}
-			YB_ATTR_fallthrough;
-		default:
-			break;
-	}
-	return {};
 }
 
 } // namespace Unilang;

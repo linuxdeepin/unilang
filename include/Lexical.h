@@ -12,14 +12,18 @@ namespace Unilang
 
 class LexicalAnalyzer final
 {
-public:
-	char Delimiter = {};
+private:
+	char ld = {};
 
+public:
 	YB_ATTR_nodiscard char
 	GetDelimiter() const noexcept
 	{
-		return Delimiter;
+		return ld;
 	}
+
+	bool
+	UpdateBack(char&, char);
 };
 
 
