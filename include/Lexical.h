@@ -5,7 +5,7 @@
 
 #include "Unilang.h" // for string_view;
 #include <cassert> // for assert;
-#include <cctype> // for std::isgraph;
+#include <ystdex/cctype.h> // for ystdex::isspace;
 
 namespace Unilang
 {
@@ -36,11 +36,7 @@ IsGraphicalDelimiter(char c) noexcept
 YB_ATTR_nodiscard constexpr bool
 IsDelimiter(char c) noexcept
 {
-#if CHAR_MIN < 0
-	return c >= 0 && (!std::isgraph(c) || IsGraphicalDelimiter(c));
-#else
-	return !std::isgraph(c) || IsGraphicalDelimiter(c);
-#endif
+	return ystdex::isspace(c) || IsGraphicalDelimiter(c);
 }
 
 
