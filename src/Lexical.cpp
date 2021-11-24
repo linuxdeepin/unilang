@@ -6,6 +6,19 @@ namespace Unilang
 {
 
 bool
+HandleBackslashPrefix(string_view buf, UnescapeContext& uctx)
+{
+	assert(!buf.empty() && "Invalid buffer found.");
+	if(!uctx.IsHandling() && buf.back() == '\\')
+	{
+		uctx.Start = buf.length() - 1;
+		uctx.Length = 1;
+		return true;
+	}
+	return {};
+}
+
+bool
 Unescape(string& buf, char c, UnescapeContext& uctx, char ld)
 {
 	if(uctx.Length == 1)
