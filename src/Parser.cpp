@@ -15,14 +15,12 @@ ByteParser::operator()(char c)
 		lexemes.push_back(yforward(arg));
 	};
 	auto& cbuf(GetBufferRef());
-
-	cbuf += c;
-
-	const bool got_delim(lexer.UpdateBack(GetBackRef(), c));
+	const bool got_delim(lexer.FilterChar(c, GetBufferRef())
+		&& lexer.UpdateBack(GetBackRef(), c));
 	const auto len(cbuf.length());
 
 	assert(!(lexemes.empty() && update_current) && "Invalid state found.");
-	if(len > 0)
+	if(len > 0 && !lexer.GetUnescapeContext().IsHandling())
 	{
 		if(len == 1)
 		{

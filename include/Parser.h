@@ -85,6 +85,10 @@ public:
 	{
 		return lexemes;
 	}
+
+private:
+	bool
+	UpdateBack(char);
 };
 
 } // namespace Unilang;
