@@ -48,6 +48,7 @@ Unescape(string&, char, UnescapeContext&, char);
 class LexicalAnalyzer final
 {
 private:
+	UnescapeContext unescape_context{};
 	char ld = {};
 
 public:
@@ -55,6 +56,27 @@ public:
 	GetDelimiter() const noexcept
 	{
 		return ld;
+	}
+	YB_ATTR_nodiscard const UnescapeContext&
+	GetUnescapeContext() const noexcept
+	{
+		return unescape_context;
+	}
+
+	template<class _tCharBuffer,
+		typename _fUnescape = decltype(Unescape),
+		typename _fPrefixHandler = decltype(HandleBackslashPrefix)>
+	YB_ATTR_nodiscard bool
+	FilterChar(char c, _tCharBuffer& cbuf, _fUnescape unescape = Unescape,
+		_fPrefixHandler handle_prefix = HandleBackslashPrefix)
+	{
+		if(!unescape_context.IsHandling())
+		{
+			cbuf += c;
+			return !handle_prefix(cbuf, unescape_context);
+		}
+		unescape(cbuf, c, unescape_context, ld);
+		return {};
 	}
 
 	bool
