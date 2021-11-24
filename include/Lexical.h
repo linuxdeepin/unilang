@@ -10,6 +10,34 @@
 namespace Unilang
 {
 
+class UnescapeContext final
+{
+public:
+	size_t Start = size_t(-1);
+	size_t Length = 0;
+
+	YB_ATTR_nodiscard bool
+	IsHandling() const noexcept
+	{
+		return Length != 0;
+	}
+
+	void
+	Clear() noexcept
+	{
+		Length =  0;
+	}
+
+	void
+	VerifyBufferLength(size_t len) const
+	{
+		yunused(len);
+		assert((Length == 0 || Start + Length <= len)
+			&& "Invalid unescaping state found.");
+	}
+};
+
+
 class LexicalAnalyzer final
 {
 private:
