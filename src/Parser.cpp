@@ -10,14 +10,15 @@ namespace Unilang
 void
 ByteParser::operator()(char c)
 {
+	auto& lexer(GetLexerRef());
+	const auto add = [&](string&& arg){
+		lexemes.push_back(yforward(arg));
+	};
 	auto& cbuf(GetBufferRef());
 
 	cbuf += c;
 
-	const auto add = [&](string&& arg){
-		lexemes.push_back(yforward(arg));
-	};
-	bool got_delim(UpdateBack(c));
+	const bool got_delim(UpdateBack(c));
 	const auto len(cbuf.length());
 
 	assert(!(lexemes.empty() && update_current) && "Invalid state found.");
@@ -32,7 +33,7 @@ ByteParser::operator()(char c)
 					add(string({b}, lexemes.get_allocator()));
 			});
 			const char b(cbuf.back());
-			const bool unquoted(Delimiter == char());
+			const bool unquoted(lexer.GetDelimiter() == char());
 
  			if(got_delim)
 			{
@@ -63,19 +64,20 @@ bool
 ByteParser::UpdateBack(char c)
 {
 	auto& b(GetBackRef());
+	auto& ld(GetLexerRef().Delimiter);
 
 	switch(c)
 	{
 		case '\'':
 		case '"':
-			if(Delimiter == char())
+			if(ld == char())
 			{
-				Delimiter = c;
+				ld = c;
 				return true;
 			}
-			else if(Delimiter == c)
+			else if(ld == c)
 			{
-				Delimiter = char();
+				ld = char();
 				return true;
 			}
 			break;
@@ -83,7 +85,7 @@ ByteParser::UpdateBack(char c)
 		case '\n':
 		case '\t':
 		case '\v':
-			if(Delimiter == char())
+			if(ld == char())
 			{
 				b = ' ';
 				break;

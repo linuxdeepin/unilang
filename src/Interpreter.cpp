@@ -309,7 +309,8 @@ Interpreter::Perform(string_view unit)
 TermNode
 Interpreter::Read(string_view unit)
 {
-	ByteParser parse{Allocator};
+	LexicalAnalyzer lexer;
+	ByteParser parse(lexer, Allocator);
 
 	std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
 	return ReadParserResult(parse);
@@ -319,7 +320,8 @@ TermNode
 Interpreter::ReadFrom(std::streambuf& buf) const
 {
 	using s_it_t = std::istreambuf_iterator<char>;
-	ByteParser parse{Allocator};
+	LexicalAnalyzer lexer;
+	ByteParser parse(lexer, Allocator);
 
 	std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
 	return ReadParserResult(parse);
