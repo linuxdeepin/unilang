@@ -10,15 +10,17 @@ namespace Unilang
 void
 ByteParser::operator()(char c)
 {
-	buffer += c;
+	auto& cbuf(GetBufferRef());
+
+	cbuf += c;
 
 	const auto add = [&](string&& arg){
 		lexemes.push_back(yforward(arg));
 	};
 	bool got_delim(UpdateBack(c));
-	const auto len(buffer.length());
+	const auto len(cbuf.length());
 
-	assert(!(lexemes.empty() && update_current));
+	assert(!(lexemes.empty() && update_current) && "Invalid state found.");
 	if(len > 0)
 	{
 		if(len == 1)
@@ -29,7 +31,7 @@ ByteParser::operator()(char c)
 				else
 					add(string({b}, lexemes.get_allocator()));
 			});
-			const char b(buffer.back());
+			const char b(cbuf.back());
 			const bool unquoted(Delimiter == char());
 
  			if(got_delim)
@@ -50,17 +52,17 @@ ByteParser::operator()(char c)
 			}
 		}
 		else if(update_current)
-			lexemes.back() += std::move(buffer);
+			lexemes.back() += std::move(cbuf);
 		else
-			add(std::move(buffer));
-		buffer.clear();
+			add(std::move(cbuf));
+		cbuf.clear();
 	}
 }
 
 bool
 ByteParser::UpdateBack(char c)
 {
-	auto& b(buffer.back());
+	auto& b(GetBackRef());
 
 	switch(c)
 	{
