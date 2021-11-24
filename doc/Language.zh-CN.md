@@ -146,11 +146,17 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 # 词法规则(Lexical Rules)
 
-　　Unilang 基础语言以空白符作为翻译单元中*词素(lexeme)* 的间隔。识别词素后，每个词素按照构成字符的不同，被分为不同的*记号(token)* 类别。
+　　*分隔符(delimiter)* 是标记代码片段中特定位置的特定字符序列，是*词素(lexeme)* 的间隔。识别词素后，每个词素按照构成字符的不同，被分为不同的*记号(token)* 类别。
 
 　　记号类别包含*标点(punctuator)* 、*字面量(literal)* 和*标识符(identifier)* 。
 
-　　基础语言识别的标点包括 `(` 和 `)` 。
+　　代码中邻接的分隔符和非分隔符的字符序列不构成一个词素。分隔符包括不在记号中包含的空白符(whitespace) 构成的字符序列以及标点。字面量以外的记号不包含空白符。
+
+　　超过一个字符的标点可能在匹配字符序列确定是否构成词素时具有词法歧义。此时，应指定消歧义规则确保存在唯一可接受的匹配方式，或引起词法错误终止翻译。
+
+**注释** 当前设计中没有这样的标点。
+
+　　基础语言识别的标点包括语法规则要求的标点 `(` 和 `)` ，以及中缀变换的标点。详见以下相关章节。
 
 　　字面量包括：
 
@@ -161,7 +167,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　派生实现可在此之外定义其它记号类型和扩展的标点，后者应符合 C++ ([ISO C++]) 的定义。
 
-　　派生实现也可定义*预处理(preprocessing)* 过程翻译其它表示为包含 Unilang 基础语言接受的词法形式的翻译单元。
+　　派生实现也可定义*预处理(preprocessing)* 过程翻译其它表示为包含 Unilang 基础语言接受的词法形式的翻译单元，以支持不同的词法和语法规则。
 
 # 语法
 
@@ -195,11 +201,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 中缀变换
 
-　　中缀变换替换形如 <expression> (<infix> <expression>)* 的记号序列为 <transformed-infix> <expression>+ 形式的记号序列。
+　　中缀变换替换形如 `<expression> (<infix> <expression>)*` 的记号序列为 `<transformed-infix> <expression>+` 形式的记号序列。
 
-　　其中，基础语言支持的中缀记号 <infix> 是 `;` 或 `,` ，而 <transformed-infix> 是语法不可见的中缀变换函数。
+　　其中，基础语言支持的中缀记号 `<infix>` 是 `;` 或 `,` ，而 `<transformed-infix>` 是语法不可见的中缀变换函数。
 
-　　变换的不同 <expression> 的实例以相同的词法顺序在变换后的结果中被保存。
+　　变换的不同 `<expression>` 的实例以相同的词法顺序在变换后的结果中被保存。
 
 　　变换后的结果符合以上的基本语法规则。
 
