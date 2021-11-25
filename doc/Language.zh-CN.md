@@ -1352,6 +1352,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
 
+`$defv/e! <variable> <parent> <formals> <eformal> <body>`
+
+　　绑定指定静态环境的 vau 抽象，等价 `$def! <variable> $vau/e <parent> <formals> <eformal> <body>` 。
+
 `$defv/e%! <variable> <parent> <formals> <eformal> <body>`
 
 　　绑定指定静态环境的 vau 抽象，等价 `$def! <variable> $vau/e% <parent> <formals> <eformal> <body>` 。
