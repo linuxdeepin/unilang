@@ -596,13 +596,13 @@ $defv! $defl/e%! (&f &p &formals .&body) d
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
 $defl%! first (%l)
-	($lambda% (fwd) forward-first% forward! (fwd l))
-		($if ($lvalue-identifier? l) id expire);
+	$if ($lvalue-identifier? l) (($lambda% ((@x .)) collapse x) l)
+		(forward-first% idv (expire l));
 $defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
 $defl%! first% (%l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
-	($lambda% ((&x .)) x) (check-list-reference (forward! l));
+	($lambda% ((@x .)) collapse x) (check-list-reference (forward! l));
 $defl! firstv ((&x .)) x;
 $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
@@ -811,7 +811,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.55"
+#define APP_VER "0.8.56"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
