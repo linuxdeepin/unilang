@@ -1427,6 +1427,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　首先调用 `check-list-reference` 检查参数是列表引用，对右值抛出异常。
 
+`firstv <list>`
+
+　　同 `first` ，但结果总是返回值转换后的值。
+
 `rest <list>`
 
 　　取列表第一个元素以外的元素值构成的列表。
