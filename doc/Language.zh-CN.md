@@ -1264,6 +1264,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　参数的作用同 `$vau` 的对应参数。
 
+`$wvau% <formals> <eformal> <body>`
+
+　　同 `$wvau` ，但允许函数体求值返回引用值。
+
 `$lambda <formals> <body>`
 
 　　创建 λ 抽象 。
@@ -1280,7 +1284,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建指定静态环境的 lambda 抽象。
 
-　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
+　　同 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
 
 `$lambda/e% <parent> <formals> <body>`
 
