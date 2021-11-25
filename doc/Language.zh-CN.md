@@ -1372,6 +1372,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　绑定包装的指定静态环境的 vau 抽象，等价 `$def! <variable> $wvau/e <parent> <formals> <eformal> <body>` 。
 
+`$defw/e%! <variable> <parent> <formals> <eformal> <body>`
+
+　　绑定包装的指定静态环境的 vau 抽象，等价 `$def! <variable> $wvau/e% <parent> <formals> <eformal> <body>` 。
+
+
 `$defl! <variable> <formals> <body>`
 
 　　绑定 λ 抽象，等价 `$def! <variable> $lambda <formals> <body>` 。
