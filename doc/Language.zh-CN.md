@@ -1272,6 +1272,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　同 `$wvau` ，但支持显式指定求值环境参数作为静态环境。
 
+`$wvau/e% <parent> <formals> <eformal> <body>`
+
+　　同 `$wvau/e` ，但保留引用值。
+
 `$lambda <formals> <body>`
 
 　　创建 λ 抽象 。
