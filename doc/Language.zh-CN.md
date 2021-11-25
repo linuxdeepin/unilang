@@ -1256,13 +1256,21 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　在当前环境求值 `<environment>` 和 `<expressions>` ，再以后者的求值结果修改前者的求值结果指定的环境中的绑定。绑定效果同使用 $def! 。
 
+`$wvau <formals> <eformal> <body>`
+
+　　创建包装的 vau 抽象。
+
+　　同 `$vau` ，但创建的是调用时对操作数的元素求值一次的应用子。
+
+　　参数的作用同 `$vau` 的对应参数。
+
 `$lambda <formals> <body>`
 
 　　创建 λ 抽象 。
 
-　　和创建 vau 抽象类似，但创建的是调用时对操作数的元素求值一次的应用子，且忽略动态环境。
+　　同 `$vau` ，但创建的是调用时对操作数的元素求值一次的应用子，且忽略动态环境。
 
-　　表达式项的用法和 vau 抽象类似。
+　　参数的作用同 `$vau` 的对应参数。
 
 `$lambda% <formals> <body>`
 

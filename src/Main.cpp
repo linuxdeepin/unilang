@@ -530,6 +530,8 @@ $def! $remote-eval $vau (&o &e) d eval o (eval e d);
 $def! $remote-eval% $vau% (&o &e) d eval% o (eval e d);
 $def! $set! $vau (&e &formals .&expr) d
 	eval (list $def! formals (unwrap eval) expr d) (eval e d);
+$def! $wvau $vau (&formals &ef .&body) d
+	wrap (eval (cons $vau (cons formals (cons ef (move! body)))) d);
 $def! $lambda $vau (&formals .&body) d
 	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
 $def! $lambda% $vau (&formals .&body) d
@@ -794,7 +796,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.29"
+#define APP_VER "0.8.45"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
