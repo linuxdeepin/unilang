@@ -1358,11 +1358,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `$defw! <variable> <formals> <eformal> <body>`
 
-　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
+　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> $wvau <formals> <eformal> <body>` 。
 
 `$defw%! <variable> <formals> <eformal> <body>`
 
-　　绑定 `wrap` 的 `vau` 抽象，等价 `$def! <variable> wrap ($vau% <formals> <eformal> <body>)` 。
+　　绑定 `wrap` 的 `vau` 抽象，等价 `$def! <variable> $wvau% <formals> <eformal> <body>` 。
 
 `$defl! <variable> <formals> <body>`
 
