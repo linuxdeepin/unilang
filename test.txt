@@ -240,6 +240,14 @@ $let ()
 		$expect 5 () get-count;
 		$expect 0 force (unbox pb);
 		$expect 10 () get-count;
+	);
+	subinfo "resolved referencing shared state move;" " fixed since V0.8.57";
+	$let ()
+	(
+		$def! p1 $lazy unit;
+		$def! p2 $lazy% p1;
+		$let* ((a force p2) (b force p1) (c force (move! p2)))
+			$expect (list unit unit unit unit) list a b c (force p1)
 	)
 );
 

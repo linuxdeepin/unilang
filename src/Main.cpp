@@ -157,14 +157,14 @@ $provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d% force)
 ((mods $as-environment (
 	$def! (encapsulate% promise? decapsulate) () make-encapsulation-type;
 	$defl%! do-force (&prom fwd) $let% ((((&o &env) evf) decapsulate prom))
-		$if (null? env) (fwd o)
+		$if (null? env) (first (first (decapsulate (fwd prom))))
 		(
 			$let*% ((&y evf (fwd o) env) (&x decapsulate prom)
 				(((&o &env) &evf) x))
 				$cond
 					((null? env) first (first (decapsulate (fwd prom))))
 					((promise? y) $sequence
-						($if (eqv? (first (rest& (decapsulate y))) eval)
+						($if (eqv? (firstv (rest& (decapsulate y))) eval)
 							(assign! evf eval))
 						(set-first%! x (first (decapsulate (forward! y))))
 						(do-force prom fwd))
@@ -811,7 +811,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.56"
+#define APP_VER "0.8.57"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
