@@ -186,6 +186,63 @@ $let ()
 	$expect #t eqv? y z
 );
 
+info "std.promises tests";
+$let ()
+(
+	$import! std.promises
+		promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
+	subinfo "value category preservation";
+	$let ((p1 $lazy% idv unit))
+	(
+		$expect unit force unit;
+		$expect unit force ($lazy p1);
+		force (expire p1);
+		$expect-moved force ($lazy p1)
+	);
+	subinfo "force idempotence";
+	$let ((a unit))
+	(
+		$def! p $lazy a;
+		$expect (force p) force p;
+	);
+	subinfo "lifting safety";
+	$let ()
+	(
+		$defl! me ()
+		(
+			$def! e () make-environment;
+			$set! e x 42;
+			e
+		);
+		$expect 42 force ($lazy/d (() me) x);
+		$expect 42 force ($lazy% $lazy/d (() me) x);
+		$expect 42 force ($lazy $lazy/d% (() me) x)
+	);
+	subinfo "test #1 (as RnRK)";
+	$let ()
+	(
+		$def! (box% box? unbox) () make-encapsulation-type;
+		$def! env_tmp_ $provide! (get-count pb) $sequence
+			($def! count 5)
+			($defl! get-count () count)
+			($def! p ($let ((self () get-current-environment))
+				(
+					$set! self saved_ () lock-current-environment;
+					$lazy $if (<=? count 0) count
+						($sequence
+							($set! self count (- count 1))
+							(force p)
+							($set! self count (+ count 2))
+							count)
+				)
+			))
+			($def! pb box% p);
+		$expect 5 () get-count;
+		$expect 0 force (unbox pb);
+		$expect 10 () get-count;
+	)
+);
+
 info "std.strings tests";
 $let ()
 (
