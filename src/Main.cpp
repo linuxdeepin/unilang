@@ -597,6 +597,7 @@ $defw%! forward-first% (&appv (&x .)) d
 $defl%! first (%l)
 	($lambda% (fwd) forward-first% forward! (fwd l))
 		($if ($lvalue-identifier? l) id expire);
+$defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
 $defl%! first% (%l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
@@ -808,7 +809,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.52"
+#define APP_VER "0.8.53"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

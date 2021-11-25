@@ -1411,6 +1411,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　当 `<list>` 是左值时结果是折叠的引用值，否则结果是返回值转换后的值。
 
+`first@ <list>`
+
+　　同 first ，但结果总是未折叠的引用值。
+
 `first% <list>`
 
 　　同 `first` ，但结果总是转发的值。
