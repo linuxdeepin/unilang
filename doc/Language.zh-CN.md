@@ -687,7 +687,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 * `<symbol>` ：符号。
 * `<symbols>` ：元素为 `<symbol>` 的列表，形式为 `(<symbol>...)` 。
-* `<eformal>` ：表示可选提供的环境名称或 `#ignore` 的符号。使用和 `<symbol>` 相同的表示。通常为动态环境。
+* `<eformal>` ：表示可选提供的环境名称的 `<symbol>` 或 `#ignore` 。
+	* 使用和 `<symbol>` 相同的表示。
+	* **注释** 通常为动态环境。
 * `<expression>` ：待求值的表达式。
 * `<expressions>` ：形式为 `<expression>...` 的待求值形式。
 	* 求值时被作为单一表达式，代替 `<expression>` 可避免语法中要求谁过多的括号及 `eval` 等求值形式中显式构造列表的需要。
