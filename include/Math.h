@@ -1,7 +1,7 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
-#ifndef INC_Unilang_Arithmetic_h_
-#define INC_Unilang_Arithmetic_h_ 1
+#ifndef INC_Unilang_Math_h_
+#define INC_Unilang_Math_h_ 1
 
 #include "Unilang.h"
 #include <ystdex/operators.hpp> // for ystdex::ordered_field_operators;
