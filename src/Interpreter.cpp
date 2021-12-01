@@ -4,7 +4,7 @@
 //	std::getline;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
-#include "Arithmetic.h" // for Number;
+#include "Math.h" // for Number;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;

@@ -1,6 +1,6 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Arithmetic.h"
+#include "Math.h"
 
 namespace Unilang
 {
