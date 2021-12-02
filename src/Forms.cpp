@@ -48,7 +48,7 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 [[noreturn]] inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
-	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
+	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
 }
 
 YB_ATTR_nodiscard YB_PURE string

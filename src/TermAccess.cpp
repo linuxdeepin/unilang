@@ -44,7 +44,7 @@ ThrowInsufficientTermsError(const TermNode& term, bool has_ref)
 }
 
 void
-ThrowListTypeErrorForInvalidType(const ystdex::type_info& tp,
+ThrowListTypeErrorForInvalidType(const type_info& tp,
 	const TermNode& term, bool is_ref)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got a list"
@@ -60,7 +60,7 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 }
 
 void
-ThrowTypeErrorForInvalidType(const ystdex::type_info& tp, const TermNode& term,
+ThrowTypeErrorForInvalidType(const type_info& tp, const TermNode& term,
 	bool has_ref)
 {
 	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
