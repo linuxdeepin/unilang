@@ -5,8 +5,8 @@
 //	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
 //	FormContextHandler, ReferenceTerm, ThrowValueCategoryError;
 #include <exception> // for std::throw_with_nested;
-#include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError, TypeError,
-//	UnilangException, ListTypeError;
+#include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
+//	ListTypeError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
 #include "Lexical.h" // for IsUnilangSymbol;
@@ -58,11 +58,7 @@ CheckEnvironmentFormal(const TermNode& term)
 	{
 		return ResolveTerm([&](const TermNode& nd, bool has_ref) -> string{
 			if(const auto p = TermToNamePtr(nd))
-			{
-				if(IsUnilangSymbol(*p))
-					return string(*p, term.get_allocator());
-				ThrowInvalidTokenError(*p);
-			}
+				return string(*p, term.get_allocator());
 			else if(!IsIgnore(nd))
 				ThrowFormalParameterTypeError(nd, has_ref);
 			return string(term.get_allocator());

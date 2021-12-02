@@ -272,14 +272,7 @@ private:
 			});
 		}
 		else if(const auto p = TermToNamePtr(t))
-		{
-			const auto& n(*p);
-
-			if(IsUnilangSymbol(n))
-				BindValue(n);
-			else
-				ThrowInvalidTokenError(n);
-		}
+			BindValue(*p);
 		else if(!IsIgnore(t))
 			ThrowFormalParameterTypeError(t, t_has_ref);
 	}
@@ -397,14 +390,7 @@ struct ParameterCheck final
 	HandleLeaf(_func f, const TermNode& t, bool t_has_ref)
 	{
 		if(const auto p = TermToNamePtr(t))
-		{
-			const auto& n(*p);
-
-			if(IsUnilangSymbol(n))
-				f(n);
-			else
-				ThrowInvalidTokenError(n);
-		}
+			f(*p);
 		else if(!IsIgnore(t))
 			ThrowFormalParameterTypeError(t, t_has_ref);
 	}
@@ -711,13 +697,12 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 		string_view id(n);
 		const char sigil(ExtractSigil(id));
 
-		if(!id.empty())
-			BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
-				[&](const TermNode& tm){
-				CopyTermTags(env.Bind(id, tm), tm);
-			}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-				return env.Bind(id, TermNode(std::move(c), std::move(vo)));
-			});
+		BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
+			[&](const TermNode& tm){
+			CopyTermTags(env.Bind(id, tm), tm);
+		}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
+			return env.Bind(id, TermNode(std::move(c), std::move(vo)));
+		});
 	})(t, o, TermTags::Temporary, p_env);
 }
 
