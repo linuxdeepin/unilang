@@ -9,8 +9,7 @@
 #include <functional> // for std::bind, std::placeholders;
 #include "BasicReduction.h" // for ReductionStatus, LiftOther;
 #include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
-#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
-//	ThrowInvalidTokenError;
+#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
 //	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
@@ -110,25 +109,13 @@ DoAssign(_func f, TermNode& x)
 	return ValueToken::Unspecified;
 }
 
-template<typename _func>
-auto
-CheckSymbol(string_view id, _func f) -> decltype(f())
-{
-	if(IsUnilangSymbol(id))
-		return f();
-	ThrowInvalidTokenError(id);
-}
-
 YB_ATTR_nodiscard ReductionStatus
 DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 	const Context& c)
 {
-	RetainN(term);
-	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		const string_view id(Unilang::AccessRegular<TokenValue>(nd, p_ref));
-
-		term = CheckSymbol(id, std::bind(f, std::ref(c), id));
-	}, *std::next(term.begin()));
+	Forms::CallRegularUnaryAs<const TokenValue>([&](string_view id){
+		term = f(c, id);
+	}, term);
 	return ReductionStatus::Retained;
 }
 
@@ -478,9 +465,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterStrict(ctx, "eval%", EvalRef);
 	RegisterUnary<Strict, const string>(ctx, "bound?",
 		[](const string& id, Context& c){
-		return CheckSymbol(id, [&]{
-			return bool(ResolveName(c, id).first);
-		});
+		return bool(ResolveName(c, id).first);
 	});
 	RegisterForm(ctx, "$resolve-identifier",
 		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
@@ -811,7 +796,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.58"
+#define APP_VER "0.8.62"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
