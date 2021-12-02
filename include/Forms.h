@@ -18,6 +18,7 @@
 #include <numeric> // for std::accumulate;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
+#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 
 namespace Unilang
 {
@@ -300,8 +301,10 @@ struct UnaryExpansion
 {
 	_func Function;
 
-	UnaryExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<UnaryExpansion, _tParams...>)>
+	UnaryExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
@@ -326,8 +329,10 @@ struct UnaryAsExpansion
 {
 	_func Function;
 
-	UnaryAsExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<UnaryAsExpansion, _tParams...>)>
+	UnaryAsExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
@@ -352,8 +357,10 @@ struct BinaryExpansion
 {
 	_func Function;
 
-	BinaryExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<BinaryExpansion, _tParams...>)>
+	BinaryExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
@@ -378,8 +385,10 @@ struct BinaryAsExpansion : private
 {
 	_func Function;
 
-	BinaryAsExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<BinaryAsExpansion, _tParams...>)>
+	BinaryAsExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
