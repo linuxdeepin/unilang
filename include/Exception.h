@@ -91,15 +91,6 @@ public:
 	{
 		return Unilang::Deref(p_identifier);
 	}
-
-private:
-	std::string
-	InitBadIdentifierExceptionString(std::string&& id, size_t n)
-	{
-		return (n != 0 ? (n == 1 ? "Bad identifier: '" 
-			: "Duplicate identifier: '")
-			: "Unknown identifier: '") + std::move(id) + "'.";
-	}
 };
 
 
