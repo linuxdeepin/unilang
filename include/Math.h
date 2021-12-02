@@ -32,6 +32,12 @@ IsNumberValue(const ValueObject& vo) noexcept
 	return IsExactValue(vo) || IsInexactValue(vo);
 }
 
+YB_ATTR_nodiscard YB_PURE bool
+IsRationalValue(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsIntegerValue(const ValueObject&) noexcept;
+
 
 class Number : private ystdex::ordered_field_operators<Number>
 {
