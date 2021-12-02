@@ -287,15 +287,12 @@ private:
 		{
 			const auto& n(*p);
 
-			if(!IsIgnore(n))
-			{
-				if(IsUnilangSymbol(n))
-					BindValue(n);
-				else
-					ThrowInvalidTokenError(n);
-			}
+			if(IsUnilangSymbol(n))
+				BindValue(n);
+			else
+				ThrowInvalidTokenError(n);
 		}
-		else
+		else if(!IsIgnore(t))
 			ThrowFormalParameterTypeError(t, t_has_ref);
 	}
 
@@ -415,15 +412,12 @@ struct ParameterCheck final
 		{
 			const auto& n(*p);
 
-			if(!IsIgnore(n))
-			{
-				if(IsUnilangSymbol(n))
-					f(n);
-				else
-					ThrowInvalidTokenError(n);
-			}
+			if(IsUnilangSymbol(n))
+				f(n);
+			else
+				ThrowInvalidTokenError(n);
 		}
-		else
+		else if(!IsIgnore(t))
 			ThrowFormalParameterTypeError(t, t_has_ref);
 	}
 
@@ -462,16 +456,13 @@ struct NoParameterCheck final
 	static void
 	HandleLeaf(_func f, const TermNode& t)
 	{
-		const auto p(TermToNamePtr(t));
-
-		assert(bool(p));
-
-		const auto& n(*p);
-
-		if(!IsIgnore(n))
+		if(!IsIgnore(t))
 		{
-			assert(IsUnilangSymbol(n));
-			f(n);
+			const auto p(TermToNamePtr(t));
+
+			assert(bool(p) && "Invalid parameter tree found.");
+
+			f(*p);
 		}
 	}
 
@@ -653,13 +644,17 @@ MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 char
 ExtractSigil(string_view& id)
 {
-	char sigil(id.front());
-
-	if(sigil != '&' && sigil != '%' && sigil != '@')
-		sigil = char();
-	else
-		id.remove_prefix(1);
-	return sigil;
+	if(!id.empty())
+	{
+		char sigil(id.front());
+ 
+		if(sigil != '&' && sigil != '%' && sigil != '@')
+			sigil = char();
+		else
+			id.remove_prefix(1);
+		return sigil;
+	}
+	return char();
 }
 
 template<class _tTraits>
@@ -722,7 +717,8 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 		}
 	}, [&](const TokenValue& n, TermNode& b, TermTags o_tags,
 		const EnvironmentReference& r_env){
-		assert(!IsIgnore(n) && IsUnilangSymbol(n));
+
+		assert(IsUnilangSymbol(n));
 
 		string_view id(n);
 		const char sigil(ExtractSigil(id));

@@ -59,14 +59,11 @@ CheckEnvironmentFormal(const TermNode& term)
 		return ResolveTerm([&](const TermNode& nd, bool has_ref) -> string{
 			if(const auto p = TermToNamePtr(nd))
 			{
-				if(!IsIgnore(*p))
-				{
-					if(IsUnilangSymbol(*p))
-						return string(*p, term.get_allocator());
-					ThrowInvalidTokenError(*p);
-				}
+				if(IsUnilangSymbol(*p))
+					return string(*p, term.get_allocator());
+				ThrowInvalidTokenError(*p);
 			}
-			else
+			else if(!IsIgnore(nd))
 				ThrowFormalParameterTypeError(nd, has_ref);
 			return string(term.get_allocator());
 		}, term);
