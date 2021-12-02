@@ -49,34 +49,7 @@ YB_ATTR_nodiscard YB_PURE bool
 IsNaN(const ValueObject&) noexcept;
 
 
-class Number : private ystdex::ordered_field_operators<Number>
-{
-private:
-	int value;
-
-public:
-	Number(int);
-
-	Number&
-	operator+=(const Number&);
-
-	Number&
-	operator-=(const Number&);
-
-	Number&
-	operator*=(const Number&);
-
-	friend bool
-	operator==(const Number&, const Number&) noexcept;
-
-	friend bool
-	operator<(const Number&, const Number&) noexcept;
-
-	operator int() const noexcept
-	{
-		return value;
-	}
-};
+using Number = int;
 
 } // inline namespace Math;
 
