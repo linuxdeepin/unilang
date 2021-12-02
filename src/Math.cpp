@@ -5,7 +5,7 @@
 namespace Unilang
 {
 
-inline namespace Numbers
+inline namespace Math
 {
 
 Number::Number(int x)
@@ -45,7 +45,7 @@ operator<(const Number& x, const Number& y) noexcept
 	return x.value < y.value;
 }
 
-} // inline namespace Numbers;
+} // inline namespace Math;
 
 } // namespace Unilang;
 
