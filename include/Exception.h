@@ -22,7 +22,7 @@ class TypeError : public UnilangException
 };
 
 
-class YF_API ValueCategoryMismatch : public TypeError
+class ValueCategoryMismatch : public TypeError
 {
 	using TypeError::TypeError;
 };
@@ -109,9 +109,6 @@ public:
 	using UnilangException::UnilangException;
 };
 
-
-YB_NORETURN void
-ThrowInvalidTokenError(string_view);
 
 YB_NORETURN void
 ThrowNonmodifiableErrorForAssignee();
