@@ -1864,6 +1864,54 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * 可假定数值计算的操作数和计算过程中不出现 SNaN(signaling NaN) 值；
 * 若被计算结果依赖的任一操作数中具有 NaN 值，则依赖这个操作数的数值操作结果也是 NaN 值。
 
+`number? <object>`
+
+　　`<number>` 的类型谓词。
+
+`real? <object>`
+
+　　`<real>` 的类型谓词。
+
+**注释** 同 `number?` ，因为当前 `<number>` 都是 `<real>` 值。
+
+`rational? <object>`
+
+　　`<rational>` 的类型谓词。
+
+**注释** 当前实现仅需排除无限大和 NaN 值。
+
+`integer? <object>`
+
+　　`<integer>` 的类型谓词。
+
+`exact-integer? <object>`
+
+　　判断参数是否为 `<integer>` 类型的精确数对象。
+
+`exact? <number>`
+
+　　断参数是否为精确数。
+
+`inexact? <number>`
+
+　　判断参数是否为不精确数。
+
+`finite? <number>`
+
+　　判断参数是否为有限值。
+
+`infinite? <number>`
+
+　　判断参数是否为无限大值。
+
+`nan? <number>`
+
+　　判断参数是否为 NaN 值。
+
+`zero? <number>`
+
+　　判断参数是否为零值。
+
 `<? <number> <number>`
 
 `<=? <number> <number>`
@@ -1876,49 +1924,69 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　结果是 `<boolean>` 类型的比较结果。
 
-`+ <number>...`
+`zero? <number>`
 
-`add2 <number> <number>`
+　　判断参数是否为零值。
 
-　　加法。
+`positive? <real>`
 
-　　参数是加数。
+　　判断参数是否为正数。
 
-　　结果是 `<number>` 类型的和。
+`negative? <real>`
+
+　　判断参数是否为负数。
+
+`odd? <real>`
+
+　　判断参数是否为奇数。
+
+`even? <real>`
+
+　　判断参数是否为偶数。
+
+`max <real1> <real2>`
+
+　　计算参数中的最大值。
+
+`min <real1> <real2>`
+
+　　计算参数中的最小值。
+
+`add1 <number>`
+
+　　计算参数加 1 的值。
+
+`sub1 <number>`
+
+　　计算参数减 1 的值。
+
+`+ <number> <number>`
+
+　　加法：计算参数的和。
 
 `- <number> <number>`
 
-　　减法。
+　　减法：计算参数的差。
 
-　　参数分别是被减数和减数。
+`* <number> <number>`
 
-　　结果是 `<number>` 类型的差。
+　　乘法：计算参数的积。
 
-`* <number>...`
+`/ <number> <number>`
 
-`multiply2 <number> <number>`
+　　除法：计算参数的商。
 
-　　乘法。
+`abs <real>`
 
-　　参数是乘数。
-
-　　结果是 `<number>` 类型的积。
+　　计算参数的绝对值。
 
 `div <int> <int>`
 
-　　整除。
-
-　　参数分别是被除数和除数。若第二参数等于 0 ，则引起错误。
-
-　　结果是 `<int>` 类型的商。
+　　整除：结果是 `<int>` 类型的商。
 
 `mod <int> <int>`
 
-　　模。
-
-　　参数分别是被除数和除数。若第二参数等于 0 ，则引起错误。
-
-　　结果是 `<int>` 类型的余数。
+　　模：结果是 `<int>` 类型的余数。
 
 `itos <int>`
 
