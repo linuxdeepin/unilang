@@ -4,8 +4,8 @@
 #define INC_Unilang_Forms_h_ 1
 
 #include "Evaluation.h" // for ReductionStatus, TermNode, ReferenceTerm,
-//	YSLib::EmplaceCallResult, Unilang::Deref, yforward, Strict,
-//	Unilang::RegisterHandler, Context;
+//	YSLib::EmplaceCallResult, yforward, Unilang::Deref,
+//	Unilang::AccessTypedValue, Strict, Unilang::RegisterHandler, Context;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <cassert> // for assert;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy,
@@ -237,6 +237,31 @@ CallUnary(_func&& f, TermNode& term, _tParams&&... args)
 	}, term);
 }
 
+template<typename _type, typename _func, typename... _tParams>
+ReductionStatus
+CallUnaryAs(_func&& f, TermNode& term, _tParams&&... args)
+{
+	return Forms::CallUnary([&](TermNode& tm){
+		return ystdex::make_expanded<void(decltype(Unilang::AccessTypedValue<
+			_type>(tm)), _tParams&&...)>(std::ref(f))(Unilang::AccessTypedValue<
+			_type>(tm), std::forward<_tParams>(args)...);
+	}, term);
+}
+
+template<typename _func, typename... _tParams>
+ReductionStatus
+CallBinary(_func&& f, TermNode& term, _tParams&&... args)
+{
+	RetainN(term, 2);
+
+	auto i(term.begin());
+	auto& x(Unilang::Deref(++i));
+
+	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
+		ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
+		std::ref(f)), x, Unilang::Deref(++i), yforward(args)...));
+}
+
 template<typename _type, typename _type2, typename _func, typename... _tParams>
 ReductionStatus
 CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
@@ -244,11 +269,12 @@ CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
 	RetainN(term, 2);
 
 	auto i(term.begin());
-	auto& x(Unilang::ResolveRegular<_type>(Unilang::Deref(++i)));
+	auto&& x(Unilang::AccessTypedValue<_type>(Unilang::Deref(++i)));
 
 	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-		ystdex::make_expanded<void(_type&, _type2&, _tParams&&...)>(
-		std::ref(f)), x, Unilang::ResolveRegular<_type2>(Unilang::Deref(++i)),
+		ystdex::make_expanded<void(decltype(x), decltype(
+		Unilang::AccessTypedValue<_type2>(*i)), _tParams&&...)>(std::ref(f)),
+		yforward(x), Unilang::AccessTypedValue<_type2>(Unilang::Deref(++i)),
 		yforward(args)...));
 }
 
@@ -259,7 +285,7 @@ CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
 	const auto n(term.size() - 1);
 	auto i(term.begin());
 	const auto j(ystdex::make_transform(++i, [](TNIter it){
-		return Unilang::ResolveRegular<_type>(Unilang::Deref(it));
+		return Unilang::AccessTypedValue<_type>(Unilang::Deref(it));
 	}));
 
 	return Forms::EmplaceCallResultOrReturn(term, std::accumulate(j, std::next(
@@ -287,13 +313,9 @@ struct UnaryExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term);
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(
-			std::ref(Function)), Unilang::Deref(std::next(term.begin())),
-			yforward(args)...));
+		return Forms::CallUnary(Function, yforward(args)...);
 	}
 };
 
@@ -317,13 +339,9 @@ struct UnaryAsExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term);
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(_type&, _tParams&&...)>(
-			std::ref(Function)), Unilang::ResolveRegular<_type>(
-			Unilang::Deref(std::next(term.begin()))), yforward(args)...));
+		return Forms::CallUnaryAs<_type>(Function, yforward(args)...);
 	}
 };
 
@@ -347,16 +365,9 @@ struct BinaryExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term, 2);
-
-		auto i(term.begin());
-		auto& x(Unilang::Deref(++i));
-
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
-			std::ref(Function)), x, Unilang::Deref(++i), yforward(args)...));
+		return Forms::CallBinary(Function, yforward(args)...);
 	}
 };
 
