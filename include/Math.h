@@ -39,6 +39,16 @@ YB_ATTR_nodiscard YB_PURE bool
 IsIntegerValue(const ValueObject&) noexcept;
 
 
+YB_ATTR_nodiscard YB_PURE bool
+IsFinite(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsInfinite(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsNaN(const ValueObject&) noexcept;
+
+
 class Number : private ystdex::ordered_field_operators<Number>
 {
 private:

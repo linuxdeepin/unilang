@@ -1,7 +1,7 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Math.h" // for Unilang::TryAccessValue;
-#include <cmath> // for std::isfinite;
+#include <cmath> // for std::isfinite, std::isinf, std::isnan;
 
 namespace Unilang
 {
@@ -67,6 +67,43 @@ IsIntegerValue(const ValueObject& vo) noexcept
 	if(const auto p_ld = Unilang::TryAccessValue<long double>(vo))
 		return FloatIsInteger(*p_ld);
 	return IsExactValue(vo);
+}
+
+
+bool
+IsFinite(const ValueObject& x) noexcept
+{
+	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+		return std::isfinite(*p_d);
+	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+		return std::isfinite(*p_f);
+	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+		return std::isfinite(*p_ld);
+	return true;
+}
+
+bool
+IsInfinite(const ValueObject& x) noexcept
+{
+	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+		return std::isinf(*p_d);
+	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+		return std::isinf(*p_f);
+	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+		return std::isinf(*p_ld);
+	return {};
+}
+
+bool
+IsNaN(const ValueObject& x) noexcept
+{
+	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+		return std::isnan(*p_d);
+	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+		return std::isnan(*p_f);
+	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+		return std::isnan(*p_ld);
+	return {};
 }
 
 
