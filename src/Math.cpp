@@ -8,6 +8,24 @@ namespace Unilang
 inline namespace Math
 {
 
+bool
+IsExactValue(const ValueObject& vo) noexcept
+{
+	return IsTyped<int>(vo) || IsTyped<unsigned>(vo) || IsTyped<long long>(vo)
+		|| IsTyped<unsigned long long>(vo) || IsTyped<long>(vo)
+		|| IsTyped<unsigned long>(vo) || IsTyped<short>(vo)
+		|| IsTyped<unsigned short>(vo) || IsTyped<signed char>(vo)
+		|| IsTyped<unsigned char>(vo);
+}
+
+bool
+IsInexactValue(const ValueObject& vo) noexcept
+{
+	return
+		IsTyped<double>(vo) || IsTyped<float>(vo) || IsTyped<long double>(vo);
+}
+
+
 Number::Number(int x)
 	: value(x)
 {}
