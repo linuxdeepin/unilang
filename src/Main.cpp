@@ -756,15 +756,11 @@ $defv! $import! (&e .&symbols) d
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "negative?", IsNegative);
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "odd?", IsOdd);
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "even?", IsEven);
-	RegisterStrict(ctx, "+", std::bind(CallBinaryFold<Number, ystdex::plus<>>,
-		ystdex::plus<>(), 0, _1));
-	RegisterBinary<Strict, const Number, const Number>(ctx, "add2",
+	RegisterBinary<Strict, const Number, const Number>(ctx, "+",
 		ystdex::plus<>());
 	RegisterBinary<Strict, const Number, const Number>(ctx, "-",
 		ystdex::minus<>());
-	RegisterStrict(ctx, "*", std::bind(CallBinaryFold<Number,
-		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
-	RegisterBinary<Strict, const Number, const Number>(ctx, "multiply2",
+	RegisterBinary<Strict, const Number, const Number>(ctx, "*",
 		ystdex::multiplies<>());
 	RegisterBinary<Strict, const int, const int>(ctx, "div",
 		[](const int& e1, const int& e2){
@@ -828,7 +824,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.82"
+#define APP_VER "0.8.84"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
