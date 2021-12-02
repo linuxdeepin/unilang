@@ -49,6 +49,22 @@ YB_ATTR_nodiscard YB_PURE bool
 IsNaN(const ValueObject&) noexcept;
 
 
+YB_ATTR_nodiscard YB_PURE bool
+Equal(const ValueObject&, const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+Less(const ValueObject&, const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+Greater(const ValueObject&, const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+LessEqual(const ValueObject&, const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+GreaterEqual(const ValueObject&, const ValueObject&) noexcept;
+
+
 using Number = int;
 
 } // inline namespace Math;
