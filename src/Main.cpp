@@ -136,6 +136,18 @@ SymbolToString(const TokenValue& s) noexcept
 	return s;
 }
 
+
+struct LeafPred
+{
+	template<typename _func>
+	YB_ATTR_nodiscard YB_PURE bool
+	operator()(const TermNode& nd, _func f) const ynoexcept_spec(f(nd.Value))
+	{
+		return IsLeaf(nd) && f(nd.Value);
+	}
+};
+
+
 void
 LoadModule_std_promises(Interpreter& intp)
 {
@@ -185,16 +197,16 @@ void
 LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& ctx(intp.Root.GetRecordRef());
 
-	RegisterStrict(renv, "++",
+	RegisterStrict(ctx, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
 		string(), std::placeholders::_1));
-	RegisterUnary<Strict, const string>(renv, "string-empty?",
+	RegisterUnary<Strict, const string>(ctx, "string-empty?",
 		[](const string& str) noexcept{
 			return str.empty();
 		});
-	RegisterBinary(renv, "string<-", [](TermNode& x, TermNode& y){
+	RegisterBinary(ctx, "string<-", [](TermNode& x, TermNode& y){
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
@@ -215,9 +227,9 @@ LoadModule_std_strings(Interpreter& intp)
 		}, x);
 		return ValueToken::Unspecified;
 	});
-	RegisterBinary<Strict, const string, const string>(renv, "string=?",
+	RegisterBinary<Strict, const string, const string>(ctx, "string=?",
 		ystdex::equal_to<>());
-	RegisterStrict(renv, "string-split", [](TermNode& term){
+	RegisterStrict(ctx, "string-split", [](TermNode& term){
 		return CallBinaryAs<string, const string>(
 			[&](string& x, const string& y) -> ReductionStatus{
 			if(!x.empty())
@@ -244,11 +256,11 @@ LoadModule_std_strings(Interpreter& intp)
 			return ReductionStatus::Clean;
 		}, term);
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains?",
+	RegisterBinary<Strict, string, string>(ctx, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains-ci?",
+	RegisterBinary<Strict, string, string>(ctx, "string-contains-ci?",
 		[](string x, string y){
 		const auto to_lwr([](string& str) noexcept{
 			for(auto& c : str)
@@ -259,7 +271,7 @@ LoadModule_std_strings(Interpreter& intp)
 		to_lwr(y);
 		return x.find(y) != string::npos;
 	});
-	RegisterUnary(renv, "string->symbol", [](TermNode& term){
+	RegisterUnary(ctx, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			auto& s(Unilang::AccessRegular<string>(nd, p_ref));
 
@@ -267,13 +279,13 @@ LoadModule_std_strings(Interpreter& intp)
 				: StringToSymbol(s);
 		}, term);
 	});
-	RegisterUnary<Strict, const TokenValue>(renv, "symbol->string",
+	RegisterUnary<Strict, const TokenValue>(ctx, "symbol->string",
 		SymbolToString);
-	RegisterUnary<Strict, const string>(renv, "string->regex",
+	RegisterUnary<Strict, const string>(ctx, "string->regex",
 		[](const string& str){
 		return std::regex(str);
 	});
-	RegisterStrict(renv, "regex-match?", [](TermNode& term){
+	RegisterStrict(ctx, "regex-match?", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(std::next(term.begin()));
@@ -283,7 +295,7 @@ LoadModule_std_strings(Interpreter& intp)
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(renv, "regex-replace", [](TermNode& term){
+	RegisterStrict(ctx, "regex-replace", [](TermNode& term){
 		RetainN(term, 3);
 
 		auto i(term.begin());
@@ -301,34 +313,34 @@ void
 LoadModule_std_io(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& ctx(intp.Root.GetRecordRef());
 
-	RegisterStrict(renv, "newline", [&](TermNode& term){
+	RegisterStrict(ctx, "newline", [&](TermNode& term){
 		RetainN(term, 0);
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterUnary<Strict, const string>(renv, "readable-file?",
+	RegisterUnary<Strict, const string>(ctx, "readable-file?",
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
 	});
-	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
+	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
-		ctx.SetupFront([&]{
+		c.SetupFront([&]{
 			term = intp.ReadFrom(*intp.OpenUnique(std::move(
 				Unilang::ResolveRegular<string>(*std::next(term.begin())))));
-			return ReduceOnce(term, ctx);
+			return ReduceOnce(term, c);
 		});
 	});
-	RegisterUnary(renv, "write", [&](TermNode& term){
+	RegisterUnary(ctx, "write", [&](TermNode& term){
 		WriteTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary(renv, "display", [&](TermNode& term){
+	RegisterUnary(ctx, "display", [&](TermNode& term){
 		DisplayTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary<Strict, const string>(renv, "put", [&](const string& str){
+	RegisterUnary<Strict, const string>(ctx, "put", [&](const string& str){
 		YSLib::IO::StreamPut(std::cout, str.c_str());
 		return ValueToken::Unspecified;
 	});
@@ -341,9 +353,9 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& ctx(intp.Root.GetRecordRef());
 
-	RegisterUnary<Strict, const string>(renv, "env-get", [](const string& var){
+	RegisterUnary<Strict, const string>(ctx, "env-get", [](const string& var){
 		string res(var.get_allocator());
 
 		YSLib::FetchEnvironmentVariable(res, var.c_str());
@@ -714,8 +726,9 @@ $defv! $import! (&e .&symbols) d
 	eval% (list $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (eval e d);
 	)Unilang");
-	// NOTE: Arithmetics.
-	// TODO: Use generic types.
+	// NOTE: Math operations.
+	RegisterUnary(ctx, "number?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
 	RegisterBinary<Strict, const Number, const Number>(ctx, "<?",
 		ystdex::less<>());
 	RegisterBinary<Strict, const Number, const Number>(ctx, "<=?",
@@ -796,7 +809,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.62"
+#define APP_VER "0.8.73"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
