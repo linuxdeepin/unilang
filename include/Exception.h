@@ -111,9 +111,6 @@ public:
 
 
 YB_NORETURN void
-ThrowInvalidTokenError(string_view);
-
-YB_NORETURN void
 ThrowNonmodifiableErrorForAssignee();
 
 } // namespace Unilang;

@@ -26,13 +26,6 @@ BadIdentifier::BadIdentifier(string_view id, size_t n)
 
 
 void
-ThrowInvalidTokenError(string_view sv)
-{
-	assert(sv.data());
-	throw InvalidSyntax(ystdex::sfmt("Invalid token '%s' found", sv.data()));
-}
-
-void
 ThrowNonmodifiableErrorForAssignee()
 {
 	throw TypeError("Destination operand of assignment shall be modifiable.");
