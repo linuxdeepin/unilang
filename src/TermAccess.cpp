@@ -44,12 +44,17 @@ ThrowInsufficientTermsError(const TermNode& term, bool has_ref)
 }
 
 void
-ThrowListTypeErrorForInvalidType(const type_info& tp,
-	const TermNode& term, bool is_ref)
+ThrowListTypeErrorForInvalidType(const char* name, const TermNode& term,
+	bool has_ref)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got a list"
-		" '%s'.", tp.name(),
-		TermToStringWithReferenceMark(term, is_ref).c_str()));
+		" '%s'.", name, TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+void
+ThrowListTypeErrorForInvalidType(const type_info& ti,
+	const TermNode& term, bool has_ref)
+{
+	ThrowListTypeErrorForInvalidType(ti.name(), term, has_ref);
 }
 
 void
@@ -60,11 +65,17 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 }
 
 void
-ThrowTypeErrorForInvalidType(const type_info& tp, const TermNode& term,
+ThrowTypeErrorForInvalidType(const char* name, const TermNode& term,
 	bool has_ref)
 {
 	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
-		tp.name(), TermToStringWithReferenceMark(term, has_ref).c_str()));
+		name, TermToStringWithReferenceMark(term, has_ref).c_str()));
+}
+void
+ThrowTypeErrorForInvalidType(const type_info& ti, const TermNode& term,
+	bool has_ref)
+{
+	ThrowTypeErrorForInvalidType(ti.name(), term, has_ref);
 }
 
 void
