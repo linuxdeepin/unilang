@@ -9,7 +9,7 @@
 namespace Unilang
 {
 
-inline namespace Numbers
+inline namespace Math
 {
 
 class Number : private ystdex::ordered_field_operators<Number>
@@ -41,7 +41,7 @@ public:
 	}
 };
 
-} // inline namespace Numbers;
+} // inline namespace Math;
 
 } // namespace Unilang;
 
