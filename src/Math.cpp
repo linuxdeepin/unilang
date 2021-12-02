@@ -17,6 +17,19 @@ inline namespace Math
 namespace
 {
 
+YB_ATTR_nodiscard ValueObject
+MoveUnary(ResolvedArg<>& x)
+{
+	ValueObject res;
+
+	if(x.IsMovable())
+		res = std::move(x.get().Value);
+	else
+		res = x.get().Value;
+	return res;
+}
+
+
 YB_NORETURN void
 ThrowForUnsupportedNumber()
 {
@@ -37,7 +50,6 @@ enum NumCode : size_t
 	LongLong,
 	ULongLong,
 	IntMax = ULongLong,
-	// TODO: Use bigint.
 	Float,
 	Double,
 	LongDouble,
@@ -91,6 +103,56 @@ MapTypeIdToNumCode(const ResolvedArg<>& arg) noexcept
 {
 	return MapTypeIdToNumCode(arg.get());
 }
+
+
+template<typename _type>
+struct ExtType : ystdex::identity<ystdex::conditional_t<ystdex::integer_width<
+	decltype(std::declval<_type>() + 1)>::value == ystdex::integer_width<
+	_type>::value, long long, int>>
+{};
+
+template<>
+struct ExtType<int> : ystdex::identity<long long>
+{};
+
+template<>
+struct ExtType<long> : ystdex::identity<long long>
+{};
+
+template<>
+struct ExtType<long long> : ystdex::identity<unsigned long long>
+{};
+
+template<>
+struct ExtType<unsigned long long> : ystdex::identity<double>
+{};
+
+template<typename _type>
+struct NExtType : ystdex::cond_t<std::is_signed<_type>, ExtType<_type>,
+	ystdex::identity<ystdex::conditional_t<(ystdex::integer_width<_type>::value
+	<= ystdex::integer_width<int>::value), int, long long>>>
+{};
+
+template<>
+struct NExtType<long long> : ystdex::identity<double>
+{};
+
+
+template<typename _type>
+struct MulExtType : ystdex::conditional_t<ystdex::integer_width<_type>::value
+	== 64, ystdex::identity<double>, ystdex::make_widen_int<_type>>
+{};
+
+
+template<typename _type>
+using MakeExtType = ystdex::_t<ExtType<_type>>;
+
+template<typename _type>
+using MakeNExtType = ystdex::_t<NExtType<_type>>;
+
+template<typename _type>
+using MakeMulExtType = ystdex::_t<MulExtType<_type>>;
+
 
 template<typename _type, typename _func, class _tValue>
 YB_ATTR_nodiscard _type
@@ -265,7 +327,6 @@ struct DynNumCast : ReportMismatch<ValueObject>
 
 struct EqZero : GUAssertMismatch<bool>
 {
-	//! \since build 930
 	using GUAssertMismatch<bool>::operator();
 	template<typename _type,
 		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
@@ -284,8 +345,6 @@ struct EqZero : GUAssertMismatch<bool>
 };
 
 
-//! \since build 930
-//@{
 struct Positive : GUAssertMismatch<bool>
 {
 	using GUAssertMismatch<bool>::operator();
@@ -294,7 +353,6 @@ struct Positive : GUAssertMismatch<bool>
 	YB_ATTR_nodiscard YB_PURE yconstfn bool
 	operator()(const _type& x) const noexcept
 	{
-		// XXX: Ditto.
 		return x > _type(0);
 	}
 };
@@ -412,6 +470,373 @@ struct GBCompare : GBAssertMismatch<bool>, _tBase
 };
 
 
+struct BMax : GBAssertMismatch<>
+{
+	using GBAssertMismatch<>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return x > y ? x : y;
+	}
+};
+
+
+struct BMin : GBAssertMismatch<>
+{
+	using GBAssertMismatch<>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return x < y ? x : y;
+	}
+};
+
+
+struct AddOne : GUAssertMismatch<>
+{
+	ValueObject& Result;
+
+	AddOne(ValueObject& res)
+		: Result(res)
+	{}
+
+	using GUAssertMismatch<>::operator();
+	template<typename _type>
+	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	operator()(_type& x) const noexcept
+	{
+		Perform(x);
+	}
+
+private:
+	template<typename _type>
+	inline ystdex::enable_if_t<std::is_floating_point<_type>::value>
+	Perform(_type& x) const noexcept
+	{
+		x += _type(1);
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		!std::is_floating_point<_type>::value, int> = 0)>
+	inline void
+	Perform(_type& x) const
+	{
+		if(x != std::numeric_limits<_type>::max())
+			++x;
+		else
+			Result = ValueObject(MakeExtType<_type>(x) + 1);
+	}
+};
+
+struct SubOne : GUAssertMismatch<>
+{
+	ValueObject& Result;
+
+	SubOne(ValueObject& res)
+		: Result(res)
+	{}
+
+	using GUAssertMismatch<>::operator();
+	template<typename _type>
+	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	operator()(_type& x) const noexcept
+	{
+		Perform(x);
+	}
+
+private:
+	template<typename _type>
+	inline ystdex::enable_if_t<std::is_floating_point<_type>::value>
+	Perform(_type& x) const noexcept
+	{
+		x -= _type(1);
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		!std::is_floating_point<_type>::value, int> = 0)>
+	inline void
+	Perform(_type& x) const
+	{
+		if(x != std::numeric_limits<_type>::min())
+			--x;
+		else
+			Result = ValueObject(MakeNExtType<_type>(x) - 1);
+	}
+};
+
+
+struct BPlus : GBAssertMismatch<>
+{
+	using GBAssertMismatch<>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return Do(x, y);
+	}
+
+private:
+	template<typename _type>
+	static inline
+		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
+	Do(const _type& x, const _type& y) noexcept
+	{
+		return x + y;
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		ystdex::and_<std::is_integral<_type>,
+		std::is_signed<_type>>::value, int> = 0)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+#if __has_builtin(__builtin_add_overflow)
+		_type r;
+
+		if(!__builtin_add_overflow(x, y, &r))
+			return r;
+		if(x > 0 && y > std::numeric_limits<_type>::max() - x)
+			return MakeExtType<_type>(x) + MakeExtType<_type>(y);
+		return MakeNExtType<_type>(x) + MakeNExtType<_type>(y);
+#else
+		if(x > 0 && y > std::numeric_limits<_type>::max() - x)
+			return MakeExtType<_type>(x) + MakeExtType<_type>(y);
+		if(x < 0 && y < std::numeric_limits<_type>::min() - x)
+			return MakeNExtType<_type>(x) + MakeNExtType<_type>(y);
+		return x + y;
+#endif
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_unsigned<_type>::value, long> = 0L)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+#if __has_builtin(__builtin_add_overflow)
+		_type r;
+
+		if(!__builtin_add_overflow(x, y, &r))
+			return r;
+#else
+		const _type r(x + y);
+
+		if(r >= x)
+			return r;urn x + y;
+#endif
+		return MakeExtType<_type>(x) + MakeExtType<_type>(y);
+	}
+};
+
+
+struct BMinus : GBAssertMismatch<>
+{
+	using GBAssertMismatch<>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return Do(x, y);
+	}
+
+private:
+	template<typename _type>
+	static inline
+		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
+	Do(const _type& x, const _type& y) noexcept
+	{
+		return x - y;
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		ystdex::and_<std::is_integral<_type>,
+		std::is_signed<_type>>::value, int> = 0)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+#if __has_builtin(__builtin_sub_overflow)
+		_type r;
+
+		if(!__builtin_sub_overflow(x, y, &r))
+			return r;
+		if(YB_UNLIKELY(y == std::numeric_limits<_type>::min())
+			|| (x > 0 && -y > std::numeric_limits<_type>::max() - x))
+			return MakeExtType<_type>(x) - MakeExtType<_type>(y);
+		return MakeNExtType<_type>(x) - MakeNExtType<_type>(y);
+#else
+		if(YB_UNLIKELY(y == std::numeric_limits<_type>::min())
+			|| (x > 0 && -y > std::numeric_limits<_type>::max() - x))
+			return MakeExtType<_type>(x) - MakeExtType<_type>(y);
+		if(x < 0 && -y < std::numeric_limits<_type>::min() - x)
+			return MakeNExtType<_type>(x) - MakeNExtType<_type>(y);
+		return x - y;
+#endif
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_unsigned<_type>::value, long> = 0L)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+		if(y <= x)
+			return x - y;
+		return MakeExtType<_type>(x) - MakeExtType<_type>(y);
+	}
+};
+
+
+struct BMultiplies : GBAssertMismatch<>
+{
+	using GBAssertMismatch<>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return Do(x, y);
+	}
+
+private:
+	template<typename _type>
+	static inline
+		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
+	Do(const _type& x, const _type& y) noexcept
+	{
+		return x * y;
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_integral<_type>::value, int> = 0)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+#if __has_builtin(__builtin_mul_overflow)
+		_type r;
+
+		if(!__builtin_mul_overflow(x, y, &r))
+			return r;
+		return MakeMulExtType<_type>(x) * MakeMulExtType<_type>(y);
+#else
+		using r_t = MakeMulExtType<_type>;
+		const r_t r(r_t(x) * r_t(y));
+
+		if(r <= r_t(std::numeric_limits<_type>::max()))
+			return _type(r);
+		return r;
+#endif
+	}
+};
+
+
+struct BDivides : GBAssertMismatch<>
+{
+	using GBAssertMismatch<>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const
+	{
+		return Do(x, y);
+	}
+
+private:
+	template<typename _type>
+	static inline
+		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
+	Do(const _type& x, const _type& y) noexcept
+	{
+		return x / y;
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		ystdex::and_<std::is_integral<_type>,
+		std::is_signed<_type>>::value, int> = 0)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+		if(y != 0)
+		{
+			if(y != _type(-1) || x != std::numeric_limits<_type>::min())
+				return DoInt(x, y);
+			if(std::numeric_limits<_type>::min()
+				== std::numeric_limits<long long>::min())
+				return -double(x);
+			return -MakeExtType<_type>(x);
+		}
+		ThrowDivideByZero();
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_unsigned<_type>::value, long> = 0L)>
+	static inline ValueObject
+	Do(const _type& x, const _type& y)
+	{
+		if(y != 0)
+			return DoInt(x, y);
+		ThrowDivideByZero();
+	}
+
+	template<typename _type>
+	static inline ValueObject
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		static_assert(std::is_integral<_type>(), "Invalid type found.");
+		YAssert(y != 0, "Invalid value found.");
+		_type r(x / y);
+
+		if(r * y == x)
+			return r;
+		return double(x) / double(y);
+	}
+
+	YB_NORETURN static ValueObject
+	ThrowDivideByZero()
+	{
+		throw std::domain_error("Division by zero.");
+	}
+};
+
+
+struct ReplaceAbs : GUAssertMismatch<>
+{
+	ValueObject& Result;
+
+	ReplaceAbs(ValueObject& res)
+		: Result(res)
+	{}
+
+	using GUAssertMismatch<>::operator();
+	template<typename _type>
+	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	operator()(_type& x) const
+	{
+		Perform(x);
+	}
+
+private:
+	template<typename _type>
+	inline ystdex::enable_if_t<!std::is_integral<_type>::value>
+	Perform(_type& x) const
+	{
+		using std::abs;
+
+		x = abs(x);
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		ystdex::and_<std::is_integral<_type>,
+		std::is_signed<_type>>::value, int> = 0)>
+	inline void
+	Perform(_type& x) const
+	{
+		if(x != std::numeric_limits<_type>::min())
+			x = _type(std::abs(x));
+		else
+			Result = -MakeExtType<_type>(x);
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_unsigned<_type>::value, long> = 0L)>
+	inline void
+	Perform(_type&) const noexcept
+	{}
+};
+
+
 YB_ATTR_nodiscard YB_PURE ValueObject
 Promote(NumCode code, const ValueObject& x, NumCode src_code)
 {
@@ -430,6 +855,21 @@ NumBinaryComp(const ValueObject& x, const ValueObject& y) noexcept
 
 	return size_t(xcode) >= size_t(ycode) ? ret_bin(x, Promote(xcode, y, ycode),
 		xcode) : ret_bin(Promote(ycode, x, xcode), y, ycode);
+}
+
+template<class _fBinary>
+ValueObject
+NumBinaryOp(ResolvedArg<>& x, ResolvedArg<>& y)
+{
+	const auto xcode(MapTypeIdToNumCode(x));
+	const auto ycode(MapTypeIdToNumCode(y));
+	const auto ret_bin([](ValueObject u, ValueObject v, NumCode code){
+		return DoNumLeafHinted<ValueObject>(code, _fBinary(), u, v);
+	});
+
+	return size_t(xcode) >= size_t(ycode) ?
+		ret_bin(MoveUnary(x), Promote(xcode, y.get().Value, ycode), xcode)
+		: ret_bin(Promote(ycode, x.get().Value, xcode), MoveUnary(y), ycode);
 }
 
 } // unnamed namespace;
@@ -572,6 +1012,70 @@ bool
 IsEven(const ValueObject& x) noexcept
 {
 	return DoNumLeaf<bool>(x, Even());
+}
+
+
+ValueObject
+Max(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<BMax>(x, y);
+}
+
+ValueObject
+Min(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<BMin>(x, y);
+}
+
+ValueObject
+Add1(ResolvedArg<>&& x)
+{
+	auto res(MoveUnary(x));
+
+	DoNumLeaf<void>(res, AddOne(res));
+	return res;
+}
+
+ValueObject
+Sub1(ResolvedArg<>&& x)
+{
+	auto res(MoveUnary(x));
+
+	DoNumLeaf<void>(res, SubOne(res));
+	return res;
+}
+
+ValueObject
+Plus(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<BPlus>(x, y);
+}
+
+ValueObject
+Minus(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<BMinus>(x, y);
+}
+
+ValueObject
+Multiplies(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<BMultiplies>(x, y);
+}
+
+ValueObject
+Divides(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<BDivides>(x, y);
+}
+
+ValueObject
+Abs(ResolvedArg<>&& x)
+{
+	auto res(MoveUnary(x));
+
+	DoNumLeaf<void>(res, ReplaceAbs(res));
+	return res;
 }
 
 } // inline namespace Math;
