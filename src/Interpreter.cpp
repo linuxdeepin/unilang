@@ -73,30 +73,41 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 	return ReductionStatus::Retrying;
 }
 
-TermNode
-ParseLeaf(string_view id, TermNode::allocator_type a)
+void
+ParseLeaf(TermNode& term, string_view id)
 {
 	assert(id.data());
-
-	auto term(Unilang::AsTermNode());
-
-	if(!id.empty())
-		switch(CategorizeBasicLexeme(id))
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(CategorizeBasicLexeme(id))
+	{
+	case LexemeCategory::Code:
+		id = DeliteralizeUnchecked(id);
+		term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
+		break;
+	case LexemeCategory::Symbol:
+		if(CheckReducible(DefaultEvaluateLeaf(term, id)))
 		{
-		case LexemeCategory::Code:
-			id = DeliteralizeUnchecked(id);
-			YB_ATTR_fallthrough;
-		case LexemeCategory::Symbol:
-			if(CheckReducible(DefaultEvaluateLeaf(term, id)))
-				term.SetValue(in_place_type<TokenValue>, id, a);
-			break;
-		case LexemeCategory::Data:
-			term.SetValue(in_place_type<string>, Deliteralize(id), a);
-			YB_ATTR_fallthrough;
-		default:
-			break;
+			if(!id.empty())
+			{
+				const char f(id.front());
+
+				if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
+					&& id.find_first_not_of("+-") != string_view::npos)
+					|| ystdex::isdigit(f))
+					throw InvalidSyntax(ystdex::sfmt(f != '#'
+						? "Unsupported literal prefix found in literal '%s'."
+						: "Invalid literal '%s' found.", id.data()));
+			}
+			term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
 		}
-	return term;
+		break;
+	case LexemeCategory::Data:
+		term.SetValue(in_place_type<string>, Deliteralize(id),
+			term.get_allocator());
+		YB_ATTR_fallthrough;
+	default:
+		break;
+	}
 }
 
 template<typename _func>
@@ -345,15 +356,20 @@ Interpreter::ReadFrom(std::istream& is) const
 TermNode
 Interpreter::ReadParserResult(const ByteParser& parse) const
 {
-	TermNode term{};
+	TermNode res{};
 	const auto& parse_result(parse.GetResult());
 
-	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(),
-		std::bind(ParseLeaf, std::placeholders::_1, std::ref(Allocator)))
-		!= parse_result.cend())
+	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
+		[&](string_view id){
+		auto term(Unilang::AsTermNode(Allocator));
+
+		if(!id.empty())
+			ParseLeaf(term, id);
+		return term;
+	}) != parse_result.cend())
 		throw UnilangException("Redundant ')' found.");
-	Preprocess(term);
-	return term;
+	Preprocess(res);
+	return res;
 }
 
 void

@@ -68,41 +68,29 @@ ReduceLeaf(TermNode& term, Context& ctx)
 
 		assert(id.data());
 
-		if(!id.empty())
+		auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
+
+		if(pr.first)
 		{
-			const char f(id.front());
+			auto& bound(*pr.first);
 
-			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
-				&& id.find_first_not_of("+-") != string_view::npos)
-				|| ystdex::isdigit(f))
-				throw InvalidSyntax(ystdex::sfmt<std::string>(id.front()
-					!= '#' ? "Unsupported literal prefix found in literal '%s'."
-					: "Invalid literal '%s' found.", id.data()));
-
-			auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
-
-			if(pr.first)
+			if(const auto p_bound
+				= Unilang::TryAccessLeaf<const TermReference>(bound))
 			{
-				auto& bound(*pr.first);
-
-				if(const auto p_bound
-					= Unilang::TryAccessLeaf<const TermReference>(bound))
-				{
-					term.GetContainerRef() = bound.GetContainer();
-					term.Value = EnsureLValueReference(TermReference(*p_bound));
-				}
-				else
-				{
-					auto p_env(Unilang::Nonnull(pr.second));
-
-					term.Value = TermReference(p_env->MakeTermTags(bound)
-						& ~TermTags::Unique, bound, std::move(p_env));
-				}
-				res = ReductionStatus::Neutral;
+				term.GetContainerRef() = bound.GetContainer();
+				term.Value = EnsureLValueReference(TermReference(*p_bound));
 			}
 			else
-				throw BadIdentifier(id);
+			{
+				auto p_env(Unilang::Nonnull(pr.second));
+
+				term.Value = TermReference(p_env->MakeTermTags(bound)
+					& ~TermTags::Unique, bound, std::move(p_env));
+			}
+			res = ReductionStatus::Neutral;
 		}
+		else
+			throw BadIdentifier(id);
 		return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
 	}
 	return ReductionStatus::Retained;
