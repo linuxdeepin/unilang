@@ -2,8 +2,11 @@
 
 #include "Math.h" // for size_t, type_info, Unilang::TryAccessValue;
 #include <ystdex/exception.h> // for ystdex::unsupported;
-#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
-#include <cmath> // for std::isfinite, std::isinf, std::isnan;
+#include <ystdex/meta.hpp> // for ystdex::exclude_self_t, ystdex::enable_if_t,
+//	std::is_floating_point;
+#include <cmath> // for std::isfinite, std::nearbyint, std::isinf, std::isnan,
+//	std::fmod;
+#include <string> // for std::to_string;
 
 namespace Unilang
 {
@@ -89,6 +92,39 @@ MapTypeIdToNumCode(const ResolvedArg<>& arg) noexcept
 	return MapTypeIdToNumCode(arg.get());
 }
 
+template<typename _type, typename _func, class _tValue>
+YB_ATTR_nodiscard _type
+DoNumLeaf(_tValue& x, _func f)
+{
+	if(const auto p_i = Unilang::TryAccessValue<int>(x))
+		return f(*p_i);
+	if(const auto p_u = Unilang::TryAccessValue<unsigned>(x))
+		return f(*p_u);
+	if(const auto p_ll = Unilang::TryAccessValue<long long>(x))
+		return f(*p_ll);
+	if(const auto p_ull = Unilang::TryAccessValue<unsigned long long>(x))
+		return f(*p_ull);
+	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+		return f(*p_d);
+	if(const auto p_l = Unilang::TryAccessValue<long>(x))
+		return f(*p_l);
+	if(const auto p_ul = Unilang::TryAccessValue<unsigned long>(x))
+		return f(*p_ul);
+	if(const auto p_s = Unilang::TryAccessValue<short>(x))
+		return f(*p_s);
+	if(const auto p_us = Unilang::TryAccessValue<unsigned short>(x))
+		return f(*p_us);
+	if(const auto p_sc = Unilang::TryAccessValue<signed char>(x))
+		return f(*p_sc);
+	if(const auto p_uc = Unilang::TryAccessValue<unsigned char>(x))
+		return f(*p_uc);
+	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+		return f(*p_f);
+	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+		return f(*p_ld);
+	return f(x);
+}
+
 template<typename _type, typename _func, class... _tValue>
 YB_ATTR_nodiscard _type
 DoNumLeafHinted(NumCode code, _func f, _tValue&... xs)
@@ -134,19 +170,37 @@ AssertMismatch()
 	YB_ASSUME(false);
 }
 
+YB_NORETURN void
+ThrowTypeErrorForInteger(const std::string& val)
+{
+	throw TypeError(ystdex::sfmt(
+		"Expected a value of type 'integer', got '%s'.", val.c_str()));
+}
+
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE bool
 FloatIsInteger(const _type& x) noexcept
 {
-#if __GNUC__
-#	pragma GCC diagnostic push
-#	pragma GCC diagnostic ignored "-Wfloat-equal"
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Push
+	YB_Diag_Ignore(float-equal)
 #endif
 	return std::isfinite(x) && std::nearbyint(x) == x;
-#if __GNUC__
-#	pragma GCC diagnostic pop
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Pop
 #endif
 }
+
+
+template<typename _type = void>
+struct GUAssertMismatch
+{
+	YB_NORETURN _type
+	operator()(const ValueObject&) const noexcept
+	{
+		AssertMismatch();
+	}
+};
 
 
 template<typename _type = void>
@@ -205,6 +259,130 @@ struct DynNumCast : ReportMismatch<ValueObject>
 		default:
 			ThrowForUnsupportedNumber();
 		}
+	}
+};
+
+
+struct EqZero : GUAssertMismatch<bool>
+{
+	//! \since build 930
+	using GUAssertMismatch<bool>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	YB_ATTR_nodiscard YB_PURE constexpr bool
+	operator()(const _type& x) const noexcept
+	{
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Push
+	YB_Diag_Ignore(float-equal)
+#endif
+		return x == _type(0);
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Pop
+#endif
+	}
+};
+
+
+//! \since build 930
+//@{
+struct Positive : GUAssertMismatch<bool>
+{
+	using GUAssertMismatch<bool>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	YB_ATTR_nodiscard YB_PURE constexpr bool
+	operator()(const _type& x) const noexcept
+	{
+		// XXX: Ditto.
+		return x > _type(0);
+	}
+};
+
+
+struct Negative : GUAssertMismatch<bool>
+{
+	using GUAssertMismatch<bool>::operator();
+	template<typename _type,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	YB_ATTR_nodiscard YB_PURE constexpr bool
+	operator()(const _type& x) const noexcept
+	{
+		return x < _type(0);
+	}
+};
+
+
+struct Odd : GUAssertMismatch<bool>
+{
+	using GUAssertMismatch<bool>::operator();
+	template<typename _type>
+	inline yimpl(ystdex::exclude_self_t<ValueObject, _type, bool>)
+	operator()(const _type& x) const
+	{
+		return Do(x);
+	}
+
+private:
+	template<typename _type>
+	static inline
+		ystdex::enable_if_t<std::is_floating_point<_type>::value, bool>
+	Do(const _type& x)
+	{
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Push
+	YB_Diag_Ignore(float-equal)
+#endif
+		if(FloatIsInteger(x))
+			return std::fmod(x, _type(2)) == _type(1);
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Pop
+#endif
+		ThrowTypeErrorForInteger(std::to_string(x));
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		!std::is_floating_point<_type>::value, int> = 0)>
+	static inline bool
+	Do(const _type& x) noexcept
+	{
+		return x % _type(2) != _type(0);
+	}
+};
+
+
+struct Even : GUAssertMismatch<bool>
+{
+	using GUAssertMismatch<bool>::operator();
+	template<typename _type>
+	inline yimpl(ystdex::exclude_self_t<ValueObject, _type, bool>)
+	operator()(const _type& x) const
+	{
+		return Do(x);
+	}
+
+private:
+	template<typename _type>
+	static inline
+		ystdex::enable_if_t<std::is_floating_point<_type>::value, bool>
+	Do(const _type& x)
+	{
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Push
+	YB_Diag_Ignore(float-equal)
+#endif
+		if(FloatIsInteger(x))
+			return std::fmod(x, _type(2)) == _type(0);
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Pop
+#endif
+		ThrowTypeErrorForInteger(std::to_string(x));
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		!std::is_floating_point<_type>::value, int> = 0)>
+	static inline bool
+	Do(const _type& x) noexcept
+	{
+		return x % _type(2) == _type(0);
 	}
 };
 
@@ -363,6 +541,37 @@ bool
 GreaterEqual(const ValueObject& x, const ValueObject& y) noexcept
 {
 	return NumBinaryComp<GBCompare<ystdex::greater_equal<>>>(x, y);
+}
+
+
+bool
+IsZero(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, EqZero());
+}
+
+bool
+IsPositive(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, Positive());
+}
+
+bool
+IsNegative(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, Negative());
+}
+
+bool
+IsOdd(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, Odd());
+}
+
+bool
+IsEven(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, Even());
 }
 
 } // inline namespace Math;

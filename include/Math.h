@@ -65,6 +65,22 @@ YB_ATTR_nodiscard YB_PURE bool
 GreaterEqual(const ValueObject&, const ValueObject&) noexcept;
 
 
+YB_ATTR_nodiscard YB_PURE bool
+IsZero(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsPositive(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsNegative(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsOdd(const ValueObject&) noexcept;
+
+YB_ATTR_nodiscard YB_PURE bool
+IsEven(const ValueObject&) noexcept;
+
+
 using Number = int;
 
 } // inline namespace Math;
