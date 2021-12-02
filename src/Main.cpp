@@ -756,12 +756,15 @@ $defv! $import! (&e .&symbols) d
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "negative?", IsNegative);
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "odd?", IsOdd);
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "even?", IsEven);
-	RegisterBinary<Strict, const Number, const Number>(ctx, "+",
-		ystdex::plus<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, "-",
-		ystdex::minus<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, "*",
-		ystdex::multiplies<>());
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "max", Max);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "min", Min);
+	RegisterUnary<Strict, NumberNode>(ctx, "add1", Add1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "+", Plus);
+	RegisterUnary<Strict, NumberNode>(ctx, "sub1", Sub1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "-", Minus);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "*", Multiplies);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
+	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
 	RegisterBinary<Strict, const int, const int>(ctx, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
@@ -824,7 +827,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.84"
+#define APP_VER "0.8.85"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
