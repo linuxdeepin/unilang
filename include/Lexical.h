@@ -101,6 +101,12 @@ Deliteralize(string_view sv) noexcept
 	return CheckLiteral(sv) != char() ? DeliteralizeUnchecked(sv) : sv;
 }
 
+YB_ATTR_nodiscard YB_PURE string
+Escape(string_view);
+
+YB_ATTR_nodiscard YB_PURE string
+EscapeLiteral(string_view);
+
 YB_ATTR_nodiscard YB_STATELESS constexpr bool
 IsGraphicalDelimiter(char c) noexcept
 {
