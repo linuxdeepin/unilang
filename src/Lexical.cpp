@@ -1,6 +1,8 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Lexical.h"
+#include "Lexical.h" // for string;
+#include <cassert> // for assert;
+#include <ystdex/string.hpp> // for ystdex::get_mid, ystdex::quote;
 
 namespace Unilang
 {
@@ -124,6 +126,91 @@ CheckLiteral(string_view sv) noexcept
 				return c;
 		}
 	return {};
+}
+
+string
+Escape(string_view sv)
+{
+	assert(bool(sv.data()));
+
+	char last{};
+	string res;
+
+	res.reserve(sv.length());
+	for(char c : sv)
+	{
+		char unescaped{};
+
+		switch(c)
+		{
+		case '\a':
+			unescaped = 'a';
+			break;
+		case '\b':
+			unescaped = 'b';
+			break;
+		case '\f':
+			unescaped = 'f';
+			break;
+		case '\n':
+			unescaped = 'n';
+			break;
+		case '\r':
+			unescaped = 'r';
+			break;
+		case '\t':
+			unescaped = 't';
+			break;
+		case '\v':
+			unescaped = 'v';
+			break;
+		case '\'':
+		case '"':
+			unescaped = c;
+		}
+		if(last == '\\')
+		{
+			if(c == '\\')
+			{
+				yunseq(last = char(), res += '\\');
+				continue;
+			}
+			switch(c)
+			{
+			case 'a':
+			case 'b':
+			case 'f':
+			case 'n':
+			case 'r':
+			case 't':
+			case 'v':
+			case '\'':
+			case '"':
+				res += '\\';
+			}
+		}
+		if(unescaped == char())
+			res += c;
+		else
+		{
+			res += '\\';
+			res += unescaped;
+			unescaped = char();
+		}
+		last = c;
+	}
+	return res;
+}
+
+string
+EscapeLiteral(string_view sv)
+{
+	const char c(CheckLiteral(sv));
+	auto content(Escape(c == char() ? sv : ystdex::get_mid(string(sv))));
+
+	if(!content.empty() && content.back() == '\\')
+		content += '\\';
+	return c == char() ? std::move(content) : ystdex::quote(content, c);
 }
 
 
