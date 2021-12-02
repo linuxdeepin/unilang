@@ -742,14 +742,16 @@ $defv! $import! (&e .&symbols) d
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "finite?", IsFinite);
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "infinite?", IsInfinite);
 	RegisterUnary<Strict, const NumberLeaf>(ctx, "nan?", IsNaN);
-	RegisterBinary<Strict, const Number, const Number>(ctx, "<?",
-		ystdex::less<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, "<=?",
-		ystdex::less_equal<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, ">=?",
-		ystdex::greater_equal<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, ">?",
-		ystdex::greater<>());
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "=?",
+		Equal);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<?",
+		Less);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">?",
+		Greater);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<=?",
+		LessEqual);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">=?",
+		GreaterEqual);
 	RegisterStrict(ctx, "+", std::bind(CallBinaryFold<Number, ystdex::plus<>>,
 		ystdex::plus<>(), 0, _1));
 	RegisterBinary<Strict, const Number, const Number>(ctx, "add2",
@@ -822,7 +824,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.77"
+#define APP_VER "0.8.80"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
