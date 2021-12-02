@@ -729,6 +729,14 @@ $defv! $import! (&e .&symbols) d
 	// NOTE: Math operations.
 	RegisterUnary(ctx, "number?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
+	RegisterUnary(ctx, "real?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
+	RegisterUnary(ctx, "rational?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsRationalValue)));
+	RegisterUnary(ctx, "integer?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
+	RegisterUnary(ctx, "exact-integer?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
 	RegisterBinary<Strict, const Number, const Number>(ctx, "<?",
 		ystdex::less<>());
 	RegisterBinary<Strict, const Number, const Number>(ctx, "<=?",
@@ -809,7 +817,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.73"
+#define APP_VER "0.8.75"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
