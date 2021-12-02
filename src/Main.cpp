@@ -737,6 +737,11 @@ $defv! $import! (&e .&symbols) d
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
 	RegisterUnary(ctx, "exact-integer?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "exact?", IsExactValue);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "inexact?", IsInexactValue);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "finite?", IsFinite);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "infinite?", IsInfinite);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "nan?", IsNaN);
 	RegisterBinary<Strict, const Number, const Number>(ctx, "<?",
 		ystdex::less<>());
 	RegisterBinary<Strict, const Number, const Number>(ctx, "<=?",
@@ -817,7 +822,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.75"
+#define APP_VER "0.8.77"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
