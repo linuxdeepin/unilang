@@ -2,6 +2,7 @@
 
 #include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
 //	std::getline;
+#include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
 #include "Math.h" // for Number;
@@ -63,6 +64,8 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 			term.Value = false;
 		else if(id == "#inert")
 			term.Value = ValueToken::Unspecified;
+		else if(id == "#ignore")
+			term.Value = ValueToken::Ignore;
 		else
 			return ReductionStatus::Retrying;
 		return ReductionStatus::Clean;
