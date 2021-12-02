@@ -81,6 +81,34 @@ YB_ATTR_nodiscard YB_PURE bool
 IsEven(const ValueObject&) noexcept;
 
 
+YB_ATTR_nodiscard YB_PURE ValueObject
+Max(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Min(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Add1(ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Sub1(ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Plus(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Minus(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Multiplies(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Divides(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Abs(ResolvedArg<>&&);
+
+
 using Number = int;
 
 } // inline namespace Math;
