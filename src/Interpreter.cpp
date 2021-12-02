@@ -356,7 +356,7 @@ Interpreter::ReadFrom(std::istream& is) const
 TermNode
 Interpreter::ReadParserResult(const ByteParser& parse) const
 {
-	TermNode res{};
+	TermNode res{Allocator};
 	const auto& parse_result(parse.GetResult());
 
 	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
