@@ -4,7 +4,12 @@
 $def! $rem $vau . #ignore "";
 
 info "sanity";
+subinfo "empty expression";
 $expect ();
+subinfo "id expressions";
+$expect 42 $let ((a 42)) a;
+$expect 42 $let (('' 42)) '';
+$expect 42 $let ((' ' 42)) ' ';
 
 info "function calls";
 $let ()
