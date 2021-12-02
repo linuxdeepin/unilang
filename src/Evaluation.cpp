@@ -1,11 +1,14 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
-//	Context, TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
-//	TermReference, ContextHandler, yunseq, std::prev, GetLValueTagsOf,
-//	EnvironmentReference, in_place_type, ThrowTypeErrorForInvalidType,
-//	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with,
-//	Unilang::allocate_shared;
+//	Context, TermToNamePtr, Unilang::TryAccessLeaf TermReference,
+//	ContextHandler, yunseq, GetLValueTagsOf, EnvironmentReference,
+//	in_place_type, ThrowTypeErrorForInvalidType, IsTyped,
+//	ThrowInsufficientTermsError, Unilang::allocate_shared,
+//	Unilang::TryAccessTerm;
+#include <iterator> // for std::prev;
+#include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
+//	ystdex::begins_with;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
@@ -13,7 +16,6 @@
 //	ListReductionFailure;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
-#include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include "TCO.h" // for Action, RelayDirect;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
 
@@ -211,7 +213,7 @@ BindReferenceTags(const TermReference& ref) noexcept
 YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
-	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
+	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
 }
 
 YB_NORETURN void
@@ -601,7 +603,7 @@ private:
 		{
 			const auto& lastv(last->Value);
 
-			assert(lastv.type() == ystdex::type_id<TokenValue>());
+			assert(IsTyped<TokenValue>(lastv.type()));
 			BindTrailing(o_tm, j, lastv.GetObject<TokenValue>(), tags, r_env);
 		}
 	}

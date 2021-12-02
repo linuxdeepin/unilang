@@ -3,8 +3,8 @@
 #ifndef INC_Unilang_TermAccess_h_
 #define INC_Unilang_TermAccess_h_ 1
 
-#include "TermNode.h" // for string, TermNode, Unilang::Deref;
-#include <ystdex/typeinfo.h> // for ystdex::type_info;
+#include "TermNode.h" // for string, TermNode, type_info, YSLib::TryAccessValue,
+//	Unilang::Deref;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
 
@@ -60,31 +60,33 @@ YB_NORETURN void
 ThrowInsufficientTermsError(const TermNode&, bool);
 
 YB_NORETURN void
-ThrowListTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&,
+ThrowListTypeErrorForInvalidType(const type_info&, const TermNode&,
 	bool);
 
 YB_NORETURN void
 ThrowListTypeErrorForNonlist(const TermNode&, bool);
 
 YB_NORETURN void
-ThrowTypeErrorForInvalidType(const ystdex::type_info&, const TermNode&, bool);
+ThrowTypeErrorForInvalidType(const type_info&, const TermNode&, bool);
 
 YB_NORETURN void
 ThrowValueCategoryError(const TermNode&);
+
+using YSLib::TryAccessValue;
 
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessLeaf(TermNode& term)
 {
-	return term.Value.type() == ystdex::type_id<_type>()
-		? std::addressof(term.Value.GetObject<_type>()) : nullptr;
+	return IsTyped<_type>(term) ? std::addressof(term.Value.GetObject<_type>())
+		: nullptr;
 }
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessLeaf(const TermNode& term)
 {
-	return term.Value.type() == ystdex::type_id<_type>()
-		? std::addressof(term.Value.GetObject<_type>()) : nullptr;
+	return IsTyped<_type>(term) ? std::addressof(term.Value.GetObject<_type>())
+		: nullptr;
 }
 
 template<typename _type>
@@ -354,8 +356,7 @@ void
 CheckRegular(_tTerm& term, bool has_ref)
 {
 	if(IsBranch(term))
-		ThrowListTypeErrorForInvalidType(ystdex::type_id<_type>(), term,
-			has_ref);
+		ThrowListTypeErrorForInvalidType(type_id<_type>(), term, has_ref);
 }
 
 template<typename _type, class _tTerm>

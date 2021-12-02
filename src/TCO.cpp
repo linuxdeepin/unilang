@@ -1,9 +1,9 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
-#include "TCO.h" // for std::get, Unilang::Nonnull, Unilang::Deref;
+#include "TCO.h" // for Unilang::Nonnull, Unilang::Deref, IsTyped;
 #include <cassert> // for assert;
-#include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
+#include <tuple> // for std::get;
 #include "Exception.h" // for UnilangException;
 
 namespace Unilang
@@ -121,7 +121,7 @@ TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 	req_lift_result(lift ? 1 : 0), xgds(ctx.get_allocator()), EnvGuard(ctx),
 	RecordList(ctx.get_allocator())
 {
-	assert(term.Value.type() == ystdex::type_id<TokenValue>() || !term.Value);
+	assert(IsTyped<TokenValue>(term) || !term.Value);
 }
 TCOAction::TCOAction(const TCOAction& a)
 	: term_guard(std::move(a.term_guard)),

@@ -12,8 +12,9 @@
 //	YSLib::ostringstream, YSLib::sfmt, YSLib::Deref, YSLib::Nonnull;
 #include YFM_YSLib_Core_YFunc // for YSLib::function;
 #include <ystdex/memory.hpp> // for YSLib::share_move;
-#include YFM_YSLib_Core_YObject // for YSLib::ValueObject, YSLib::any_ops,
-//	YSLib::any, YSLib::bad_any_cast, YSLib::in_place_type;
+#include YFM_YSLib_Core_YObject // for YSLib::type_id, YSLib::type_index,
+//	YSLib::type_info, YSLib::any_ops, YSLib::any, YSLib::bad_any_cast,
+//	YSLib::in_place_type, YSLib::ValueObject, YSLib::IsTyped;
 #include <ystdex/memory_resource.h> // for complete
 //	ystdex::pmr::polymorphic_allocator;
 
@@ -53,11 +54,16 @@ using YSLib::ostringstream;
 // NOTE: Only use the unqualified call for unqualified 'string' type.
 using YSLib::sfmt;
 
-using YSLib::ValueObject;
+using YSLib::type_id;
+using YSLib::type_index;
+using YSLib::type_info;
+
 namespace any_ops = YSLib::any_ops;
 using YSLib::any;
 using YSLib::bad_any_cast;
 using YSLib::in_place_type;
+
+using YSLib::ValueObject;
 
 using YSLib::Deref;
 using YSLib::Nonnull;
