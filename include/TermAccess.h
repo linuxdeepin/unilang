@@ -378,6 +378,79 @@ ResolveRegular(_tTerm& term) -> decltype(Unilang::Access<_type>(term))
 }
 
 
+template<typename _type>
+struct TypedValueAccessor
+{
+	template<class _tTerm>
+	YB_ATTR_nodiscard YB_PURE inline auto
+	operator()(_tTerm& term) const
+		-> yimpl(decltype(Unilang::Access<_type>(term)))
+	{
+		return Unilang::ResolveRegular<_type>(term);
+	}
+};
+
+template<typename _type>
+struct TypedValueAccessor<const _type>
+	: TypedValueAccessor<_type>
+{};
+
+
+template<typename _type, class _tTerm>
+YB_ATTR_nodiscard YB_PURE inline auto
+AccessTypedValue(_tTerm& term) ynoexcept_spec(TypedValueAccessor<_type>()(term))
+	-> yimpl(decltype(TypedValueAccessor<_type>()(term)))
+{
+	return TypedValueAccessor<_type>()(term);
+}
+
+
+template<typename _type = TermNode>
+struct ResolvedArg : pair<lref<_type>, ResolvedTermReferencePtr>
+{
+	using BaseType = pair<lref<_type>, ResolvedTermReferencePtr>;
+
+	using BaseType::first;
+	using BaseType::second;
+
+	using BaseType::BaseType;
+
+	DefPred(const noexcept, Modifiable, !second || second->IsModifiable())
+	DefPred(const noexcept, Movable, Unilang::IsMovable(second))
+
+	PDefH(_type&, get, ) const noexcept
+		ImplRet(first.get())
+};
+
+
+template<typename _type>
+struct TypedValueAccessor<ResolvedArg<_type>>
+{
+	template<class _tTerm>
+	YB_ATTR_nodiscard YB_PURE inline ResolvedArg<_type>
+	operator()(_tTerm& term) const
+	{
+		return Unilang::ResolveTerm([](_tTerm& nd, ResolvedTermReferencePtr p_ref){
+			return ResolvedArg<_type>(
+				Unilang::AccessRegular<_type>(nd, p_ref), p_ref);
+		}, term);
+	}
+};
+
+template<>
+struct TypedValueAccessor<ResolvedArg<>>
+{
+	template<class _tTerm>
+	YB_ATTR_nodiscard YB_PURE inline ResolvedArg<>
+	operator()(_tTerm& term) const
+	{
+		return Unilang::ResolveTerm([](_tTerm& nd, ResolvedTermReferencePtr p_ref){
+			return ResolvedArg<>(nd, p_ref);
+		}, term);
+	}
+};
+
+
 struct ReferenceTermOp
 {
 	template<typename _type>
