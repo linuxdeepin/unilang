@@ -311,3 +311,9 @@ $provide/let! (dependency-set? make-dependency-set has-dependency?)
 						(raise-error "has-dependency?: Syntax error.")))
 );
 
+"NOTE", "The following implements the new high-level language syntax planned",
+	" for V0.10";
+
+$def! if $if;
+$def! while $while;
+
