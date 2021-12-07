@@ -2105,3 +2105,14 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　基于基础语言，上层语言提供替代的语法，提供可使具有其它语言背景的用户更易使用的包装特性。
 
+## 库特性
+
+`if <test> <consequent> <alternate>`
+`if <test> <consequent>`
+
+　　条件分支，功能同核心库的 `$if` 。
+
+`while <test> <expression-sequence>`
+
+　　循环求值，功能同核心库的 `$while` 。
+
