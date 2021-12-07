@@ -314,6 +314,8 @@ $provide/let! (dependency-set? make-dependency-set has-dependency?)
 "NOTE", "The following implements the new high-level language syntax planned",
 	" for V0.10";
 
-$def! if $if;
+$defv%! if (&test &consequent) e
+	$if (eval test e) (eval consequent e) #inert;
+
 $def! while $while;
 
