@@ -916,6 +916,12 @@ using ReadIntType = int;
 using ReadExtIntType = long long;
 using ReadCommonType = ystdex::common_type_t<ReadExtIntType, std::uint64_t>;
 
+YB_ATTR_nodiscard YB_STATELESS yconstfn bool
+IsDecimalPoint(char c) ynothrow
+{
+	return c == '.';
+}
+
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type
 ScaleDecimalFlonum(char sign, _type ans, ptrdiff_t scale)
@@ -939,7 +945,7 @@ SetDecimalFlonum(ValueObject& vo, char e, char sign, ReadCommonType ans,
 
 void
 ReadDecimalInexact(ValueObject& vo, string_view::const_iterator first,
-	string_view id, ReadCommonType ans)
+	string_view id, ReadCommonType ans, string_view::const_iterator dpos)
 {
 	assert(!id.empty() && "Invalid lexeme found.");
 
@@ -959,11 +965,21 @@ ReadDecimalInexact(ValueObject& vo, string_view::const_iterator first,
 				}
 			}
 		}
+		else if(IsDecimalPoint(*first))
+		{
+			if(dpos == id.end())
+				dpos = first;
+			else
+				throw InvalidSyntax(ystdex::sfmt(
+					"More than one decimal points found in '%s'.", id.data()));
+		}
 		else
 			ThrowForInvalidLiteralSuffix(&*first, id.data());
 		if(++first != id.end())
 			return true;
-		scale = (cut == id.end() ? 0 : id.end() - cut);
+		scale = (cut == id.end() ? 0 : id.end() - cut
+			- (dpos != id.end() && dpos > cut ? 1 : 0))
+			- (dpos == id.end() ? 0 : id.end() - dpos - 1);
 		return {};
 	});
 	SetDecimalFlonum(vo, e, id[0], ans, scale);
@@ -987,6 +1003,12 @@ ReadDecimalExact(ValueObject& vo, string_view id,
 		if(ystdex::isdigit(*first))
 			return DecimalAccumulate(ans, *first) ? ReductionStatus::Retrying
 				: ReductionStatus::Partial;
+		if(IsDecimalPoint(*first))
+		{
+			ReadDecimalInexact(vo, first + 1, id, ReadCommonType(ans),
+				first);
+			return ReductionStatus::Clean;
+		}
 		ThrowForInvalidLiteralSuffix(&*first, id.data());
 	}) == ReductionStatus::Partial;
 }
@@ -1218,7 +1240,8 @@ ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
 		ReadExtIntType lans(ans);
 
 		if(YB_UNLIKELY(ReadDecimalExact(vo, id, first, lans)))
-			ReadDecimalInexact(vo, first, id, ReadCommonType(lans));
+			ReadDecimalInexact(vo, first, id, ReadCommonType(lans),
+				id.end());
 	}
 }
 
