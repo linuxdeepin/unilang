@@ -1,13 +1,13 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Math.h" // for size_t, type_info, Unilang::TryAccessValue, ptrdiff_t.
-//	string_view;
+//	string_view, sfmt;
 #include <ystdex/exception.h> // for ystdex::unsupported;
 #include <ystdex/meta.hpp> // for ystdex::_t, ystdex::exclude_self_t,
 //	ystdex::enable_if_t, std::is_floating_point, ystdex::common_type_t;
 #include <cassert> // for assert;
 #include <cmath> // for std::isfinite, std::nearbyint, std::isinf, std::isnan,
-//	std::fmod, std::ldexp, std::pow;
+//	std::fmod, std::ldexp, std::pow, std::fp_classify, FP_INFINITE, FP_NAN;
 #include <string> // for std::to_string;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
@@ -1306,17 +1306,41 @@ ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
 string
 FPToString(float x)
 {
-	return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.6g", double(x));
+	switch(std::fpclassify(x))
+	{
+	default:
+		return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.6g", double(x));
+	case FP_INFINITE:
+		return std::signbit(x) ? "-inf.0" : "+inf.0";
+	case FP_NAN:
+		return std::signbit(x) ? "-nan.0" : "+nan.0";
+	}
 }
 string
 FPToString(double x)
 {
-	return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.14g", x);
+	switch(std::fpclassify(x))
+	{
+	default:
+		return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.14g", x);
+	case FP_INFINITE:
+		return std::signbit(x) ? "-inf.0" : "+inf.0";
+	case FP_NAN:
+		return std::signbit(x) ? "-nan.0" : "+nan.0";
+	}
 }
 string
 FPToString(long double x)
 {
-	return sfmt<string>(FloatIsInteger(x) ? "%.1Lf" : "%.18Lg", x);
+	switch(std::fpclassify(x))
+	{
+	default:
+		return sfmt<string>(FloatIsInteger(x) ? "%.1Lf" : "%.18Lg", x);
+	case FP_INFINITE:
+		return std::signbit(x) ? "-inf.0" : "+inf.0";
+	case FP_NAN:
+		return std::signbit(x) ? "-nan.0" : "+nan.0";
+	}
 }
 
 } // inline namespace Math;
