@@ -112,6 +112,14 @@ Abs(ResolvedArg<>&&);
 void
 ReadDecimal(ValueObject&, string_view, string_view::const_iterator);
 
+// XXX: These functions are known problematic with non-default locales.
+string
+FPToString(float x);
+string
+FPToString(double x);
+string
+FPToString(long double x);
+
 } // inline namespace Math;
 
 template<>
