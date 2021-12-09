@@ -1,12 +1,18 @@
 ﻿// © 2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue;
+#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue, ptrdiff_t.
+//	string_view;
 #include <ystdex/exception.h> // for ystdex::unsupported;
-#include <ystdex/meta.hpp> // for ystdex::exclude_self_t, ystdex::enable_if_t,
-//	std::is_floating_point;
+#include <ystdex/meta.hpp> // for ystdex::_t, ystdex::exclude_self_t,
+//	ystdex::enable_if_t, std::is_floating_point, ystdex::common_type_t;
+#include <cassert> // for assert;
 #include <cmath> // for std::isfinite, std::nearbyint, std::isinf, std::isnan,
-//	std::fmod;
+//	std::fmod, std::ldexp, std::pow;
 #include <string> // for std::to_string;
+#include <limits> // for std::numeric_limits;
+#include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
+#include <ystdex/cctype.h> // for ystdex::isdigit;
+#include "BasicReduction.h" // for ReductionStatus;
 
 namespace Unilang
 {
@@ -777,7 +783,9 @@ private:
 	DoInt(const _type& x, const _type& y) noexcept
 	{
 		static_assert(std::is_integral<_type>(), "Invalid type found.");
-		YAssert(y != 0, "Invalid value found.");
+
+		assert(y != 0 && "Invalid value found.");
+
 		_type r(x / y);
 
 		if(r * y == x)
@@ -870,6 +878,117 @@ NumBinaryOp(ResolvedArg<>& x, ResolvedArg<>& y)
 	return size_t(xcode) >= size_t(ycode) ?
 		ret_bin(MoveUnary(x), Promote(xcode, y.get().Value, ycode), xcode)
 		: ret_bin(Promote(ycode, x.get().Value, xcode), MoveUnary(y), ycode);
+}
+
+
+YB_NORETURN YB_NONNULL(1, 2) void
+ThrowForInvalidLiteralSuffix(const char* sfx, const char* id)
+{
+	// TODO: Use %ThrowInvalidSyntaxError lift from %A1?
+	throw InvalidSyntax(ystdex::sfmt(
+		"Literal suffix '%s' is unsupported in identifier '%s'.", sfx, id));
+}
+
+template<typename _type>
+YB_ATTR_nodiscard YB_STATELESS yconstfn _type
+DecimalCarryAddDigit(_type x, char c)
+{
+	return x * 10 + _type(c - '0');
+}
+
+template<typename _tInt>
+YB_ATTR_nodiscard YB_FLATTEN inline bool
+DecimalAccumulate(_tInt& ans, char c)
+{
+	static yconstexpr const auto i_thr(std::numeric_limits<_tInt>::max() / 10);
+	static yconstexpr const char
+		c_thr(char('0' + size_t(std::numeric_limits<_tInt>::max() % 10)));
+
+	if(ans < i_thr || YB_UNLIKELY(ans == i_thr && c <= c_thr))
+	{
+		ans = DecimalCarryAddDigit(ans, c);
+		return true;
+	}
+	return {};
+}
+
+using ReadIntType = int;
+using ReadExtIntType = long long;
+using ReadCommonType = ystdex::common_type_t<ReadExtIntType, std::uint64_t>;
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline _type
+ScaleDecimalFlonum(char sign, _type ans, ptrdiff_t scale)
+{
+	return std::ldexp(sign != '-' ? _type(ans) : -_type(ans), int(scale))
+		* std::pow(_type(5), _type(scale));
+}
+
+void
+SetDecimalFlonum(ValueObject& vo, char e, char sign, ReadCommonType ans,
+	ptrdiff_t scale)
+{
+	switch(e)
+	{
+	case 'e':
+	case 'E':
+		vo = ScaleDecimalFlonum(sign, double(ans), scale);
+		break;
+	}
+}
+
+void
+ReadDecimalInexact(ValueObject& vo, string_view::const_iterator first,
+	string_view id, ReadCommonType ans)
+{
+	assert(!id.empty() && "Invalid lexeme found.");
+
+	auto cut(id.end());
+	ptrdiff_t scale;
+	char e('e');
+
+	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
+		if(ystdex::isdigit(*first))
+		{
+			if(cut == id.end())
+			{
+				if(!DecimalAccumulate(ans, *first))
+				{
+					ans += *first >= '5' ? 1 : 0;
+					cut = first;
+				}
+			}
+		}
+		else
+			ThrowForInvalidLiteralSuffix(&*first, id.data());
+		if(++first != id.end())
+			return true;
+		scale = (cut == id.end() ? 0 : id.end() - cut);
+		return {};
+	});
+	SetDecimalFlonum(vo, e, id[0], ans, scale);
+}
+
+template<typename _tInt>
+YB_ATTR_nodiscard bool
+ReadDecimalExact(ValueObject& vo, string_view id,
+	string_view::const_iterator& first, _tInt& ans)
+{
+	assert(!id.empty() &&  "Invalid lexeme found.");
+	return ystdex::retry_on_cond([&](ReductionStatus r) ynothrow -> bool{
+		if(r == ReductionStatus::Retrying)
+		{
+			if(++first != id.end())
+				return true;
+			vo = id[0] != '-' ? ans : -ans;
+		}
+		return {};
+	}, [&]() -> ReductionStatus{
+		if(ystdex::isdigit(*first))
+			return DecimalAccumulate(ans, *first) ? ReductionStatus::Retrying
+				: ReductionStatus::Partial;
+		ThrowForInvalidLiteralSuffix(&*first, id.data());
+	}) == ReductionStatus::Partial;
 }
 
 } // unnamed namespace;
@@ -1092,24 +1211,15 @@ ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
 		else
 			break;
 
-	int ans(0);
+	ReadIntType ans(0);
 
-	for(auto p(first); p != id.end(); ++p)
-		if(ystdex::isdigit(*p))
-		{
-			if(unsigned((ans << 3) + (ans << 1) + *p - '0')
-				<= unsigned(INT_MAX))
-				ans = (ans << 3) + (ans << 1) + *p - '0';
-			else
-				throw InvalidSyntax(ystdex::sfmt<std::string>(
-					"Value of identifier '%s' is out of the range of"
-					" the supported integer.", id.data()));
-		}
-		else
-			throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
-				" postfix is unsupported in identifier '%s'.",
-				id.data()));
-	vo = id[0] != '-' ? ans : -ans;
+	if(YB_UNLIKELY(ReadDecimalExact(vo, id, first, ans)))
+	{
+		ReadExtIntType lans(ans);
+
+		if(YB_UNLIKELY(ReadDecimalExact(vo, id, first, lans)))
+			ReadDecimalInexact(vo, first, id, ReadCommonType(lans));
+	}
 }
 
 } // inline namespace Math;
