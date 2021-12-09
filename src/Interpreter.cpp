@@ -3,6 +3,7 @@
 #include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
 //	std::getline;
 #include <cassert> // for assert;
+#include "Math.h" // for ReadDecimal;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
@@ -31,42 +32,98 @@ namespace
 ReductionStatus
 DefaultEvaluateLeaf(TermNode& term, string_view id)
 {
-	assert(id.data());
-	if(!id.empty())
+	assert(bool(id.data()));
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(id.front())
 	{
-		const char f(id.front());
-
-		if(ystdex::isdigit(f))
-		{
-		    int ans(0);
-
-			for(auto p(id.begin()); p != id.end(); ++p)
-				if(ystdex::isdigit(*p))
+	case '#':
+		id.remove_prefix(1);
+		if(!id.empty())
+			switch(id.front())
+			{
+			case 't':
+				if(id.size() == 1 || id.substr(1) == "rue")
 				{
-					if(unsigned((ans << 3) + (ans << 1) + *p - '0')
-						<= unsigned(INT_MAX))
-						ans = (ans << 3) + (ans << 1) + *p - '0';
-					else
-						throw InvalidSyntax(ystdex::sfmt<std::string>(
-							"Value of identifier '%s' is out of the range of"
-							" the supported integer.", id.data()));
+					term.Value = true;
+					return ReductionStatus::Clean;
 				}
-				else
-					throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
-						" postfix is unsupported in identifier '%s'.",
-						id.data()));
-			term.Value = int(ans);
+				break;
+			case 'f':
+				if(id.size() == 1 || id.substr(1) == "alse")
+				{
+					term.Value = false;
+					return ReductionStatus::Clean;
+				}
+				break;
+			case 'i':
+				if(id.substr(1) == "nert")
+				{
+					term.Value = ValueToken::Unspecified;
+					return ReductionStatus::Clean;
+				}
+				else if(id.substr(1) == "gnore")
+				{
+					term.Value = ValueToken::Ignore;
+					return ReductionStatus::Clean;
+				}
+				break;
+			}
+	default:
+		break;
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		ReadDecimal(term.Value, id, id.begin());
+		return ReductionStatus::Clean;
+	case '-':
+		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
+			break;
+		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				term.Value = -std::numeric_limits<double>::infinity();
+				return ReductionStatus::Clean;
+			}
+			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				term.Value = -std::numeric_limits<double>::quiet_NaN();
+				return ReductionStatus::Clean;
+			}
 		}
-		else if(id == "#t")
-			term.Value = true;
-		else if(id == "#f")
-			term.Value = false;
-		else if(id == "#inert")
-			term.Value = ValueToken::Unspecified;
-		else if(id == "#ignore")
-			term.Value = ValueToken::Ignore;
+		if(id.size() > 1)
+			ReadDecimal(term.Value, id, std::next(id.begin()));
 		else
-			return ReductionStatus::Retrying;
+			term.Value = 0;
+		return ReductionStatus::Clean;
+	case '+':
+		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
+			break;
+		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				term.Value = std::numeric_limits<double>::infinity();
+				return ReductionStatus::Clean;
+			}
+			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				term.Value = std::numeric_limits<double>::quiet_NaN();
+				return ReductionStatus::Clean;
+			}
+		}
+		YB_ATTR_fallthrough;
+	case '0':
+		if(id.size() > 1)
+			ReadDecimal(term.Value, id, std::next(id.begin()));
+		else
+			term.Value = 0;
 		return ReductionStatus::Clean;
 	}
 	return ReductionStatus::Retrying;
