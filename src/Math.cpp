@@ -1078,6 +1078,40 @@ Abs(ResolvedArg<>&& x)
 	return res;
 }
 
+
+void
+ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
+{
+	assert(!id.empty() && "Invalid lexeme found.");
+	assert(first >= id.begin() && size_t(first - id.begin()) < id.size()
+		&& "Invalid first iterator found.");
+
+	while(YB_UNLIKELY(*first == '0'))
+		if(first + 1 != id.end())
+			++first;
+		else
+			break;
+
+	int ans(0);
+
+	for(auto p(first); p != id.end(); ++p)
+		if(ystdex::isdigit(*p))
+		{
+			if(unsigned((ans << 3) + (ans << 1) + *p - '0')
+				<= unsigned(INT_MAX))
+				ans = (ans << 3) + (ans << 1) + *p - '0';
+			else
+				throw InvalidSyntax(ystdex::sfmt<std::string>(
+					"Value of identifier '%s' is out of the range of"
+					" the supported integer.", id.data()));
+		}
+		else
+			throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
+				" postfix is unsupported in identifier '%s'.",
+				id.data()));
+	vo = id[0] != '-' ? ans : -ans;
+}
+
 } // inline namespace Math;
 
 } // namespace Unilang;
