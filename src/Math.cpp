@@ -1303,6 +1303,22 @@ ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
 	}
 }
 
+string
+FPToString(float x)
+{
+	return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.6g", double(x));
+}
+string
+FPToString(double x)
+{
+	return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.14g", x);
+}
+string
+FPToString(long double x)
+{
+	return sfmt<string>(FloatIsInteger(x) ? "%.1Lf" : "%.18Lg", x);
+}
+
 } // inline namespace Math;
 
 } // namespace Unilang;
