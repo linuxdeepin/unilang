@@ -5,7 +5,6 @@
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
-#include "Math.h" // for Number;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
@@ -56,7 +55,7 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 					throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
 						" postfix is unsupported in identifier '%s'.",
 						id.data()));
-			term.Value = Number(ans);
+			term.Value = int(ans);
 		}
 		else if(id == "#t")
 			term.Value = true;
@@ -153,7 +152,7 @@ StringifyValueObject(const ValueObject& vo)
 		return *p ? "#t" : "#f";
 	if(const auto p = vo.AccessPtr<int>())
 		return ystdex::sfmt<string>("%d", *p);
-	if(const auto p = vo.AccessPtr<Number>())
+	if(const auto p = vo.AccessPtr<int>())
 		// TODO: Support different internal representations.
 		return ystdex::sfmt<string>("%d", int(*p));
 	if(const auto p = vo.AccessPtr<ValueToken>())

@@ -15,7 +15,8 @@
 //	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
 //	ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
-#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold;
+#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
+//	form implementations;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
@@ -24,7 +25,7 @@
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
 //	YSLib::FetchEnvironmentVariable;
-#include "Math.h" // for Number;
+#include "Math.h" // for NumberLeaf, NumberNode and other math functions;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
 #include YFM_YSLib_Core_YShellDefinition // for std::to_string,
@@ -777,11 +778,11 @@ $defv! $import! (&e .&symbols) d
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterUnary<Strict, const Number&>(ctx, "itos", [](const Number& x){
+	RegisterUnary<Strict, const int&>(ctx, "itos", [](const int& x){
 		return string(YSLib::make_string_view(std::to_string(int(x))));
 	});
 	RegisterUnary<Strict, const string>(ctx, "stoi", [](const string& x){
-		return Number(std::stoi(YSLib::to_std_string(x)));
+		return int(std::stoi(YSLib::to_std_string(x)));
 	});
 	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
@@ -827,7 +828,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.85"
+#define APP_VER "0.8.86"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
