@@ -2107,10 +2107,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 库特性
 
-`if <test> <consequent> <alternate>`
+`if <test> <consequent> else <alternate>`
 `if <test> <consequent>`
 
-　　条件分支，功能同核心库的 `$if` 。
+　　条件分支，功能同核心库的 `$if` ，但表达式不能是符号 `else` ，否则引起错误。
 
 `while <test> <expression-sequence>`
 
