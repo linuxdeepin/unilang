@@ -3,7 +3,7 @@
 #include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
 //	std::getline;
 #include <cassert> // for assert;
-#include "Math.h" // for ReadDecimal;
+#include "Math.h" // for ReadDecimal, FPToString;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
@@ -216,7 +216,7 @@ StringifyValueObject(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned long long>())
 		return sfmt<string>("%llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
-		return sfmt<string>("%.14g", *p);
+		return FPToString(*p);
 	if(const auto p = vo.AccessPtr<long>())
 		return sfmt<string>("%ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
@@ -230,9 +230,9 @@ StringifyValueObject(const ValueObject& vo)
 	if(const auto p = vo.AccessPtr<unsigned char>())
 		return sfmt<string>("%u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
-		return sfmt<string>("%.6g", double(*p));
+		return FPToString(*p);
 	if(const auto p = vo.AccessPtr<long double>())
-		return sfmt<string>("%.18Lg", *p);
+		return FPToString(*p);
 	if(const auto p = vo.AccessPtr<int>())
 		return ystdex::sfmt<string>("%d", *p);
 	if(const auto p = vo.AccessPtr<ValueToken>())
