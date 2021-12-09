@@ -922,6 +922,12 @@ IsDecimalPoint(char c) noexcept
 	return c == '.';
 }
 
+YB_ATTR_nodiscard YB_STATELESS yconstfn
+bool IsExponent(char c) noexcept
+{
+	return c == 'e' || c == 'E';
+}
+
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type
 ScaleDecimalFlonum(char sign, _type ans, ptrdiff_t scale)
@@ -941,6 +947,43 @@ SetDecimalFlonum(ValueObject& vo, char e, char sign, ReadCommonType ans,
 		vo = ScaleDecimalFlonum(sign, double(ans), scale);
 		break;
 	}
+}
+
+YB_ATTR_nodiscard YB_PURE ptrdiff_t
+ReadDecimalExponent(string_view::const_iterator first, string_view id)
+{
+	bool minus = {};
+
+	switch(*first)
+	{
+	case '-':
+		minus = true;
+		YB_ATTR_fallthrough;
+	case '+':
+		++first;
+		YB_ATTR_fallthrough;
+	default:
+		break;
+	}
+	if(first != id.end())
+	{
+		ptrdiff_t res(0);
+
+		ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
+			if(ystdex::isdigit(*first))
+			{
+				if(DecimalAccumulate(res, *first))
+					return ++first != id.end();
+				res = std::numeric_limits<ptrdiff_t>::max();
+				return {};
+			}
+			throw InvalidSyntax(ystdex::sfmt("Invalid character '%c' found in"
+				" the exponent of '%s'.", *first, id.data()));
+		});
+		return minus ? -res : res;
+	}
+	throw
+		InvalidSyntax(ystdex::sfmt("Empty exponent found in '%s'.", id.data()));
 }
 
 void
@@ -972,6 +1015,15 @@ ReadDecimalInexact(ValueObject& vo, string_view::const_iterator first,
 			else
 				throw InvalidSyntax(ystdex::sfmt(
 					"More than one decimal points found in '%s'.", id.data()));
+		}
+		else if(IsExponent(*first))
+		{
+			e = *first;
+			scale = (cut == id.end() ? 0 : first - cut
+				- (dpos != id.end() && dpos > cut ? 1 : 0))
+				- (dpos == id.end() ? 0 : first - dpos - 1)
+				+ ReadDecimalExponent(first + 1, id);
+			return {};
 		}
 		else
 			ThrowForInvalidLiteralSuffix(&*first, id.data());
@@ -1007,6 +1059,12 @@ ReadDecimalExact(ValueObject& vo, string_view id,
 		{
 			ReadDecimalInexact(vo, first + 1, id, ReadCommonType(ans),
 				first);
+			return ReductionStatus::Clean;
+		}
+		if(IsExponent(*first))
+		{
+			SetDecimalFlonum(vo, *first, id[0], ReadCommonType(ans),
+				ReadDecimalExponent(first + 1, id));
 			return ReductionStatus::Clean;
 		}
 		ThrowForInvalidLiteralSuffix(&*first, id.data());
