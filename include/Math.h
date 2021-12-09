@@ -108,9 +108,6 @@ Divides(ResolvedArg<>&&, ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 Abs(ResolvedArg<>&&);
 
-
-using Number = int;
-
 } // inline namespace Math;
 
 template<>
