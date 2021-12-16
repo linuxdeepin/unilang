@@ -488,4 +488,91 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 		* 新增库函数 `putss` 和测试框架。
 	* 添加测试脚本 `test.txt`，添加测试用例。
 	* 修复语言规范中一些等价谓词的比较规则不够充分及相关的解释器实现中关于合并子的子对象引用的相等操作。
+* **V0.9**
+	* 修复实现问题（除非另行指定，自从 V0.8 ）：
+		* 修复库函数：
+			* `make-encapsulation-type` 构造的封装类型相等性（以 `eqv?` 比较）。
+			* `set-first%!` 调用失败
+			* `collapse` 的调用结果没有保留右值引用
+			* `first` 和 `first&` 的调用结果没有保留消亡值或左值列表的临时对象元素的右值引用
+			* 标准库模块 `std.promises` 中：
+				* `force` 对嵌套的 promise 对象调用失败及对右值不正确共享状态转移
+	* 新增支持特性：
+		* 新增标准库函数：
+			* `itos`
+			* `stoi`
+			* `assign!`
+			* 标准库模块 `std.io` 中：
+				* `write`
+			* `weaken-environment`
+			* `$wvau`
+			* `$wvau%`
+			* `$wvau/e`
+			* `$wvau/e%`
+			* `first@`
+			* 补充数值操作函数：
+				* `number?`
+				* `real?`
+				* `rational?`
+				* `integer?`
+				* `exact-integer?`
+				* `exact?`
+				* `inexact?`
+				* `finite?`
+				* `infinite?`
+				* `nan?`
+				* `zero?`
+				* `=?`
+				* `zero?`
+				* `positive?`
+				* `negative?`
+				* `odd?`
+				* `even?`
+				* `max`
+				* `min`
+				* `add1`
+				* `sub1`
+				* `/`
+				* `abs`
+		* 启动脚本默认库函数：
+			* `stoi-exact`
+			* `rmatch?`
+			* 依赖控制 API
+				* `version?`
+				* `string->version`
+				* `version->string`
+				* `version<?`
+				* `dependency?`
+				* `make-dependency`
+				* `name-of`
+				* `version-of`
+				* `check-of`
+				* `validate`
+				* `strings->dependency-contract`
+				* `dependency-set?`
+				* `make-dependency-set`
+				* `has-dependency?`
+			* 测试 API ：
+				* `moved?`
+				* `unit`
+				* `$expect-moved`
+		* 新增支持基本转义字符序列。
+		* 新增非符整数以外的数值字面量及对应的数值类型。
+	* 调整支持特性：
+		* 调整标准库函数：
+			* 标准库模块 `std.io` 中：
+				* `display` 不输出字符串字面量的引号（保持原行为使用 `write` ）。
+			* 修改算术操作为数值操作，支持不同的数值类型：
+				* 算术操作（包括算术计算和比较，下同）统一支持两个操作数，不再支持多个操作数。
+				* 算术操作支持不同的数值类型的内部表示。
+				* 移除函数：
+					* `add2`
+					* `multiply2`
+	* 测试脚本 `test.txt` 添加测试用例。
+	* 调整和优化解释器实现：
+		* 简化部分标准库实现。
+		* 增强命令行选项支持。
+			* 选项 `-e` 支持重复多次。
+			* 新增脚本模式，支持从命令行指定文件名或标准输入 `-` 。
+			* 新增显示命令行帮助的选项。
 
