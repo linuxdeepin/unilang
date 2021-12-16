@@ -311,3 +311,41 @@ $provide/let! (dependency-set? make-dependency-set has-dependency?)
 						(raise-error "has-dependency?: Syntax error.")))
 );
 
+"NOTE", "The following implements the new high-level language syntax planned",
+	" for V0.10";
+
+$defv%! if (&test &consequent .&opt) e $let*%
+(
+	(else-sym ($remote-eval string->symbol std.strings) "else")
+	(check-expr% $lambda% (&x) $if (eqv? x else-sym)
+		(raise-error "Syntax error: 'else' cannot be used as an expression.")
+		(forward! x))
+)
+$if (null? opt)
+(
+	$if (eval (check-expr% (forward! test)) e)
+		(eval% (check-expr% (forward! consequent)) e)
+		#inert
+)
+(
+	$let% (((&k .&opt2) forward! opt)) $if (eqv? k else-sym)
+	(
+		$if (null? opt2)
+		(raise-error
+			"Syntax error: expected an expression after 'else'.")
+		($let (((&alternative .&opt3) opt2)) $if (null? opt3)
+			(
+				check-expr% consequent,
+				check-expr% alternative;
+				eval% ($if (eval (check-expr% (forward! test)) e)
+					(forward! consequent) (forward! alternative)) e
+			)
+			(raise-error
+				(++ "Syntax error: more than 1 expressions"
+				" found after 'else'.")))
+	)
+	(raise-error
+		"Syntax error: expected 'else' after the consequent of 'if'.")
+);
+$def! while $while;
+
