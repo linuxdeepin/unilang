@@ -206,13 +206,13 @@ echo 'display "Hello world."; () newline' | ./unilang
 ### Qt Demo
 
 ```
-echo 'load "qt.txt"' | ./unilang
+./unilang demo/qt.txt
 ```
 
 ### Quicksort demo
 
 ```
-echo 'load "quicksort.txt"' | ./unilang
+./unilang demo/quicksort.txt
 ```
 
 ## 运行测试脚本
