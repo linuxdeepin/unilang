@@ -830,7 +830,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.96"
+#define APP_VER "0.8.97"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -852,6 +852,7 @@ main(int argc, char* argv[])
 		if(xargc > 1)
 		{
 			vector<string> args;
+			bool opt_trans(true);
 			bool requires_eval = {};
 			vector<string> eval_strs;
 
@@ -859,10 +860,18 @@ main(int argc, char* argv[])
 			{
 				string arg(xargv[i]);
 
-				if(arg == "-e")
+				if(opt_trans)
 				{
-					requires_eval = true;
-					continue;
+					if(YB_UNLIKELY(arg == "--"))
+					{
+						opt_trans = {};
+						continue;
+					}
+					else if(arg == "-e")
+					{
+						requires_eval = true;
+						continue;
+					}
 				}
 				if(requires_eval)
 				{
