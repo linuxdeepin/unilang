@@ -101,6 +101,15 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　派生实现可定义其它的作用。
 
+　　为约束作用的顺序，两个作用 A 和 B 之间可能具有以下二元关系：
+
+* *先序(sequenced before)* 关系是两个作用之间存在的一种*偏序关系(partial order)* 
+* *后序(sequenced after)* 是先序的逆关系。
+* *非决定性有序(indeterminately sequenced)* 是先序或后序的并集。
+* *无序(unsequenced)* 是非决定性有序在作用之间的顺序二元关系全集上的补集。
+
+　　除非另行指定，任意两个作用之间是无序的。
+
 　　除非另行指定，副作用构成实现接受程序时具有的*可观察(observable) 行为*。
 
 # 符合性(Conformance)
@@ -146,22 +155,54 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 # 词法规则(Lexical Rules)
 
-　　Unilang 基础语言以空白符作为翻译单元中*词素(lexeme)* 的间隔。识别词素后，每个词素按照构成字符的不同，被分为不同的*记号(token)* 类别。
+　　*分隔符(delimiter)* 是标记代码片段中特定位置的特定字符序列，是*词素(lexeme)* 的间隔。识别词素后，每个词素按照构成字符的不同，被分为不同的*记号(token)* 类别。
 
 　　记号类别包含*标点(punctuator)* 、*字面量(literal)* 和*标识符(identifier)* 。
 
-　　基础语言识别的标点包括 `(` 和 `)` 。
+　　代码中邻接的分隔符和非分隔符的字符序列不构成一个词素。分隔符包括不在记号中包含的空白符(whitespace) 构成的字符序列以及标点。字面量以外的记号不包含空白符。
+
+　　超过一个字符的标点可能在匹配字符序列确定是否构成词素时具有词法歧义。此时，应指定消歧义规则确保存在唯一可接受的匹配方式，或引起词法错误终止翻译。
+
+**注释** 当前设计中没有这样的标点。
+
+　　基础语言识别的标点包括语法规则要求的标点 `(` 和 `)` ，以及中缀变换的标点。详见以下相关章节。
 
 　　字面量包括：
 
-* 以 `"` 作为词素起始和结尾的*字符串字面量(string literal)* 。
-* 以 0~9 组成的十进制整数数值字面量。
-* `#t` 和 `#f` 表示逻辑真和逻辑假。
-* `#inert` 指定特定操作中表示被忽略的结果。
+* 以特定的字符作为词素起始和结尾，中间包含决定字符序列作为内容的*字符串字面量(string literal)* ：
+	* 以 `"` 作为词素起始和结尾的*数据字面量(data literal)* 。
+	* 以 `'` 作为词素起始和结尾的*代码字面量(code literal)* 。
+* 包含数字字符的*数值字面量(numerical literal)* ：
+	* 词素匹配正则表达式 `(+|-)?[0-9]+` ：十进制整数数值。
+	* 词素匹配正则表达式 `(+|-)?[0-9]+\.[0-9]*` 或 `(+|-)?[0-9]+(\.[0-9]*)?(E|e)(+|-)?[0-9]+` ：十进制小数数值。
+	* 两种形式分别是直接记法和科学记数法(scientific notation) 。
+		* 科学记数法中，指数字母 `e` 或 `E` 含义一致；前后的数字序列分别是有效数字(significand) 和指数(exponent) 。
+	* 词素匹配正则表达式 `(+|-)(inf|nan).(0|f|t)` ：特殊值。
+* 以 `#` 起始的字面量：
+	* `#t` 和 `#f` 表示逻辑真和逻辑假。
+	* `#inert` 指定特定操作中表示被忽略的结果。
+	* `#ignore` 指定特定操作中代替标识符作为被忽略匹配的占位符。
+
+**注释** 字面量的语义参见以下关于求值算法的描述。
+
+　　特定的记号中的字符序列是*转义(escape)* 字符序列。确定词素时，转义字符序列首先被替换为被转义的字符。以下转义字符序列被基础语言直接支持：
+
+* `\'` ：转义 `\` 。
+* `\"` ：转义 `"` 。
+* `\\` ：转义 `\\` 。
+* `\a` ：转义响铃符 BEL 。
+* `\b` ：转义退格符 BS 。
+* `\f` ：转义换页符 FF 。
+* `\n` ：转义换行符 NL(LF) 。
+* `\r` ：转义回车符 CR 。
+* `\t` ：转义水平制表符 HT 。
+* `\v` ：转义垂直制表符 VT 。
+
+**注释** 这些转义字符序列同 [ISO C++] 支持的转义字符的含义。和 [ISO C++] 不同，不匹配转义字符序列的其它字符序列不被替换；单独的 `\` 不引起诊断。
 
 　　派生实现可在此之外定义其它记号类型和扩展的标点，后者应符合 C++ ([ISO C++]) 的定义。
 
-　　派生实现也可定义*预处理(preprocessing)* 过程翻译其它表示为包含 Unilang 基础语言接受的词法形式的翻译单元。
+　　派生实现也可定义*预处理(preprocessing)* 过程翻译其它表示为包含 Unilang 基础语言接受的词法形式的翻译单元，以支持不同的词法和语法规则。
 
 # 语法
 
@@ -195,11 +236,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 中缀变换
 
-　　中缀变换替换形如 <expression> (<infix> <expression>)* 的记号序列为 <transformed-infix> <expression>+ 形式的记号序列。
+　　中缀变换替换形如 `<expression> (<infix> <expression>)*` 的记号序列为 `<transformed-infix> <expression>+` 形式的记号序列。
 
-　　其中，基础语言支持的中缀记号 <infix> 是 `;` 或 `,` ，而 <transformed-infix> 是语法不可见的中缀变换函数。
+　　其中，基础语言支持的中缀记号 `<infix>` 是 `;` 或 `,` ，而 `<transformed-infix>` 是语法不可见的中缀变换函数。
 
-　　变换的不同 <expression> 的实例以相同的词法顺序在变换后的结果中被保存。
+　　变换的不同 `<expression>` 的实例以相同的词法顺序在变换后的结果中被保存。
 
 　　变换后的结果符合以上的基本语法规则。
 
@@ -318,6 +359,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * 列表表达式中若不含有子表达式，则这个表达式是空列表；否则，是非空列表。
 
 　　空列表和非空列表统称列表，其中包含的子对象是列表的元素。未求值的非空列表中，子表达式是列表的元素。
+
+　　列表是 Unilang 的最基本数据结构之一，同时也可存在于求值后的值中。
 
 　　Unilang 的列表是*真列表(proper list)* ：列表的元素有限，同一个列表的不同元素之间不具有相互的所有权，生存期不相交。
 
@@ -525,7 +568,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　一个存在求值结构的合并子被调用、所有的参数都匹配成功且参数传递成功后，（参数传递确定的）形式参数的值替换求值结构中的副本中和形式参数树的子表达式相同的符号。
 
-　　合并子的*正常(normal)* 调用总是可确定一个计算结果，作为求值的结果。除非另行指定，若求值结果为引用值，则*提升(lift)* 为被引用对象的值。这避免返回*悬空引用(danling reference)* 。
+　　合并子的*正常(normal)* 调用总是可确定一个计算结果，作为求值的结果。除非另行指定，若求值结果是引用值，则*提升(lift)* 为被引用对象的值。这避免返回*悬空引用(danling reference)* 。
 
 　　合并子的*非正常(abnormal)* 调用不确保调用结果。
 
@@ -541,12 +584,22 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　以被求值的表达式和所在的环境作为参数，基础语言使用以下统一的求值算法：
 
-1. *自求值(self-evaluation)* ：若被求值的表达式不是符号或不是非空列表，则求值结果为自身。
-2. 名称解析：若被求值的表达式是一个符号，则这个符号被视为*变量名(variable name)* ，求值结果为该符号在上下文（当前环境确定的词法作用域）中变量绑定确定的对象的经引用折叠的引用值。
+1. *自求值(self-evaluation)* ：若被求值的表达式不是符号或不是非空列表，则求值结果是自身。
+2. 名称解析：若被求值的表达式是一个符号，则这个符号被视为*变量名(variable name)* ，求值结果是该符号在上下文（当前环境确定的词法作用域）中变量绑定确定的对象的经引用折叠的引用值。
 3. 否则，被求值的表达式是一个非空列表，则：
-	1. 若第一个子表达式是空表（这里不需要是字面上的语法表示 `()` ），则移除；
+	1. 若第一个子表达式是空列表，则移除；
 	2. 对第一个子表达式求值；
 	3. 把第一个子表达式求值的结果作为*操作符(operator)* ，以其余子表达式作为操作数，求值*合并(combination)* 。
+
+	被求值时，标识符的值是构成标识符的符号。代码字面量的值是去除其边界的 `'` 的标识符构成的符号。数值字面量求值为*数值(numerical value)* 。
+	
+**注释** 被支持的数值的范围详见以下标准库数值操作中关于数值类型的相关描述。
+
+**注释** 代码字面量可表达直接作为标识符时不能作为符号的词素的转义，例如 `''` 是一个空的符号；而 `'#ignore'` 和 `42` 这样的形式允许其中的表达作为变量名，而不是字面量。
+
+	非空列表和代码字面量以外的对象作为表达式，都是自求值表达式。
+
+**注释** 空列表是值，而不一定需要是字面上的语法表示 `()` 。除源代码中的 `()` 的情形外，可能通过组合成带有空列表的表达式，使空列表在此被求值。
 
 　　求值算法使用的环境是求值的*当前环境(current environment)* 。
 　　
@@ -555,6 +608,20 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　被求值的表达式的求值使用中缀变换和求值算法处理，实现求值。
 
 **注释** 关于支持的中缀变换，详见以下相关小节。
+
+　　一般地，求值蕴含值的计算和副作用。除非另行指定，子表达式的值的计算先序所在表达式的值的计算。
+
+**注释** 求值合并中的子表达式可能不被求值。
+
+　　此外，抽象机上（可能作为副作用和求值交互而影响可观察行为的）以下依赖关系：
+
+* 一个对象存储的值依赖这个对象上的写操作。
+* 访问一个对象取得值的读操作依赖这个对象存储的值。
+* 派生实现定义的其它依赖。
+
+　　为推理在求值时使用的值，以上依赖关系可被替换为后序关系。
+
+**原理** 以上所有可推导出顺序的规则遵循*因果性(causality)* 。其它依赖可包括并发环境中的同步操作指定的依赖。当前实现不对此附加要求。
 
 ### 中缀变换
 
@@ -567,11 +634,13 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ### 函数
 
-　　成功调用合并子的表达式是*函数合并(function combination)* 表达式。在最终调用合并子的操作符位置的求值为合并子左值或右值的非列表表达式是*函数(function)* 。
+　　第一个表达式成功求值为操作子的列表表达式是*函数合并(function combination)* 表达式。在最终调用合并子的操作符位置的求值为合并子左值或右值的非列表表达式是*函数(function)* 。
 
 　　函数是合并子右值、合并子左值（引用值）或求值为这些值的符号。
 
 　　一般地，函数合并的求值结果替换函数合并表达式，这种替换是*函数调用(function call)* 。合并子调用的结果是函数调用的结果，称为*函数值(function value)* 。替换函数使操作数被求值的函数调用是*函数应用(function application)* 。
+
+　　求值蕴含函数调用和函数应用的函数合并表达式分别是函数应用表达式和函数调用表达式，在不引起歧义时也简称函数应用和函数调用。
 
 　　函数调用时，*主调函数(caller function)* 等*调用者(caller)* 或其它引起调用的计算的实体转移程序的控制到被调用的函数，使之*进入(enter)* 函数。控制可能通过调用被再次转移，即*嵌套调用(nested call)* 。一些被调用的过程可能被多次进入，即*重入(reenter)* 。
 
@@ -630,6 +699,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * 对列表，输出的表示是以 `(` 和 `)` 作为边界，元素以单个 ` ` 为分隔符的序列，其中的元素被递归地嵌套输出。
 * 对非列表的存在对应字面量的值，输出这个值的字面量形式。
 * 对引用值，输出被引用对象。
+* 数值的外部表示由数值操作模块的规则约定。
 * 其它值的外部表示未指定。
 
 # 语言和程序接口约定
@@ -660,7 +730,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 * `<symbol>` ：符号。
 * `<symbols>` ：元素为 `<symbol>` 的列表，形式为 `(<symbol>...)` 。
-* `<eformal>` ：表示可选提供的环境名称或 `#ignore` 的符号。使用和 `<symbol>` 相同的表示。通常为动态环境。
+* `<eformal>` ：表示可选提供的环境名称的 `<symbol>` 或 `#ignore` 。
+	* 使用和 `<symbol>` 相同的表示。
+	* **注释** 通常为动态环境。
 * `<expression>` ：待求值的表达式。
 * `<expressions>` ：形式为 `<expression>...` 的待求值形式。
 	* 求值时被作为单一表达式，代替 `<expression>` 可避免语法中要求谁过多的括号及 `eval` 等求值形式中显式构造列表的需要。
@@ -682,15 +754,17 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<reference>` ：对象引用值。
 * `<list>` ：列表。
 * `<lists>` ：元素都是列表的列表。
-* `<bool>` ：布尔值，值为 `#t` 或 `#f` 的集合。
-* `<test>` ：类似 `<object>` ，通常预期为 `<bool>` ，作为条件。当值非 `#f` 时条件成立。 
-	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果为 `#inert` 。
+* `<boolean>` ：布尔值，值为 `#t` 或 `#f` 的集合。
+* `<test>` ：类似 `<object>` ，通常预期为 `<boolean>` ，作为条件。当值非 `#f` 时条件成立。 
+	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果是 `#inert` 。
 * `<combiner>` ：合并子。
 * `<applicative>` ：应用子。
 * `<predicate>` ：谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
 * `<environment>` 一等环境。
 * `<string>` ：字符串。
-	* 字符串是包括字符串字面量求值的结果类型，能以 [ISO C++] 兼容的方式表示。除非另行指定，使用 ISO/IEC 10646 定义的 UCS 的 UTF-8 编码，其值不包含空字符（编码数值为 0 的 UCS 代码点）。
+	* 字符串是包括数据字面量作为表示的值的类型。
+	* 字符串的内部表示在具体实现中保持一致。除非另行指定，使用 ISO/IEC 10646 定义的 UCS 的 UTF-8 编码，其值不包含空字符（编码数值为 0 的 UCS 代码点）。
+	* **注释** 为互操作的兼容性，一般建议实现使用兼容 [ISO C++] 中定义的 NTBS(null-terminated byte string) 的方式表达。
 * `<parent>` ：指定环境的父环境的值，包括 `<environment>` 或元素为 `<environment>` 的 `<list>` 。
 
 　　操作数在操作的描述中作为约束。
@@ -803,6 +877,22 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　以下各节的约定对标准库函数有效，用户程序不被要求。
 
+## 操作类型约定
+
+　　*谓词(predicate)* 是返回类型为 `<boolean>` 的函数。
+
+　　除非另行指定，以下引入的谓词调用时没有副作用。
+
+　　标准库约定以下典型的谓词：
+
+* *类型谓词(type predicate)* ：接受一个 `<object>` 参数，判断参数是特定的类型的对象。
+	* 调用这些类型谓词不引起错误。
+	* 仅当参数指定的对象具有对应类型时结果是 `#t` 。
+	* 除非另行指定，这些类型谓词忽略值类别的差异。
+* *等价谓词(equivalence predicate)* ：接受两个参数，判断参数是否属于同一个等价类。
+
+**注释** 返回的 `<boolean>` 值可在要求 `<test>` 的上下文中使用。
+
 ## 操作名称约定
 
 　　对应合并子是操作子的函数以 `$` 起始。
@@ -853,7 +943,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 操作结果约定
 
-　　若以下关于操作的描述中未指定调用的求值结果，则结果为右值 `#inert` 。
+　　若以下关于操作的描述中未指定调用的求值结果，则结果是右值 `#inert` 。
 
 　　除非另行指定，没有明确在操作结果中保留引用值的其它一些操作的结果进行返回值转换：一次引用值提升转换和可选的临时对象实质化转换的复合。
 
@@ -880,7 +970,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　标准库的对象在基础环境中直接提供绑定。
 
-　　标准库提供对象 `ignore` ，其值为符号 `#ignore` ，在特定操作中表示被忽略的值。
+　　标准库提供对象 `ignore` ，其值为 `#ignore` ，在特定操作中表示被忽略的值。
 
 ## 标准库基本操作
 
@@ -888,18 +978,18 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `eq? <object1> <object2>`
 
-　　判断引用相等关系。当且仅当对象同一时引用相等，结果为 `#t` ，否则为 `#f` 。
+　　判断引用相等关系。当且仅当对象同一时引用相等，结果是 `#t` ，否则为 `#f` 。
 
 `eqv? <object1> <object2>`
 
-　　判断非列表的值相等关系。当且对象转换的右值相等时，结果为 `#t` ，否则为 `#f` 。
+　　判断非列表的值相等关系。当且对象转换的右值相等时，结果是 `#t` ，否则为 `#f` 。
 
 　　`eqv?` 确定的相等关系的比较结果应满足：
 
 * 当参数都具有枝节点表示（参见 `branch?` ）时，同 `eq?` 的比较结果。
-* 若这两个参数的内部表示相同，则结果为 `#t` 。
-* 若两个参数的 `eqv?` 比较结果为 `#f` ，则这两个参数以 `eq?` 比较结果总是 `#f` 。
-* 不等价的函数的 `eqv?` 比较结果为 `#f` 。
+* 若这两个参数的内部表示相同，则结果是 `#t` 。
+* 若两个参数的 `eqv?` 比较结果是 `#f` ，则这两个参数以 `eq?` 比较结果总是 `#f` 。
+* 不等价的函数的 `eqv?` 比较结果是 `#f` 。
 	* 这里的等价关系定义为：仅当一个函数或其作为子表达式的任意表达式和对应把这个函数替换为另一个函数的表达式的求值的可观察行为总是相同，则两个函数等价。
 
 `$if <test> <consequent> <alternate>`
@@ -972,7 +1062,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　移除符号中的引用标记字符 `&` 或 `%` 。
 
-　　判断符号非空且以 `&` 或 `%` 起始，结果为移除起始字符的参数。否则，结果为参数。
+　　判断符号非空且以 `&` 或 `%` 起始，结果是移除起始字符的参数。否则，结果是参数。
 
 　　不处理引用标记字符 `@` 。
 
@@ -1006,7 +1096,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　锁定环境：创建环境强引用。
 
-　　检查操作数的环境弱引用，结果为对应的环境强引用。
+　　检查操作数的环境弱引用，结果是对应的环境强引用。
 
 **注释** 强引用可能引起环境之间的不被检查的[循环引用](#引用值和初始化)，用户应自行避免未定义行为。
 
@@ -1015,6 +1105,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　创建以参数为父环境的环境。
 
 　　创建的环境是强引用。
+
+`weaken-environment <environment>`
+
+　　使用环境强引用创建环境弱引用。
+
+　　检查参数类型是环境强引用，若失败则引起类型错误。
 
 `$def! <definiend> <expressions>`
 
@@ -1038,7 +1134,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　`<formals>` 被用于在合并子调用时匹配操作数树，参数匹配算法如下：
 
-* 初始化 <formals> 为当前形式参数，函数合并（包括作为合并子的第一个子项和作为操作数的之后余下的子项）作为当前操作数。
+* 初始化 `<formals>` 为当前形式参数，函数合并（包括作为合并子的第一个子项和作为操作数的之后余下的子项）作为当前操作数。
 * 对每一对当前形式参数和当前操作数，比较两者（除非另行指定，操作数的值是引用值的，视为匹配被引用对象，下同）：
 	* 若两者都是列表，则：
 		* 若形式参数列表元素的末尾元素不是符号也不是列表，则参数匹配失败。
@@ -1064,7 +1160,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * 存在标记字符 `@` 时，绑定以实际参数作为被引用对象的引用值，不论操作数的类型和值类别。
 	* 初始化引用值时，没有引用折叠。
 
-　　创建绑定时形式参数对应的变量被操作数初始化。形式参数中具有的前缀影响被绑定的变量的初始化方式。每个绑定符合以下规则。
+　　创建绑定时形式参数对应的变量在对应的符号的绑定匹配之后被操作数初始化。形式参数中具有的前缀影响被绑定的变量的初始化方式。每个绑定符合以下规则。
 
 * 若不存在绑定标记字符 `@` ，则：
 	* 若操作数为可转移的对象的引用值，则被绑定对象是按以下规则初始化的蕴含隐含的引用折叠的引用值：
@@ -1143,9 +1239,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建封装类型。
 
-　　结果是三个合并子组成的列表，其元素分别表示用于构造封装类型对象的封装(encapsulate) 构造器、判断封装类型的谓词和用于解封装(decapsulate) 的访问器。
+　　结果是三个合并子组成的列表，其元素分别表示用于构造封装类型对象的*封装(encapsulate)* 构造器、判断封装类型的谓词和用于*解封装(decapsulate)* 的访问器。
 
 　　封装构造器保留参数中的引用值。
+
+　　解封装访问器转发参数。
 
 　　创建的封装类型的相等性（以 `eqv?` 判断）同被封装的对象。
 
@@ -1177,13 +1275,13 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `id <object>`
 
-　　结果为不隐含左值到右值转换的参数，在结果保留引用值。
+　　结果是不隐含左值到右值转换的参数，在结果保留引用值。
 
 　　其作用等价返回值转换，可能引起对象转移。
 
 `idv <object>`
 
-　　同 `id` ，但结果为返回值转换后的值。
+　　同 `id` ，但结果是返回值转换后的值。
 
 **注释** 使用 `idv` 可指定在返回值中保留引用值的不安全操作的个别操作数不再保留引用值。
 
@@ -1221,13 +1319,33 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　在当前环境求值 `<environment>` 和 `<expressions>` ，再以后者的求值结果修改前者的求值结果指定的环境中的绑定。绑定效果同使用 $def! 。
 
+`$wvau <formals> <eformal> <body>`
+
+　　创建包装的 vau 抽象。
+
+　　同 `$vau` ，但创建的是调用时对操作数的元素求值一次的应用子。
+
+　　参数的作用同 `$vau` 的对应参数。
+
+`$wvau% <formals> <eformal> <body>`
+
+　　同 `$wvau` ，但允许函数体求值返回引用值。
+
+`$wvau/e <parent> <formals> <eformal> <body>`
+
+　　同 `$wvau` ，但支持显式指定求值环境参数作为静态环境。
+
+`$wvau/e% <parent> <formals> <eformal> <body>`
+
+　　同 `$wvau/e` ，但保留引用值。
+
 `$lambda <formals> <body>`
 
 　　创建 λ 抽象 。
 
-　　和创建 vau 抽象类似，但创建的是调用时对操作数的元素求值一次的应用子，且忽略动态环境。
+　　同 `$vau` ，但创建的是调用时对操作数的元素求值一次的应用子，且忽略动态环境。
 
-　　表达式项的用法和 vau 抽象类似。
+　　参数的作用同 `$vau` 的对应参数。
 
 `$lambda% <formals> <body>`
 
@@ -1237,7 +1355,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建指定静态环境的 lambda 抽象。
 
-　　类似 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
+　　同 `$lambda` ，但支持显式指定的求值环境为静态环境。指定静态环境的参数含义同 `$vau/e` 。
 
 `$lambda/e% <parent> <formals> <body>`
 
@@ -1256,6 +1374,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 `assign%! <reference> <object>`
 
 　　同 `assign@!` ，但 `<object>` 是引用值时赋值的源操作数是 `<object>` 折叠后的值。
+
+`assign! <reference> <object>`
+
+　　同 `assign%!` ，但 `<object>` 隐含左值到右值转换。
+
+**注释** 因为左值到右值转换，即便 `<object>` 指定的值来自 `<reference>` ，也可赋值而不因此引起未定义行为。
 
 `apply <applicative> <object> <environment>`
 
@@ -1291,17 +1415,30 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　绑定 vau 抽象，等价 `$def! <variable> $vau% <formals> <eformal> <body>` 。
 
+`$defv/e! <variable> <parent> <formals> <eformal> <body>`
+
+　　绑定指定静态环境的 vau 抽象，等价 `$def! <variable> $vau/e <parent> <formals> <eformal> <body>` 。
+
 `$defv/e%! <variable> <parent> <formals> <eformal> <body>`
 
 　　绑定指定静态环境的 vau 抽象，等价 `$def! <variable> $vau/e% <parent> <formals> <eformal> <body>` 。
 
 `$defw! <variable> <formals> <eformal> <body>`
 
-　　绑定 `wrap` 的 vau 抽象，等价 `$def! <variable> wrap ($vau <formals> <eformal> <body>)` 。
+　　绑定包装的 vau 抽象，等价 `$def! <variable> $wvau <formals> <eformal> <body>` 。
 
 `$defw%! <variable> <formals> <eformal> <body>`
 
-　　绑定 `wrap` 的 `vau` 抽象，等价 `$def! <variable> wrap ($vau% <formals> <eformal> <body>)` 。
+　　绑定包装的 `vau` 抽象，等价 `$def! <variable> $wvau% <formals> <eformal> <body>` 。
+
+`$defw/e! <variable> <parent> <formals> <eformal> <body>`
+
+　　绑定包装的指定静态环境的 vau 抽象，等价 `$def! <variable> $wvau/e <parent> <formals> <eformal> <body>` 。
+
+`$defw/e%! <variable> <parent> <formals> <eformal> <body>`
+
+　　绑定包装的指定静态环境的 vau 抽象，等价 `$def! <variable> $wvau/e% <parent> <formals> <eformal> <body>` 。
+
 
 `$defl! <variable> <formals> <body>`
 
@@ -1337,6 +1474,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　当 `<list>` 是左值时结果是折叠的引用值，否则结果是返回值转换后的值。
 
+`first@ <list>`
+
+　　同 first ，但结果总是未折叠的引用值。
+
 `first% <list>`
 
 　　同 `first` ，但结果总是转发的值。
@@ -1348,6 +1489,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　同 `first` ，但结果总是折叠的引用值。
 
 　　首先调用 `check-list-reference` 检查参数是列表引用，对右值抛出异常。
+
+`firstv <list>`
+
+　　同 `first` ，但结果总是返回值转换后的值。
 
 `rest <list>`
 
@@ -1383,7 +1528,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　条件选择。
 
-　　顺序求值 `<clause>` 中每个子项的 `<test>` ，以 `<test>` 求值结果作为条件，当条件成立时求值再求值对应的 `<body>` ，结果为求值 `<body>` 的结果。
+　　顺序求值 `<clause>` 中每个子项的 `<test>` ，以 `<test>` 求值结果作为条件，当条件成立时求值再求值对应的 `<body>` ，结果是求值 `<body>` 的结果。
 
 `$when <test> <expression-sequence>`
 
@@ -1413,19 +1558,19 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　逻辑非。
 
-　　若参数非 `#f` 时结果为 `#f` ，否则结果为 `#t` 。
+　　若参数非 `#f` 时结果是 `#f` ，否则结果是 `#t` 。
 
 `$and? <test>...`
 
 　　逻辑与。
 
-　　顺序短路求值。操作数为空时结果为 `#t` ；参数求值存在 `#f` 时结果为 `#f` ；否则结果为最后一个参数的值。
+　　顺序短路求值。操作数为空时结果是 `#t` ；参数求值存在 `#f` 时结果是 `#f` ；否则结果是最后一个参数的值。
 
 `$or? <test>...`
 
 　　逻辑或。
 
-　　顺序短路求值。操作数为空时结果为 `#f` ，参数求值存在不是 `#f` 的值时结果为第一个这样的值；否则结果为 `#t` 。
+　　顺序短路求值。操作数为空时结果是 `#f` ，参数求值存在不是 `#f` 的值时结果是第一个这样的值；否则结果是 `#t` 。
 
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
@@ -1433,7 +1578,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　对 `<object1>` 指定的抽象列表进行处理，取得部分和。
 
-　　当谓词 `<predicate>` 成立时结果为参数指定的对象，否则继续处理抽象列表中余下的元素。
+　　当谓词 `<predicate>` 成立时结果是参数指定的对象，否则继续处理抽象列表中余下的元素。
 
 　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
 
@@ -1458,7 +1603,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `map1 <applicative> <list>`
 
-　　单列表映射操作，使用指定应用子对列表中每个参数进行调用，结果为调用结果的列表。
+　　单列表映射操作，使用指定应用子对列表中每个参数进行调用，结果是调用结果的列表。
 
 　　参数 `<applicative>` 应接受一个参数，否则引起错误。
 
@@ -1575,6 +1720,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 代理求值
 
+　　代理求值操作加载为基础环境下的 `std.promises` 环境。
+
 　　代理求值可支持以下求值得到的操作数：
 
 * `<promise>` 求值代理：表示可被求值取得结果的对象。
@@ -1582,11 +1729,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 **注释** 在 `<promise>` 上的并发访问并不具有特别的同步保证和要求。
 
-**原理** 代理求值的原语可实现[惰性求值](https://en.wikipedia.org/wiki/Lazy_evaluation)和透明的[记忆化](https://en.wikipedia.org/wiki/Memoization)求值。和一些流行的误解不同，尽管[原始设计](https://en.wikipedia.org/wiki/Futures_and_promises)是关于并行处理的，这不必然蕴含并发的[投机执行](https://en.wikipedia.org/wiki/Speculative_execution)，只是因为*解析(resolve)* 内部状态并不在用户程序中可见，而蕴含必要的最小同步。由于当前语言不支持并发访问，即使是对 `<promise>` 的修改操作导致变化，在语言中其状态也不可见，没有要求支持这种同步；未来可能会附加要求以提供更完善的并发支持。关于 API 的设计，参见 [RnRK] 9 和 [SRFI-45](https://srfi.schemers.org/srfi-45/) 。
-	
 `promise? <object>`
 
-　　判断参数是否为 <promise> 类型的值。
+　　判断参数是否为 `<promise>` 类型的值。
 
 `memoize <object>`
 
@@ -1618,6 +1763,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 **注释** 通过 `force` 引起 `<promise>` 对象的求值可能蕴含修改这个对象而使其中的状态失效的操作（如通过 `assign!` ）。因此，实现中需要重新访问状态，而重新进行类型检查。
 
+**原理** 代理求值的原语可实现[惰性求值](https://en.wikipedia.org/wiki/Lazy_evaluation)和透明的[记忆化](https://en.wikipedia.org/wiki/Memoization)求值。和一些流行的误解不同，尽管这些原语的[原始设计](https://en.wikipedia.org/wiki/Futures_and_promises)是关于并行处理的，这不必然蕴含并发的[投机执行](https://en.wikipedia.org/wiki/Speculative_execution)，只是因为*解析(resolve)* 内部状态并不在用户程序中可见，而蕴含必要的最小同步。由于当前语言不支持并发访问，即使是对 `<promise>` 的修改操作导致改变对象蕴含的状态，在语言中其状态也不可见，没有要求支持这种同步；未来可能会附加要求以提供更完善的并发支持。关于 API 的设计，参见 [RnRK] 第 9 章和 [SRFI-45](https://srfi.schemers.org/srfi-45/) 。
+	
 ## 字符串操作
 
 　　字符串操作加载为基础环境下的 `std.string` 环境。
@@ -1682,16 +1829,129 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　结果是替换后的字符串。
 
-## 算术操作
+## 数值操作
 
-　　算术操作在基础环境中直接提供绑定。
+　　数值操作在基础环境中直接提供绑定。
 
-　　算术操作可支持以下求值得到的操作数：
+　　数值操作可支持以下求值得到的操作数：
 
-* `<int>` 整数类型。
-* `<number>` 数值类型。当前是 `<int>` 类型。
+* `<number>` ：数值。
+* `<real>` ：实数。
+* `<rational>` ：有理数。
+* `<integer>` ：整数。
+* `<int>` 内部实现使用的整数类型。
+	* **注释** `<int>` 对应 C++ 的 `int` 类型。主要用于互操作。
 
-**注释** `<int>` 对应 C++ 的 `int` 类型。未来可能添加和改变不同数值类型的支持。
+　　以上类型不都互斥，即一个数值可以同时具有以上的不同的类型。数值之间的子类型关系由数学定义蕴含，即以上类型中，后者依次是前者的子类型。
+
+	当前所有 `<number>` 都是 `<real>` 。
+
+**注释** 按具体操作的逻辑，仍然区分 `<number>` 和 `<real>` 的操作数。未来可能添加新的数值类型，或改变内部实现使用的不同数值类型的支持。
+
+　　Unilang 数值建模数学意义上的数，后者是前者的*真值(true value)* 。此外，和数学意义上的数值不同，`<real>` 也包含以下可带符号的特殊值：
+
+* 无限大值。
+* NaN(not a number) 值。
+
+**注释** 无限大值在数学意义上是超实数(hyperreal number) ，也作为扩展实数(extended real number) 的值；NaN 不是数学意义上的数，表示特定的没有数学定义的计算结果。
+
+　　根据是否具有数学上可严格定义相等性的确切表示（精确性(exactness) ），数值分为*精确数(exact number)* 和*不精确数(inexact number)* 。
+
+　　精确数和对应的真值总是相等；不精确数和真值不严格相等。
+
+　　有限的不精确数的偏离程度可通过实数描述，即（绝对）*误差(error)* 。精确数的误差恒等于 0 。数值的绝对*精度(precision)* 是其内部表示蕴含的误差的上界的倒数。对确定使用进位制的表示，精度也指精确表示的数值位数，即数量级精度。数值的内部表示中能以实数描述的度量应至少具有整数数量级精度，即误差不大于 1 。
+
+**注释** 整数精度外的数量级精度仅在确定使用进位制的底数时和绝对精度可比较。但是，不比较具体大小时，有限的数量级精度和绝对精度性质可以一致，这种上下文可不区分两者。
+
+　　精确数和不精确数在数值上可能相等，而类型不同。
+
+**注释** 这影响一般的等价谓词的结果，如 `eqv?` 。比较数值相等，一般应使用本节的操作 `=?`。
+
+　　不精确数的零值有不同的符号，不是相同的数值，但在数值上相等。
+
+　　数值字面量是数值的外部表示。以外部表示求值的数值具有如下性质：
+
+* 起始的 `+` 和 `-` 指定符号。若符合规则的数值字面量没有指定符号，则隐含为 `+` 。
+	* **注释** 不精确数可能在内部表示支持不同符号的零值。
+* 除非绝对值大于可表示的范围，十进制整数数值具有 `<integer>` 类型，是精确数；否则，十进制整数具有 `<real>` 类型，是不精确数。
+* 十进制小数数值和特殊值具有 `<real>` 类型，是不精确数。
+	* 若字面量指定的数值小于或大于使用的类型的数值表示范围，则值为对应类型具有相同符号的零值或无限大值。
+	* 不精确数数值字面量的解析使用未指定的浮点数舍入模式，其误差不大于最后一个在规格化范围内表示的十进制小数位为 1 时的绝对值的真值大小（以任意可能符合宿主语言要求的舍入模式下的最大值计）。
+	* 科学记数法外部表示中，有效数字和指数构成的真值和内部表示可具有误差。
+* 数值具有的其它子类型和内部表示未指定。
+
+　　数值的外部表示和内部表示应支持往返(round-trip) 转换，即转换的内部或者外部表示输出可被输入接受。
+
+　　往返转换中，精确数转换保持任意（无限）精度；不精确数经有限次转换不继续损失精度。
+
+**注释** 即便损失精度，也应总是满足结果至少不低于整数精度。
+
+　　除非另行指定：
+
+* 对预期是数值类型的操作数，数值操作进行类型检查，失败时出错。
+* 若作为操作数的精确数决定计算结果在数学上未定义，则引起错误。
+* 数值操作不区分数值类型的操作数中数值上等价的精确数或不精确数。
+* 若数值操作的所有数值类型的操作数都是精确数，除非不能表示计算结果的范围，结果不是不精确数。
+* 除非不能表示计算结果的范围，数值操作不损失结果的精度。
+* 若计算结果是数值，则对应的数值操作的结果是不超过所有数值操作数结果的数值类型。
+* 数值操作的输出的类型是能表示操作结果的数，其类型的值域能表示操作结果，具体类型和内部表示未指定。
+* 若计算结果是小于最小可唯一表示的数值的不精确数，则对应的数值操作结果是不精确数 0 。
+* 不精确数计算中的舍入和作为计算结果的 0 的符号是未指定的。
+* 若计算结果中无限大数值不能通过数学上有意义的方式确定符号，则对应的数值操作结果是无限大值或 NaN 之一，具体选择未指定。
+* 可假定数值计算的操作数和计算过程中不出现 SNaN(signaling NaN) 值；
+* 若被计算结果依赖的任一操作数中具有 NaN 值，则依赖这个操作数的数值操作结果也是 NaN 值。
+
+`number? <object>`
+
+　　`<number>` 的类型谓词。
+
+`real? <object>`
+
+　　`<real>` 的类型谓词。
+
+**注释** 同 `number?` ，因为当前 `<number>` 都是 `<real>` 值。
+
+`rational? <object>`
+
+　　`<rational>` 的类型谓词。
+
+**注释** 当前实现仅需排除无限大和 NaN 值。
+
+`integer? <object>`
+
+　　`<integer>` 的类型谓词。
+
+`exact-integer? <object>`
+
+　　判断参数是否为 `<integer>` 类型的精确数对象。
+
+`exact? <number>`
+
+　　断参数是否为精确数。
+
+`inexact? <number>`
+
+　　判断参数是否为不精确数。
+
+`finite? <number>`
+
+　　判断参数是否为有限值。
+
+`infinite? <number>`
+
+　　判断参数是否为无限大值。
+
+`nan? <number>`
+
+　　判断参数是否为 NaN 值。
+
+`zero? <number>`
+
+　　判断参数是否为零值。
+
+`=? <number1> <number2>`
+
+　　比较相等。
 
 `<? <number> <number>`
 
@@ -1703,51 +1963,79 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　数值关系操作，分别为：小于、小于等于、大于等于和大于。
 
-　　结果为 \<bool> 类型的比较结果。
+　　结果是 `<boolean>` 类型的比较结果。
 
-`+ <number>...`
+`zero? <number>`
 
-`add2 <number> <number>`
+　　判断参数是否为零值。
 
-　　加法。
+`positive? <real>`
 
-　　参数是加数。
+　　判断参数是否为正数。
 
-　　结果为 `<number>` 类型的和。
+`negative? <real>`
+
+　　判断参数是否为负数。
+
+`odd? <real>`
+
+　　判断参数是否为奇数。
+
+`even? <real>`
+
+　　判断参数是否为偶数。
+
+`max <real1> <real2>`
+
+　　计算参数中的最大值。
+
+`min <real1> <real2>`
+
+　　计算参数中的最小值。
+
+`add1 <number>`
+
+　　计算参数加 1 的值。
+
+`sub1 <number>`
+
+　　计算参数减 1 的值。
+
+`+ <number> <number>`
+
+　　加法：计算参数的和。
 
 `- <number> <number>`
 
-　　减法。
+　　减法：计算参数的差。
 
-　　参数分别是被减数和减数。
+`* <number> <number>`
 
-　　结果为 `<number>` 类型的差。
+　　乘法：计算参数的积。
 
-`* <number>...`
+`/ <number> <number>`
 
-`multiply2 <number> <number>`
+　　除法：计算参数的商。
 
-　　乘法。
+`abs <real>`
 
-　　参数是乘数。
-
-　　结果为 `<number>` 类型的积。
+　　计算参数的绝对值。
 
 `div <int> <int>`
 
-　　整除。
-
-　　参数分别是被除数和除数。若第二参数等于 0 ，则引起错误。
-
-　　结果为 `<int>` 类型的商。
+　　整除：结果是 `<int>` 类型的商。
 
 `mod <int> <int>`
 
-　　模。
+　　模：结果是 `<int>` 类型的余数。
 
-　　参数分别是被除数和除数。若第二参数等于 0 ，则引起错误。
+`itos <int>`
 
-　　结果为 `<int>` 类型的余数。
+　　转换整数为字符串表示。
+
+`stoi <string>`
+
+　　转换整数的字符串表示为整数。若失败，则引起错误。
 
 ## 标准 I/O 库
 
@@ -1771,9 +2059,27 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　求值被加载后读取的对象，并以其求值结果作为表达式的求值结果。
 
+`write <object>`
+
+　　写对象的外部表示。
+
+　　输出的目标为标准输出。
+
+　　输出的外部表示符合以下格式约定：
+
+* 除非派生实现另行指定且值的格式没有在此指定，左值的外部表示同其经左值到右值转换取得的值。
+* 数值和字符串的输出其源代码中可以求值到相等的值的表示。
+	* **注释** 字符串以 `"` 作为输出的起始和结束。
+* 列表以 `(` 和 `)` 作为输出的起始和结束。
+* 空列表不输出元素；非空列表的元素顺序输出，之间以空白符分隔。
+
+　　其余具体格式未指定。
+
 `display <object>`
 
 　　输出对象的外部表示。
+
+　　同 `write` ，但输出字符串没有字面量的引号。
 
 `put <string>`
 
@@ -1931,6 +2237,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `newline`
 	* `load`
 	* `display`
+	* `puts`
 
 　　实现可提供其它形式的、由实现定义的用户环境初始化操作替代上述的默认用户环境初始化。
 

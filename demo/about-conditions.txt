@@ -1,0 +1,25 @@
+﻿"About conditions.";
+
+info "if expressions";
+$expect "T" $if #t "T";
+$expect "T" $if "" "T";
+$expect (list "a" "b") $if #t (list "a" "b");
+$expect #inert $if #f "T";
+$expect "T" $if #t "T" "F";
+$expect "T" $if "" "T" "F";
+$expect "F" $if #f "T" "F";
+
+info "when: one-arm 'if' with implicit sequence evaluation";
+$expect "T" $when #t "T";
+$expect "b" $when #t list "a" "b";
+$expect (list "a" "b") $when #t (list "a" "b");
+$expect "T" $when "" "T";
+$expect #inert $when #f "T";
+
+info "unless: one arm negated 'if' with implict sequence evaluation";
+$expect #inert $unless #t "T";
+$expect #inert $unless "" "T";
+$expect "T" $unless #f "T";
+$expect "b" $unless #f list "a" "b";
+$expect (list "a" "b") $unless #f (list "a" "b");
+

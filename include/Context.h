@@ -4,12 +4,11 @@
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for ValueObject, vector, string, TermNode,
-//	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
+//	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref, type_info,
 //	Unilang::allocate_shared, EnvironmentReference;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
-#include <ystdex/typeinfo.h> // for ystdex::type_info;
 #include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
@@ -157,7 +156,7 @@ public:
 	}
 
 	YB_NORETURN static void
-	ThrowForInvalidType(const ystdex::type_info&);
+	ThrowForInvalidType(const type_info&);
 };
 
 

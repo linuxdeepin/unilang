@@ -2,8 +2,23 @@
 $import! std.strings ++;
 
 $defl! putss (.&xs) puts (apply ++ xs);
+
+$defl! stoi-exact (&x)
+	$let ((&r stoi x))
+		$if (eqv? (itos r) x) (forward! r)
+			(raise-error "Invalid integer representation found.");
+
+$defl/e! rmatch? std.strings (&x &r) regex-match? x (string->regex r);
+
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
+
+"XXX", "Assume the move-after state is deterministic of a stable value,",
+	" which is the empty list at current.";
+$def! moved? null?;
+"XXX", "Assume moved-after states are not the unit value,",
+	"otherwise the expectations on equality to the value is false negative.";
+$def! unit (first (() make-encapsulation-type)) #inert;
 
 $def! Unilang_TestOpts_QuickFail #t;
 $def! report-failure $if Unilang_TestOpts_QuickFail raise-error puts;
@@ -34,4 +49,265 @@ $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
+$defv! $expect-moved (.&expr) d
+	$let ((&res eval expr d))
+		$if (moved? res) (pass res) (fail-on-expect expr (forward! res) ());
+
+$provide/let! (version? string->version version->string version<?)
+((mods $as-environment (
+	$import! std.strings &++ &string-split;
+
+	$def! (encapsulate% version? decapsulate)
+		() make-encapsulation-type,
+	$defl! semver->string (&x)
+		$let (((xmajor xminor xpatch) x))
+			++ (itos xmajor) "." (itos xminor) "." (itos xpatch),
+	$defl! semver<? (&x &y)
+		$let ((=? eqv?) ((xmajor xminor xpatch) x) ((ymajor yminor ypatch) y))
+			$or? (<? xmajor ymajor) ($and? (=? xmajor ymajor)
+				($or? (<? xminor yminor) ($and? (=? xminor yminor)
+				(<? xpatch ypatch)))),
+	$defl! semver-parse (&x)
+		$let* ((normalized string-split x "-")
+			(ls string-split (first normalized) ".")
+			((smajor sminor spatch) ls))
+			map1 stoi-exact ls
+)))
+(
+	$import! mods &version?,
+	$defl/e! string->version mods (&x) encapsulate% (idv (semver-parse x)),
+	$defl/e! version->string mods (&x) semver->string (decapsulate x),
+	$defl/e! version<? mods (&x &y) semver<? (decapsulate x) (decapsulate y)
+);
+
+$provide/let! (dependency? make-dependency name-of version-of check-of validate
+	strings->dependency-contract)
+((mods $as-environment (
+	$def! (encapsulate% dependency? decapsulate)
+		() make-encapsulation-type;
+	(
+	$defl! name-of (&dep) idv (first (decapsulate dep)),
+	$defl! version-of (&dep) idv (first (rest& (decapsulate dep)))
+	);
+	(
+	$defl! parse-ver-con (&ver-con)
+	(
+		$import! std.strings
+			&string->regex &++ &regex-match? &regex-replace &string-empty?;
+
+		$let ((pattern
+			string->regex (++ "(\!)?(\!?\<|>|\<\=|\>\=|\^|\~|\=)?[ \t]*"
+				"((\*|0|[1-9]\d*)(\.(\*|0|[1-9]\d*)){0,2})")))
+			$if (regex-match? ver-con pattern)
+				(
+					$let ((op regex-replace ver-con pattern "$1$2")
+						(vstr regex-replace ver-con pattern "$3"))
+					(
+						$cond
+							(($and? (not? (string-empty? op))
+								(rmatch? vstr ".*\*.*"))
+								raise-error (++ "Unexpected operator '" op
+									"' found for wildcard requirement string '"
+									vstr "'."))
+							((rmatch? vstr "\*\..*")
+								raise-error (++
+									"Invalid wildcard requirement string '"
+									vstr "' found."))
+							(#t list op vstr)
+					)
+				)
+				(raise-error (++
+					"Invalid version constraint string found: '" ver-con "'."))
+	),
+	(
+	$defl! normalize-vstr (&vstr)
+	(
+		$import! std.strings &++;
+
+		$cond
+			((rmatch? vstr "0|[1-9]\d*") ++ vstr ".0.0")
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)") ++ vstr ".0")
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)") vstr)
+			(#t raise-error (++ "Invalid version string found: '" vstr "'."))
+	);
+	$defl! vstr->version (&vstr)
+		string->version (normalize-vstr vstr)
+	),
+	(
+	$defl! str-add1 (&x) itos (+ (stoi x) 1);
+	$defl! carry-caret-vstr (&vstr)
+	(
+		$import! std.strings &++ &regex-replace &string->regex;
+
+		$cond
+			((rmatch? vstr "0|[1-9]\d*") ++ (str-add1 vstr) ".0.0")
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)")
+				$let ((major
+					regex-replace vstr (string->regex "(\d+)\.\d+") "$1")
+					(minor
+					regex-replace vstr (string->regex "\d+\.(\d+)") "$1"))
+					$if (eqv? major "0")
+						(++ major "." (str-add1 minor) ".0")
+						(++ (str-add1 major) "." minor ".0")
+			)
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)" vstr)
+				$let ((major
+					regex-replace vstr (string->regex "(\d+)\.\d+\.\d+") "$1")
+					(minor
+					regex-replace vstr (string->regex "\d+\.(\d+)\.\d+") "$1")
+					(patch
+					regex-replace vstr (string->regex "\d+\.\d+\.(\d+)") "$1"))
+					$if (eqv? major "0")
+						($if (eqv? minor "0")
+							(++ major "." minor "." (str-add1 patch))
+							(++ major "." (str-add1 minor) ".0"))
+						(++ (str-add1 major) "." minor "." patch)
+			)
+			(#t raise-error (++ "Invalid version string found: '" vstr "'."))
+	),
+	$defl! carry-tilde-vstr (&vstr)
+	(
+		$import! std.strings &++ &regex-replace &string->regex;
+
+		$cond
+			((rmatch? vstr "0|[1-9]\d*") ++ (str-add1 vstr) ".0.0")
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)")
+				++ (str-add1
+					(regex-replace vstr (string->regex "(\d+)\.\d+") "$1")) "."
+					(regex-replace vstr (string->regex "\d+\.(\d+)") "$1") ".0")
+			((rmatch? vstr "(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)")
+				++ (regex-replace vstr (string->regex "(\d+\.)\d+\.\d+") "$1")
+					(str-add1 (regex-replace vstr
+						(string->regex "\d+\.(\d+)\d+") "$1")) ".0")
+			(#t raise-error (++ "Invalid version string found: '" vstr "'."))
+	);
+	$defl! vstr-caret->version (&vstr)
+		string->version (carry-caret-vstr vstr),
+	$defl! vstr-tilde->version (&vstr)
+		string->version (carry-tilde-vstr vstr)
+	),
+	$defl! version-in-range? (&ver &x &y)
+		$and? ($or? (eqv? ver x) (version<? x ver)) (version<? ver y);
+	$defl! check-caret-req (&ver &vstr)
+		version-in-range? ver (vstr->version vstr) (vstr-caret->version vstr),
+	(
+	$defl! check-tilde-req (&ver &vstr)
+		version-in-range? ver (vstr->version vstr) (vstr-tilde->version vstr);
+	$defl! check-eq-req (&ver &vstr)
+	(
+		$if (rmatch? vstr "\d+\*\d+\*\d+")
+			(eqv? ver (vstr->version vstr))
+			(check-tilde-req ver vstr)
+	)
+	),
+	$defl! check-ge-req (&ver &vstr)
+		$let ((nver vstr->version vstr))
+			$or? (eqv? ver nver) (version<? nver ver);
+	$defl! check-ver-con (&ver &ver-con)
+		$let (((op vstr) parse-ver-con ver-con))
+			$cond
+				(($or? (eqv? op "<") (eqv? op "!>="))
+					version<? ver (vstr->version vstr))
+				(($or? (eqv? op ">") (eqv? op "!<="))
+					version<? (vstr->version vstr) ver)
+				(($or? (eqv? op "<=") (eqv? op "!>"))
+					$let ((nver vstr->version vstr))
+						$or? (eqv? ver nver) (version<? ver nver))
+				(($or? (eqv? op ">=") (eqv? op "!<"))
+					check-ge-req ver vstr)
+				((eqv? op "=") check-eq-req ver vstr)
+				((eqv? op "!=") not? (eqv? ver (vstr->version vstr)))
+				((eqv? op "")
+				(
+					$import! std.strings &regex-replace &string->regex;
+
+					$cond
+						((eqv? vstr "*") check-ge-req ver "0.0.0")
+						((rmatch? vstr "\d+\.\*(\.\*)?")
+							check-eq-req ver (regex-replace vstr
+								(string->regex "(\d+).+") "$1"))
+						((rmatch? vstr "\d+\.\d+\.\*")
+							check-eq-req ver (regex-replace vstr
+								(string->regex "(\d+\.\d+).+") "$1"))
+						((rmatch? vstr ".\*")
+							raise-error (++
+								"Invalid wildcard version string found: '" vstr
+								"'."))
+						(#t check-caret-req ver vstr)
+				))
+				((eqv? op "^") check-caret-req ver vstr)
+				((eqv? op "!^") not? (check-caret-req ver vstr))
+				((eqv? op "~") check-tilde-req ver vstr)
+				((eqv? op "!~") not? (check-tilde-req ver vstr))
+				(#t raise-error (++ "Unexpected operator '" op
+					"' found in the version constrait."));
+	$defl! check-ver-cons (&ver &ver-cons)
+		$if (null? ver-cons) #t
+			($and? (check-ver-con ver (first ver-cons))
+				(check-ver-cons ver (rest& ver-cons)));
+	$defl! check-dep (&dep &name &ver-cons)
+		$and? (eqv? (name-of dep) name)
+			(check-ver-cons (version-of dep) ver-cons);
+	$defl! check-deps (&deps &name &ver-cons)
+		$if (null? deps) #t
+			($and? (check-dep (first deps) name ver-cons)
+				(check-deps (rest& deps) name ver-cons))
+	)
+)))
+(
+	$import! mods &dependency? &name-of &version-of,
+	$defl/e! make-dependency mods (&name &ver &check)
+		encapsulate% (list name ver check),
+	$defl/e! check-of mods (&dep) idv (first (rest& (rest& (decapsulate dep)))),
+	$defl/e! validate mods (&dep .&deps) apply (check-of dep) deps,
+	(
+	$set! mods pmods weaken-environment mods;
+	$defl/e! strings->dependency-contract mods (&name .&ver-cons)
+		$lambda/e ($bindings/p->environment (pmods)
+			(name forward! name) (ver-cons forward! ver-cons))
+			(.&deps) check-deps (move! deps) name ver-cons
+	)
+);
+
+$provide/let! (dependency-set? make-dependency-set has-dependency?)
+((mods $as-environment (
+	$import! std.strings &++ &string-split;
+
+	$def! (encapsulate% dependency-set? decapsulate)
+		() make-encapsulation-type,
+	$defl! mk-dependency-set (&deps)
+	(
+		map1 ($lambda (&x) $unless (dependency? x)
+			(raise-error "Non-dependency object found.")) deps;
+		encapsulate% (move! deps)
+	),
+	(
+	$defl! match-dependency? (&dep &name) eqv? (name-of dep) name;
+	$defl! match-dependencies? (&deps &name)
+		$if (null? deps) #f
+			($or? (match-dependency? (first deps) name)
+				(match-dependencies? (rest& deps) name)),
+	(
+	$defl! match-ver-dependency? (&dep &name &ver)
+		$and? (match-dependency? dep name) (eqv? (version-of dep) ver);
+	$defl! match-ver-dependencies? (&deps &name &ver)
+		$if (null? deps) #f
+			($or? (match-ver-dependency? (first deps) name ver)
+				(match-ver-dependencies? (rest& deps) name ver))
+	)
+	)
+)))
+(
+	$import! mods &dependency-set?,
+	$defl/e! make-dependency-set mods (.&deps) mk-dependency-set deps,
+	$defl/e! has-dependency? mods (&depset &name .&opt)
+		$if (null? opt)
+			(match-dependencies? (decapsulate depset) name)
+			(match-ver-dependencies? (decapsulate depset) name
+				($let (((&ver .&vopt) opt))
+					$if (null? vopt) ($if (version? ver) ver
+						(raise-error (++ "has-dependency?:"
+							" Invalid version object found in the argument.")))
+						(raise-error "has-dependency?: Syntax error.")))
+);
 

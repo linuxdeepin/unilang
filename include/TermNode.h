@@ -4,7 +4,7 @@
 #define INC_Unilang_TermNode_h_ 1
 
 #include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward,
-//	std::allocator_arg_t;
+//	std::allocator_arg_t, YSLib::IsTyped;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
@@ -383,6 +383,27 @@ YB_ATTR_nodiscard YB_PURE inline bool
 IsList(const TermNode& nd) noexcept
 {
 	return !nd.Value;
+}
+
+YB_ATTR_nodiscard YB_PURE inline bool
+IsRegular(const TermNode& nd) noexcept
+{
+	return IsLeaf(nd) || IsList(nd);
+}
+
+using YSLib::IsTyped;
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline bool
+IsTyped(const TermNode& nd)
+{
+	return IsTyped<_type>(nd.Value);
+}
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline bool
+IsTypedRegular(const TermNode& nd)
+{
+	return IsLeaf(nd) && IsTyped<_type>(nd);
 }
 
 template<typename _type>

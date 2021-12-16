@@ -130,7 +130,7 @@ export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bashrc` ）中而不需重复配置。
+　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bash_profile` ）中而不需重复配置。
 
 ### 构建命令
 
@@ -183,12 +183,19 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 
 ## 运行解释器
 
-　　运行解释器可执行文件直接进入 REPL ；或使用命令行选项 `-e` ，支持直接求值字符串参数。
+　　运行解释器可执行文件直接进入交互模式运行 REPL ；或在命令行指定一个脚本，进入脚本模式执行脚本中的源程序。脚本名称 `-` 被视为标准输入。
+
+　　运行解释器时使用命令行选项 `-e` 可在进入交互模式或脚本模式前直接求值字符串参数。选项 `-e` 可以使用多次，每个选项后具有一个命令行参数，这些参数字符串被作为 Unilang 源代码顺序求值。
+
+　　解释器命令行支持 POSIX 约定，在命令行参数 `--` 之后的其它参数不被解释为选项。这允许指定和选项重名的脚本文件。
+
+　　命令行选项 `-h` 或 `--help` 显示解释器命令行的帮助。
 
 　　可选环境变量：
 
 * `ECHO`：启用 REPL 回显。
-* `UNILANG_NO_JIT`：停用代码执行时 JIT 编译，使用纯解释器。
+* `UNILANG_NO_JIT`：停用基于 JIT 编译的代码执行优化，使用纯解释器。
+* `UNILANG_PATH`：库加载路径。详见[语言规范](doc/Language.zh-CN.md)对标准库函数 `load` 的说明以及[解释器实现](Interpreter.zh-CN.md)对标准库模块操作的说明。
 
 　　除使用选项 `-e` ，配合 `echo` 命令，也可支持非交互式输入，如：
 
@@ -237,6 +244,15 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 	* 环境和变量解析。
 	* 函数应用。
 * 函数：详见[语言规范文档](doc/Language.zh-CN.md)。
+
+## 已知问题
+
+　　不精确数使用 C++ 标准库 `<cstdio>` 兼容格式输出，可能在非默认区域(locale) 设置中输出非预期的格式，如：
+
+* 小数点不是 `.` 。
+* 数值中出现小数点、符号和指数字符以外的非数字分隔符。
+
+　　当前版本在非默认区域下不确保这些输出能被作为 Unilang 数值字面量解析。
 
 # 版本历史
 
@@ -330,7 +346,6 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 			* `make-encapsulation-type`
 			* `load`
 * **V0.6**
-	* README.md: 补充说明。
 	* 新增支持特性：
 		* **实验性** FFI 支持。
 		* 支持绑定的变量（包括函数参数）以引用传递。
@@ -435,5 +450,149 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 	* 优化实现：
 		* 支持合并子右值调用转移而不是复制内部资源。
 		* 省略合并子调用时对形式参数的冗余检查。
+* **V0.8**
+	* 调整和优化解释器实现：
+		* 启用内存池。
+		* 命令行添加 `-e` 选项支持。
+		* 增强异常处理。
+		* 新增可选的 LLVM 代码生成。
+	* 修复实现问题（除非另行指定，自从 V0.7 ）：
+		* 修复用户定义的函数右值调用转移资源未生效的问题。
+		* 修复标准库函数：
+			* 修复 `list%` 中的非预期对象复制：
+			* 修复 `$provide/let!` 和 `$provide!` 最后的符号以 `.` 起始时错误地被忽略。
+			* 修复 `wrap` 和 `unwrap` 操作对操作数的表示的检查。
+		* 修复 Unilang 解释器数值减法操作（自从 V0.6 ）。
+		* 修复返回值转换的实现中缺失对象转移支持。
+	* 新增支持特性：
+		* 新增标准库函数：
+			* `desigil`
+			* `symbols->imports`
+			* 标准库模块 `std.strings` 中：
+				* `string-split`
+				* `regex-replace`
+			* `raise-error`
+			* `$remove-eval`
+			* `$remove-eval%`
+			* 标准库模块 `std.system` 中：
+				* `env-get`
+			* 标准库模块 `std.modules`
+			* `check-list-reference`
+			* `first&`
+			* `rest&`
+			* `$lambda/e%`
+			* `$defl/e%!`
+			* `$let%`
+			* `$let*%`
+			* `assign@!`
+			* `idv`
+			* `collapse`
+			* `assign%!`
+			* `set-first%!`
+			* `check-environment`
+			* 标准库模块 `std.promises`
+			* `wrap%`
+		* 调整标准库函数：
+			* `$provide/let!` 、`$provide!` 和 `$import!` 支持指定引用标记字符。
+			* 函数 `load` 移至标准库模块 `std.io` 。
+			* 涉及形式参数树的检查中支持递归检查和符号类型错误。
+			* 函数 `wrap` 和 `unwrap` 避免冗余复制，并添加合并子的子对象引用支持。
+	* 分离启动脚本 `init.txt` 。
+		* 保持以下标准库核心函数在初始环境可用：
+			* `display`
+			* `newline`
+			* `load`
+			* `display`
+			* `puts`
+			* `++`
+		* 新增库函数 `putss` 和测试框架。
+	* 添加测试脚本 `test.txt`，添加测试用例。
+	* 修复语言规范中一些等价谓词的比较规则不够充分及相关的解释器实现中关于合并子的子对象引用的相等操作。
+* **V0.9**
+	* 修复实现问题（除非另行指定，自从 V0.8 ）：
+		* 修复库函数：
+			* `make-encapsulation-type` 构造的封装类型相等性（以 `eqv?` 比较）。
+			* `set-first%!` 调用失败
+			* `collapse` 的调用结果没有保留右值引用
+			* `first` 和 `first&` 的调用结果没有保留消亡值或左值列表的临时对象元素的右值引用
+			* 标准库模块 `std.promises` 中：
+				* `force` 对嵌套的 promise 对象调用失败及对右值不正确共享状态转移
+	* 新增支持特性：
+		* 新增标准库函数：
+			* `itos`
+			* `stoi`
+			* `assign!`
+			* 标准库模块 `std.io` 中：
+				* `write`
+			* `weaken-environment`
+			* `$wvau`
+			* `$wvau%`
+			* `$wvau/e`
+			* `$wvau/e%`
+			* `first@`
+			* 补充数值操作函数：
+				* `number?`
+				* `real?`
+				* `rational?`
+				* `integer?`
+				* `exact-integer?`
+				* `exact?`
+				* `inexact?`
+				* `finite?`
+				* `infinite?`
+				* `nan?`
+				* `zero?`
+				* `=?`
+				* `zero?`
+				* `positive?`
+				* `negative?`
+				* `odd?`
+				* `even?`
+				* `max`
+				* `min`
+				* `add1`
+				* `sub1`
+				* `/`
+				* `abs`
+		* 启动脚本默认库函数：
+			* `stoi-exact`
+			* `rmatch?`
+			* 依赖控制 API
+				* `version?`
+				* `string->version`
+				* `version->string`
+				* `version<?`
+				* `dependency?`
+				* `make-dependency`
+				* `name-of`
+				* `version-of`
+				* `check-of`
+				* `validate`
+				* `strings->dependency-contract`
+				* `dependency-set?`
+				* `make-dependency-set`
+				* `has-dependency?`
+			* 测试 API ：
+				* `moved?`
+				* `unit`
+				* `$expect-moved`
+		* 新增支持基本转义字符序列。
+		* 新增非符整数以外的数值字面量及对应的数值类型。
+	* 调整支持特性：
+		* 调整标准库函数：
+			* 标准库模块 `std.io` 中：
+				* `display` 不输出字符串字面量的引号（保持原行为使用 `write` ）。
+			* 修改算术操作为数值操作，支持不同的数值类型：
+				* 算术操作（包括算术计算和比较，下同）统一支持两个操作数，不再支持多个操作数。
+				* 算术操作支持不同的数值类型的内部表示。
+				* 移除函数：
+					* `add2`
+					* `multiply2`
+	* 测试脚本 `test.txt` 添加测试用例。
+	* 调整和优化解释器实现：
+		* 简化部分标准库实现。
+		* 增强命令行选项支持。
+			* 选项 `-e` 支持重复多次。
+			* 新增脚本模式，支持从命令行指定文件名或标准输入 `-` 。
+			* 新增显示命令行帮助的选项。
 
-	

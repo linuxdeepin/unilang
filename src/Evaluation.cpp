@@ -1,11 +1,14 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
-//	Context, TermToNamePtr, ystdex::sfmt, std::string, Unilang::TryAccessLeaf
-//	TermReference, ContextHandler, yunseq, std::prev, GetLValueTagsOf,
-//	EnvironmentReference, in_place_type, ThrowTypeErrorForInvalidType,
-//	ThrowInsufficientTermsError, Unilang::TryAccessTerm, ystdex::begins_with,
-//	Unilang::allocate_shared;
+//	Context, TermToNamePtr, Unilang::TryAccessLeaf TermReference,
+//	ContextHandler, yunseq, GetLValueTagsOf, EnvironmentReference,
+//	in_place_type, ThrowTypeErrorForInvalidType, IsTyped,
+//	ThrowInsufficientTermsError, Unilang::allocate_shared,
+//	Unilang::TryAccessTerm;
+#include <iterator> // for std::prev;
+#include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
+//	ystdex::begins_with;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
@@ -13,9 +16,8 @@
 //	ListReductionFailure;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
-#include <ystdex/typeinfo.h> // for ystdex::type_id;
+#include "TCO.h" // for Action, RelayDirect;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
-#include "TCO.h" // for RelayDirect;
 
 namespace Unilang
 {
@@ -68,41 +70,29 @@ ReduceLeaf(TermNode& term, Context& ctx)
 
 		assert(id.data());
 
-		if(!id.empty())
+		auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
+
+		if(pr.first)
 		{
-			const char f(id.front());
+			auto& bound(*pr.first);
 
-			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
-				&& id.find_first_not_of("+-") != string_view::npos)
-				|| ystdex::isdigit(f))
-				throw InvalidSyntax(ystdex::sfmt<std::string>(id.front()
-					!= '#' ? "Unsupported literal prefix found in literal '%s'."
-					: "Invalid literal '%s' found.", id.data()));
-
-			auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
-
-			if(pr.first)
+			if(const auto p_bound
+				= Unilang::TryAccessLeaf<const TermReference>(bound))
 			{
-				auto& bound(*pr.first);
-
-				if(const auto p_bound
-					= Unilang::TryAccessLeaf<const TermReference>(bound))
-				{
-					term.GetContainerRef() = bound.GetContainer();
-					term.Value = EnsureLValueReference(TermReference(*p_bound));
-				}
-				else
-				{
-					auto p_env(Unilang::Nonnull(pr.second));
-
-					term.Value = TermReference(p_env->MakeTermTags(bound)
-						& ~TermTags::Unique, bound, std::move(p_env));
-				}
-				res = ReductionStatus::Neutral;
+				term.GetContainerRef() = bound.GetContainer();
+				term.Value = EnsureLValueReference(TermReference(*p_bound));
 			}
 			else
-				throw BadIdentifier(id);
+			{
+				auto p_env(Unilang::Nonnull(pr.second));
+
+				term.Value = TermReference(p_env->MakeTermTags(bound)
+					& ~TermTags::Unique, bound, std::move(p_env));
+			}
+			res = ReductionStatus::Neutral;
 		}
+		else
+			throw BadIdentifier(id);
 		return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
 	}
 	return ReductionStatus::Retained;
@@ -223,7 +213,7 @@ BindReferenceTags(const TermReference& ref) noexcept
 YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
-	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
+	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
 }
 
 YB_NORETURN void
@@ -233,8 +223,6 @@ ThrowNestedParameterTreeCheckError()
 		" parameter tree (expected a symbol or '#ignore')."));
 }
 
-
-using Action = function<void()>;
 
 template<typename _fBindValue>
 class GParameterValueMatcher final
@@ -286,18 +274,8 @@ private:
 			});
 		}
 		else if(const auto p = TermToNamePtr(t))
-		{
-			const auto& n(*p);
-
-			if(!IsIgnore(n))
-			{
-				if(IsUnilangSymbol(n))
-					BindValue(n);
-				else
-					ThrowInvalidTokenError(n);
-			}
-		}
-		else
+			BindValue(*p);
+		else if(!IsIgnore(t))
 			ThrowFormalParameterTypeError(t, t_has_ref);
 	}
 
@@ -414,18 +392,8 @@ struct ParameterCheck final
 	HandleLeaf(_func f, const TermNode& t, bool t_has_ref)
 	{
 		if(const auto p = TermToNamePtr(t))
-		{
-			const auto& n(*p);
-
-			if(!IsIgnore(n))
-			{
-				if(IsUnilangSymbol(n))
-					f(n);
-				else
-					ThrowInvalidTokenError(n);
-			}
-		}
-		else
+			f(*p);
+		else if(!IsIgnore(t))
 			ThrowFormalParameterTypeError(t, t_has_ref);
 	}
 
@@ -464,16 +432,13 @@ struct NoParameterCheck final
 	static void
 	HandleLeaf(_func f, const TermNode& t)
 	{
-		const auto p(TermToNamePtr(t));
-
-		assert(bool(p));
-
-		const auto& n(*p);
-
-		if(!IsIgnore(n))
+		if(!IsIgnore(t))
 		{
-			assert(IsUnilangSymbol(n));
-			f(n);
+			const auto p(TermToNamePtr(t));
+
+			assert(bool(p) && "Invalid parameter tree found.");
+
+			f(*p);
 		}
 	}
 
@@ -638,7 +603,7 @@ private:
 		{
 			const auto& lastv(last->Value);
 
-			assert(lastv.type() == ystdex::type_id<TokenValue>());
+			assert(IsTyped<TokenValue>(lastv.type()));
 			BindTrailing(o_tm, j, lastv.GetObject<TokenValue>(), tags, r_env);
 		}
 	}
@@ -655,13 +620,17 @@ MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 char
 ExtractSigil(string_view& id)
 {
-	char sigil(id.front());
-
-	if(sigil != '&' && sigil != '%' && sigil != '@')
-		sigil = char();
-	else
-		id.remove_prefix(1);
-	return sigil;
+	if(!id.empty())
+	{
+		char sigil(id.front());
+ 
+		if(sigil != '&' && sigil != '%' && sigil != '@')
+			sigil = char();
+		else
+			id.remove_prefix(1);
+		return sigil;
+	}
+	return char();
 }
 
 template<class _tTraits>
@@ -724,18 +693,18 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 		}
 	}, [&](const TokenValue& n, TermNode& b, TermTags o_tags,
 		const EnvironmentReference& r_env){
-		assert(!IsIgnore(n) && IsUnilangSymbol(n));
+
+		assert(IsUnilangSymbol(n));
 
 		string_view id(n);
 		const char sigil(ExtractSigil(id));
 
-		if(!id.empty())
-			BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
-				[&](const TermNode& tm){
-				CopyTermTags(env.Bind(id, tm), tm);
-			}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-				return env.Bind(id, TermNode(std::move(c), std::move(vo)));
-			});
+		BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
+			[&](const TermNode& tm){
+			CopyTermTags(env.Bind(id, tm), tm);
+		}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
+			return env.Bind(id, TermNode(std::move(c), std::move(vo)));
+		});
 	})(t, o, TermTags::Temporary, p_env);
 }
 

@@ -1,21 +1,21 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
-//	Unilang::TryAccessReferencedTerm, YSLib::EmplaceCallResult,
-//	FormContextHandler;
+#include "Forms.h" // for Unilang::TryAccessReferencedTerm,
+//	ThrowTypeErrorForInvalidType, ResolveTerm, TermToNamePtr,
+//	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
+//	FormContextHandler, ReferenceTerm, ThrowValueCategoryError;
 #include <exception> // for std::throw_with_nested;
-#include "Exception.h" // for InvalidSyntax, ThrowInvalidTokenError, TypeError,
-//	UnilangException, ListTypeError;
-#include "TermAccess.h" // for ThrowTypeErrorForInvalidType, ResolveTerm,
-//	TermToNamePtr, ResolvedTermReferencePtr, ThrowValueCategoryError;
+#include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
+//	ListTypeError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
 #include "Lexical.h" // for IsUnilangSymbol;
-#include "TCO.h" // for MoveGuard, ReduceSubsequent;
-#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory;
+#include "TCO.h" // for MoveGuard, ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
+#include "TermNode.h" // for TNCIter;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
+#include <ystdex/functional.hpp> // for ystdex::update_thunk;
 
 namespace Unilang
 {
@@ -48,7 +48,7 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 [[noreturn]] inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
-	ThrowTypeErrorForInvalidType(ystdex::type_id<TokenValue>(), term, has_ref);
+	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
 }
 
 YB_ATTR_nodiscard YB_PURE string
@@ -58,15 +58,8 @@ CheckEnvironmentFormal(const TermNode& term)
 	{
 		return ResolveTerm([&](const TermNode& nd, bool has_ref) -> string{
 			if(const auto p = TermToNamePtr(nd))
-			{
-				if(!IsIgnore(*p))
-				{
-					if(IsUnilangSymbol(*p))
-						return string(*p, term.get_allocator());
-					ThrowInvalidTokenError(*p);
-				}
-			}
-			else
+				return string(*p, term.get_allocator());
+			else if(!IsIgnore(nd))
 				ThrowFormalParameterTypeError(nd, has_ref);
 			return string(term.get_allocator());
 		}, term);
@@ -479,6 +472,38 @@ EqTermReference(TermNode& term, _func f)
 	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
 }
 
+YB_ATTR_nodiscard YB_PURE inline bool
+TermUnequal(const TermNode& x, const TermNode& y)
+{
+	return x.size() != y.size() || x.Value != y.Value;
+}
+
+void
+EqualSubterm(bool& r, Action& act, TermNode::allocator_type a, TNCIter first1,
+	TNCIter first2, TNCIter last1)
+{
+	if(first1 != last1)
+	{
+		auto& x(ReferenceTerm(*first1));
+		auto& y(ReferenceTerm(*first2));
+
+		if(TermUnequal(x, y))
+			r = {};
+		else
+		{
+			yunseq(++first1, ++first2);
+			ystdex::update_thunk(act, a, [&, a, first1, first2, last1]{
+				if(r)
+					EqualSubterm(r, act, a, first1, first2, last1);
+			});
+			ystdex::update_thunk(act, a, [&, a]{
+				if(r)
+					EqualSubterm(r, act, a, x.begin(), y.begin(), x.end());
+			});
+		}
+	}
+}
+
 
 void
 MakeValueListOrMove(TermNode& term, TermNode& nd,
@@ -526,203 +551,6 @@ ConsImpl(TermNode& term)
 }
 
 
-class EncapsulationBase
-{
-private:
-	shared_ptr<void> p_type;
-
-public:
-	EncapsulationBase(shared_ptr<void> p) noexcept
-		: p_type(std::move(p))
-	{}
-	EncapsulationBase(const EncapsulationBase&) = default;
-	EncapsulationBase(EncapsulationBase&&) = default;
-
-	EncapsulationBase&
-	operator=(const EncapsulationBase&) = default;
-	EncapsulationBase&
-	operator=(EncapsulationBase&&) = default;
-
-	YB_ATTR_nodiscard YB_PURE friend bool
-	operator==(const EncapsulationBase& x, const EncapsulationBase& y) noexcept
-	{
-		return x.p_type == y.p_type;
-	}
-
-	const EncapsulationBase&
-	Get() const noexcept
-	{
-		return *this;
-	}
-	EncapsulationBase&
-	GetEncapsulationBaseRef() noexcept
-	{
-		return *this;
-	}
-	const shared_ptr<void>&
-	GetType() const noexcept
-	{
-		return p_type;
-	}
-};
-
-
-class Encapsulation final : private EncapsulationBase
-{
-public:
-	mutable TermNode TermRef;
-
-	Encapsulation(shared_ptr<void> p, TermNode term)
-		: EncapsulationBase(std::move(p)), TermRef(std::move(term))
-	{}
-	Encapsulation(const Encapsulation&) = default;
-	Encapsulation(Encapsulation&&) = default;
-
-	Encapsulation&
-	operator=(const Encapsulation&) = default;
-	Encapsulation&
-	operator=(Encapsulation&&) = default;
-
-	YB_ATTR_nodiscard YB_PURE friend bool
-	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
-	{
-		return x.Get() == y.Get();
-	}
-
-	using EncapsulationBase::Get;
-	using EncapsulationBase::GetType;
-};
-
-
-class Encapsulate final : private EncapsulationBase
-{
-public:
-	Encapsulate(shared_ptr<void> p)
-		: EncapsulationBase(std::move(p))
-	{}
-	Encapsulate(const Encapsulate&) = default;
-	Encapsulate(Encapsulate&&) = default;
-
-	Encapsulate&
-	operator=(const Encapsulate&) = default;
-	Encapsulate&
-	operator=(Encapsulate&&) = default;
-
-	YB_ATTR_nodiscard YB_PURE friend bool
-	operator==(const Encapsulate& x, const Encapsulate& y) noexcept
-	{
-		return x.Get() == y.Get();
-	}
-
-	void
-	operator()(TermNode& term) const
-	{
-		RetainN(term);
-
-		auto& tm(*std::next(term.begin()));
-
-		YSLib::EmplaceCallResult(term.Value, Encapsulation(GetType(),
-			ystdex::invoke_value_or(&TermReference::get,
-			Unilang::TryAccessReferencedLeaf<const TermReference>(tm),
-			std::move(tm))));
-	}
-};
-
-
-class Encapsulated final : private EncapsulationBase
-{
-public:
-	Encapsulated(shared_ptr<void> p)
-		: EncapsulationBase(std::move(p))
-	{}
-	Encapsulated(const Encapsulated&) = default;
-	Encapsulated(Encapsulated&&) = default;
-
-	Encapsulated&
-	operator=(const Encapsulated&) = default;
-	Encapsulated&
-	operator=(Encapsulated&&) = default;
-
-	YB_ATTR_nodiscard YB_PURE friend bool
-	operator==(const Encapsulated& x, const Encapsulated& y) noexcept
-	{
-		return x.Get() == y.Get();
-	}
-
-	void
-	operator()(TermNode& term) const
-	{
-		RetainN(term);
-
-		auto& tm(*std::next(term.begin()));
-
-		YSLib::EmplaceCallResult(term.Value,
-			ystdex::call_value_or([this](const Encapsulation& enc) noexcept{
-				return Get() == enc.Get();
-			}, Unilang::TryAccessReferencedTerm<Encapsulation>(tm)));
-	}
-};
-
-
-class Decapsulate final : private EncapsulationBase
-{
-public:
-	Decapsulate(shared_ptr<void> p)
-		: EncapsulationBase(std::move(p))
-	{}
-	Decapsulate(const Decapsulate&) = default;
-	Decapsulate(Decapsulate&&) = default;
-
-	Decapsulate&
-	operator=(const Decapsulate&) = default;
-	Decapsulate&
-	operator=(Decapsulate&&) = default;
-
-	YB_ATTR_nodiscard YB_PURE friend bool
-	operator==(const Decapsulate& x, const Decapsulate& y) noexcept
-	{
-		return x.Get() == y.Get();
-	}
-
-	ReductionStatus
-	operator()(TermNode& term, Context& ctx) const
-	{
-		RetainN(term);
-
-		return Unilang::ResolveTerm(
-			[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-			const auto&
-				enc(Unilang::AccessRegular<const Encapsulation>(nd, p_ref));
-
-			if(enc.Get() == Get())
-			{
-				auto& tm(enc.TermRef);
-
-				return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
-					if(const auto p
-						= Unilang::TryAccessLeaf<const TermReference>(tm))
-					{
-						term.GetContainerRef() = tm.GetContainer();
-						term.Value = *p;
-					}
-					else
-					{
-						term.SetValue(in_place_type<TermReference>, tm,
-							FetchTailEnvironmentReference(*p_ref, ctx));
-						return ReductionStatus::Clean;
-					}
-					return ReductionStatus::Retained;
-				}, [&]{
-					LiftTerm(term, tm);		
-					return ReductionStatus::Retained;
-				});
-			}
-			throw TypeError("Mismatched encapsulation type found.");
-		}, *std::next(term.begin()));
-	}
-};
-
-
 template<typename... _tParams>
 YB_ATTR_nodiscard YB_PURE inline TermNode
 AsForm(TermNode::allocator_type a, _tParams&&... args)
@@ -764,6 +592,90 @@ CheckResolvedListReference(TermNode& nd, bool has_ref)
 
 } // unnamed namespace;
 
+bool
+Encapsulation::Equal(const TermNode& x, const TermNode& y)
+{
+	if(TermUnequal(x, y))
+		return {};
+
+	bool r(true);
+	Action act{};
+
+	EqualSubterm(r, act, x.get_allocator(), x.begin(), y.begin(), x.end());
+	while(act)
+	{
+		const auto a(std::move(act));
+
+		a();
+	}
+	return r;
+}
+
+
+ReductionStatus
+Encapsulate::operator()(TermNode& term) const
+{
+	RetainN(term);
+
+	auto& tm(*std::next(term.begin()));
+
+	return Forms::EmplaceCallResultOrReturn(term,
+		Encapsulation(GetType(), ystdex::invoke_value_or(&TermReference::get,
+		Unilang::TryAccessReferencedLeaf<const TermReference>(tm),
+		std::move(tm))));
+}
+
+
+ReductionStatus
+Encapsulated::operator()(TermNode& term) const
+{
+	RetainN(term);
+
+	auto& tm(*std::next(term.begin()));
+
+	return Forms::EmplaceCallResultOrReturn(term,
+		ystdex::call_value_or([this](const Encapsulation& enc) noexcept{
+		return Get() == enc.Get();
+	}, Unilang::TryAccessReferencedTerm<Encapsulation>(tm)));
+}
+
+
+ReductionStatus
+Decapsulate::operator()(TermNode& term, Context& ctx) const
+{
+	RetainN(term);
+
+	return Unilang::ResolveTerm(
+		[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		const auto&
+			enc(Unilang::AccessRegular<const Encapsulation>(nd, p_ref));
+
+		if(enc.Get() == Get())
+		{
+			auto& tm(enc.TermRef);
+
+			return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
+				if(const auto p
+					= Unilang::TryAccessLeaf<const TermReference>(tm))
+				{
+					term.GetContainerRef() = tm.GetContainer();
+					term.Value = *p;
+				}
+				else
+				{
+					term.SetValue(in_place_type<TermReference>, tm,
+						FetchTailEnvironmentReference(*p_ref, ctx));
+					return ReductionStatus::Clean;
+				}
+				return ReductionStatus::Retained;
+			}, [&]{
+				LiftTerm(term, tm);		
+				return ReductionStatus::Retained;
+			});
+		}
+		throw TypeError("Mismatched encapsulation type found.");
+	}, *std::next(term.begin()));
+}
 
 namespace Forms
 {
@@ -862,6 +774,13 @@ Define(TermNode& term, Context& ctx)
 
 		RemoveHead(term);
 		return ReduceSubsequent(term, ctx,
+			// XXX: This is certainly unsafe for the type initializing the
+			//	handler in 'any' due to the 'TermNode' is not trivially
+			//	swappable (since the 'list' data member is not trivially
+			//	swappable) if the target object is stored in-place. However, it
+			//	is known that in the supported platform configurations, the ABI
+			//	makes it not in-place storable in
+			//	'ystdex::any_ops::any_storage', so there is no need to change.
 			std::bind([&](Context&, const TermNode& saved,
 			const shared_ptr<Environment>& p_e){
 			CheckBindParameter(p_e, saved, term);
