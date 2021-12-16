@@ -4,8 +4,8 @@
 #define INC_Unilang_TCO_h_ 1
 
 #include "Evaluation.h" // for map, lref, Environment, size_t, set, weak_ptr,
-//	shared_ptr, ContextHandler, list, TermNode, EnvironmentGuard,
-//	ReductionStatus, Context, Unilang::Deref;
+//	shared_ptr, IsTyped, Unilang::Deref, ContextHandler, list, TermNode,
+//	EnvironmentGuard, Context, ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
 #include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
@@ -47,17 +47,17 @@ struct RecordCompressor final
 	{
 		const auto& tp(parent.type());
 
-		if(tp == ystdex::type_id<EnvironmentList>())
+		if(IsTyped<EnvironmentList>(tp))
 		{
 			for(auto& vo : parent.GetObject<EnvironmentList>())
 				Traverse(e, vo, trace);
 		}
-		else if(tp == ystdex::type_id<EnvironmentReference>())
+		else if(IsTyped<EnvironmentReference>(tp))
 		{
 			if(auto p = parent.GetObject<EnvironmentReference>().Lock())
 				TraverseForSharedPtr(e, parent, trace, p);
 		}
-		else if(tp == ystdex::type_id<shared_ptr<Environment>>())
+		else if(IsTyped<shared_ptr<Environment>>(tp))
 		{
 			if(auto p = parent.GetObject<shared_ptr<Environment>>())
 				TraverseForSharedPtr(e, parent, trace, p);
@@ -395,6 +395,10 @@ struct Combine final
 		}, std::placeholders::_2, std::move(gd_or_env)), yforward(next));
 	}
 };
+
+
+using Action = function<void()>;
+
 
 } // namespace Unilang;
 

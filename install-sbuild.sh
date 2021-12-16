@@ -90,6 +90,7 @@ echo "Use option: SHBuild_BuildOpt=$SHBuild_BuildOpt"
 echo "Use option: SHBuild_SysRoot=$SHBuild_SysRoot"
 
 SHBuild_BuildOpt="$SHBuild_BuildOpt" SHBuild_SysRoot="$SHBuild_SysRoot" \
+	SHBuild_UseDebug=true SHBuild_UseRelease=true \
 	SHBuild_NoDev=true "$YSLib_BaseDir/Tools/install-sysroot.sh"
 
 echo 'To make the build environment work, ensure environment variables are' \

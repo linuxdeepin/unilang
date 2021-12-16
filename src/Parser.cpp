@@ -10,16 +10,17 @@ namespace Unilang
 void
 ByteParser::operator()(char c)
 {
-	buffer += c;
-
+	auto& lexer(GetLexerRef());
 	const auto add = [&](string&& arg){
 		lexemes.push_back(yforward(arg));
 	};
-	bool got_delim(UpdateBack(c));
-	const auto len(buffer.length());
+	auto& cbuf(GetBufferRef());
+	const bool got_delim(lexer.FilterChar(c, GetBufferRef())
+		&& lexer.UpdateBack(GetBackRef(), c));
+	const auto len(cbuf.length());
 
-	assert(!(lexemes.empty() && update_current));
-	if(len > 0)
+	assert(!(lexemes.empty() && update_current) && "Invalid state found.");
+	if(len > 0 && !lexer.GetUnescapeContext().IsHandling())
 	{
 		if(len == 1)
 		{
@@ -29,8 +30,8 @@ ByteParser::operator()(char c)
 				else
 					add(string({b}, lexemes.get_allocator()));
 			});
-			const char b(buffer.back());
-			const bool unquoted(Delimiter == char());
+			const char b(cbuf.back());
+			const bool unquoted(lexer.GetDelimiter() == char());
 
  			if(got_delim)
 			{
@@ -50,47 +51,11 @@ ByteParser::operator()(char c)
 			}
 		}
 		else if(update_current)
-			lexemes.back() += buffer.substr(0, len);
+			lexemes.back() += std::move(cbuf);
 		else
-			add(std::move(buffer));
-		buffer.clear();
+			add(std::move(cbuf));
+		cbuf.clear();
 	}
-}
-
-bool
-ByteParser::UpdateBack(char c)
-{
-	auto& b(buffer.back());
-
-	switch(c)
-	{
-		case '\'':
-		case '"':
-			if(Delimiter == char())
-			{
-				Delimiter = c;
-				return true;
-			}
-			else if(Delimiter == c)
-			{
-				Delimiter = char();
-				return true;
-			}
-			break;
-		case '\f':
-		case '\n':
-		case '\t':
-		case '\v':
-			if(Delimiter == char())
-			{
-				b = ' ';
-				break;
-			}
-			YB_ATTR_fallthrough;
-		default:
-			break;
-	}
-	return {};
 }
 
 } // namespace Unilang;

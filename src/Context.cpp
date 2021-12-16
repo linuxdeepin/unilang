@@ -1,12 +1,11 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Context.h" // for Unilang::allocate_shared, lref;
+#include "Context.h" // for Unilang::allocate_shared, lref, type_id;
 #include <cassert> // for assert;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
 #include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for ReduceOnce;
-#include <ystdex/typeinfo.h> // for ystdex::type_id;
 #include <ystdex/utility.hpp> // ystdex::exchange;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include "TermAccess.h" // for Unilang::IsMovable;
@@ -121,7 +120,7 @@ Environment::LookupName(string_view id) const
 }
 
 void
-Environment::ThrowForInvalidType(const ystdex::type_info& tp)
+Environment::ThrowForInvalidType(const type_info& tp)
 {
 	throw TypeError(
 		ystdex::sfmt("Invalid environment type '%s' found.", tp.name()));
@@ -193,13 +192,13 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 				const ValueObject& parent(cur);
 				const auto& tp(parent.type());
 
-				if(tp == ystdex::type_id<EnvironmentReference>())
+				if(IsTyped<EnvironmentReference>(tp))
 				{
 					p_redirected = RedirectToShared(id,
 						parent.GetObject<EnvironmentReference>().Lock());
 					p_env.swap(p_redirected);
 				}
-				else if(tp == ystdex::type_id<shared_ptr<Environment>>())
+				else if(IsTyped<shared_ptr<Environment>>(tp))
 				{
 					p_redirected = RedirectToShared(id,
 						parent.GetObject<shared_ptr<Environment>>());
@@ -209,7 +208,7 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 				{
 					const ValueObject* p_next = {};
 
-					if(tp == ystdex::type_id<EnvironmentList>())
+					if(IsTyped<EnvironmentList>(tp))
 					{
 						auto& envs(parent.GetObject<EnvironmentList>());
 

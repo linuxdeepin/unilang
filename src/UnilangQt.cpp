@@ -25,7 +25,6 @@
 #endif
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
 #include "Evaluation.h" // for ReduceCombinedBranch;
-#include "Arithmetic.h" // for Number;
 
 namespace Unilang
 {
@@ -218,8 +217,8 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& wgt(ResolveQWidget(*++i));
-		const int& w(Unilang::ResolveRegular<Number>(*++i));
-		const int& h(Unilang::ResolveRegular<Number>(*++i));
+		const int& w(Unilang::ResolveRegular<int>(*++i));
+		const int& h(Unilang::ResolveRegular<int>(*++i));
 
 		wgt.resize(w, h);
 		return ReduceReturnUnspecified(term);

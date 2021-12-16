@@ -4,7 +4,7 @@
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
-#include "UnilangFFI.h" // for Unilang::allocate_shared;
+#include "UnilangFFI.h" // for Unilang::allocate_shared, IsTyped;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::unique_ptr_from;
 #if __GNUC__
 #	pragma GCC diagnostic pop
@@ -443,7 +443,7 @@ InitializeFFI(Interpreter& intp)
 
 	RegisterUnary<>(ctx, "ffi-library?",
 		ComposeReferencedTermOp([](const TermNode& term) noexcept{
-		return term.Value.type() == ystdex::type_id<DynamicLibrary>();
+		return IsTyped<DynamicLibrary>(term);
 	}));
 	RegisterUnary<Strict, const string>(ctx, "ffi-load-library",
 		[](const string& filename){
@@ -451,8 +451,7 @@ InitializeFFI(Interpreter& intp)
 	});
 	RegisterUnary<>(ctx, "ffi-call-interface?",
 		ComposeReferencedTermOp([](const TermNode& term) noexcept{
-		return term.Value.type()
-			== ystdex::type_id<shared_ptr<CallInterface>>();
+		return IsTyped<shared_ptr<CallInterface>>(term);
 	}));
 	RegisterStrict(ctx, "ffi-make-call-interface", [](TermNode& term){
 		RetainN(term, 3);

@@ -2,15 +2,17 @@
 
 #include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
 //	std::getline;
+#include <cassert> // for assert;
+#include "Math.h" // for ReadDecimal, FPToString;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for InvalidSyntax, UnilangException;
-#include "Arithmetic.h" // for Number;
 #include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
 //	DeliteralizeUnchecked;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
-#include YFM_YSLib_Core_YException // for YSLib::ExtractException;
+#include YFM_YSLib_Core_YException // for YSLib::ExtractException,
+//	YSLib::stringstream;
 #include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
@@ -30,134 +32,233 @@ namespace
 ReductionStatus
 DefaultEvaluateLeaf(TermNode& term, string_view id)
 {
-	assert(id.data());
-	if(!id.empty())
+	assert(bool(id.data()));
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(id.front())
 	{
-		const char f(id.front());
-
-		if(ystdex::isdigit(f))
-		{
-		    int ans(0);
-
-			for(auto p(id.begin()); p != id.end(); ++p)
-				if(ystdex::isdigit(*p))
+	case '#':
+		id.remove_prefix(1);
+		if(!id.empty())
+			switch(id.front())
+			{
+			case 't':
+				if(id.size() == 1 || id.substr(1) == "rue")
 				{
-					if(unsigned((ans << 3) + (ans << 1) + *p - '0')
-						<= unsigned(INT_MAX))
-						ans = (ans << 3) + (ans << 1) + *p - '0';
-					else
-						throw InvalidSyntax(ystdex::sfmt<std::string>(
-							"Value of identifier '%s' is out of the range of"
-							" the supported integer.", id.data()));
+					term.Value = true;
+					return ReductionStatus::Clean;
 				}
-				else
-					throw InvalidSyntax(ystdex::sfmt<std::string>("Literal"
-						" postfix is unsupported in identifier '%s'.",
-						id.data()));
-			term.Value = Number(ans);
+				break;
+			case 'f':
+				if(id.size() == 1 || id.substr(1) == "alse")
+				{
+					term.Value = false;
+					return ReductionStatus::Clean;
+				}
+				break;
+			case 'i':
+				if(id.substr(1) == "nert")
+				{
+					term.Value = ValueToken::Unspecified;
+					return ReductionStatus::Clean;
+				}
+				else if(id.substr(1) == "gnore")
+				{
+					term.Value = ValueToken::Ignore;
+					return ReductionStatus::Clean;
+				}
+				break;
+			}
+	default:
+		break;
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		ReadDecimal(term.Value, id, id.begin());
+		return ReductionStatus::Clean;
+	case '-':
+		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
+			break;
+		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				term.Value = -std::numeric_limits<double>::infinity();
+				return ReductionStatus::Clean;
+			}
+			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				term.Value = -std::numeric_limits<double>::quiet_NaN();
+				return ReductionStatus::Clean;
+			}
 		}
-		else if(id == "#t")
-			term.Value = true;
-		else if(id == "#f")
-			term.Value = false;
-		else if(id == "#inert")
-			term.Value = ValueToken::Unspecified;
+		if(id.size() > 1)
+			ReadDecimal(term.Value, id, std::next(id.begin()));
 		else
-			return ReductionStatus::Retrying;
+			term.Value = 0;
+		return ReductionStatus::Clean;
+	case '+':
+		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
+			break;
+		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				term.Value = std::numeric_limits<double>::infinity();
+				return ReductionStatus::Clean;
+			}
+			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				term.Value = std::numeric_limits<double>::quiet_NaN();
+				return ReductionStatus::Clean;
+			}
+		}
+		YB_ATTR_fallthrough;
+	case '0':
+		if(id.size() > 1)
+			ReadDecimal(term.Value, id, std::next(id.begin()));
+		else
+			term.Value = 0;
 		return ReductionStatus::Clean;
 	}
 	return ReductionStatus::Retrying;
 }
 
-TermNode
-ParseLeaf(string_view id, TermNode::allocator_type a)
+void
+ParseLeaf(TermNode& term, string_view id)
 {
 	assert(id.data());
-
-	auto term(Unilang::AsTermNode());
-
-	if(!id.empty())
-		switch(CategorizeBasicLexeme(id))
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(CategorizeBasicLexeme(id))
+	{
+	case LexemeCategory::Code:
+		id = DeliteralizeUnchecked(id);
+		term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
+		break;
+	case LexemeCategory::Symbol:
+		if(CheckReducible(DefaultEvaluateLeaf(term, id)))
 		{
-		case LexemeCategory::Code:
-			id = DeliteralizeUnchecked(id);
-			YB_ATTR_fallthrough;
-		case LexemeCategory::Symbol:
-			if(CheckReducible(DefaultEvaluateLeaf(term, id)))
-				term.SetValue(in_place_type<TokenValue>, id, a);
-			break;
-		case LexemeCategory::Data:
-			term.SetValue(in_place_type<string>, Deliteralize(id), a);
-			YB_ATTR_fallthrough;
-		default:
-			break;
+			if(!id.empty())
+			{
+				const char f(id.front());
+
+				if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
+					&& id.find_first_not_of("+-") != string_view::npos)
+					|| ystdex::isdigit(f))
+					throw InvalidSyntax(ystdex::sfmt(f != '#'
+						? "Unsupported literal prefix found in literal '%s'."
+						: "Invalid literal '%s' found.", id.data()));
+			}
+			term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
 		}
-	return term;
+		break;
+	case LexemeCategory::Data:
+		term.SetValue(in_place_type<string>, Deliteralize(id),
+			term.get_allocator());
+		YB_ATTR_fallthrough;
+	default:
+		break;
+	}
 }
 
+template<typename _func>
 void
-PrintTermNodeImpl(std::ostream& os, const TermNode& term, size_t depth = 0,
-	size_t i = 0)
+PrintTermNode(std::ostream& os, const TermNode& term, _func f, size_t depth = 0,
+	size_t idx = 0)
 {
-	const auto print_node_str([&](const TermNode& subterm){
-		return ResolveTerm(
-			[&](const TermNode& tm) -> pair<lref<const TermNode>, bool>{
-			try
-			{
-				const auto& vo(tm.Value);
-
-				os << [&]() -> string{
-					if(const auto p = vo.AccessPtr<string>())
-						return ystdex::quote(*p);
-					if(const auto p = vo.AccessPtr<TokenValue>())
-						return *p;
-					if(const auto p = vo.AccessPtr<bool>())
-						return *p ? "#t" : "#f";
-					if(const auto p = vo.AccessPtr<int>())
-						return ystdex::sfmt<string>("%d", *p);
-					if(const auto p = vo.AccessPtr<Number>())
-						// TODO: Support different internal representations.
-						return ystdex::sfmt<string>("%d", int(*p));
-					if(const auto p = vo.AccessPtr<ValueToken>())
-						if(*p == ValueToken::Unspecified)
-							return "#inert";
-
-					const auto& t(vo.type());
-
-					if(t != typeid(void))
-						return "#[" + string(t.name()) + ']';
-					throw bad_any_cast();
-				}();
-				return {tm, true};
-			}
-			catch(bad_any_cast&)
-			{}
-			return {tm, false};
-		}, subterm);
-	});
-
-	if(depth != 0 && i != 0)
+	if(depth != 0 && idx != 0)
 		os << ' ';
-
-	const auto pr(print_node_str(term));
-
-	if(!pr.second)
-	{
-		size_t n(0);
-
-		os << '(';
-		for(const auto& nd : pr.first.get())
+	ResolveTerm([&](const TermNode& tm){
+		try
 		{
-			try
-			{
-				PrintTermNodeImpl(os, nd, depth + 1, n);
-			}
-			catch(std::out_of_range&)
-			{}
-			++n;
+			f(os, tm);
+			return;
 		}
+		catch(bad_any_cast&)
+		{}
+		os << '(';
+		try
+		{
+			size_t i(0);
+
+			for(const auto& nd : tm)
+			{
+				PrintTermNode(os, nd, f, depth + 1, i);
+				++i;
+			}
+		}
+		catch(std::out_of_range&)
+		{}
 		os << ')';
-	}
+	}, term);
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObject(const ValueObject& vo)
+{
+	if(const auto p = vo.AccessPtr<string>())
+		return ystdex::quote(*p);
+	if(const auto p = vo.AccessPtr<TokenValue>())
+		return *p;
+	if(const auto p = vo.AccessPtr<bool>())
+		return *p ? "#t" : "#f";
+	if(const auto p = vo.AccessPtr<int>())
+		return sfmt<string>("%d", *p);
+	if(const auto p = vo.AccessPtr<unsigned>())
+		return sfmt<string>("%u", *p);
+	if(const auto p = vo.AccessPtr<long long>())
+		return sfmt<string>("%lld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long long>())
+		return sfmt<string>("%llu", *p);
+	if(const auto p = vo.AccessPtr<double>())
+		return FPToString(*p);
+	if(const auto p = vo.AccessPtr<long>())
+		return sfmt<string>("%ld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long>())
+		return sfmt<string>("%lu", *p);
+	if(const auto p = vo.AccessPtr<short>())
+		return sfmt<string>("%hd", *p);
+	if(const auto p = vo.AccessPtr<unsigned short>())
+		return sfmt<string>("%hu", *p);
+	if(const auto p = vo.AccessPtr<signed char>())
+		return sfmt<string>("%d", int(*p));
+	if(const auto p = vo.AccessPtr<unsigned char>())
+		return sfmt<string>("%u", unsigned(*p));
+	if(const auto p = vo.AccessPtr<float>())
+		return FPToString(*p);
+	if(const auto p = vo.AccessPtr<long double>())
+		return FPToString(*p);
+	if(const auto p = vo.AccessPtr<int>())
+		return ystdex::sfmt<string>("%d", *p);
+	if(const auto p = vo.AccessPtr<ValueToken>())
+		if(*p == ValueToken::Unspecified)
+			return "#inert";
+
+	const auto& t(vo.type());
+
+	if(t != typeid(void))
+		return "#[" + string(t.name()) + ']';
+	throw bad_any_cast();
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForDisplay(const ValueObject& vo)
+{
+	if(const auto p = vo.AccessPtr<string>())
+		return *p;
+	return StringifyValueObject(vo);
+}
+
+YB_ATTR_nodiscard YB_PURE string
+StringifyValueObjectForWrite(const ValueObject& vo)
+{
+	// XXX: At current, this is just same to the "print" routine.
+	return StringifyValueObject(vo);
 }
 
 YB_ATTR_nodiscard YB_PURE std::string
@@ -229,13 +330,43 @@ Interpreter::Evaluate(TermNode& term)
 }
 
 ReductionStatus
-Interpreter::EvaluateOnceIn(Context& ctx)
+Interpreter::ExecuteOnce(Context& ctx)
 {
 	return ReduceOnce(Term, ctx);
 }
 
 ReductionStatus
-Interpreter::ExecuteOnce(string_view unit, Context& ctx)
+Interpreter::ExecuteString(string_view unit, Context& ctx)
+{
+	PrepareExecution(ctx);
+	if(Echo)
+		RelaySwitched(ctx, [&]{
+			Print(Term);
+			return ReductionStatus::Neutral;
+		});
+	Term = Read(unit);
+	return ExecuteOnce(ctx);
+}
+
+ReductionStatus
+Interpreter::Exit()
+{
+	Root.UnwindCurrent();
+	return ReductionStatus::Neutral;
+}
+
+YSLib::unique_ptr<std::istream>
+Interpreter::OpenUnique(string filename)
+{
+	using namespace YSLib;
+	auto p_is(OpenFile(filename.c_str()));
+
+	CurrentSource = YSLib::share_move(filename);
+	return p_is;
+}
+
+void
+Interpreter::PrepareExecution(Context& ctx)
 {
 	ctx.SaveExceptionHandler();
 	ctx.HandleException = std::bind([&](std::exception_ptr p,
@@ -256,30 +387,6 @@ Interpreter::ExecuteOnce(string_view unit, Context& ctx)
 			TraceException(e, trace);
 		}
 	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
-	if(Echo)
-		RelaySwitched(ctx, [&]{
-			Print(Term);
-			return ReductionStatus::Neutral;
-		});
-	Term = Read(unit);
-	return EvaluateOnceIn(ctx);
-}
-
-ReductionStatus
-Interpreter::Exit()
-{
-	Root.UnwindCurrent();
-	return ReductionStatus::Neutral;
-}
-
-YSLib::unique_ptr<std::istream>
-Interpreter::OpenUnique(string filename)
-{
-	using namespace YSLib;
-	auto p_is(OpenFile(filename.c_str()));
-
-	CurrentSource = YSLib::share_move(filename);
-	return p_is;
 }
 
 void
@@ -301,10 +408,10 @@ Interpreter::Perform(string_view unit)
 TermNode
 Interpreter::Read(string_view unit)
 {
-	ByteParser parse{};
+	LexicalAnalyzer lexer;
+	ByteParser parse(lexer, Allocator);
 
 	std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
-
 	return ReadParserResult(parse);
 }
 
@@ -312,10 +419,10 @@ TermNode
 Interpreter::ReadFrom(std::streambuf& buf) const
 {
 	using s_it_t = std::istreambuf_iterator<char>;
-	ByteParser parse{};
+	LexicalAnalyzer lexer;
+	ByteParser parse(lexer, Allocator);
 
 	std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
-
 	return ReadParserResult(parse);
 }
 TermNode
@@ -334,15 +441,20 @@ Interpreter::ReadFrom(std::istream& is) const
 TermNode
 Interpreter::ReadParserResult(const ByteParser& parse) const
 {
-	TermNode term{};
+	TermNode res{Allocator};
 	const auto& parse_result(parse.GetResult());
 
-	if(ReduceSyntax(term, parse_result.cbegin(), parse_result.cend(),
-		std::bind(ParseLeaf, std::placeholders::_1, std::ref(Allocator)))
-		!= parse_result.cend())
+	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
+		[&](string_view id){
+		auto term(Unilang::AsTermNode(Allocator));
+
+		if(!id.empty())
+			ParseLeaf(term, id);
+		return term;
+	}) != parse_result.cend())
 		throw UnilangException("Redundant ')' found.");
-	Preprocess(term);
-	return term;
+	Preprocess(res);
+	return res;
 }
 
 void
@@ -357,8 +469,29 @@ Interpreter::RunLine(string_view unit)
 {
 	if(!unit.empty() && unit != "exit")
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
-			return ExecuteOnce(unit, ctx);
+			return ExecuteString(unit, ctx);
 		}));
+}
+
+void
+Interpreter::RunScript(string filename)
+{
+	if(filename == "-")
+	{
+		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+			PrepareExecution(ctx);
+			Term = ReadFrom(std::cin);
+			return ExecuteOnce(ctx);
+		}));
+	}
+	else if(!filename.empty())
+	{
+		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+			PrepareExecution(ctx);
+			Term = ReadFrom(*OpenUnique(std::move(filename)));
+			return ExecuteOnce(ctx);
+		}));
+	}
 }
 
 ReductionStatus
@@ -368,7 +501,7 @@ Interpreter::RunLoop(Context& ctx)
 	{
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
-		return !line.empty() ? (line != "exit" ? ExecuteOnce(line, ctx)
+		return !line.empty() ? (line != "exit" ? ExecuteString(line, ctx)
 			: Exit()) : ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
@@ -399,9 +532,33 @@ Interpreter::WaitForLine()
 
 
 void
+DisplayTermValue(std::ostream& os, const TermNode& term)
+{
+	YSLib::stringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObjectForDisplay(nd.Value);
+	});
+	os << oss.str().c_str();
+}
+
+void
 PrintTermNode(std::ostream& os, const TermNode& term)
 {
-	PrintTermNodeImpl(os, term);
+	PrintTermNode(os, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObject(nd.Value);
+	});
+}
+
+void
+WriteTermValue(std::ostream& os, const TermNode& term)
+{
+	YSLib::stringstream oss(string(term.get_allocator()));
+
+	PrintTermNode(oss, term, [](std::ostream& os0, const TermNode& nd){
+		os0 << StringifyValueObjectForWrite(nd.Value);
+	});
+	os << oss.str().c_str();
 }
 
 } // namespace Unilang;

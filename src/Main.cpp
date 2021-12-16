@@ -9,14 +9,14 @@
 #include <functional> // for std::bind, std::placeholders;
 #include "BasicReduction.h" // for ReductionStatus, LiftOther;
 #include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
-#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
-//	ThrowInvalidTokenError;
+#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
 //	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
 //	ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
-#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold;
+#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
+//	form implementations;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
@@ -25,15 +25,22 @@
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
 //	YSLib::FetchEnvironmentVariable;
-#include "Arithmetic.h" // for Number;
+#include "Math.h" // for NumberLeaf, NumberNode and other math functions;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
+#include YFM_YSLib_Core_YShellDefinition // for std::to_string,
+//	YSLib::make_string_view, YSLib::to_std::string;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
-#include YFM_YSLib_Core_YException // for YSLib::FilterExceptions, YSLib::Alert;
+#include <ystdex/string.hpp> // for ystdex::quote, ystdex::write_ntcts;
+#include <vector> // for std::vector;
+#include <array> // for std::array;
+#include YFM_YSLib_Core_YException // for YSLib::LoggedEvent,
+//	YSLib::FilterExceptions, YSLib::CommandArguments, YSLib::Alert;
+#include YFM_YSLib_Core_YCoreUtilities // for YSLib::LockCommandArguments;
 #include "UnilangQt.h"
 
 namespace Unilang
@@ -109,25 +116,13 @@ DoAssign(_func f, TermNode& x)
 	return ValueToken::Unspecified;
 }
 
-template<typename _func>
-auto
-CheckSymbol(string_view id, _func f) -> decltype(f())
-{
-	if(IsUnilangSymbol(id))
-		return f();
-	ThrowInvalidTokenError(id);
-}
-
 YB_ATTR_nodiscard ReductionStatus
 DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 	const Context& c)
 {
-	RetainN(term);
-	Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		const string_view id(Unilang::AccessRegular<TokenValue>(nd, p_ref));
-
-		term = CheckSymbol(id, std::bind(f, std::ref(c), id));
-	}, *std::next(term.begin()));
+	Forms::CallRegularUnaryAs<const TokenValue>([&](string_view id){
+		term = f(c, id);
+	}, term);
 	return ReductionStatus::Retained;
 }
 
@@ -148,6 +143,18 @@ SymbolToString(const TokenValue& s) noexcept
 	return s;
 }
 
+
+struct LeafPred
+{
+	template<typename _func>
+	YB_ATTR_nodiscard YB_PURE bool
+	operator()(const TermNode& nd, _func f) const ynoexcept_spec(f(nd.Value))
+	{
+		return IsLeaf(nd) && f(nd.Value);
+	}
+};
+
+
 void
 LoadModule_std_promises(Interpreter& intp)
 {
@@ -156,14 +163,14 @@ $provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d% force)
 ((mods $as-environment (
 	$def! (encapsulate% promise? decapsulate) () make-encapsulation-type;
 	$defl%! do-force (&prom fwd) $let% ((((&o &env) evf) decapsulate prom))
-		$if (null? env) (fwd o)
+		$if (null? env) (first (first (decapsulate (fwd prom))))
 		(
 			$let*% ((&y evf (fwd o) env) (&x decapsulate prom)
 				(((&o &env) &evf) x))
 				$cond
 					((null? env) first (first (decapsulate (fwd prom))))
 					((promise? y) $sequence
-						($if (eqv? (first (rest& (decapsulate y))) eval)
+						($if (eqv? (firstv (rest& (decapsulate y))) eval)
 							(assign! evf eval))
 						(set-first%! x (first (decapsulate (forward! y))))
 						(do-force prom fwd))
@@ -197,16 +204,16 @@ void
 LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& ctx(intp.Root.GetRecordRef());
 
-	RegisterStrict(renv, "++",
+	RegisterStrict(ctx, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
 		string(), std::placeholders::_1));
-	RegisterUnary<Strict, const string>(renv, "string-empty?",
+	RegisterUnary<Strict, const string>(ctx, "string-empty?",
 		[](const string& str) noexcept{
 			return str.empty();
 		});
-	RegisterBinary(renv, "string<-", [](TermNode& x, TermNode& y){
+	RegisterBinary(ctx, "string<-", [](TermNode& x, TermNode& y){
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
@@ -227,9 +234,9 @@ LoadModule_std_strings(Interpreter& intp)
 		}, x);
 		return ValueToken::Unspecified;
 	});
-	RegisterBinary<Strict, const string, const string>(renv, "string=?",
+	RegisterBinary<Strict, const string, const string>(ctx, "string=?",
 		ystdex::equal_to<>());
-	RegisterStrict(renv, "string-split", [](TermNode& term){
+	RegisterStrict(ctx, "string-split", [](TermNode& term){
 		return CallBinaryAs<string, const string>(
 			[&](string& x, const string& y) -> ReductionStatus{
 			if(!x.empty())
@@ -256,11 +263,11 @@ LoadModule_std_strings(Interpreter& intp)
 			return ReductionStatus::Clean;
 		}, term);
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains?",
+	RegisterBinary<Strict, string, string>(ctx, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains-ci?",
+	RegisterBinary<Strict, string, string>(ctx, "string-contains-ci?",
 		[](string x, string y){
 		const auto to_lwr([](string& str) noexcept{
 			for(auto& c : str)
@@ -271,7 +278,7 @@ LoadModule_std_strings(Interpreter& intp)
 		to_lwr(y);
 		return x.find(y) != string::npos;
 	});
-	RegisterUnary(renv, "string->symbol", [](TermNode& term){
+	RegisterUnary(ctx, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			auto& s(Unilang::AccessRegular<string>(nd, p_ref));
 
@@ -279,13 +286,13 @@ LoadModule_std_strings(Interpreter& intp)
 				: StringToSymbol(s);
 		}, term);
 	});
-	RegisterUnary<Strict, const TokenValue>(renv, "symbol->string",
+	RegisterUnary<Strict, const TokenValue>(ctx, "symbol->string",
 		SymbolToString);
-	RegisterUnary<Strict, const string>(renv, "string->regex",
+	RegisterUnary<Strict, const string>(ctx, "string->regex",
 		[](const string& str){
 		return std::regex(str);
 	});
-	RegisterStrict(renv, "regex-match?", [](TermNode& term){
+	RegisterStrict(ctx, "regex-match?", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(std::next(term.begin()));
@@ -295,7 +302,7 @@ LoadModule_std_strings(Interpreter& intp)
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(renv, "regex-replace", [](TermNode& term){
+	RegisterStrict(ctx, "regex-replace", [](TermNode& term){
 		RetainN(term, 3);
 
 		auto i(term.begin());
@@ -313,32 +320,34 @@ void
 LoadModule_std_io(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& ctx(intp.Root.GetRecordRef());
 
-	RegisterStrict(renv, "newline", [&](TermNode& term){
+	RegisterStrict(ctx, "newline", [&](TermNode& term){
 		RetainN(term, 0);
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterUnary<Strict, const string>(renv, "readable-file?",
+	RegisterUnary<Strict, const string>(ctx, "readable-file?",
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
 	});
-	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
+	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
-		ctx.SetupFront([&]{
+		c.SetupFront([&]{
 			term = intp.ReadFrom(*intp.OpenUnique(std::move(
 				Unilang::ResolveRegular<string>(*std::next(term.begin())))));
-			return ReduceOnce(term, ctx);
+			return ReduceOnce(term, c);
 		});
 	});
-	RegisterStrict(renv, "display", [&](TermNode& term){
-		RetainN(term);
-		LiftOther(term, *std::next(term.begin()));
-		PrintTermNode(std::cout, term);
-		return ReduceReturnUnspecified(term);
+	RegisterUnary(ctx, "write", [&](TermNode& term){
+		WriteTermValue(std::cout, term);
+		return ValueToken::Unspecified;
 	});
-	RegisterUnary<Strict, const string>(renv, "put", [&](const string& str){
+	RegisterUnary(ctx, "display", [&](TermNode& term){
+		DisplayTermValue(std::cout, term);
+		return ValueToken::Unspecified;
+	});
+	RegisterUnary<Strict, const string>(ctx, "put", [&](const string& str){
 		YSLib::IO::StreamPut(std::cout, str.c_str());
 		return ValueToken::Unspecified;
 	});
@@ -351,9 +360,9 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& ctx(intp.Root.GetRecordRef());
 
-	RegisterUnary<Strict, const string>(renv, "env-get", [](const string& var){
+	RegisterUnary<Strict, const string>(ctx, "env-get", [](const string& var){
 		string res(var.get_allocator());
 
 		YSLib::FetchEnvironmentVariable(res, var.c_str());
@@ -475,9 +484,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	RegisterStrict(ctx, "eval%", EvalRef);
 	RegisterUnary<Strict, const string>(ctx, "bound?",
 		[](const string& id, Context& c){
-		return CheckSymbol(id, [&]{
-			return bool(ResolveName(c, id).first);
-		});
+		return bool(ResolveName(c, id).first);
 	});
 	RegisterForm(ctx, "$resolve-identifier",
 		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
@@ -488,6 +495,10 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	RegisterForm(ctx, "$move-resolved!",
 		std::bind(DoResolve, std::ref(MoveResolved), _1, _2));
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
+	RegisterUnary<Strict, const shared_ptr<Environment>>(ctx,
+		"weaken-environment", [](const shared_ptr<Environment>& p_env) noexcept{
+		return EnvironmentReference(p_env);
+	});
 	RegisterForm(ctx, "$def!", Define);
 	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
 	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
@@ -523,6 +534,14 @@ $def! $remote-eval $vau (&o &e) d eval o (eval e d);
 $def! $remote-eval% $vau% (&o &e) d eval% o (eval e d);
 $def! $set! $vau (&e &formals .&expr) d
 	eval (list $def! formals (unwrap eval) expr d) (eval e d);
+$def! $wvau $vau (&formals &ef .&body) d
+	wrap (eval (cons $vau (cons formals (cons ef (move! body)))) d);
+$def! $wvau% $vau (&formals &ef .&body) d
+	wrap (eval (cons $vau% (cons formals (cons ef (move! body)))) d);
+$def! $wvau/e $vau (&p &formals &ef .&body) d
+	wrap (eval (cons $vau/e (cons p (cons formals (cons ef (move! body))))) d);
+$def! $wvau/e% $vau (&p &formals &ef .&body) d
+	wrap (eval (cons $vau/e% (cons p (cons formals (cons ef (move! body))))) d);
 $def! $lambda $vau (&formals .&body) d
 	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
 $def! $lambda% $vau (&formals .&body) d
@@ -537,8 +556,10 @@ $def! $lambda/e% $vau (&p &formals .&body) d
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
 $def! collapse $lambda% (%x)
-	$if (uncollapsed? ($resolve-identifier x)) (idv x) x;
+	$if (uncollapsed? x)
+		(($if ($lvalue-identifier? x) ($lambda% (%x) x) id) (idv x)) x;
 $def! assign%! $lambda (&x &y) assign@! (forward! x) (forward! (collapse y));
+$def! assign! $lambda (&x &y) assign@! (forward! x) (idv (collapse y));
 $def! apply $lambda% (&appv &arg .&opt)
 	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
 		($if (null? opt) (() make-environment)
@@ -556,12 +577,18 @@ $def! $defv! $vau (&$f &formals &ef .&body) d
 	eval (list $set! d $f $vau formals ef (move! body)) d;
 $defv! $defv%! (&$f &formals &ef .&body) d
 	eval (list $set! d $f $vau% formals ef (move! body)) d;
+$defv! $defv/e! (&$f &p &formals &ef .&body) d
+	eval (list* $def! $f $vau/e p formals ef (move! body)) d;
 $defv! $defv/e%! (&$f &e &formals &ef .&body) d
 	eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
 $defv! $defw! (&f &formals &ef .&body) d
-	eval (list $set! d f wrap (list* $vau formals ef (move! body))) d;
+	eval (list* $def! f $wvau formals ef (move! body)) d;
 $defv! $defw%! (&f &formals &ef .&body) d
-	eval (list $set! d f wrap (list* $vau% formals ef (move! body))) d;
+	eval (list* $def! f $wvau% formals ef (move! body)) d;
+$defv! $defw/e! (&f &p &formals &ef .&body) d
+	eval (list* $def! f $wvau/e p formals ef (move! body)) d;
+$defv! $defw/e%! (&f &p &formals &ef .&body) d
+	eval (list* $def! f $wvau/e% p formals ef (move! body)) d;
 $defv! $defl! (f formals .body) d
 	eval (list $set! d f $lambda formals (move! body)) d;
 $defv! $defl%! (&f &formals .&body) d
@@ -573,12 +600,14 @@ $defv! $defl/e%! (&f &p &formals .&body) d
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
 $defl%! first (%l)
-	($lambda% (fwd) forward-first% forward! (fwd l))
-		($if ($lvalue-identifier? l) id expire);
+	$if ($lvalue-identifier? l) (($lambda% ((@x .)) collapse x) l)
+		(forward-first% idv (expire l));
+$defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
 $defl%! first% (%l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
-	($lambda% ((&x .)) x) (check-list-reference (forward! l));
+	($lambda% ((@x .)) collapse x) (check-list-reference (forward! l));
+$defl! firstv ((&x .)) x;
 $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
 $defl%! rest& (&l)
@@ -704,26 +733,45 @@ $defv! $import! (&e .&symbols) d
 	eval% (list $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (eval e d);
 	)Unilang");
-	// NOTE: Arithmetics.
-	// TODO: Use generic types.
-	RegisterBinary<Strict, const Number, const Number>(ctx, "<?",
-		ystdex::less<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, "<=?",
-		ystdex::less_equal<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, ">=?",
-		ystdex::greater_equal<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, ">?",
-		ystdex::greater<>());
-	RegisterStrict(ctx, "+", std::bind(CallBinaryFold<Number, ystdex::plus<>>,
-		ystdex::plus<>(), 0, _1));
-	RegisterBinary<Strict, const Number, const Number>(ctx, "add2",
-		ystdex::plus<>());
-	RegisterBinary<Strict, const Number, const Number>(ctx, "-",
-		ystdex::minus<>());
-	RegisterStrict(ctx, "*", std::bind(CallBinaryFold<Number,
-		ystdex::multiplies<>>, ystdex::multiplies<>(), 1, _1));
-	RegisterBinary<Strict, const Number, const Number>(ctx, "multiply2",
-		ystdex::multiplies<>());
+	// NOTE: Math operations.
+	RegisterUnary(ctx, "number?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
+	RegisterUnary(ctx, "real?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
+	RegisterUnary(ctx, "rational?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsRationalValue)));
+	RegisterUnary(ctx, "integer?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
+	RegisterUnary(ctx, "exact-integer?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "exact?", IsExactValue);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "inexact?", IsInexactValue);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "finite?", IsFinite);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "infinite?", IsInfinite);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "nan?", IsNaN);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "=?",
+		Equal);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<?", Less);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">?",
+		Greater);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<=?",
+		LessEqual);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">=?",
+		GreaterEqual);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "zero?", IsZero);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "positive?", IsPositive);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "negative?", IsNegative);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "odd?", IsOdd);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "even?", IsEven);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "max", Max);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "min", Min);
+	RegisterUnary<Strict, NumberNode>(ctx, "add1", Add1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "+", Plus);
+	RegisterUnary<Strict, NumberNode>(ctx, "sub1", Sub1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "-", Minus);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "*", Multiplies);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
+	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
 	RegisterBinary<Strict, const int, const int>(ctx, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
@@ -735,6 +783,12 @@ $defv! $import! (&e .&symbols) d
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	RegisterUnary<Strict, const int&>(ctx, "itos", [](const int& x){
+		return string(YSLib::make_string_view(std::to_string(int(x))));
+	});
+	RegisterUnary<Strict, const string>(ctx, "stoi", [](const string& x){
+		return int(std::stoi(YSLib::to_std_string(x)));
 	});
 	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
@@ -781,8 +835,100 @@ $defv! $import! (&e .&symbols) d
 	PreloadExternal(intp, "init.txt");
 }
 
-#define APP_NAME "Unilang demo"
-#define APP_VER "0.7.121"
+template<class _tString>
+auto
+Quote(_tString&& str) -> decltype(ystdex::quote(yforward(str), '\''))
+{
+	return ystdex::quote(yforward(str), '\'');
+}
+
+
+const struct Option
+{
+	const char *prefix, *option_arg;
+	std::vector<const char*> option_details;
+
+	Option(const char* pfx, const char* opt_arg,
+		std::initializer_list<const char*> il)
+		: prefix(pfx), option_arg(opt_arg), option_details(il)
+	{}
+} OptionsTable[]{
+	{"-h, --help", "", {"Print this message."}},
+	{"-e", " [STRING]", {"Evaluate a string if the following argument exists."
+		" This option can occur more than once and combined with SRCPATH.\n"
+		"\tEach instance of this option (with its optional argument) will be"
+		" evaluated in order before evaluate the script specified by SRCPATH"
+		" (if any)."}}
+};
+
+const std::array<const char*, 3> DeEnvs[]{
+	{{"ECHO", "", "If set, echo the result after evaluating each string."}},
+	{{"UNILANG_NO_JIT", "", "If set, disable any optimization based on the JIT"
+		" (just-in-time) execution."}},
+	{{"UNILANG_PATH", "", "Unilang loader path template string."}}
+};
+
+
+void
+PrintHelpMessage(const string& prog)
+{
+	using ystdex::sfmt;
+	auto& os(std::cout);
+
+	ystdex::write_ntcts(os, sfmt("Usage: \"%s\" [OPTIONS ...] SRCPATH"
+		" [OPTIONS ... [-- [ARGS...]]]\n"
+		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
+		"\tThis program is an interpreter of Unilang.\n"
+		"\tThere are two execution modes, scripting mode and interactive mode,"
+		" exclusively. In scripting mode, a script file specified in the"
+		" command line arguments is run. Otherwise, the program runs in the"
+		" interactive mode and the REPL (read-eval-print loop) is entered,"
+		" see below for details.\n"
+		"\tThere are no checks on the values. Any behaviors depending"
+		" on the locale-specific values are unspecified.\n"
+		"\tCurrently accepted environment variable are:\n\n",
+		prog.c_str(), prog.c_str()).c_str());
+	for(const auto& env : DeEnvs)
+		ystdex::write_ntcts(os, sfmt("  %s\n\t%s Default value is %s.\n\n",
+			env[0], env[2], env[1][0] == '\0' ? "empty"
+			: Quote(string(env[1])).c_str()).c_str());
+	ystdex::write_literal(os,
+		"SRCPATH\n"
+		"\tThe source path. It is handled if and only if this program runs in"
+		" scripting mode. In this case, SRCPATH is the 1st command line"
+		" argument not recognized as an option (see below). Otherwise, the"
+		" command line argument is treated as an option.\n"
+		"\tSRCPATH shall specify a path to a source file, or"
+		" the special value '-' which indicates the standard input. The source"
+		" specified by SRCPATH shall have Unilang source tokens, which are to"
+		" be read and evaluated in the initial environment of the interpreter."
+		" Otherwise, errors are raise to reject the source.\n\n"
+		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
+		"\tThe options and arguments for the program execution. After '--',"
+		" options parsing is turned off and every remained command line"
+		" argument (if any) is interpreted as an argument, except that the"
+		" 1st command line argument is treated as SRCPATH (implying scripting"
+		" mode) when there is no SRCPATH before '--'.\n"
+		"\tRecognized options are handled in this program, and the remained"
+		" arguments will be passed to the Unilang user program (in the script"
+		" or in the interactive environment) which can access the arguments via"
+		" appropriate API.\n\t"
+		"The recognized options are:\n\n");
+	for(const auto& opt : OptionsTable)
+	{
+		ystdex::write_ntcts(os,
+			sfmt("  %s%s\n", opt.prefix, opt.option_arg).c_str());
+		for(const auto& des : opt.option_details)
+			ystdex::write_ntcts(os, sfmt("\t%s\n", des).c_str());
+		os << '\n';
+	}
+	ystdex::write_literal(os,
+		"The exit status is 0 on success and 1 otherwise.\n");
+}
+
+
+#define APP_NAME "Unilang interpreter"
+#define APP_VER "0.9.0"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -795,30 +941,82 @@ int
 main(int argc, char* argv[])
 {
 	using namespace Unilang;
-	using namespace std;
 	using YSLib::LoggedEvent;
 
 	return YSLib::FilterExceptions([&]{
-		if(argc > 1)
-		{
-			if(std::strcmp(argv[1], "-e") == 0)
-			{
-				if(argc == 3)
-				{
-					Interpreter intp{};
+		const YSLib::CommandArguments xargv(argc, argv);
+		const auto xargc(xargv.size());
 
-					LoadFunctions(intp, Unilang_UseJIT, argc, argv);
-					llvm_main();
-					intp.RunLine(argv[2]);
+		if(xargc > 1)
+		{
+			vector<string> args;
+			bool opt_trans(true);
+			bool requires_eval = {};
+			vector<string> eval_strs;
+
+			for(size_t i(1); i < xargc; ++i)
+			{
+				string arg(xargv[i]);
+
+				if(opt_trans)
+				{
+					if(YB_UNLIKELY(arg == "--"))
+					{
+						opt_trans = {};
+						continue;
+					}
+					if(arg == "-h" || arg == "--help")
+					{
+						PrintHelpMessage(xargv[0]);
+						return;
+					}
+					else if(arg == "-e")
+					{
+						requires_eval = true;
+						continue;
+					}
+				}
+				if(requires_eval)
+				{
+					eval_strs.push_back(std::move(arg));
+					requires_eval = {};
 				}
 				else
-					throw LoggedEvent("Option '-e' expect exact one argument.");
+					args.push_back(std::move(arg));
 			}
-			else
-				throw LoggedEvent("Too many arguments.");
+			if(!args.empty())
+			{
+				auto src(std::move(args.front()));
+
+				args.erase(args.begin());
+
+				const auto p_cmd_args(YSLib::LockCommandArguments());
+
+				p_cmd_args->Arguments = std::move(args);
+
+				Interpreter intp{};
+
+				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
+				llvm_main();
+				for(const auto& str : eval_strs)
+					intp.RunLine(str);
+				intp.RunScript(std::move(src));
+			}
+			else if(!eval_strs.empty())
+			{
+				Interpreter intp{};
+
+				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
+				for(const auto& str : eval_strs)
+					intp.RunLine(str);
+			}
 		}
-		else if(argc == 1)
+		else if(xargc == 1)
 		{
+			using namespace std;
+
+			Unilang::Deref(YSLib::LockCommandArguments()).Reset(argc, argv);
+
 			Interpreter intp{};
 
 			cout << title << endl << "Initializing the interpreter "
