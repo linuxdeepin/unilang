@@ -830,7 +830,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.97"
+#define APP_VER "0.8.99"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -897,6 +897,7 @@ main(int argc, char* argv[])
 				llvm_main();
 				for(const auto& str : eval_strs)
 					intp.RunLine(str);
+				intp.RunScript(std::move(src));
 			}
 			else if(!eval_strs.empty())
 			{

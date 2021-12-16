@@ -338,25 +338,7 @@ Interpreter::ExecuteOnce(Context& ctx)
 ReductionStatus
 Interpreter::ExecuteString(string_view unit, Context& ctx)
 {
-	ctx.SaveExceptionHandler();
-	ctx.HandleException = std::bind([&](std::exception_ptr p,
-		const Context::ReducerSequence::const_iterator& i){
-		ctx.TailAction = nullptr;
-		ctx.Shift(Backtrace, i);
-		try
-		{
-			Context::DefaultHandleException(std::move(p));
-		}
-		catch(std::exception& e)
-		{
-			const auto gd(ystdex::make_guard([&]() noexcept{
-				Backtrace.clear();
-			}));
-			static YSLib::Logger trace;
-
-			TraceException(e, trace);
-		}
-	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
+	PrepareExecution(ctx);
 	if(Echo)
 		RelaySwitched(ctx, [&]{
 			Print(Term);
@@ -381,6 +363,30 @@ Interpreter::OpenUnique(string filename)
 
 	CurrentSource = YSLib::share_move(filename);
 	return p_is;
+}
+
+void
+Interpreter::PrepareExecution(Context& ctx)
+{
+	ctx.SaveExceptionHandler();
+	ctx.HandleException = std::bind([&](std::exception_ptr p,
+		const Context::ReducerSequence::const_iterator& i){
+		ctx.TailAction = nullptr;
+		ctx.Shift(Backtrace, i);
+		try
+		{
+			Context::DefaultHandleException(std::move(p));
+		}
+		catch(std::exception& e)
+		{
+			const auto gd(ystdex::make_guard([&]() noexcept{
+				Backtrace.clear();
+			}));
+			static YSLib::Logger trace;
+
+			TraceException(e, trace);
+		}
+	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
 }
 
 void
@@ -465,6 +471,19 @@ Interpreter::RunLine(string_view unit)
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
 			return ExecuteString(unit, ctx);
 		}));
+}
+
+void
+Interpreter::RunScript(string filename)
+{
+	if(!filename.empty())
+	{
+		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+			PrepareExecution(ctx);
+			Term = ReadFrom(*OpenUnique(std::move(filename)));
+			return ExecuteOnce(ctx);
+		}));
+	}
 }
 
 ReductionStatus

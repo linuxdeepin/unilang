@@ -90,10 +90,10 @@ public:
 	void
 	Evaluate(TermNode&);
 
+private:
 	ReductionStatus
 	ExecuteOnce(Context&);
 
-private:
 	ReductionStatus
 	ExecuteString(string_view, Context&);
 
@@ -107,6 +107,11 @@ public:
 	TermNode
 	Perform(string_view);
 
+private:
+	void
+	PrepareExecution(Context&);
+
+public:
 	static void
 	Print(const TermNode&);
 
@@ -132,6 +137,9 @@ private:
 	RunLoop(Context&);
 
 public:
+	void
+	RunScript(string);
+
 	bool
 	SaveGround();
 
