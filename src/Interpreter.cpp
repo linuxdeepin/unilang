@@ -330,13 +330,13 @@ Interpreter::Evaluate(TermNode& term)
 }
 
 ReductionStatus
-Interpreter::EvaluateOnceIn(Context& ctx)
+Interpreter::ExecuteOnce(Context& ctx)
 {
 	return ReduceOnce(Term, ctx);
 }
 
 ReductionStatus
-Interpreter::ExecuteOnce(string_view unit, Context& ctx)
+Interpreter::ExecuteString(string_view unit, Context& ctx)
 {
 	ctx.SaveExceptionHandler();
 	ctx.HandleException = std::bind([&](std::exception_ptr p,
@@ -363,7 +363,7 @@ Interpreter::ExecuteOnce(string_view unit, Context& ctx)
 			return ReductionStatus::Neutral;
 		});
 	Term = Read(unit);
-	return EvaluateOnceIn(ctx);
+	return ExecuteOnce(ctx);
 }
 
 ReductionStatus
@@ -463,7 +463,7 @@ Interpreter::RunLine(string_view unit)
 {
 	if(!unit.empty() && unit != "exit")
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
-			return ExecuteOnce(unit, ctx);
+			return ExecuteString(unit, ctx);
 		}));
 }
 
@@ -474,7 +474,7 @@ Interpreter::RunLoop(Context& ctx)
 	{
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
-		return !line.empty() ? (line != "exit" ? ExecuteOnce(line, ctx)
+		return !line.empty() ? (line != "exit" ? ExecuteString(line, ctx)
 			: Exit()) : ReductionStatus::Partial;
 	}
 	return ReductionStatus::Retained;
