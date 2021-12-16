@@ -476,7 +476,15 @@ Interpreter::RunLine(string_view unit)
 void
 Interpreter::RunScript(string filename)
 {
-	if(!filename.empty())
+	if(filename == "-")
+	{
+		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+			PrepareExecution(ctx);
+			Term = ReadFrom(std::cin);
+			return ExecuteOnce(ctx);
+		}));
+	}
+	else if(!filename.empty())
 	{
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
