@@ -35,7 +35,9 @@
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
-#include YFM_YSLib_Core_YException // for YSLib::FilterExceptions, YSLib::Alert;
+#include YFM_YSLib_Core_YException // for YSLib::LoggedEvent,
+//	YSLib::FilterExceptions, YSLib::CommandArguments, YSLib::Alert;
+#include YFM_YSLib_Core_YCoreUtilities // for YSLib::LockCommandArguments;
 
 namespace Unilang
 {
@@ -828,7 +830,7 @@ $defv! $import! (&e .&symbols) d
 }
 
 #define APP_NAME "Unilang demo"
-#define APP_VER "0.8.86"
+#define APP_VER "0.8.96"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -841,30 +843,67 @@ int
 main(int argc, char* argv[])
 {
 	using namespace Unilang;
-	using namespace std;
 	using YSLib::LoggedEvent;
 
 	return YSLib::FilterExceptions([&]{
-		if(argc > 1)
-		{
-			if(std::strcmp(argv[1], "-e") == 0)
-			{
-				if(argc == 3)
-				{
-					Interpreter intp{};
+		const YSLib::CommandArguments xargv(argc, argv);
+		const auto xargc(xargv.size());
 
-					LoadFunctions(intp, Unilang_UseJIT);
-					llvm_main();
-					intp.RunLine(argv[2]);
+		if(xargc > 1)
+		{
+			vector<string> args;
+			bool requires_eval = {};
+			vector<string> eval_strs;
+
+			for(size_t i(1); i < xargc; ++i)
+			{
+				string arg(xargv[i]);
+
+				if(arg == "-e")
+				{
+					requires_eval = true;
+					continue;
+				}
+				if(requires_eval)
+				{
+					eval_strs.push_back(std::move(arg));
+					requires_eval = {};
 				}
 				else
-					throw LoggedEvent("Option '-e' expect exact one argument.");
+					args.push_back(std::move(arg));
 			}
-			else
-				throw LoggedEvent("Too many arguments.");
+			if(!args.empty())
+			{
+				auto src(std::move(args.front()));
+
+				args.erase(args.begin());
+
+				const auto p_cmd_args(YSLib::LockCommandArguments());
+
+				p_cmd_args->Arguments = std::move(args);
+
+				Interpreter intp{};
+
+				LoadFunctions(intp, Unilang_UseJIT);
+				llvm_main();
+				for(const auto& str : eval_strs)
+					intp.RunLine(str);
+			}
+			else if(!eval_strs.empty())
+			{
+				Interpreter intp{};
+
+				LoadFunctions(intp, Unilang_UseJIT);
+				for(const auto& str : eval_strs)
+					intp.RunLine(str);
+			}
 		}
-		else if(argc == 1)
+		else if(xargc == 1)
 		{
+			using namespace std;
+
+			Unilang::Deref(YSLib::LockCommandArguments()).Reset(argc, argv);
+
 			Interpreter intp{};
 
 			cout << title << endl << "Initializing the interpreter "
