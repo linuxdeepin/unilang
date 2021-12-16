@@ -2241,3 +2241,20 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　实现可提供其它形式的、由实现定义的用户环境初始化操作替代上述的默认用户环境初始化。
 
+　　初始化还应提供以下章节的上层语言特性的必要实现。
+
+# 上层语言特性
+
+　　基于基础语言，上层语言提供替代的语法，提供可使具有其它语言背景的用户更易使用的包装特性。
+
+## 库特性
+
+`if <test> <consequent> else <alternate>`
+`if <test> <consequent>`
+
+　　条件分支，功能同核心库的 `$if` ，但表达式不能是符号 `else` ，否则引起错误。
+
+`while <test> <expression-sequence>`
+
+　　循环求值，功能同核心库的 `$while` 。
+
