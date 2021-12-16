@@ -91,11 +91,11 @@ public:
 	Evaluate(TermNode&);
 
 	ReductionStatus
-	EvaluateOnceIn(Context&);
+	ExecuteOnce(Context&);
 
 private:
 	ReductionStatus
-	ExecuteOnce(string_view, Context&);
+	ExecuteString(string_view, Context&);
 
 public:
 	ReductionStatus
