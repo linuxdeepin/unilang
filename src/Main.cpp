@@ -35,6 +35,9 @@
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
+#include <ystdex/string.hpp> // for ystdex::quote, ystdex::write_ntcts;
+#include <vector> // for std::vector;
+#include <array> // for std::array;
 #include YFM_YSLib_Core_YException // for YSLib::LoggedEvent,
 //	YSLib::FilterExceptions, YSLib::CommandArguments, YSLib::Alert;
 #include YFM_YSLib_Core_YCoreUtilities // for YSLib::LockCommandArguments;
@@ -829,8 +832,100 @@ $defv! $import! (&e .&symbols) d
 	PreloadExternal(intp, "init.txt");
 }
 
-#define APP_NAME "Unilang demo"
-#define APP_VER "0.8.99"
+template<class _tString>
+auto
+Quote(_tString&& str) -> decltype(ystdex::quote(yforward(str), '\''))
+{
+	return ystdex::quote(yforward(str), '\'');
+}
+
+
+const struct Option
+{
+	const char *prefix, *option_arg;
+	std::vector<const char*> option_details;
+
+	Option(const char* pfx, const char* opt_arg,
+		std::initializer_list<const char*> il)
+		: prefix(pfx), option_arg(opt_arg), option_details(il)
+	{}
+} OptionsTable[]{
+	{"-h, --help", "", {"Print this message."}},
+	{"-e", " [STRING]", {"Evaluate a string if the following argument exists."
+		" This option can occur more than once and combined with SRCPATH.\n"
+		"\tEach instance of this option (with its optional argument) will be"
+		" evaluated in order before evaluate the script specified by SRCPATH"
+		" (if any)."}}
+};
+
+const std::array<const char*, 3> DeEnvs[]{
+	{{"ECHO", "", "If set, echo the result after evaluating each string."}},
+	{{"UNILANG_NO_JIT", "", "If set, disable any optimization based on the JIT"
+		" (just-in-time) execution."}},
+	{{"UNILANG_PATH", "", "Unilang loader path template string."}}
+};
+
+
+void
+PrintHelpMessage(const string& prog)
+{
+	using ystdex::sfmt;
+	auto& os(std::cout);
+
+	ystdex::write_ntcts(os, sfmt("Usage: \"%s\" [OPTIONS ...] SRCPATH"
+		" [OPTIONS ... [-- [ARGS...]]]\n"
+		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
+		"\tThis program is an interpreter of Unilang.\n"
+		"\tThere are two execution modes, scripting mode and interactive mode,"
+		" exclusively. In scripting mode, a script file specified in the"
+		" command line arguments is run. Otherwise, the program runs in the"
+		" interactive mode and the REPL (read-eval-print loop) is entered,"
+		" see below for details.\n"
+		"\tThere are no checks on the values. Any behaviors depending"
+		" on the locale-specific values are unspecified.\n"
+		"\tCurrently accepted environment variable are:\n\n",
+		prog.c_str(), prog.c_str()).c_str());
+	for(const auto& env : DeEnvs)
+		ystdex::write_ntcts(os, sfmt("  %s\n\t%s Default value is %s.\n\n",
+			env[0], env[2], env[1][0] == '\0' ? "empty"
+			: Quote(string(env[1])).c_str()).c_str());
+	ystdex::write_literal(os,
+		"SRCPATH\n"
+		"\tThe source path. It is handled if and only if this program runs in"
+		" scripting mode. In this case, SRCPATH is the 1st command line"
+		" argument not recognized as an option (see below). Otherwise, the"
+		" command line argument is treated as an option.\n"
+		"\tSRCPATH shall specify a path to a source file, or"
+		" the special value '-' which indicates the standard input. The source"
+		" specified by SRCPATH shall have Unilang source tokens, which are to"
+		" be read and evaluated in the initial environment of the interpreter."
+		" Otherwise, errors are raise to reject the source.\n\n"
+		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
+		"\tThe options and arguments for the program execution. After '--',"
+		" options parsing is turned off and every remained command line"
+		" argument (if any) is interpreted as an argument, except that the"
+		" 1st command line argument is treated as SRCPATH (implying scripting"
+		" mode) when there is no SRCPATH before '--'.\n"
+		"\tRecognized options are handled in this program, and the remained"
+		" arguments will be passed to the Unilang user program (in the script"
+		" or in the interactive environment) which can access the arguments via"
+		" appropriate API.\n\t"
+		"The recognized options are:\n\n");
+	for(const auto& opt : OptionsTable)
+	{
+		ystdex::write_ntcts(os,
+			sfmt("  %s%s\n", opt.prefix, opt.option_arg).c_str());
+		for(const auto& des : opt.option_details)
+			ystdex::write_ntcts(os, sfmt("\t%s\n", des).c_str());
+		os << '\n';
+	}
+	ystdex::write_literal(os,
+		"The exit status is 0 on success and 1 otherwise.\n");
+}
+
+
+#define APP_NAME "Unilang interpreter"
+#define APP_VER "0.8.101"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -866,6 +961,11 @@ main(int argc, char* argv[])
 					{
 						opt_trans = {};
 						continue;
+					}
+					if(arg == "-h" || arg == "--help")
+					{
+						PrintHelpMessage(xargv[0]);
+						return;
 					}
 					else if(arg == "-e")
 					{
