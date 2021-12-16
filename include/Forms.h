@@ -3,9 +3,9 @@
 #ifndef INC_Unilang_Forms_h_
 #define INC_Unilang_Forms_h_ 1
 
-#include "Evaluation.h" // for ReductionStatus, TermNode,
-//	YSLib::EmplaceCallResult, Unilang::Deref, yforward, Strict,
-//	Unilang::RegisterHandler, Context;
+#include "Evaluation.h" // for ReductionStatus, TermNode, ReferenceTerm,
+//	YSLib::EmplaceCallResult, yforward, Unilang::Deref,
+//	Unilang::AccessTypedValue, Strict, Unilang::RegisterHandler, Context;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <cassert> // for assert;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy,
@@ -18,14 +18,161 @@
 #include <numeric> // for std::accumulate;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
+#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 
 namespace Unilang
 {
 
+class EncapsulationBase
+{
+private:
+	shared_ptr<void> p_type;
+
+public:
+	EncapsulationBase(shared_ptr<void> p) noexcept
+		: p_type(std::move(p))
+	{}
+	EncapsulationBase(const EncapsulationBase&) = default;
+	EncapsulationBase(EncapsulationBase&&) = default;
+
+	EncapsulationBase&
+	operator=(const EncapsulationBase&) = default;
+	EncapsulationBase&
+	operator=(EncapsulationBase&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const EncapsulationBase& x, const EncapsulationBase& y) noexcept
+	{
+		return x.p_type == y.p_type;
+	}
+
+	const EncapsulationBase&
+	Get() const noexcept
+	{
+		return *this;
+	}
+	EncapsulationBase&
+	GetEncapsulationBaseRef() noexcept
+	{
+		return *this;
+	}
+	const shared_ptr<void>&
+	GetType() const noexcept
+	{
+		return p_type;
+	}
+};
+
+
+class Encapsulation final : private EncapsulationBase
+{
+public:
+	mutable TermNode TermRef;
+
+	Encapsulation(shared_ptr<void> p, TermNode term)
+		: EncapsulationBase(std::move(p)), TermRef(std::move(term))
+	{}
+	Encapsulation(const Encapsulation&) = default;
+	Encapsulation(Encapsulation&&) = default;
+
+	Encapsulation&
+	operator=(const Encapsulation&) = default;
+	Encapsulation&
+	operator=(Encapsulation&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Encapsulation& x, const Encapsulation& y) noexcept
+	{
+		return x.Get() == y.Get()
+			&& Equal(ReferenceTerm(x.TermRef), ReferenceTerm(y.TermRef));
+	}
+
+	using EncapsulationBase::Get;
+	using EncapsulationBase::GetType;
+
+	static bool
+	Equal(const TermNode&, const TermNode&);
+};
+
+
+class Encapsulate final : private EncapsulationBase
+{
+public:
+	Encapsulate(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Encapsulate(const Encapsulate&) = default;
+	Encapsulate(Encapsulate&&) = default;
+
+	Encapsulate&
+	operator=(const Encapsulate&) = default;
+	Encapsulate&
+	operator=(Encapsulate&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Encapsulate& x, const Encapsulate& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode&) const;
+};
+
+
+class Encapsulated final : private EncapsulationBase
+{
+public:
+	Encapsulated(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Encapsulated(const Encapsulated&) = default;
+	Encapsulated(Encapsulated&&) = default;
+
+	Encapsulated&
+	operator=(const Encapsulated&) = default;
+	Encapsulated&
+	operator=(Encapsulated&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Encapsulated& x, const Encapsulated& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode&) const;
+};
+
+
+class Decapsulate final : private EncapsulationBase
+{
+public:
+	Decapsulate(shared_ptr<void> p)
+		: EncapsulationBase(std::move(p))
+	{}
+	Decapsulate(const Decapsulate&) = default;
+	Decapsulate(Decapsulate&&) = default;
+
+	Decapsulate&
+	operator=(const Decapsulate&) = default;
+	Decapsulate&
+	operator=(Decapsulate&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const Decapsulate& x, const Decapsulate& y) noexcept
+	{
+		return x.Get() == y.Get();
+	}
+
+	ReductionStatus
+	operator()(TermNode&, Context&) const;
+};
+
 namespace Forms
 {
 
-[[nodiscard, gnu::const]] constexpr ReductionStatus
+YB_ATTR_nodiscard YB_STATELESS constexpr ReductionStatus
 EmplaceCallResultOrReturn(TermNode&, ReductionStatus status) noexcept
 {
 	return status;
@@ -91,6 +238,31 @@ CallUnary(_func&& f, TermNode& term, _tParams&&... args)
 	}, term);
 }
 
+template<typename _type, typename _func, typename... _tParams>
+ReductionStatus
+CallUnaryAs(_func&& f, TermNode& term, _tParams&&... args)
+{
+	return Forms::CallUnary([&](TermNode& tm){
+		return ystdex::make_expanded<void(decltype(Unilang::AccessTypedValue<
+			_type>(tm)), _tParams&&...)>(std::ref(f))(Unilang::AccessTypedValue<
+			_type>(tm), std::forward<_tParams>(args)...);
+	}, term);
+}
+
+template<typename _func, typename... _tParams>
+ReductionStatus
+CallBinary(_func&& f, TermNode& term, _tParams&&... args)
+{
+	RetainN(term, 2);
+
+	auto i(term.begin());
+	auto& x(Unilang::Deref(++i));
+
+	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
+		ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
+		std::ref(f)), x, Unilang::Deref(++i), yforward(args)...));
+}
+
 template<typename _type, typename _type2, typename _func, typename... _tParams>
 ReductionStatus
 CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
@@ -98,11 +270,12 @@ CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
 	RetainN(term, 2);
 
 	auto i(term.begin());
-	auto& x(Unilang::ResolveRegular<_type>(Unilang::Deref(++i)));
+	auto&& x(Unilang::AccessTypedValue<_type>(Unilang::Deref(++i)));
 
 	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-		ystdex::make_expanded<void(_type&, _type2&, _tParams&&...)>(
-		std::ref(f)), x, Unilang::ResolveRegular<_type2>(Unilang::Deref(++i)),
+		ystdex::make_expanded<void(decltype(x), decltype(
+		Unilang::AccessTypedValue<_type2>(*i)), _tParams&&...)>(std::ref(f)),
+		yforward(x), Unilang::AccessTypedValue<_type2>(Unilang::Deref(++i)),
 		yforward(args)...));
 }
 
@@ -113,7 +286,7 @@ CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
 	const auto n(term.size() - 1);
 	auto i(term.begin());
 	const auto j(ystdex::make_transform(++i, [](TNIter it){
-		return Unilang::ResolveRegular<_type>(Unilang::Deref(it));
+		return Unilang::AccessTypedValue<_type>(Unilang::Deref(it));
 	}));
 
 	return Forms::EmplaceCallResultOrReturn(term, std::accumulate(j, std::next(
@@ -128,8 +301,10 @@ struct UnaryExpansion
 {
 	_func Function;
 
-	UnaryExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<UnaryExpansion, _tParams...>)>
+	UnaryExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
@@ -141,13 +316,9 @@ struct UnaryExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term);
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(
-			std::ref(Function)), Unilang::Deref(std::next(term.begin())),
-			yforward(args)...));
+		return Forms::CallUnary(Function, yforward(args)...);
 	}
 };
 
@@ -158,8 +329,10 @@ struct UnaryAsExpansion
 {
 	_func Function;
 
-	UnaryAsExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<UnaryAsExpansion, _tParams...>)>
+	UnaryAsExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
@@ -171,13 +344,9 @@ struct UnaryAsExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term);
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(_type&, _tParams&&...)>(
-			std::ref(Function)), Unilang::ResolveRegular<_type>(
-			Unilang::Deref(std::next(term.begin()))), yforward(args)...));
+		return Forms::CallUnaryAs<_type>(Function, yforward(args)...);
 	}
 };
 
@@ -188,8 +357,10 @@ struct BinaryExpansion
 {
 	_func Function;
 
-	BinaryExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<BinaryExpansion, _tParams...>)>
+	BinaryExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
@@ -201,16 +372,9 @@ struct BinaryExpansion
 
 	template<typename... _tParams>
 	inline ReductionStatus
-	operator()(TermNode& term, _tParams&&... args) const
+	operator()(_tParams&&... args) const
 	{
-		RetainN(term, 2);
-
-		auto i(term.begin());
-		auto& x(Unilang::Deref(++i));
-
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
-			ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
-			std::ref(Function)), x, Unilang::Deref(++i), yforward(args)...));
+		return Forms::CallBinary(Function, yforward(args)...);
 	}
 };
 
@@ -221,8 +385,10 @@ struct BinaryAsExpansion : private
 {
 	_func Function;
 
-	BinaryAsExpansion(_func f)
-		: Function(std::move(f))
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<BinaryAsExpansion, _tParams...>)>
+	BinaryAsExpansion(_tParams&&... args)
+		: Function(yforward(args)...)
 	{}
 
 	YB_ATTR_nodiscard YB_PURE friend bool

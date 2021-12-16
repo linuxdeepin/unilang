@@ -4,7 +4,12 @@
 $def! $rem $vau . #ignore "";
 
 info "sanity";
+subinfo "empty expression";
 $expect ();
+subinfo "id expressions";
+$expect 42 $let ((a 42)) a;
+$expect 42 $let (('' 42)) '';
+$expect 42 $let ((' ' 42)) ' ';
 
 info "function calls";
 $let ()
@@ -147,6 +152,110 @@ $let ()
 	eval ((unwrap ($lambda (x) x)) e) e
 );
 
+info "make-encapsulation-type";
+subinfo "encapsulation values";
+$let ()
+(
+	$def! (e p? d) () make-encapsulation-type;
+	p? 1;
+	$def! enc e 1;
+	$expect #t p? enc;
+	$expect #f p? "str";
+	$expect 1 d enc;
+	$expect 2 d (e 2);
+	$expect #t eqv? (e (list 1 2)) (e (list 1 2));
+	$expect #f eqv? (e (list 1 2)) (e (list 3 4))
+);
+subinfo "encapsulation temporary values";
+$let ((u unit) (&lt unit) (&t (idv unit)))
+(
+	$def! (e% #ignore d) () make-encapsulation-type;
+	$def! o e% u;
+	forward! (d o);
+	$expect unit d o;
+	$def! o e% lt;
+	forward! (d o);
+	$expect unit d o;
+	$def! o e% t;
+	forward! (d o);
+	$expect-moved d o
+);
+subinfo "encapsulation equality";
+$let ()
+(
+	$def! (e #ignore d) () make-encapsulation-type;
+	$def! x e 1;
+	$def! y e 2;
+	$def! z e 2;
+	$expect #f eqv? x y;
+	$expect #t eqv? y z
+);
+
+info "std.promises tests";
+$let ()
+(
+	$import! std.promises
+		promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
+	subinfo "value category preservation";
+	$let ((p1 $lazy% idv unit))
+	(
+		$expect unit force unit;
+		$expect unit force ($lazy p1);
+		force (expire p1);
+		$expect-moved force ($lazy p1)
+	);
+	subinfo "force idempotence";
+	$let ((a unit))
+	(
+		$def! p $lazy a;
+		$expect (force p) force p;
+	);
+	subinfo "lifting safety";
+	$let ()
+	(
+		$defl! me ()
+		(
+			$def! e () make-environment;
+			$set! e x 42;
+			e
+		);
+		$expect 42 force ($lazy/d (() me) x);
+		$expect 42 force ($lazy% $lazy/d (() me) x);
+		$expect 42 force ($lazy $lazy/d% (() me) x)
+	);
+	subinfo "test #1 (as RnRK)";
+	$let ()
+	(
+		$def! (box% box? unbox) () make-encapsulation-type;
+		$def! env_tmp_ $provide! (get-count pb) $sequence
+			($def! count 5)
+			($defl! get-count () count)
+			($def! p ($let ((self () get-current-environment))
+				(
+					$set! self saved_ () lock-current-environment;
+					$lazy $if (<=? count 0) count
+						($sequence
+							($set! self count (- count 1))
+							(force p)
+							($set! self count (+ count 2))
+							count)
+				)
+			))
+			($def! pb box% p);
+		$expect 5 () get-count;
+		$expect 0 force (unbox pb);
+		$expect 10 () get-count;
+	);
+	subinfo "resolved referencing shared state move;" " fixed since V0.8.57";
+	$let ()
+	(
+		$def! p1 $lazy unit;
+		$def! p2 $lazy% p1;
+		$let* ((a force p2) (b force p1) (c force (move! p2)))
+			$expect (list unit unit unit unit) list a b c (force p1)
+	)
+);
+
 info "std.strings tests";
 $let ()
 (
@@ -154,5 +263,35 @@ $let ()
 	$expect #t string-empty? "";
 	$expect #f string-empty? "x";
 	$expect "abc123" ++ "a" "bc" "123"
+);
+
+info "dependency library tests";
+$let ()
+(
+	$expect "1.2.3" version->string (string->version "1.2.3");
+
+	$def! dep-core
+		make-dependency "core" (string->version "0.0.1") ($lambda (.) #t);
+
+	$expect "core" name-of dep-core;
+	$expect "0.0.1" version->string (version-of dep-core);
+
+	$def! dep-comp1
+		make-dependency "comp1" (string->version "0.0.2")
+		(strings->dependency-contract "core" "> 0.0.0" "<	0.0.4" "0.0"
+			"=0.0.1" "= 0" "	*" "0.*");
+	$def! dep-comp2
+		make-dependency "comp2" (string->version "0.0.3")
+		(strings->dependency-contract "core" ">= 0.0.1" "0.0.*");
+
+	$expect #t validate dep-comp1 dep-core;
+	$expect #t validate dep-comp2 dep-core;
+
+	$def! depset1 make-dependency-set dep-comp1 dep-comp2;
+
+	$expect #t has-dependency? depset1 "comp1";
+	$expect #f has-dependency? depset1 "comp1" (string->version "0.0.1");
+	$expect #t has-dependency? depset1 "comp1" (string->version "0.0.2");
+	$expect #f has-dependency? depset1 "comp3"
 );
 

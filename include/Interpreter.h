@@ -90,12 +90,12 @@ public:
 	void
 	Evaluate(TermNode&);
 
-	ReductionStatus
-	EvaluateOnceIn(Context&);
-
 private:
 	ReductionStatus
-	ExecuteOnce(string_view, Context&);
+	ExecuteOnce(Context&);
+
+	ReductionStatus
+	ExecuteString(string_view, Context&);
 
 public:
 	ReductionStatus
@@ -107,6 +107,11 @@ public:
 	TermNode
 	Perform(string_view);
 
+private:
+	void
+	PrepareExecution(Context&);
+
+public:
 	static void
 	Print(const TermNode&);
 
@@ -132,6 +137,9 @@ private:
 	RunLoop(Context&);
 
 public:
+	void
+	RunScript(string);
+
 	bool
 	SaveGround();
 
@@ -141,7 +149,13 @@ public:
 
 
 void
+DisplayTermValue(std::ostream&, const TermNode&);
+
+void
 PrintTermNode(std::ostream&, const TermNode&);
+
+void
+WriteTermValue(std::ostream&, const TermNode&);
 
 } // namespace Unilang;
 

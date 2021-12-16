@@ -4,7 +4,8 @@
 #define INC_Unilang_Evaluation_h_ 1
 
 #include "Context.h" // for ReductionStatus, TermNode, Context,
-//	YSLib::AreEqualHeld, YSLib::GHEvent, ContextHandler, std::allocator_arg_t;
+//	YSLib::AreEqualHeld, YSLib::GHEvent, ContextHandler, std::allocator_arg_t,
+//	HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
@@ -31,7 +32,8 @@ ReduceOnce(TermNode&, Context&);
 // NOTE: The collection of values of unit types.
 enum class ValueToken
 {
-	Unspecified
+	Unspecified,
+	Ignore
 };
 
 
@@ -363,9 +365,9 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 
 
 YB_ATTR_nodiscard YB_PURE inline bool
-IsIgnore(const TokenValue& s) noexcept
+IsIgnore(const TermNode& nd) noexcept
 {
-	return s == "#ignore";
+	return HasValue(nd, ValueToken::Ignore);
 }
 
 void
