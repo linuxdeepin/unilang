@@ -44,6 +44,7 @@ $CXXFLAGS_EXTRA \
 "$YSLib_BaseDir/YFramework/source/YCLib/Debug.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/NativeAPI.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Core/YCoreUtilities.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
