@@ -324,20 +324,25 @@ OpenFile(const char* filename)
 
 struct SeparatorPass::TransformationSpec final
 {
-	using Filter = decltype(ystdex::bind1(HasValue<TokenValue>,
-		std::declval<TokenValue&>()));
+	enum SeparatorKind
+	{
+		NAry,
+		BinaryAssocLeft,
+		BinaryAssocRight
+	};
 
-	TokenValue Delimiter;
-	Filter TransformFilter;
+	decltype(ystdex::bind1(HasValue<TokenValue>,
+		std::declval<TokenValue&>())) Filter;
 	ValueObject Prefix;
+	SeparatorKind Kind;
 
-	TransformationSpec(TokenValue, ValueObject);
+	TransformationSpec(TokenValue, ValueObject, SeparatorKind = NAry);
 };
 
 SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
-	ValueObject pfx)
-	: Delimiter(delim), TransformFilter(ystdex::bind1(HasValue<TokenValue>,
-	delim)), Prefix(pfx)
+	ValueObject pfx, SeparatorKind kind)
+	: Filter(ystdex::bind1(HasValue<TokenValue>, delim)), Prefix(pfx),
+	Kind(kind)
 {}
 
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
@@ -367,10 +372,61 @@ SeparatorPass::Transform(TermNode& term, SeparatorPass::TermStack& terms) const
 {
 	terms.push(term);
 	for(const auto& trans : transformations)
-		if(std::find_if(term.begin(), term.end(), trans.TransformFilter)
-			!= term.end())
-			term = SeparatorTransformer::Process(std::move(term), trans.Prefix,
-				trans.TransformFilter);
+	{
+		const auto& filter(trans.Filter);
+		auto i(std::find_if(term.begin(), term.end(), filter));
+
+		if(i != term.end())
+			switch(trans.Kind)
+			{
+			case TransformationSpec::NAry:
+				term = SeparatorTransformer::Process(std::move(term),
+					trans.Prefix, filter);
+				break;
+			case TransformationSpec::BinaryAssocLeft:
+				{
+					const auto ri(std::find_if(term.rbegin(), term.rend(),
+						filter));
+
+					assert(ri != term.rend());
+					i = ri.base();
+					--i;
+				}
+				YB_ATTR_fallthrough;
+			case TransformationSpec::BinaryAssocRight:
+				if(i != term.begin() && std::next(i) != term.end())
+				{
+					const auto a(term.get_allocator());
+					auto res(Unilang::AsTermNode(yforward(term).Value));
+					auto im(std::make_move_iterator(i));
+					using it_t = decltype(im);
+					const auto range_add([&](it_t b, it_t e){
+						const auto add([&](TermNode& node, it_t j){
+							node.Add(Unilang::Deref(j));
+						});
+
+						assert(b != e);
+						if(std::next(b) == e)
+							add(res, b);
+						else
+						{
+							auto child(Unilang::AsTermNode());
+
+							do
+							{
+								add(child, b++);
+							}while(b != e);
+							res.Add(std::move(child));
+						}
+					});
+
+					res.Add(Unilang::AsTermNode(trans.Prefix));
+					range_add(std::make_move_iterator(term.begin()), im);
+					range_add(++im, std::make_move_iterator(term.end()));
+					term = std::move(res);
+				}
+			}
+	}
 }
 
 
