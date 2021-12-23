@@ -4,7 +4,7 @@
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
-#include "UnilangFFI.h" // for Unilang::allocate_shared, IsTyped;
+#include "UnilangFFI.h" // for Context, Unilang::allocate_shared, IsTyped;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::unique_ptr_from;
 #if __GNUC__
 #	pragma GCC diagnostic pop
@@ -20,6 +20,8 @@
 #endif
 #include "Exception.h" // for UnilangException, TypeError, ListTypeError,
 //	InvalidSyntax;
+#include "Forms.h" // for ContextHandler, RetainN, RegisterUnary,
+//	RegisterStrict;
 #include <ffi.h> // for ::ffi_type;
 
 namespace Unilang
