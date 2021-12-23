@@ -1,0 +1,1058 @@
+﻿# 概述
+
+　　本文档以语言的用户（开发者）的角度介绍新的语言中的参考设计。**Unilang** 是当前设计的开发代号，也是计划中的示例实现（解释器）的名称。
+
+　　本文档包含已解释器实现的设计和当前已基本确定的设计。部分内容可能随开发进展而变动。
+
+　　本文档描述的语言是包含了**基础语言**和预期由 Unilang 实现同时发布的第一方**语言扩展**。由于当前暂时只完成了基础语言的一部分设计，本文档介绍的语言可能包含没有被《语言需求和设计》详细描述其设计细节和扩展思路的特性。根据 Unilang 的实现状况，这部分的特性可能会在以后有较大的变化。
+
+　　本文档预期的面向的读者有一定通用目的语言编程经验的开发者。虽然不是必须的，[SICP](https://mitpress.mit.edu/sites/default/files/sicp/index.html) 第二版等相关专业基础训练的经历或者有 C、C++ 和 Lisp 方言的经验对理解本文档的内容会有明显的帮助。
+
+**注释** SICP 提供官方 [HTML](https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html) 和 [PDF](https://web.mit.edu/alexmv/6.037/sicp.pdf) 资源。
+
+# 目的
+
+* 介绍项目背景和主要面向的领域。
+* 显示本设计具有的特色。
+* 突出擅长的优势和其它语言的不同之处。
+
+# 概要
+
+　　Unilang 是一门现代的通用目的编程语言。它被设计为模块化的、可移植的和可扩展的。得益于一些革新的基础语言特性的设计，它具有强大的抽象能力和灵活性。
+
+## 整体特色
+
+* 表现力：Unilang 是图灵完备的通用计算语言。Unilang 的创新式的语言特性，有助于构建强大而易于使用的抽象。
+* 可复用：Unilang 对一等对象(first-class) 的强调使几乎任何源程序组件都更比往常意义上更容易复用——只要语言的用户愿意。
+* 可扩展：Unilang 的基础语言和语言扩展的底层设计使开发者能有机会以前所未有的方式平滑地改进现有语言的设计和实现并保持兼容——而非等待和语言设计及实现者的沟通与反馈。
+* 可伸缩：Unilang 的资源管理模型和抽象能力使程序在具有不同计算资源的平台上的表现默认自然地一致，且易于调整。
+* 多泛型(multi-paradigm) ：Unilang 的语言特性不要求用户拘泥于具体的语用范型——例如，不会限制副作用来要求习惯纯函数式的风格，或者要求隐含对象而要求程序按面向对象的形式进行表达。灵活的抽象使用户能够针对不同领域的设计方案按需使用不同风格的实现。
+* 易用性：Unilang 的核心语言特性的极简设计使它的入门相当容易。而可扩展的特性和强大的抽象机制使语言保留了丰富的进阶内容，供开发者按需选择。合理的基础设计使不同内容的掌握不易出错而更易使用。
+* 专注性：Unilang 不是一门需要面面俱到精通各种特性才能用好的语言——如果问题不是需要修改语言，语言的用户就应能更集中注意力于解决语言之外的问题上。
+
+　　Unilang 在语言特性的层次上被设计为能支持不同的应用开发场景，但原则上对这些场景保持中立——这意味着它可以同时支持服务端和客户端应用的开发，不需要用户切换思维范式或者大幅改换对语言的使用习惯。用户可以不同的库按需解决面向不同场景的问题。示例实现的预览版本的后续实现将会侧重客户端应用工具等支持，但这不和语言设计能适应的场景冲突。
+
+## 特性概览
+
+　　Unilang 支持各种语言特性以体现上述整体特色。
+
+* 核心语言特性
+	* 实体特性
+		* 存储和对象模型（类似 C++）
+		* 对象和值类别（类似 C++）
+		* 一等函数：合并子(combiner)
+		* 一等环境：环境引用
+		* 一等引用：引用值
+	* 求值算法
+		* 变量解析
+		* 函数调用
+	* 运行时支持
+		* 动态类型检查
+		* 动态加载和执行
+		* 不依赖 GC
+		* 不安全操作
+		* PTC(proper tail call)
+	* 互操作
+		* 对 C++ 友好的对象模型
+		* 在 C++ 中调用 Unilang 代码
+		* FFI ：调用 C 和 C++ 等本机语言实现的模块
+	* ……
+* 库特性
+	* 核心库
+		* 变量绑定
+		* 块作用域
+		* 列表算法
+		* 模块机制
+		* ……
+	* 字符串
+	* 数值算术操作
+	* 输入/输出
+	* 类型系统增强
+		* 类型标注
+		* 静态类型检查
+	* FFI API
+	* Qt 绑定
+	* ……
+
+　　以上仅列出主要的特性，相对现有的其它编程语言，这些特性不一定是最丰富的；但没有被包含的语言特性，预期总是能通过用户自行扩展语言而加以完善。
+
+　　和常见的现有其它语言相比，具体语言特性设计的主要特色有：
+
+* 对象和程序执行模型能和 C/C++ 兼容。
+	* 核心语言的语义基于抽象机，具有明确的操作语义。允许灵活的优化。
+	* 类似 C++ ，允许自定义资源管理。
+		* 强调基于所有权的设计，但不提供强制所有权检查。
+		* 支持 RAII 。
+		* 不依赖 GC 。
+* 强调一等对象并内建充分的支持。
+	* 函数是一等对象，可以作为函数参数和返回值传递。
+	* 环境是一等对象，可以显式地指定求值及动态管理环境中的变量。
+	* 对象的引用是一等对象，在指称被引用的对象的同时，可以使用普通对象的操作。
+		* 参考 C++ 的 `std::reference_wrapper` 。
+		* 同时支持类似 C++ 的右值引用。
+* 函数调用等上下文默认保证 PTC 。
+	* 同时能支持 RAII 。
+* 强大的元编程特性支持把许多常见语言特性提取为库，让用户自由定制实现。
+	* 同时支持代码作为数据和数据作为代码。
+	* 更强力的函数：合并子统一常见语言的应用(applicative) 函数和（卫生）宏。
+	* 允许用户自行定义部分类型系统规则。
+		* 使用潜在类型(latent typing) 作为基本的动态类型系统。
+		* 同时支持可选的类型标注和静态类型。
+		* 类型检查规则是可编程的，可以通过用户程序定制内部接口及其实现。
+		* 类型标注和检查可以实现成库。
+	* 不需要内建特设的反射机制：因为允许的反射的范围是用户可自定义的，可以实现成库。
+	* 不需要内建的模块机制：可以实现成库。
+	* 允许用户在运行时以通用、一致、自然的方式自行扩展语言实现（解释器和编译器）的功能。
+* 安全设计：
+	* 屏蔽活动记录(activation record) 实现细节：没有特设的调用栈溢出的错误条件。
+	* 允许不安全操作。
+	* 不安全语言特性的语言子集允许用户定制，不依赖笼统的内建“不安全”语法。
+	
+　　Unilang 的实现计划提供以下支持：
+
+* 基于 AST 解释器的 REPL
+* 基于 LLVM 的多种后端的本机编译器
+
+# 入门
+
+　　本章介绍初步学习和使用 Unilang 。
+
+## 导读
+　　Unilang 具有和 Scheme 以及 C++ 等现有语言的一些相似之处。虽然并非绝对必要，对这些语言有经验可能对理解 Unilang 的设计和使用有一定的便利。其它编程语言的经验也可能有一些帮助。
+
+**注释** 如本文档开头提到的，SICP 阅读经验可能使快速入门事半功倍。这主要能帮助读者习惯一些不对特定语言有倾向性的最基本的抽象和类 Lisp 的语法，所以基本上只需要前三章的知识。
+
+　　本章的介绍可能会穿插和不同语言的比较，旨在帮助已有相关知识的读者分辨设计和使用上的差异，避免误用。如果没有相关使用经验，可以忽略其中的差异。标记为 **注释** 中的内容可能帮助理解，但相对正文，主要起到补充作用，在逻辑顺序上并不一定同样容易理解。对难以理解的内容，可以先跳过，并在之后回顾。此外，**原理** 是着重解释设计动机的 **注释** 。
+
+## 导论
+
+　　Unilang 是一门通用目的编程语言，支持*[面向语言编程(LOF, language-oriented programming)](https://zh.wikipedia.org/zh-cn/%E9%9D%A2%E5%90%91%E8%AF%AD%E8%A8%80%E7%9A%84%E7%A8%8B%E5%BA%8F%E8%AE%BE%E8%AE%A1)* 范型。
+
+　　和其它一些支持 LOP 范型的语言不同，作为通用目的编程语言，Unilang 首先强调语言自身的可扩展性——而非作为创建其它语言的工具。Unilang 能支持语言的*派生(derivation)* ：通过编写适当的 Unilang 代码，能在现有语言的基础上添加或修改语言的一些特性，且不引起兼容问题。
+
+　　Unilang 中支持语言派生的基本特性并非特设，而和其它常规的编程设施无缝衔接。学习 Unilang 的基本特性解决常规编程问题不需要 LOP 的知识。通过编写 Unilang 代码实现*语言扩展(language extension)* 的技术能在学习 Unilang 的过程中自然地领悟——它能够轻易实现许多其它语言需要单独实现解释器等方式才能获得的功能，更少地受制于语言设计的限制，更灵活地解决编程问题。
+
+## 第一个程序
+
+　　Unilang 语言的示例实现 `unilang` 是解释器可执行文件。解释器支持 REPL ：运行解释器，进入交互式环境，输入程序后回车执行。
+
+　　第一个程序：
+
+```
+display "Hello, world!"
+```
+
+　　输出：
+
+```
+Hello, world!
+```
+
+## 表达式和值
+
+　　Unilang 的源程序的基本的可组合语法单位是*表达式(expression)* 。表达式可由其它表达式组成，后者是前者的*子表达式(subexpression)* 。表达式被*求值(evaluate)* 而执行计算——确定表达式的计算结果，即表达式的*值(value)* ，并且可能有*副作用(side effect)* 。
+
+　　这里，整个程序的 `display "Hello, world"` 就是一个表达式。执行程序即求值这个表达式。
+
+　　表达式 `display "Hello, world!` 具有两个子表达式：第一个子表达式 `display` 是一个*函数(function)* 或者说*操作符(operator)* ，而第二个子表达式 `"Hello, world!"` 表示一个字符串，作为函数的*实际参数(actual argument)* ，或者说作为这个操作符的*操作数(operand)* 。
+
+**注释** 准确地说，这里的“函数”是一个作为*函数名(function name)* 的符号。但直接称为函数（表达式）技术上也没什么问题。也有不是函数名的函数。
+
+　　这种第一个子表达式是函数，而之后一个或多个子表达式的表达式是*函数合并(function combination)* 表达式。
+
+**注释** 更精确的说法是：函数是求值为操作符的表达式，而函数合并表达式是第一个子表达式求值为操作符的表达式。
+
+**原理** 和 Lisp 的传统习惯类似，函数自然地出现在第一个子表达式中，成为操作符。这样，在语法上不需要有特设的操作符设计（例如特定的标点、优先级和结合性），函数和操作符可以不加区分，使用相同的规则统一描述，而简化语言规则。和其它许多语言不同，Unilang 的函数的参数不一定被求值。Unilang 函数可能决定是否对操作数进行求值后作为参数（这种功能在一些语言中是不作为函数的操作符才具有的特权）；这也是 Unilang 不需要特设的操作符的原因。
+
+　　函数合并的求值中，作为子表达式的函数名总是被求值以确定这个子表达式位置上是一个可调用的函数。若不是函数的实体出现在这个子表达式上，则引起错误。
+
+　　通常情形下，函数合并表达式的求值最终使函数和参数决定的计算结果替换这个表达式，在此*调用(call)* 这个函数。替换得到的表达式的值称为*函数值(function value)* 。蕴含*函数调用(function call)* 的这种表达式称为函数调用表达式*(function call expression)* ，在不和其中蕴含的函数混淆时，也简称为函数调用。
+
+**注释** 非通常情形下，某个子表达式求值失败，则函数不被调用，也不需要考虑函数值。
+
+　　函数合并的求值时，若每个实际参数的求值总是在进入在函数调用之前完成，则称这种函数合并表达式的求值中函数以*应用序(applicative order)* 调用，这种调用即函数应用*(function application)* 。蕴含函数应用的函数合并表达式称为*函数应用表达式(function application expression)* ，在不和其中蕴含的函数应用混淆时，也简称为函数调用。
+
+**原理** 在 Unilang 中，因为参数的求值可能单独表达计算（的副作用），函数合并表达式的求值和其中的蕴含函数合并的具体行为并不是一回事。函数调用和函数应用也有类似的问题。并且，严格地说，Unilang 的调用不是针对作为函数名，而是作用在函数名求值之后得到的函数上的。不过，仍然可以说，对函数名作为函数进行函数应用，引起这个函数被调用(called) 。同其它一些文献的习惯，把这样的概念可以优先作为简称进行解释，在不区分求值和蕴含的操作时技术上仍能保持正确。Unilang 支持非应用序的调用；相对地，其它一些语言中的函数应用可能等同于函数调用。此外，一些其它语言中，函数调用可能更间接地的其它实体（如方法(method) ）的调用(invocation) ，在这里没有类似的机制。
+
+　　函数 `display` 接受一个参数，其功能是输出参数指定的内容；应用参数 `"Hello, world!"` 到函数上，就输出了参数的内容 `Hello, world!` 。
+
+　　就 `display` 这个函数，它的计算结果不被关心。被关心的是它能把参数的内容以某种形式显示出来，这跟函数值无关，而是一种*副作用(side effect)* 。只关心副作用的表达式的值逻辑上是未指定的——只要满足是否存在这个值都不对程序的行为产生影响，原则上是什么都应该无所谓；但为了统一起见（特别是考虑如何判断“存在这样的值”），约定这样的值以字面量 `#inert` 表示。在函数值的意义上，这些只关心副作用的函数的计算结果都是一致的。反过来，其它一些函数可以有不同的函数值。
+
+　　组成表达式的语法规则是嵌套的——子表达式自身也可以具有子表达式。圆括号 `()` 被用于区分不同层次上的子表达式组合。例如：
+
+```
+display (display "Hello, world!")
+```
+
+　　输出：
+
+```
+Hello, world!#inert
+```
+
+**注释** 当前解释器支持设置环境变量 `ECHO` 时，自动回显 REPL 输入的表达式求值的结果。此时，需要注意和作为表达式求值的副作用的输出进行区分。
+
+## 换一些写法
+
+　　这个程序的另一种写法是：
+
+```
+(display "Hello, world!")
+```
+
+　　有其它语言经验的读者可能会发现，这种语法类似 Lisp 风格——事实上，这就是一个 Lisp 程序，如 Scheme 等 Lisp 的现代变体直接可以接受这个源程序实现相同的效果。但是，应当注意，Unilang 的解释对此并不相同——在 Unilang 中，括号**不**表示函数应用，而仅仅是用于组合相邻的子表达式，使之和周围其它表达式进行区分的语法边界。
+
+**原理** 在具有不同操作符优先级的语言中，类似的组合方式称为*结合性(grouping)* 。实际上尽管目的类似，这些语言中也有很多不同的语法具有相同的用法，例如 C 和 C++ 语言的声明符使用的圆括号；统称为结合性是不恰当的。Unilang 的圆括号只具有一种语法。这种设计允许在任意默认方式求值的表达式周围对称地添加圆括号，如 `(((display "Hello, world!")))`，而不改变含义，而更接近纯粹的“结合性”。对嵌套圆括号数量的宽松要求可以减少有时临时编辑源代码方面的一些麻烦，尽管特定数量的括号偶尔也能构造和某些 Lisp 实现兼容的程序。
+
+　　Unilang 的函数合并支持不提供表达式作为操作数。这种函数合并需要以 `()` 在函数前出现。例如：
+
+```
+() newline
+```
+
+　　这相当于 Scheme 的 `(newline)` 。这样的写法也能扩展到其它存在操作数的函数合并上，于是第一个程序有另外的等价写法：
+
+```
+() display "Hello, world!"
+```
+
+　　除此之外，还有一种稍微不同的写法：
+
+```
+display "Hello, world!";
+```
+
+　　这里，以 `;` 结尾的表达式是**语句**。记号 ';' 只是一个作为中缀标点的语法糖，它被变换为：
+
+```
+$sequence display "Hello, world!"
+```
+
+　　而
+
+```
+display "Hello, "; display "world!"
+```
+
+　　则对应：
+
+```
+$sequence (display "Hello, ") (display "world!")
+```
+
+　　其中，`$sequence` 是一个接受不确定数量的子表达式作为它的*操作数(operand)* 的函数，求值这个函数的应用时，对每个子表达式顺序地求值，以最后一个表达式求值。这个函数，或者更一般地，语法意义上的*操作符(operator)* ，相当于 Scheme 中的 `begin` *特殊形式(special form)* 的*关键字(keyword)* ；而标点 `;` 的作用则相当于 C 语言中的 `,` 操作符——不过表达式最后结尾的 `;` 是可选的。
+
+　　和 C 这样的语言不同的是，在 Unilang 中，“语句”这样的概念除了有限的语法糖外，不需要另外约定特设的规则来支持。事实上，除了中缀的标点，Unilang 的基本语法也只支持表达式作为可组合的“句法”单位——任何其它更具体功能的可以用递归文法描述的语法元素，例如“声明”，在 Unilang 中并不被直接的语法支持。
+
+**注释** 通过以库的形式引入特定的 Unilang 表达式，即可实现类似一些其它语言的声明的功能。这也会被将来用于语言功能的扩展。
+
+　　和 Scheme 这样的 Lisp 方言不同，Unilang 中没有特殊形式，也不需要预定义全局范围的关键字。像 `begin` 这样表示为特殊形式用核心语言或宏实现的功能，在 Unilang 中作为被函数提供——这意味着，Unilang 中的函数，实际上比大多数语言的外延更广，而具有更加普适的抽象能力。
+
+## 变量和对象
+
+　　Unilang 是支持*变量(variable)* 这种代数风格实体的高级语言。一个变量总是具有*名称(name)* ，它*指称(denote)* 一个*对象(object)* 。和多数 Lisp 方言类似，变量名的拼写具有词法上的限制，它是一个*标识符(identifier)* ——可以是由数字、字母、下划线以及连接号(`-`) 等可打印字符组成的连续序列。因为可以使用 `-` 等字符，这相对比 C 等语言更宽松。
+
+**注释** 同传统上数学上的用法相同，变量总是具名的，不论指称的对象是否可变。变量字面上的可变性指的是同名的变量在不同的作用域中可以指称不同的对象，而和对象的内容无关。传统的编程语言（如 C++ ）大多使用相同的概念；这也兼容变量原则上不指称可变对象的纯函数式语言（如 Haskell ）中的定义。少数语言（如 Go ）可能正式地定义“变量”为传统上是“对象”的实体，而引起新的混淆。
+
+　　作为变量名的标识符在未被作为表达式求值前，是一个*符号(symbol)* 类型的值。
+
+　　变量通过定义(definition) 引入。变量的定义指定了变量名和它具有的初值。最基本的变量的定义形如：
+
+```
+$def! x "hello"
+```
+
+　　这里，`$def!` 是用于引入变量的函数。求值函数应用 `$def! x "hello"` 引入名为 `x` 的变量，它的值为 "hello" 。
+
+　　和许多动态类型语言一样，Unilang 使用*潜在类型(latent type)* 。这意味着变量在引入时是不指定*类型(type)* 的，但变量的值仍然存在不同类型的区别，这些区别可能引起程序语义和行为的不同——例如，不匹配的对象类型引起*类型错误(type error)* 可能在程序运行时被用户观察到。在此基础上，仍然可以构造不同的静态类型系统而使类型错误被提前检查，但现阶段这不在 Unilang 中直接提供。
+
+　　变量定义的具体作用在以下章节进一步介绍。
+
+## 列表
+
+　　和 Lisp 方言类似，*列表(list)* 是 Unilang 中的最重要的原生支持的数据结构。列表是一种*结构化(structrual)* 类型，即它直接和代码中出现的构造对应，而不是由类型声明等方式指定它具有和其它类型不等价的*名义(nominal)* 意义引入：任何一个以 `(` 和 `)` 包含的表达式，在语法的意义上都是一个列表，其中的子表达式都是列表的元素。
+
+　　`()` 表示没有元素的空列表。列表能够嵌套地构造——这使列表实际上可以作为树形数据结构使用。
+
+　　在语义的意义上，列表使用构造器 `list` 函数创建。例如，求值 `list "hello" "world"` 得到列表 `("hello" "world")` 。注意这里表示一个求值的结果，而不是语法意义上的列表——以这个列表作为表达式求值，会把 `"hello"` 作为函数而出错。
+
+　　和一些 Lisp 方言不同，`()` 和字符串类似，属于所谓的*自求值形式(self-evaluation form)* ，把 `()` 作为语法形式的列表求值仍然得到空列表（而不会因为求值语法上一个不存在的函数应用而出错）。
+
+　　函数 `null?` 接受一个参数，判断参数是空列表。若参数是空列表，函数应用的结果是*布尔类型(boolean type)* 的值：要么是 `#t` ——逻辑真，要么是 `#f` ——逻辑假。
+
+　　和 Lisp 方言类似，列表可以通过组合一个对象和现有列表构建新列表的更基本的 `cons` 操作构造。例如，求值 `cons "x" ()` 相当于求值 `list "x"`，而求值 `cons "x" (cons "y" ())` 相当于求值 `list "x" "y"` 。因为 `()` 是最基本的列表，任意语言支持的有限的列表都可以通过 `cons` 构造。
+
+**注释** 事实上，`list` 可由 `cons` 派生。
+
+　　为了简化语言的设计和使用，Unilang 只支持*真列表(proper list)* ，即元素组成严格线性结构的列表。这要求构成 `cons` 的列表自身也是真列表，而不是任意的 *cons 对(cons pair)* 。这样，`cons` 的一般形式是：`cons <object> <list>` 。若第二个参数不是（真）列表，则调用 `cons` 会出错。
+
+　　实际上，Unilang 中其它方式引入的列表也都是真列表。只支持真列表排除了列表元素构成循环结构而简化了存储和资源管理。若需要自循环的数据结构，需要间接的方式进行编码构造。
+
+## 函数
+
+　　在 Unilang 中，函数是一个求值为*合并子(combiner)* 类型的值或引用合并子类型的值的表达式（注意和函数应用不同；合并子的称谓来自函数应用的求值表现为合并(combine) 不同的对象取得新的对象——函数值）。求值这种表达式的值是*一等对象(first-class object)* ，称为函数对象（不关心作为函数的表达式是否被求值时，函数对象也可以称为函数）。函数可以是通过变量定义引入的符号。这种情形下，函数是*具名的(named)* ，变量名就是函数名。其它情形的函数是*匿名的(anonymous)* 。
+
+### 创建函数
+
+　　和 Scheme 的 `lambda` 特殊形式类似，`$lambda` 引入一个匿名的函数（在 Scheme 中，这种函数称为*过程(procedure)* ）。
+
+**注释** 特殊形式的命名使用 `$` 作为前缀；理由参见以下函数命名约定。
+
+　　例如，表达式 `$lambda (x) display x` 的值是一个函数，其中 `x` 是*形式参数(formal parameter)* ，而 `display x` 是*函数体(function body)* 。这样的函数是一等(first-class) 的，可以作为其它函数的参数或者被作为函数体求值的结果（通称*返回值(return value)* ）使用。
+
+　　类似 Lisp 方言，函数体被调用时的求值的结果就是函数调用的结果。指定返回值不需要类 C 语言的 `return` 这样的关键字。例如，`$lambda (x) x` 相当于 C++ 的 `[](auto x){return x;}` 。
+
+　　由之前介绍的括号上的作用的差异，Unilang 的 `$lambda` 语法在实用上略有不同。
+
+　　首先，在不作为子表达式时，一个表达式作为函数体和函数之外的语法在形式上是一致的（且原则上可以是任意的表达式）——例如，`$lambda (x) display x` 在不作为子表达式时，等效于 `($lambda (x) display x)` 以及 `($lambda (x) (display x))` ，而 Lisp 需要使用 `(lambda (x) (display x))` 这样的形式（并且实际上往往限制能出现为函数体的语法元素）。相比之下 Unilang 的规则更简单一致，且在最简的情形下可以省略许多括号。
+
+　　其次，Scheme 等约定 lambda 的函数体具有隐含的顺序求值（技术上讲，表达式之前还可能有定义——定义在这些语言中不是表达式），但 Unilang 没有这样的隐含约定。也就是说，Scheme 的 `($lambda (x y) (display x) (display y))` 等效 `($lambda (x y) (begin (display x) (display y)))` ，而对应的 Unilang 表达式需要是 `$lambda (x y) $sequence (display x) (display y)` ，并不隐含 `$sequence` 。但是，Unilang 可以使用 `;` 简化这种写法：`$lambda (x y) (display x; display y)`。不过，因为 优先级，当函数体包含 `;` 这样的分隔符时，函数体的边界需要括号以免分隔符被视为函数体以外的记号，相比 Scheme 的过程语法不再能被省略。
+
+**原理** 和括号的语法作用类似，在 `$lambda` 中约定的这些差异能减少嵌套括号的必要性并在一定程度上减少编辑上的麻烦。
+
+　　配合变量定义和匿名函数的创建，可引入具名的函数，例如 `$def! id $lambda (x) x;` 定义可作为函数使用的变量 `id` 。
+
+### 参数匹配
+
+　　创建函数时指定形式参数。函数调用时，操作数被作为实际参数并*传递(pass)* 给函数，即用实际参数的值*替换(substitute)* 形式参数中蕴含的对应的变量，以便函数体中的计算。这种替换用实际参数的值*初始化(initialize)* 形式参数：形式参数在进入函数体时具有对应实际参数确定的初始值。
+
+　　使用 `$lambda` 和 Scheme 的 `lambda` 以及其它语言的函数定义有另一个重要的不同：`$lambda` 的形式参数支持更多的形式。
+
+　　具体地，`$lambda` 支持形式参数的位置上是一个没有共享节点的有向无环图描述的*形式参数树(formal parameter tree)* ，而不只是一个（无循环的）真列表构成的所谓*参数列表(parameter list)* ；并且，形式参数支持*模式匹配(pattern matching)* 在函数应用中提供的操作数。
+
+　　利用这种支持可以很容易地实现列表的分解(decompose) ，如求值 `display (($lambda ((x y)) x) (list "hello" "world"))` 输出 `hello` 。
+
+　　绑定匹配变量名的规则（包括形式参数树）中，还具有一些其它的语法约定，主要有：
+
+* `#ignore` 代替变量名，表示忽略绑定。
+* 结尾以 `.` 起始的变量名，表示绑定的是一个可匹配零个或多个实际参数的列表。
+
+　　利用后者，可以分解结尾参数列表，配合 `null?` 判断是否存在可选的参数值。
+
+**注释** 结尾的 `.` 的功能类似 ECMAScript 2017 的 rest 操作符（但不用 `...` ）。
+
+　　利用这些特性，可以实现一些传统 Lisp 中的基本操作，如：
+
+```
+$def! car $lambda ((x .)) x;
+$def! cdr $lambda ((#ignore .x)) x;
+```
+
+### 合并子和操作数求值
+
+　　在 Unilang 中引入函数值的*构造器(constructor)* 不只是 `$lambda` 。另一种重要的构造器是 `$vau` 。使用 `$lambda` 引入的函数，求值其函数应用时，被传递的实际参数是被求值后的操作数，且操作数的求值先于其函数体求值（即应用序），其对应的合并子称为*应用合并子(applicative combiner)* ，简称*应用子(applicative)* 。而使用 `$vau` 引入的合并子的应用不对操作数求值，其调用直接让函数体处理未求值的操作数作为实际参数，让函数体直接能处理（未求值的）操作数，这种合并子称为*操作合并子(operative combiner)* ，简称*操作子(operative)* 。
+
+　　应用子对应 Scheme 的过程以及许多常见语言的函数；而操作子具有应用子无法实现的对操作数所在上下文直接进行操作的能力——例如，把语法意义上的表达式作为一等对象并控制其求值。
+
+　　操作子进行函数应用时，操作数并不被求值而直接作为实际参数传递给形式参数，形式参数匹配的就是作为*语法对象(syntactic object)* 的表达式。关于合并子具体如何捕获上下文，在之后章节中继续介绍。
+
+　　之前提到的 `$sequence` 就是操作子的一个例子。类似的功能在 Lisp 方言中以特殊形式提供，可能被实现为内建的特性或者宏——后者需要单独的语法和模板语言（如 `define-syntax` ）；在 Unilang 中，因为处理函数的一致的操作已经能涵盖这些功能，并没有必要支持特设的功能（单独支持宏这样的特性）。事实上，作为一等对象的操作子能比宏更灵活，具有更少的限制——例如操作子可以被作为函数的参数传递。
+
+　　应用子的函数应用可以在概念上认为是一个操作子的操作数求值的复合。这种求值被称为*包装(wrapping)* 。为体现这种关系，每一个应用子都有*底层(underlying)* 的操作子；函数 `unwrap` 从应用解包装取底层操作子。反过来，函数 `wrap` 在合并子的基础上添加包装，取对应包装后的应用子。
+
+### 函数命名约定
+
+　　许多语言的宏替换一样，操作子的求值往往比一般的函数（应用子）更难理解，且能够直接变换源代码结构的操作子容易被滥用，因此约定以 **s**pecial form 的变形 `$` 作为操作子的函数起始，表示需要特别注意（类似 C 的宏名习惯使用大写字母）。使用已有的特性可以轻易地违反这个约定（如 `$def! lambda $lambda` ）语言规则也不要求对此进行检查；不过，一般不建议这样做。
+
+　　函数名使用 `?` 表示函数是*谓词(predicate)* ，即返回布尔类型的函数，例如之前提到的 `null?` 。
+
+　　函数名使用后缀 `!` 表示函数是可能引起改变(mutation) 而具有副作用的操作。
+
+　　函数名的 `?` 和 `!` 的后缀和 Scheme 的约定类似。不过，在 Scheme 中定义变量（用 `define` 特殊形式）并非被认为需要使用后缀，和 Unilang 中的 `$def!` 不同；这里的差异会在之后的章节中解释。
+
+## 对象和存储
+
+　　Unilang 和 Lisp 等语言有一个重要的不同：，Unilang 明确区分对象和值。Unilang 的对象的准确概念和 C 以及 C++ 的更加近似，指能被区分*同一性(identity)* 的实体。在 C 和 C++ 中，这种同一性直接由的*存储位置(memory location)* 决定，对象被定义为可能以特定类型访问的存储（注意，和 Java 等语言中定位的“类的实例”并不是一回事）。在 Unilang 中，存储不被强调（也没有提供内建的 `&` 操作），但也可以作为抽象的存储位置类比理解“对象”的含义——对象关联的值可能代表可变的状态，可视为对象存储了值。
+
+　　求值符号取得变量指称的对象的*引用(reference)* 。引用保持*被引用对象(referent)* 的同一性；同一个对象的不同引用是等价的。和 C++ 的引用出现在表达式中总是调整(adjust) 为被引用对象的值的规则不同，Unilang 中引用的实例可以是表达式的求值结果，或用于构造表达式，自身也是值，称为*引用值(reference value)* 。类似地，引用值可以是一等对象储存的值，这种对象称为*引用对象(reference object)* 。引用对象和引用值具有*引用类型(reference type)* 。
+
+　　和 C 以及 C++ 类似，保持同一性的表达式是*左值(lvalue)* ，否则是*右值(rvalue)* ；对象具有*生存期(lifetime)* 。求值指称对象名称的表达式来确定表达式的值，会*读(read)* 的对象（存储）的值；特定的操作引起对象值的*改变(mutation)* ，会涉及对象的*写(write)* 。读和写对象都是*访问(access)* 。超过生存期访问对象，引起按语言规则不可预期的*未定义行为(undefined behavior)* 。不过，Unilang 的函数一般不返回引用值而更强调决定生存期的*所有权(ownership)* ，因此不容易出现这种破坏*内存安全(memory safety)* 的行为。
+
+　　因为生存期的有限性，和 Lisp 的一般实现相比，Unilang 不依赖全局的 GC（ Garbage Collection，垃圾回收）。这使其更适应客户端应用的开发。若需要 GC 适配不同的开发场景，也可以以库的形式引入（当前实现暂时不对此提供支持）。
+
+## 绑定(binding) 和环境(environment)
+
+　　变量声明引入在当前上下文中使用变量，并保存对应的变量名指称的对象。*变量绑定(variable binding)* 确定变量名对应的对象。变量绑定的集合被保存在称为*环境(environment)* 的数据结构中。一个环境具有可选的一个或多个与之关联的其它环境作为它的*父环境(parent environment)* 。 
+
+　　和大多数 Lisp 方言不同，变量绑定对其中的对象具有所有权而不仅仅是保存对象的引用；此外，环境是一等对象，这意味着程序可以直接操作环境：函数 `make-environment` 创建环境（其参数指定父环境），可以进行改变，然后传递到其它位置进行操作。不过，和其它一等对象不同，环境自身具有引用语义——环境传递会共享其中的变量绑定集合和父环境的关联，实际上在这些内容的意义上不区分同一性。
+
+　　程序在语法上下文中隐含*当前环境(current environment)* 。当前环境被用于作为变量名的符号的求值，通过作为符号的变量名为键(key) 实现*名称解析(name resolution)* 算法来确定符号指称的对象的引用：
+
+* 在当前环境的变量绑定集合中查找和变量名匹配的绑定，若找到，则变量绑定的对象的引用就是被求值的结果；
+* 否则，以深度优先搜索(DFS, depth-first search) 的方式递归地重定向到当前环境的第一个父环境作为待查找变量绑定的环境，继续查找；
+* 否则，名称解析失败，求值符号出错——在当前环境（以及隐含的所有直接和间接父环境中）找不到指定变量名的对象。
+
+　　引入变量定义的函数 `$def!` 操作当前的环境。这个操作在当前环境添加或修改变量绑定集合中的个别元素，是对当前环境的改变，因此带有 `!` 。（作为对比，在 Scheme 中，环境不是一等对象，因此 `define` 在语言的意义上不被认为改变对象。）不带参数的函数 `get-current-environment` 取当前环境。
+
+　　体现环境作为一等环境的重要操作是基本操作 `eval` 。这也是传统 Lisp 中重要的概念；在现代 Lisp 方言中，因为可移植性和一些实现问题，这个操作实际不被常用；但在 Unilang 中这重新变得非常重要——这是组成许多常规操作的基础。它的基本形式是 `eval <expr> <environment>` ，两个参数分别是待求值的表达式和环境值。待求值的表达式根本上是一个没有循环的（可能嵌套的）真列表，实质上具有树结构，对应语言中代码的抽象语法树(AST, abstract syntax tree) 。对 `eval` 操作的强调体现语言对同像性(homoiconicity) 的支持——数据即代码。
+
+　　常规的表达式求值总是可以使用 `eval` 间接表达，如下面是 `display "Hello, world!` 在求值作用的意义上的等效写法：
+
+```
+eval (list display "Hello, world!") (() get-current-environment)
+```
+
+　　这个例子中，表达式是被直接构造的，和不使用 `eval` 的直接风格中表达式默认会被求值的方式相同只是更加间接（需要多求值具有 `eval` 的表达式），看起来似乎多此一举。不过，在实现操作子的函数体时，这样的写法很大程度上是不可或缺的，难以用更简单的方式代替，却具有强大的表达和抽象能力。具体的例子详见以下章节的介绍。
+
+### 变量定义的一般形式
+
+　　在 `$lambda` 的介绍中，提到形式参数支持树形结构的形式参数树。事实上，形式参数树也在变量定义中被支持。
+
+　　变量定义的 `$def!` 的一般形式是 `$def! <definiend> <expressions>` ，其中 `<definiend>` 是被引入的变量，而 `<expressions>` 是初始化变量的一个或多个表达式序列。这里 `<definiend>` 可以是形式参数树相同的形式，和函数定义时的形式参数相比，只是顶层绑定的区别—— `(x)` 绑定的函数参数 `x` ，在绑定单独的参数时，直接使用 `x` 即可（而单独的 `x` 表示把函数的整个操作数——包含可能被求值的所有实际参数绑定为一整个列表）。
+
+　　这样的定量定义可以在一个 `$def!` 应用中定义多个变量，例如：
+
+```
+$def! (x y) list "hello" "world";
+display x;
+display y;
+```
+
+　　定量定义的这种支持和 C++17 的结构化绑定(structural binding) 类似，但后者并没有在函数参数中支持这项特性，也不支持递归匹配。
+
+### 作用域(scope)
+
+　　环境确定了变量绑定的集合，因此不相交的环境可以容纳相同的变量名而指称不用的对象，不会引发冲突。在程序的不同上下文中，使用不同的环境避免这种冲突，实质上支持了作用域(scoping) 。和许多其它语言不同的是，Unilang 不需要特别强调作用域，因为它实质上仅有一种作用域，就是环境确定的作用域。
+
+　　这并不会引起使用上的不便。得益于 Unilang 强大的抽象能力，常见语言中需要内建支持的作用域规则可以被轻易地派生(derive) ——以其它的操作表达出来。
+
+　　例如，在 C++ 等类 ALGOL 语言中称为块作用域(block scope) 的局部作用域(local scope) ，可以使用 `$let` 函数的表达式：`$let ((x "hello")) (foo x; bar x);` 类似于前者的块 `{auto x = "hello"; foo(x); bar(x);}` 。这是因为，使用词法作用域规则的函数，为了不污染函数体外部的环境，在调用时创建以其定义所在的*静态环境(static environment)* 为父环境的新的环境——这实质上就是块作用域的原理。唯一的差别是，块作用域总是以固定的语法要求这个环境只有一个实例——相当于函数只能被调用一次。因此，块作用域完全可以用函数来实现（反过来不行），并不一定需要核心语言提供特设的支持。
+
+　　语言层次上直接以派生的形式支持局部作用域最早由 Scheme 给出（并且现在成为描述这种作用域的标准的操作语义）。在 Scheme 中，这种派生可使用宏实现，但并不那么容易—— `let` 特殊形式依赖非常复杂的 `letrec` 派生，而并不实用。但是，Unilang 使用的操作子派生相对而言非常容易——详见以下章节的讨论。
+
+　　大多数其它语言则根本不能支持这样的实现方式（除非直接另外写解释器），或难以实现；例如，C++ 允许把上面的例子表达为 `[&](auto x){foo(x); bar(x);}("hello");` ，但语言缺乏机制来把自动地重写等效的表达（显然 C++ 的宏难以实用地做到这点），所以实际上还是需要单独的特性支持不同的作用域，原则上需要学习更多的语言规则才能掌握。
+
+### 合并子构造器
+
+　　之前已经介绍了引入函数（应用子）的 `$lambda` 的构造器，它的一般语法形式是 `$lambda <formal> <body>` ，其中 `<formals>` 是形式参数树，而 `<body>` 表示（可能由零个或多个表达式组成的）函数体。相对地，操作子构造器 `$vau` 的一般形式是 `$vau <formals> <eformal> <body>` 。其中，`<formals>` 和 `<body>` 的含义和 `$lambda` 中的一致，而 `<eformal>` 表示绑定*动态环境(dynamic)* 的名称（符号）。
+
+　　动态环境是指函数调用时（而不是创建时）所在上下文的当前环境。捕获动态环境意味着函数能操作调用侧的语法上下文，这是操作子能提供不弱于宏的抽象能力的关键。而当指定动态环境为 `#ignore` 时，这样构造的操作子和更常规的应用子只有是否求值操作数上的差别。若操作子的函数体总是保证求值操作数，那么在外部看来，这样构造的操作子和应用子行为等价——唯一的差别就是是否能够被 `unwrap`（因为只有应用子能保证具有合并子）。
+
+　　利用这个原理，可以派生 `$lambda` ：
+
+```
+	$def! $lambda $vau (formals .body) d
+		wrap (eval (cons $vau (cons formals (cons #ignore body))) d);
+```
+
+## 派生变量绑定操作
+
+　　函数 `$def!` 能改变当前环境中的绑定。要改变其它环境的绑定，直接使用 `$def!` 是不够的。为此，引入函数 `$set!` 改变参数指定的环境中的变量绑定。它的一般形式是 `$set! <environment> <formals> <expressions>` 。
+
+　　求值 `$set!` 表达式类似变量定义，除了它改变的环境通过 `<environment>` 指定，而非当前环境。
+
+　　容易理解，`$def! x "hello"` 相当于 `$set! (() get-current-environment) x "hello"` 。
+
+　　函数 `$set!` 可以被派生实现：
+
+```
+$def! $set! $vau (e formals .expr) d
+	eval (list $def! formals (unwrap eval) expr d) (eval e d);
+```
+
+　　注意作为应用子，`eval` 会对参数进行求值。若需要避免 `eval` 的函数体对参数重复求值，可使用其底层的操作子。
+
+　　函数 `$set!` 类似 Scheme 的 `set` 特殊形式，可以实现替换变量的值的*赋值(assignment)* 。不过，Unilang 的 `$set!` 明确指定替换环境中的变量绑定，而不只是变量指称的对象。
+
+　　利用 `$set!` 可派生通过 `$def!` 和函数构造器组合定义函数的语法糖：
+
+```
+$def! $defv! $vau ($f formals ef .body) d
+	eval (list $set! d $f $vau formals ef body) d;
+$defv! $defl! (f formals .body) d
+	eval (list $set! d f $lambda formals body) d;
+```
+
+　　因为通常定义函数时同时只定义一个函数名，这种方式可以替代 `$def!` 而更常用。例如：
+
+```
+$def! id $lambda (x) x;
+```
+
+　　可以简作：
+
+```
+$defl! id (x) x;
+```
+
+## 等价谓词
+
+　　基础语言提供不同的等价谓词判断等价性，包括 `eq?`、`eqv?` 和 `equal?` 。这些等价谓词和 Scheme 的同名过程基本类似，都是二元操作。主要差异为：
+
+* `eq?` 明确比较对象的同一性。若两个参数指定同一个对象，则结果为 `#t` ，否则为 `#f` 。
+* `eqv?` 明确比较非列表对象值的相等性。若两个参数指定的非列表对象的值相等，则结果为 `#t` ，否则为 `#f` 。若参数中指定的对象存在列表，则结果未指定。
+* `equal?` 同 `eqv?`，但也支持列表。比较列表时，递归比较其元素相等；若所有元素对应相等，则结果为 `#t` ，否则为 `#f` 。
+
+## 控制
+
+　　表达选择性求值的选择结构，使用函数 `$if` 来实现，如：
+
+```
+$def! x ();
+display "x is ";
+display ($if (null? x) "empty" "not empty");
+```
+
+　　函数 `$if` 支持的一般形式是 `$if <test> <consequent> <alternate>` 。其中，第三个参数是可选的：若 `<alternate>` 不存在，则隐含为 `#inert` 。
+
+# 进阶
+
+　　本章进一步展开讨论一些 Unilang 语言中的基础语言应用的话题。
+
+## 词法
+
+　　从以上可以看出，Unilang 语法上是自由形式(free form) 的语言，引号包含外的空格等空白符不构成影响语义的元素。这类似 C（预处理除外）和 Lisp ，而不像 Python 和 Haskell 这样的语言——后者的语义可能被缩进影响。
+
+### 非空白符元素
+
+　　以空白符分隔的*词素(lexeme)* 在词法处理中会识别为不同种类的*记号(token)* 。和大多数语言类似，Unilang 在空白符分隔词素并分为以下几类：
+
+* 标点(punctuation) ：如 `;` 和括号。
+* 字面量(literal) 。
+* 标识符。
+
+　　标识符的语法已经在上文中有介绍。和 Lisp 方言类似，字面量至少包含：
+
+* 字符串字面量(string literal) ：如 `"Hello, world!"` 。
+* 十进制数值：如 `42` 和 `6.0` 。
+* `#` 起始的其它字面量：如 `#t` 。
+
+　　字符串字面量的编码和内部表示在基础语言不可见，因此不在语言的语义中约定；但为了简化实现和互操作支持，外部可见的字符串的实现可被假定以 UTF-8 编码。
+
+　　和其它语言不同，基础语言不约定数值具体使用的类型。并且，当前设计也不要求支持浮点数的表示。因为涉及的不只是词法规则，数值的问题在以下章节中讨论。
+
+　　当前支持的其它字面量只有 `#t` 和 `#f` ，都是*布尔(boolean)* 类型的逻辑值。
+
+### 注释
+
+　　当前基础语言的设计有意不提供固定语法规则上的注释。这是因为，以字符串字面量单独作为表达式构成“语句”，足以表示注释，例如：
+
+```
+"This is a single-line comment.";
+
+"This is a",
+	"multi-line comment.";
+```
+
+　　这种“注释”具有的优点是简化语言规则。并且，可以类似地引入其它形式的“注释”，提供更灵活的处理——例如，扩展为更一般的函数调用，用来生成文档（约定生成文档的语法具体应符合什么样的约束以及如何实现文档生成则涉及其它问题)，如：
+
+```
+$docuemnt-block
+(
+	"@brief brief xxx"
+	"@param p param"
+);
+```
+	
+　　这种避免提供特设语法而实现注释功能的一个现有语言的类似例子是 Python 的 [`longstring`] ——虽然这种语法被习惯性作为“多行注释”，但其实并不不是语法意义上的注释。Python 只支持 `#` 单行注释；而 Unilang 的基础语言在此更简单，也不为单行注释提供特设语法。
+
+**注意** 上述多行注释中不适用于只支持输入单一行求值的 REPL 。
+
+## 数值
+
+**注意** 本节描述的部分特性的设计尚未被完全确定或为预览发布，可能在之后的设计中变更。
+
+　　直观上的*数值(numerical value)* 应是数学意义上的*数(number)* ，但这无法准确实现——因为存储资源不可能表示得下任意（大）的数值。不同语言对此有不同的裁剪方式——如 C 等语言原生支持适合硬件直接支持的*机器数(machine number)* 、许多其它高级语言支持的更接近数学含义的*任意精度数(arbitrary precision number)* 和一些 Lisp 系统支持的*[数值塔(numerical tower)](https://en.wikipedia.org/wiki/Numerical_tower)* 。从抽象能力讲，作为通用目的的语言应支持最一般的、接近目的领域（大多数情况这里就是指数学）的形式，也就是选取数值塔（或者更强形式的扩展，例如支持四元数或者 Kawa 的*数量(quantity)* 这样的特性）。但在核心语言规则中原生支持所有这些特性和简单性矛盾，因此强大的抽象和复杂的实现被留给库而非基础语言中解决。
+
+　　注意数值的支持总是意味着一定的复杂性：即便数值的字面量只要求十进制数值，就已经可能包括和目标平台相关的不固定范围的数值集合。因此以上入门示例中，也不使用数值作为例子，以避免数值及其相关操作的一些复杂的问题。
+
+　　当前实现从 C++ 互操作的角度考虑，整数数值至少能支持本机的 `int` 类型，浮点数值能支持 `double` 类型。这些设计可能会在以后扩充（例如，支持更多不同类型的数值，以及不同进位制和定点数的语法）。
+
+## 程序和库(library)
+
+　　基础语言可通过自身进行实现。除此之外，基础语言支持的程序是*用户程序(user program)* 。
+
+　　和其它大部分语言一样，Unilang 语言能复用代码。被复用的代码以库的形式提供。
+
+　　不论是语言的实现还是用户程序，都可以使用库。
+
+　　库的设计一般是模块化的。库的实例引入若干 Unilang 变量（对象或函数）为公开接口，内部也可以带有非公开的状态。这允许库的实例之间不冲突。
+
+### 基础环境(ground environment)
+
+　　基础语言以环境的绑定作为公开的接口提供主要的特性。
+
+　　按实体区分，这些绑定提供的特性有两类：对象和*操作(operation)* 。后者以函数的形式提供。
+
+　　基础语言指定一个基础环境作为这些绑定的环境。基础环境不是一等对象，而只是作为用户程序执行时的一个父环境，以避免被修改。
+
+　　基础语言的*用户程序(user program)* 直接可依赖在基础环境中的接口。这也被用于构建语言扩展的基本构建块(basic building block) 。
+
+### 标准库
+
+　　Unilang 语言特性绝大部分预期以库的形式提供。基础语言应附带的*标准库(standard library)* ，是通过基础环境提供的库的。用户程序外，只要不循环依赖，标准库自身的实现也可依赖基础语言接口。
+
+　　标准库中，一部分重要常用的特性称为*核心库(core library)* 。核心库的绑定直接位于基础环境中。除非另行指定，除用户程序外，本文档中出现的对象和操作，都由核心库提供。
+
+　　其它标准库的绑定使用基础环境提供的其它环境间接提供。
+
+### 用户库
+
+　　用户可使用一等环境提供库的模块。可使用通用的核心库函数（如 `$import!` ，参见以下相关章节）从环境中引入绑定。
+
+### 外部库
+
+**注意** 本章描述的部分特性的设计尚未被确定。
+
+　　Unilang 也可以使用 FFI 引入标准库和用户程序以外的外部依赖，并可复用其它语言已经编写的代码。
+
+## 常用核心库操作
+
+　　基础函数核心库提供一些操作，用于操作列表等。
+
+### 派生控制操作
+
+　　函数 `$cond` 类似 Scheme 的 `cond` 特殊形式，实现多分支选择。相比于其它类似的语法，它的默认分支直接以 `#t` 作为判断的条件表达式，而不需引入诸如 `else` 或者 `=>` 等特设的语法，例如：
+
+```
+$cond (x)
+	((eqv? x "a") "x is a")
+	((eqv? x "b") "x is b")
+	(#t "x is other");
+```
+
+　　函数 `$when` 和 `$unless` 类似 Scheme 的 `when` 和 `unless` 特殊形式，用于强调单分支条件的求值。在 Unilang 中，被求值的分支的子表达式被顺序求值（即隐含了前缀 `$sequence`），如：
+
+```
+$sequence ($def! l ()) ($when (null? l) "list is null" (display l));
+$sequence ($def! l list "x") ($unless (null? l) "list is not null" (display l));
+```
+
+### 逻辑操作
+
+　　函数 `not?` 实现逻辑非运算：接受一个参数，判断参数等于 `#f` 。
+
+　　函数 `$and?` 和函数 `$or?` 实现带有短路求值的逻辑与和逻辑或运算。若没有参数，则结果分别为 `#f` 和 `#t` ；否则，顺序求值参数，直至找到符合终止逻辑条件的值；若不存在这样的值时，所有参数都被求值。当求值参数时，求值这些函数调用的结果都是其最后被求值的参数。逻辑与的终止逻辑条件是这个值等于 `#f` ；而逻辑或的终止逻辑条件是这个值不等于 `#f` 。这两个函数和 Scheme 的 `and` 和 `or` 特殊形式功能相同。 
+
+　　函数 `and?` 和函数 `or?` 实现不带有短路求值的逻辑与和逻辑或运算。与 `$and?` 和 `$or?` 类似，但函数对应的合并子是应用子而不是操作子。这保证调用返回结果时所有参数都已被求值，但不同参数之间求值顺序未指定。
+
+### 函数和列表相关操作
+
+　　函数 `apply` 以指定列表作为参数调用应用子，如 `f` 指称应用子时，`apply f list ("x" "y") (() get-environment)` 相当于 `f "x" "y"` 。这和传统 Lisp 类似，但其中最后一个参数也可以指定其它的环境。最后一个参数是可选的，当省略时，隐含新创建的空环境（即 `() make-environment`）。若调用应用子本身具有修改环境的副作用，这种省略环境的情形下，被修改的环境是新创建的环境，不会影响外部。
+
+　　对任意的对象 `x` ，求值调用 `apply list x` 的结果为 `x` 。
+
+　　函数 `first` 和 `rest` 分别用于取列表的第一个元素和余下的元素构成的列表，相当于传统 Lisp 的 `car` 和 `cdr` ，如：
+
+```
+$def! l list "x" "y" "z";
+display (first l);
+display (rest l);
+```
+
+　　函数 `list*` 类似 `cons` ，但支持前缀附加多个参数，满足：
+
+* 求值 `list* x` 同 `x` 。
+* 求值 `list* x y` 同 `cons x y` 。
+* 求值 `list* x y z` 同 `cons x (cons (y z))` ，以此类推。
+
+　　函数 `list*` 和 Racket 的[同名过程](https://docs.racket-lang.org/reference/pairs.html#%28def._%28%28quote._~23~25kernel%29._list*%29%29)功能相同，但只支持真列表。
+
+　　利用函数 `list*` 可在基础环境中派生定义指定动态环境的应用子语法糖：
+
+```
+	$defv! $defw! (f formals ef .body) d
+		eval (list $set! d f wrap (list* $vau formals ef body)) d;
+```
+
+　　函数 `accl` 和 `accr` 对抽象列表进行遍历，参数为抽象列表、判断列表遍历终止的谓词 `pred?`、遍历终止的默认元素、分别从抽象列表中分离第一个元素和余下的元素的应用子 `head` 和 `tail` 以及合并元素取得部分和(partial sum) 的应用子。应用子的求值都在调用所在的动态环境中进行。
+
+　　限定函数 `accr` 的参数 `pred?`、`head` 和 `tail` 分别为 `null?`、`first` 和 `rest` ，可得到函数 `foldr1`（其中 `1` 指这些函数都是一元函数，同时只处理一个列表）：
+
+```
+	$defw! foldr1 (kons knil l) d
+		apply accr (list l null? knil first rest kons) d;
+```
+
+　　进一步限定函数 `foldr1` 的部分参数，可派生映射一元应用子到列表上的操作 `map1` ：
+
+```
+	$defw! map1 (appv l) d
+		foldr1 ($lambda (x xs) cons% (apply appv (list x) d) xs) () (forward! l);
+```
+
+　　函数 `list-concat` 顺序连接两个列表。函数 `append` 顺序连接零个或多个列表。
+
+　　函数 `assv` 接受两个参数，其中第二个参数是*关联列表(associative list)* ，即每个元素是两个元素（*键(key)* 和*值(value)* ）的列表作为元素的列表。这个函数在关联列表中元素的键查找等于（通过 `eqv?` 确定）第一参数的元素。若找到这样的元素，结果为这个元素；否则，结果为空列表。
+
+### 绑定相关操作
+
+　　函数 `$let` 在具有绑定列表指定的局部绑定的环境中求值形式和函数体相同的表达式（称为*块(block)* ），可以通过上述操作派生：
+
+```
+	$defv! $let (bindings .body) d
+		eval (list* () (list* $lambda (map1 first bindings)
+			(list body)) (map1 ($lambda (x) list (rest x)) bindings)) d;
+```
+
+　　函数 `$let` 中初始化的局部绑定的顺序是未指定的，不字面顺序在后的初始化可使用先前初始化的变量。为此，可使用 `$let*` 代替 `$let` 。此外，若需要使用互相引用的初始化，使用 `$letrec` 代替。这两个函数类似 Scheme 的 `let*` 和 `letrec` 形式。
+
+　　函数 $let/d 和函数 $let 类似，但在求值的表达式前指定 <eformal> 捕获块的外部的动态环境。
+
+　　调用不接受参数的函数 `make-standard-environment` 创建*标准环境(standard environment)* ，即以基础环境为唯一父环境的空环境。
+
+　　函数 `$bindings->environment` 通过绑定列表创建环境。创建的环境是标准环境和带有列表对应的绑定。类似的函数 `$bindings/p->environment` 则允许第一个参数指定父环境列表（而不隐含使用标准环境），其余环境指定绑定。
+
+　　函数 `$provide!` 提供另一种通过求值表达式初始化指定名称的变量创建新环境的方法，如：
+
+```
+	$def! e $provide! (a b c) $def! a list "a" "b" "c";
+```
+
+　　函数 `$provide/d!` 和函数 `$provide` 类似，但在求值的表达式前指定 <eformal> 捕获块的外部的动态环境。
+
+　　函数 `$import!` 从环境中引入绑定，可使用以一等环境提供的库的模块。
+
+　　库的模块可以使用常规的 `make-environment` 函数创建，以 `$set!` 等方式修改。用户程序也可自行以这种方式提供和使用库：
+
+```
+	$def! library-module () make-environment;
+	$set! library-module v 42;
+	$set! library-module id $lambda (x) x;
+
+	$import! library-module id v;
+	display (id v);
+```
+
+　　也可以调用 `$provide!` 和 `$provide/d!` 直接创建这样的环境。
+
+## 函数调用、环境所有权和内存安全(memory safety)
+
+　　函数调用时，函数以其静态环境作为父环境，创建一个新环境。若函数对应的合并子在创建时同时通过指定了 <eformal> ，则绑定调用时的动态环境到这个新环境的名为 <eformal> 的符号上。在 <formals> 指定的形式函数绑定到这个环境上。之后，函数调用时，合并子指定的 <body> 的副本被求值，其动态环境也是新创建的环境。
+
+　　这意味着这个环境对这里创建的对象具有所有权。函数调用退出后，调用创建的环境会被销毁，这些对象也会随之被销毁。如果函数中返回引用这些对象的值，这样的引用值是*悬空引用(dangling reference)* 。悬空引用的对象的生存期已经结束，访问它的值引起未定义行为。这破坏了所谓的内存安全性。
+
+　　这实际上类似 C/C++ 的自动对象的机制。如果返回对象的引用或指针，也会有悬空引用或者悬空指针，访问对应的对象具有类似的未定义行为。
+
+　　基础语言中，以 `$lambda` 和 `$vau` 这样的函数返回值时进行*返回值转换(return value conversion)* ，把引用值转换为引用的对象，函数的返回值是对象的副本。只要不使用实现相关的机制获取“引用的引用”（确保不引入这样的值的机制类似 C++ 的*引用折叠(reference collapse)* ），返回的不是引用值，就不会有悬空引用。
+
+　　因为 `$lambda` 中的访问依赖合并子静态环境，如静态环境的生存期结束，则会有类似的问题（这通常出现在返回一个合并子并传递到嵌套的函数体外部）。这个问题并不容易直接解决，因为 `$lambda` 指定创建合并子所在的当前环境作为静态环境，这个环境并不需要在 `$lambda` 中直接能被访问，其生存期也不受控制。为了解决这个问题，基础语言对捕获静态环境的提供了使用 带有 `/e` 作为（除 `!` 等后缀以后的）函数名后缀的版本，允许用户直接指定可被外部控制的静态环境；而当静态环境为当前环境时，即同不带有 `/e` 后缀的版本（这个意义上，带有 `/e` 的函数提供的是更底层的操作）。如：
+
+```
+	$defl! foo (x) $lambda () display x;
+	() (foo 1);
+```
+
+　　上面的程序是错的，因为调用 `foo 1` 返回的函数时访问了已经不存在的静态环境（这个环境先前在调用 `foo` 时创建）。而：
+
+```
+	$defl! foo (x d)
+	(
+		$def! se make-environment d;
+		$set! se x x;
+		$lambda/e se () display x;
+	);
+	() (foo 1 (() get-current-environment));
+```
+
+　　这个程序没有这样的问题。造成这个差异的原因是，`make-environment` 创建的环境和一般的对象一样，对环境的绑定和父环境引用等内部数据具有所有权，是环境的*强引用(strong environment)* ，而通过不带有 `/e` 后缀的合并子创建函数得到的合并子中，其静态环境和 `() get-current-environment` 的结果一样都不直接具有环境内部数据的所有权，是环境的*弱引用(weak environment)* 。环境的强引用共享环境的数据，因此返回环境一等对象时，传递了引用保证环境中的共享数据不被销毁；而传递弱引用时，若之后没有其它共享环境的强引用，则共享的环境数据会被销毁。
+
+　　可见，为了维持环境数据，强引用是必须的。然而只使用环境强引用不能处理循环引用（除非依赖非确定性的垃圾回收(GC) ，通常实现总是会造成资源泄漏）。基础语言不依赖 GC ，因此默认使用环境弱引用，仅在必要时使用强引用。区分强引用和弱引用也能允许实现检查循环引用，但这可能存在附带的开销。而强引用的循环引用是无法检查的。因为这本质是所有权混乱的编程错误，基础语言规定，引入循环引用破坏所有权关系的程序具有未定义行为。
+
+　　使用 `make-environment` 创建强引用并不总是必要的。在确保不会引入循环强引用时，转换一个现有的弱引用为强引用是更实用的选项。为此，基础语言提供函数 `lock-environment` 支持这种操作。进一步地，以 `() lock-current-environment` 可代替 `lock-environment (() get-current-environment)` ，如：
+
+```
+	$defl! foo (x) $lambda/e (() lock-current-environment) () display x;
+	() (foo 1);
+```
+
+　　对应地，函数 `weaken-environment` 转换一个环境强引用为一个环境弱引用。
+
+　　因为 `lock-environment` 和 `lock-current-environment` 可能引入循环强引用引起基础语言的未定义行为，这个意义上它们是*不安全(unsafe)* 操作，即便它们没有违反常规的内存安全保证。
+
+# GUI 框架
+
+**注意** 本章描述的部分特性的设计尚未被确定。
+
+**注意** 本章描述的一些特性已过时，待同步。实际支持的 QtDemo 见版本库的 `demo` 分支。使用以下命令获取代码：`git clone http://gerrit.uniontech.com/unilang` 。
+
+　　GUI 框架是语言设计需要支持的重要应用案例。
+
+## 语言绑定示例
+
+　　虽然完整的设计和实现需要不小工作量，但基于 Qt 等成熟的框架，可以预期至少能够实现和现有语言绑定近似的一些功能。例如以下的 PyQt5 代码：
+
+```
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget
+
+app = QApplication(sys.argv)
+root = QWidget()
+root.resize(320, 240)
+root.setWindowTitle("Hello, World!")
+root.show()
+sys.exit(app.exec_())
+```
+
+　　按基础语言的语法风格，类似地可以有：
+
+```
+$import-all! system;
+$import! UnilangQt.QtGui QApplication QWidget;
+
+$define-instance! QApplication app system.argv;
+$define-instance! QWidget root;
+
+$call-method root resize 320 240;
+$call-method root set-window-title "Hello, world!";
+$call-method root show;
+
+system.exit ($call-method app exec);
+```
+
+　　对用户（使用框架的 GUI 应用开发者）而言，代码本身的复杂度是近似的，甚至许多时候可以一对一直接转译其它绑定的代码。这简化了移植。
+
+　　按 Unilang 的基础语言惯例一样，以上带有 `$` 前缀的标识符在语言设计中表示的是操作子的函数名。这些函数来自基础语言或者扩展基础语言的构成框架的底层库（例如面向对象和语言绑定支持）。类似的功能在其它语言中通常以固定的关键字表达；在 Unilang 中，这些关键字原则上可以使用其它写法替代，如：
+
+```
+$def! import-all $import-all!
+$def! import $import;
+$def! defi $define-instance!;
+$def! callm $call-method;
+```
+
+　　注意到替代关键字的代码可以通过开发流程中必备的工具（工具链中的解释器或者编辑器等）隐含求值而不需要用户编写。这样，上述的示例代码简化为：
+
+```
+import-all system;
+import UnilangQt.QtGui QApplication QWidget;
+
+defi QApplication app system.argv;
+defi QWidget root;
+
+callm root resize 320 240;
+callm root set-window-title "Hello, world!";
+callm root show;
+
+system.exit (call app exec);
+```
+
+　　所以，不必要担心使用基础语言风格的 `$` 和 `!` 等标识符前后缀约定的原始形式可能会造成的视觉污染和输入上的低效。
+
+## 其它示例
+
+　　以上示例仅演示最简单的语法风格。因为都是直接基于 Qt，在框架功能的意义上，和 PyQt 和 PySide 等语言绑定类似，使用 UnilangQt 开发的程序基本不会有结构差异；当然，这些绑定一般都比直接使用 Qt C++ API 的程序更简洁。
+
+　　以下展示一个和 PySide 的 [examples/demos/qtdemo 示例](https://code.qt.io/cgit/pyside/examples.git/tree/examples/demos/qtdemo?id=bd0c77f81fcc66e2cd57d78123bd1ea5ece3cb28)部分文件的对应的 UnilangQt 实现（因为篇幅原因，部分非关键代码被省略）。
+
+QtDemo.u:
+
+```
+import-all system;
+import UnilangQt QtCore QtGui;
+import-all qtdemo_rc;
+
+import colors Colors;
+import mainwindow MainWindow;
+import menumanager MenuManager;
+
+defl artisticSleep (sleepTime)
+(
+	def time (callm QtCore QTime);
+	callm time restart;
+	while (<? (callm time elapsed) sleepTime))
+		(callm QtCore QCoreApplication processEvents ((getprop QtCore QEventLoop AllEvents) 50)
+);
+
+def-main
+(
+	import-all system;
+
+	defi (QtGui QApplication) app system.argv;
+	callm Colors.parseArgs system.argv;
+
+	if (eqv? system.platform "win32")
+		(callm QtGui QMessageBox information (None "Documentation Warning" "The documentation is missing"));
+
+	defi MainWindow mainWindow;
+	callm (callm MenuManager instance) init mainWindow;
+	callm mainWindow setFocus;
+	
+	if (getprop Colors fullscreen)
+		(callm mainWindow showFullScreen)
+		(callm mainWindow enableMask #t; callm mainWindow show)	
+
+	artisticSleep 500;
+	callm mainWindow start;
+	system.exit (call app exec);
+);
+```
+
+colors.u:
+
+```
+import-all system;
+import UnilangQt QtGui;
+
+def-class Colors (object)
+(
+	"# Colors:";
+	def-mem-init-from (lambda (r g b) callm QtGui QColor (r g b))
+		(sceneBg1 91 91 91)
+		(sceneBg2 0 0 0)
+		(sceneLine 255 255 255);
+	def-mem
+		(contentColor "<font color='#eeeeee'>")
+		(glVersion "Not detected!");
+	def-mem
+		(contentColor "<font color='#eeeeee'>")
+		(glVersion "Not detected!");
+	"# Guides:";
+	def-mem
+		(stageStartY 8)
+		(stageHeight 536);
+	def-mem-init-to #f
+		(openGlRendering direct3dRendering softwareRendering noRescale);
+	def-mem-init-to #t
+		(openGlAvailable openGlAdequate direct3dAvailable xRenderPresent);
+	def-mem
+		(fps 100)
+		(menuCount 18)
+		(animSpeed 1.0)
+		(benchmarkFps - 1.0);
+		(tickerText ".EROM ETAERC .SSEL EDOC");
+
+	def-static-method contentFont ()
+	(
+		defi (QtGui QFont) font;
+
+		callm font setStyleStrategy (getprop QtGui QFont PreferAntialias);
+
+		if (eqv? system.platform "darwin")
+		(
+			callm font setPixelSize 14;
+			callm font setFamily "Arial";
+		)
+		(
+			callm font setPixelSize 13;
+			callm font setFamily "Verdana";
+		);
+		font			
+	);
+	
+	def-method debug (cls .args)
+	(
+		if (getprop cls verbose)
+			(fputs system.stderr (for-each (join " ") args))
+	);
+
+	def-method parseArgs (cls .argv)
+	(
+		"# Some arguments should be processed before others.  Handle them now.";
+		if (memv? "-verbose" argv)
+			(setprop cls verbose #t);
+			
+		callm cls detectSystemResources;
+		
+		"# Handle the rest of the arguments.  They may override attributes",
+		"	already set.";
+		for-each (lambda (s)
+			cond (s)
+				((eqv? s "-opengl") setprop cls openGlRendring #t)
+				((eqv? s "-direct3d") setprop cls direct3dRendering #t)
+				("-direct3d" setprop cls direct3dRendering #t)
+				((startswith s "-fps") setprop cls fps (to-int (parseFloat s "-fps")))
+				(($or? (startwith s "-fps") (startswith s "-help))
+					(callm QtGui QMessageBox warning (None "Arguments" "Usage: qtdemo.u [-verbose] [...]"); system.exit 0));
+		)) argv;
+		
+	);
+);
+```
+
+## MVU 架构风格示例
+
+　　除了使用 Qt API 绑定这样传统风格的代码外，使用支持 [MVU 架构](https://thomasbandt.com/model-view-update) 的 API 在一定条件下能使 UI 程序更清晰简洁易维护。
+
+　　MVU 通常适合在一定规模范围的 GUI 中使用，参见[关于 MVU 的讨论](%E8%AF%AD%E8%A8%80%E5%92%8C%E6%A1%86%E6%9E%B6%E5%88%86%E6%9E%90.md)的局限性分析。
+
+　　使用 MVU 的例子可具有类似以下类似 Flutter 的风格：
+
+```
+def-class Widget (StatelessWidget)
+(
+	def-mem Model item;
+
+	def-overwrite build (context)
+	(
+		ListView
+		(
+			def-mem AppBar appBar
+			(
+				def-mem Text title (getprop item title)
+			);
+			def-mem Padding body
+			(
+				def padding callm EdgeInsets all 16.0;
+				def-mem Text child (getprop item content)
+			)
+		)
+	);
+);
+
+
+defi Model model;
+defi Widget widget;
+
+setprop widget item model;
+
+"# Some model updates here."
+update-view widget; "# Build is called internally on demand."
+callm widget show;
+```
+
+　　或者使用绑定代替显式更新（类似 SwiftUI ）：
+
+```
+def-class ListView (View)
+(
+	"# def-mem list (identifiable-list "A" "B" "C")";
+	def-binding list; "NOTE: The type is inferred.";
+	def-mem body some View
+	(
+		NavigationView
+		(
+			def-mem list List (lambda (item) (identify self)) (lambda (item) (
+				HStack
+				(
+					Image systemName "circle;
+					Text item;
+					() Spacer
+				);
+			));
+			navigationBarTitle (Text "Sample List")
+		);
+	);
+);
+
+defi ListView widget;
+callm widget show;
+```
+
+
+## Unilang 绑定的抽象能力
+
+　　用户还保留了必要时继续引入新的操作子的能力，因此最后使用的语言中有更强的抽象能力。例如以上连续的方法调用可以转写成：
+
+```
+$with-method-call root
+(
+	(resize 320 240)
+	(set-window-title "Hello, world!")
+	(show)
+);
+```
+
+　　类似这种*语法扩展(syntatic extension)* 在上述较简单的例子中或许不具有很明显的优势，但非常适合生成大批量的模板代码等任务，避免代码的过度冗余。这种在外部工具辅助之前直接扩展语言的方式在大多数语言内部无法轻易实现，而具有一些缺陷：
+
+* 大多数语言通常需要另外预处理代码或配合（开发流程中本不必要的）外部工具，而显著提升了开发环境的依赖。
+* 少数其它语言能通过*宏(macro)* 变通，也需要另外的元语言设计，不能复用基础语言的已有的设施。（并且，宏在许多方面比 Unilang 的操作子限制更大。）
+* 不论是开发工具的特定用法还是特设的语言规则，都需要开发者额外进行学习，不利于复用以往的经验。开发者不容易兼顾附加的知识和其它内容，使许多熟练开发者倾向于过细的分工及过度依赖特定的工具引发一些问题（特别地，关于直接编写代码和依赖设计器等工具生成代码之间的协作），间接导致项目成本上升。
+
+　　由于以上的原因，Unilang 在这些方面有一定的提升开发效率的潜力。
+
+## 开放问题
+
+* 因为“关键字”的替代能被轻易实现，因此在当前的设计中，“关键字”的拼写相对不是重要的部分。为了开发方便，仍有必要约定一套不会产生过多冗余而且足够具有可读性的具体写法。
+* 确定什么样的语法扩展能满足现有项目需求并改进现状。
+
