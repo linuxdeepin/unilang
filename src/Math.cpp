@@ -628,7 +628,7 @@ private:
 		const _type r(x + y);
 
 		if(r >= x)
-			return r;urn x + y;
+			return r;
 #endif
 		return MakeExtType<_type>(x) + MakeExtType<_type>(y);
 	}
