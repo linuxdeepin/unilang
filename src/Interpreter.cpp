@@ -1,8 +1,9 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for std::bind, HasValue, TokenValue,
-//	std::placeholders, std::declval, string_view, ystdex::sfmt,
-//	Context::DefaultHandleException, ByteParser, std::getline;
+#include "Interpreter.h" // for std::bind, HasValue, TokenValue, std::declval,
+//	string_view, ystdex::sfmt, Context::DefaultHandleException, ByteParser,
+//	std::getline;
+#include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <cassert> // for assert;
 #include "Math.h" // for ReadDecimal, FPToString;
@@ -20,7 +21,6 @@
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
-#include <functional> // for std::placeholders::_1;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
 #include <algorithm> // for std::for_each;
 #include "Syntax.h" // for ReduceSyntax;
@@ -324,8 +324,8 @@ OpenFile(const char* filename)
 
 struct SeparatorPass::TransformationSpec final
 {
-	using Filter = decltype(std::bind(HasValue<TokenValue>,
-		std::placeholders::_1, std::declval<TokenValue&>()));
+	using Filter = decltype(ystdex::bind1(HasValue<TokenValue>,
+		std::declval<TokenValue&>()));
 
 	TokenValue Delimiter;
 	Filter TransformFilter;
@@ -336,8 +336,8 @@ struct SeparatorPass::TransformationSpec final
 
 SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
 	ValueObject pfx)
-	: Delimiter(delim), TransformFilter(std::bind(HasValue<TokenValue>,
-	std::placeholders::_1, delim)), Prefix(pfx) 
+	: Delimiter(delim), TransformFilter(ystdex::bind1(HasValue<TokenValue>,
+	delim)), Prefix(pfx)
 {}
 
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
@@ -423,7 +423,7 @@ void
 Interpreter::PrepareExecution(Context& ctx)
 {
 	ctx.SaveExceptionHandler();
-	ctx.HandleException = std::bind([&](std::exception_ptr p,
+	ctx.HandleException = ystdex::bind1([&](std::exception_ptr p,
 		const Context::ReducerSequence::const_iterator& i){
 		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
@@ -440,7 +440,7 @@ Interpreter::PrepareExecution(Context& ctx)
 
 			TraceException(e, trace);
 		}
-	}, std::placeholders::_1, ctx.GetCurrent().cbegin());
+	}, ctx.GetCurrent().cbegin());
 }
 
 void
