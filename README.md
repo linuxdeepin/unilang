@@ -214,16 +214,9 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 
 # 支持的语言特性
 
-　　参照[《Unilang 介绍》](https://gitlabwh.uniontech.com/ut001269/working-docs/-/blob/master/Unilang%20%E4%BB%8B%E7%BB%8D.md)中的例子（尚未完全支持）。
+　　语言特性可参照[《Unilang 介绍》](doc/Introduction.zh-CN.md)中的例子（尚未完全支持）和[特性清单](doc/Features.zh-CN.md)。
 
-　　详细的语言规范和设计文档待补充。
-
-　　当前支持的特性清单：
-
-* 基本语法和求值算法：
-	* 环境和变量解析。
-	* 函数应用。
-* 函数：详见[语言规范文档](doc/Language.zh-CN.md)。
+　　另见[语言规范](doc/Language.zh-CN.md)和[解释器设计和实现文档](Interpreter.zh-CN.md)。
 
 ## 已知问题
 
