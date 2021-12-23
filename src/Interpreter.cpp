@@ -1,7 +1,9 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for string_view, ystdex::sfmt, ByteParser,
-//	std::getline;
+#include "Interpreter.h" // for std::bind, HasValue, TokenValue,
+//	std::placeholders, std::declval, string_view, ystdex::sfmt,
+//	Context::DefaultHandleException, ByteParser, std::getline;
+#include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <cassert> // for assert;
 #include "Math.h" // for ReadDecimal, FPToString;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
@@ -319,6 +321,58 @@ OpenFile(const char* filename)
 }
 
 } // unnamed namespace;
+
+struct SeparatorPass::TransformationSpec final
+{
+	using Filter = decltype(std::bind(HasValue<TokenValue>,
+		std::placeholders::_1, std::declval<TokenValue&>()));
+
+	TokenValue Delimiter;
+	Filter TransformFilter;
+	ValueObject Prefix;
+
+	TransformationSpec(TokenValue, ValueObject);
+};
+
+SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
+	ValueObject pfx)
+	: Delimiter(delim), TransformFilter(std::bind(HasValue<TokenValue>,
+	std::placeholders::_1, delim)), Prefix(pfx) 
+{}
+
+SeparatorPass::SeparatorPass(TermNode::allocator_type a)
+	: allocator(a), transformations({{";", ContextHandler(Forms::Sequence)},
+	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))}}, a)
+{}
+SeparatorPass::~SeparatorPass() = default;
+
+ReductionStatus
+SeparatorPass::operator()(TermNode& term) const
+{
+	assert(remained.empty() && "Invalid state found.");
+	Transform(term, remained);
+	while(!remained.empty())
+	{
+		const auto term_ref(std::move(remained.top()));
+
+		remained.pop();
+		for(auto& tm : term_ref.get())
+			Transform(tm, remained);
+	}
+	return ReductionStatus::Clean;
+}
+
+void
+SeparatorPass::Transform(TermNode& term, SeparatorPass::TermStack& terms) const
+{
+	terms.push(term);
+	for(const auto& trans : transformations)
+		if(std::find_if(term.begin(), term.end(), trans.TransformFilter)
+			!= term.end())
+			term = SeparatorTransformer::Process(std::move(term), trans.Prefix,
+				trans.TransformFilter);
+}
+
 
 Interpreter::Interpreter()
 {}
