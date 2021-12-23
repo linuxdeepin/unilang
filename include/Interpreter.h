@@ -3,9 +3,8 @@
 #ifndef INC_Unilang_Interpreter_h_
 #define INC_Unilang_Interpreter_h_ 1
 
-#include "Forms.h" // for TokenValue, HasValue, std::bind, std::placeholders,
-//	TermNode, lref, stack, std::declval, Forms::Sequence, ReduceBranchToList,
-//	string, shared_ptr, pmr, Unilang::Deref, YSLib::unique_ptr;
+#include "Context.h" // for stack, lref, vector, pmr, string, shared_ptr,
+//	Environment, Context, TermNode, Unilang::Deref, YSLib::unique_ptr;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
 #include <istream> // for std::istream;
@@ -15,56 +14,25 @@
 namespace Unilang
 {
 
-class SeparatorPass
+class SeparatorPass final
 {
 private:
-	using Filter = decltype(std::bind(HasValue<TokenValue>,
-		std::placeholders::_1, std::declval<TokenValue&>()));
 	using TermStack = stack<lref<TermNode>, vector<lref<TermNode>>>;
+	struct TransformationSpec;
 
-	TermNode::allocator_type alloc;
-	TokenValue delim{";"};
-	TokenValue delim2{","};
-	Filter
-		filter{std::bind(HasValue<TokenValue>, std::placeholders::_1, delim)};
-	Filter
-		filter2{std::bind(HasValue<TokenValue>, std::placeholders::_1, delim2)};
-	ValueObject pfx{ContextHandler(Forms::Sequence)};
-	ValueObject pfx2{ContextHandler(FormContextHandler(ReduceBranchToList, 1))};
-	mutable TermStack remained{alloc};
+	TermNode::allocator_type allocator;
+	vector<TransformationSpec> transformations;
+	mutable TermStack remained{allocator};
 
 public:
-	SeparatorPass(TermNode::allocator_type a)
-		: alloc(a)
-	{}
+	SeparatorPass(TermNode::allocator_type);
+	~SeparatorPass();
 
 	ReductionStatus
-	operator()(TermNode& term) const
-	{
-		assert(remained.empty());
-		Transform(term, remained);
-		while(!remained.empty())
-		{
-			const auto term_ref(std::move(remained.top()));
+	operator()(TermNode&) const;
 
-			remained.pop();
-			for(auto& tm : term_ref.get())
-				Transform(tm, remained);
-		}
-		return ReductionStatus::Clean;
-	}
-
-private:
 	void
-	Transform(TermNode& term, TermStack& terms) const
-	{
-		terms.push(term);
-		if(std::find_if(term.begin(), term.end(), filter) != term.end())
-			term = SeparatorTransformer::Process(std::move(term), pfx, filter);
-		if(std::find_if(term.begin(), term.end(), filter2) != term.end())
-			term = SeparatorTransformer::Process(std::move(term), pfx2,
-				filter2);
-	}
+	Transform(TermNode&, TermStack&) const;
 };
 
 
