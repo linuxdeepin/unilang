@@ -2271,6 +2271,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `load`
 	* `display`
 	* `puts`
+* 定义实体别名：
+	* `=` ：同数学库函数 `=?` 。
+	* `<` ：同数学库函数 `<?` 。
+	* `>` ：同数学库函数 `>?` 。
+	* `<=` ：同数学库函数 `<=?` 。
+	* `>=` ：同数学库函数 `>=?` 。
 
 **注释** 不在此指定为别名的函数也可能实现为别名。
 
