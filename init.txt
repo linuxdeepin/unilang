@@ -5,6 +5,7 @@
 
 $import! std.strings &++;
 $import! std.io &newline &load &display &puts;
+$import! std.math &+ &- &* &/;
 
 $defv%! if (&test &consequent .&opt) e $let*%
 (
