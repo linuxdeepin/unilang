@@ -316,6 +316,70 @@ LoadModule_std_strings(Interpreter& intp)
 }
 
 void
+LoadModule_std_math(Interpreter& intp)
+{
+	using namespace Forms;
+	auto& ctx(intp.Root.GetRecordRef());
+
+	RegisterUnary(ctx, "number?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
+	RegisterUnary(ctx, "real?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
+	RegisterUnary(ctx, "rational?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsRationalValue)));
+	RegisterUnary(ctx, "integer?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
+	RegisterUnary(ctx, "exact-integer?",
+		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "exact?", IsExactValue);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "inexact?", IsInexactValue);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "finite?", IsFinite);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "infinite?", IsInfinite);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "nan?", IsNaN);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "=?",
+		Equal);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<?", Less);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">?",
+		Greater);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<=?",
+		LessEqual);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">=?",
+		GreaterEqual);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "zero?", IsZero);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "positive?", IsPositive);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "negative?", IsNegative);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "odd?", IsOdd);
+	RegisterUnary<Strict, const NumberLeaf>(ctx, "even?", IsEven);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "max", Max);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "min", Min);
+	RegisterUnary<Strict, NumberNode>(ctx, "add1", Add1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "+", Plus);
+	RegisterUnary<Strict, NumberNode>(ctx, "sub1", Sub1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "-", Minus);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "*", Multiplies);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
+	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
+	RegisterBinary<Strict, const int, const int>(ctx, "div",
+		[](const int& e1, const int& e2){
+		if(e2 != 0)
+			return e1 / e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	RegisterBinary<Strict, const int, const int>(ctx, "mod",
+		[](const int& e1, const int& e2){
+		if(e2 != 0)
+			return e1 % e2;
+		throw std::domain_error("Runtime error: divided by zero.");
+	});
+	RegisterUnary<Strict, const int&>(ctx, "itos", [](const int& x){
+		return string(YSLib::make_string_view(std::to_string(int(x))));
+	});
+	RegisterUnary<Strict, const string>(ctx, "stoi", [](const string& x){
+		return int(std::stoi(YSLib::to_std_string(x)));
+	});
+}
+
+void
 LoadModule_std_io(Interpreter& intp)
 {
 	using namespace Forms;
@@ -732,63 +796,6 @@ $defv! $import! (&e .&symbols) d
 	eval% (list $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (eval e d);
 	)Unilang");
-	// NOTE: Math operations.
-	RegisterUnary(ctx, "number?",
-		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
-	RegisterUnary(ctx, "real?",
-		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
-	RegisterUnary(ctx, "rational?",
-		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsRationalValue)));
-	RegisterUnary(ctx, "integer?",
-		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
-	RegisterUnary(ctx, "exact-integer?",
-		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "exact?", IsExactValue);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "inexact?", IsInexactValue);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "finite?", IsFinite);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "infinite?", IsInfinite);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "nan?", IsNaN);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "=?",
-		Equal);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<?", Less);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">?",
-		Greater);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<=?",
-		LessEqual);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">=?",
-		GreaterEqual);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "zero?", IsZero);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "positive?", IsPositive);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "negative?", IsNegative);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "odd?", IsOdd);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "even?", IsEven);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "max", Max);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "min", Min);
-	RegisterUnary<Strict, NumberNode>(ctx, "add1", Add1);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "+", Plus);
-	RegisterUnary<Strict, NumberNode>(ctx, "sub1", Sub1);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "-", Minus);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "*", Multiplies);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
-	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
-	RegisterBinary<Strict, const int, const int>(ctx, "div",
-		[](const int& e1, const int& e2){
-		if(e2 != 0)
-			return e1 / e2;
-		throw std::domain_error("Runtime error: divided by zero.");
-	});
-	RegisterBinary<Strict, const int, const int>(ctx, "mod",
-		[](const int& e1, const int& e2){
-		if(e2 != 0)
-			return e1 % e2;
-		throw std::domain_error("Runtime error: divided by zero.");
-	});
-	RegisterUnary<Strict, const int&>(ctx, "itos", [](const int& x){
-		return string(YSLib::make_string_view(std::to_string(int(x))));
-	});
-	RegisterUnary<Strict, const string>(ctx, "stoi", [](const string& x){
-		return int(std::stoi(YSLib::to_std_string(x)));
-	});
 	// NOTE: Supplementary functions.
 	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
 		RetainN(term);
@@ -820,6 +827,7 @@ $defv! $import! (&e .&symbols) d
 
 	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("strings", LoadModule_std_strings);
+	load_std_module("math", LoadModule_std_math);
 	load_std_module("io", LoadModule_std_io);
 	load_std_module("system", LoadModule_std_system);
 	load_std_module("modules", LoadModule_std_modules);
@@ -925,7 +933,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.9.0"
+#define APP_VER "0.9.11"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

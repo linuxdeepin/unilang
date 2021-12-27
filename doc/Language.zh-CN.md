@@ -1829,9 +1829,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　结果是替换后的字符串。
 
-## 数值操作
+## 数学库
 
-　　数值操作在基础环境中直接提供绑定。
+　　数学库加载为基础环境下的 `std.math` 环境，主要支持关于数值类型的操作。
 
 　　数值操作可支持以下求值得到的操作数：
 
