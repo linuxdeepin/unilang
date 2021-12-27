@@ -49,6 +49,9 @@ $if (null? opt)
 
 $def! while $while;
 
+"XXX", "'()' at the front or '&' on the name is needed to prevent the infix",
+	" transformation.";
+() $defl! != (&x &y) not? (= x y);
 
 "NOTE", "The following are extensions provided by the Unilang implementation.";
 
