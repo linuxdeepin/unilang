@@ -3,6 +3,9 @@
 
 "NOTE", "The following implements the new high-level language syntaxes.";
 
+$import! std.strings &++;
+$import! std.io &newline &load &display &puts;
+
 $defv%! if (&test &consequent .&opt) e $let*%
 (
 	(else-sym ($remote-eval string->symbol std.strings) "else")
@@ -38,9 +41,6 @@ $if (null? opt)
 );
 
 $def! while $while;
-
-$import! std.io newline load display puts;
-$import! std.strings ++;
 
 
 "NOTE", "The following are extensions provided by the Unilang implementation.";
