@@ -20,6 +20,7 @@
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
+#include <ystdex/functor.hpp> // for ystdex::id;
 #include <algorithm> // for std::find_if, std::for_each;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
@@ -354,7 +355,13 @@ SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
 
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
 	: allocator(a), transformations({{";", ContextHandler(Forms::Sequence)},
-	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))}}, a)
+	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))},
+	{[](const TermNode& nd) ynothrow{
+		return HasValue<TokenValue>(nd, "+") || HasValue<TokenValue>(nd, "-"); 
+	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
+	{[](const TermNode& nd) ynothrow{
+		return HasValue<TokenValue>(nd, "*") || HasValue<TokenValue>(nd, "/"); 
+	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft}}, a)
 {}
 SeparatorPass::~SeparatorPass() = default;
 
