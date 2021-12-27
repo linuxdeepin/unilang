@@ -17,7 +17,8 @@ namespace Unilang
 class SeparatorPass final
 {
 private:
-	using TermStack = stack<lref<TermNode>, vector<lref<TermNode>>>;
+	using TermStackEntry = pair<lref<TermNode>, bool>;
+	using TermStack = stack<TermStackEntry, vector<TermStackEntry>>;
 	struct TransformationSpec;
 
 	TermNode::allocator_type allocator;
@@ -32,7 +33,7 @@ public:
 	operator()(TermNode&) const;
 
 	void
-	Transform(TermNode&, TermStack&) const;
+	Transform(TermNode&, bool, TermStack&) const;
 };
 
 
