@@ -2037,9 +2037,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　转换整数的字符串表示为整数。若失败，则引起错误。
 
-## 标准 I/O 库
+## I/O 库
 
-　　标准 I/O 库的操作加载为基础环境下的 `std.io` 环境。
+　　I/O 库的操作加载为基础环境下的 `std.io` 环境。
 
 `() newline`
 
@@ -2145,7 +2145,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　若参数指定的需求字符串没有注册，则注册需求字符串并加载同调用 `find-requirement-filename` 等价的方式搜索得到的结果；否则没有作用。
 
-## 辅助标准库功能
+## 辅助功能
 
 　　包含当前设计中未归类的以标准库提供的辅助运行时功能。
 
@@ -2222,27 +2222,6 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建 FFI 回调函数对象。
 
-# 初始化
-
-　　用户程序使用的初始环境包括以下初始化：
-
-* 确保基础环境可用，并创建以基础环境为父环境的空环境。
-* 用户环境初始化。
-
-　　之后，运行用户程序。
-
-　　其中，用户环境初始化的默认行为等效以下操作：
-
-* 在当前环境中引入标准 I/O 库的操作：
-	* `newline`
-	* `load`
-	* `display`
-	* `puts`
-
-　　实现可提供其它形式的、由实现定义的用户环境初始化操作替代上述的默认用户环境初始化。
-
-　　初始化还应提供以下章节的上层语言特性的必要实现。
-
 # 上层语言特性
 
 　　基于基础语言，上层语言提供替代的语法，提供可使具有其它语言背景的用户更易使用的包装特性。
@@ -2268,6 +2247,28 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ## 库特性
 
+　　基于基础语言，上层语言提供更多的库。
+
+　　一些定义提供标准库的实体别名。作为简化写法，可能不遵循标准库中函数的命名约定。
+
+　　除非另行指定，这些定义同一个环境中绑定。
+
+### 基础语言实体别名
+
+　　以下名称在启用上层语言的初始环境可用，而不需要程序显式地在当前环境中引入或定义。
+
+　　以别名方式指定的实体和标准库函数具有同一性，即 `eq?` 比较相等。
+
+* I/O 库操作：
+	* `newline`
+	* `load`
+	* `display`
+	* `puts`
+
+**注释** 不在此指定为别名的函数也可能实现为别名。
+
+### 控制操作
+
 `if <test> <consequent> else <alternate>`
 `if <test> <consequent>`
 
@@ -2276,4 +2277,17 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 `while <test> <expression-sequence>`
 
 　　循环求值，功能同核心库的 `$while` 。
+
+# 初始化
+
+　　用户程序使用的初始环境包括以下初始化：
+
+* 确保基础环境可用，并创建以基础环境为父环境的空环境。
+* 用户环境初始化。
+
+　　之后，运行用户程序。
+
+　　其中，用户环境初始化的默认行为等效在当前环境中引入上层语言的库特性。
+
+　　实现可提供其它形式的、由实现定义的用户环境初始化操作补充或替代上述的默认用户环境初始化。
 
