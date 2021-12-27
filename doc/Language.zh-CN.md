@@ -2257,9 +2257,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　以下名称在启用上层语言的初始环境可用，而不需要程序显式地在当前环境中引入或定义。
 
-　　以别名方式指定的实体和标准库函数具有同一性，即 `eq?` 比较相等。
+　　在本节指定为别名的定义和对应的标准库函数具有同一性，即 `eq?` 比较相等。
 
-* I/O 库操作：
+* 字符串操作：
+	* `++`
+* I/O 库：
 	* `newline`
 	* `load`
 	* `display`
