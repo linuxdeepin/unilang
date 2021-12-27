@@ -1,6 +1,8 @@
 ﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
 "Unilang test script.";
 
+$if (bound? "std.math") ($import! std.math =? <? <=? >? >=? + - * / stoi itos);
+
 $def! $rem $vau . #ignore "";
 
 info "sanity";
