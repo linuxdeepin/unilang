@@ -2298,6 +2298,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　循环求值，功能同核心库的 `$while` 。
 
+### 数学库
+
+`!= <number1> <number2>`
+
+　　比较不等。
+
 # 初始化
 
 　　用户程序使用的初始环境包括以下初始化：
