@@ -2261,6 +2261,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 * 字符串操作：
 	* `++`
+* 数学库操作：
+	* `+`
+	* `-`
+	* `*`
+	* `/`
 * I/O 库：
 	* `newline`
 	* `load`
