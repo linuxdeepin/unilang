@@ -362,77 +362,85 @@ ReductionStatus
 SeparatorPass::operator()(TermNode& term) const
 {
 	assert(remained.empty() && "Invalid state found.");
-	Transform(term, remained);
+	Transform(term, {}, remained);
 	while(!remained.empty())
 	{
-		const auto term_ref(std::move(remained.top()));
+		const auto entry(std::move(remained.top()));
 
 		remained.pop();
-		for(auto& tm : term_ref.get())
-			Transform(tm, remained);
+		for(auto& tm : entry.first.get())
+			Transform(tm, entry.second, remained);
 	}
 	return ReductionStatus::Clean;
 }
 
 void
-SeparatorPass::Transform(TermNode& term, SeparatorPass::TermStack& terms) const
+SeparatorPass::Transform(TermNode& term, bool skip_binary,
+	SeparatorPass::TermStack& terms) const
 {
-	terms.push(term);
-	for(const auto& trans : transformations)
+	if(IsBranch(term))
 	{
-		const auto& filter(trans.Filter);
-		auto i(std::find_if(term.begin(), term.end(), filter));
+		if(IsEmpty(*term.begin()))
+			skip_binary = true;
+		terms.push({term, skip_binary});
+		for(const auto& trans : transformations)
+		{
+			const auto& filter(trans.Filter);
+			auto i(std::find_if(term.begin(), term.end(), filter));
 
-		if(i != term.end())
-			switch(trans.Kind)
-			{
-			case TransformationSpec::NAry:
-				term = SeparatorTransformer::Process(std::move(term),
-					trans.MakePrefix(i->Value), filter);
-				break;
-			case TransformationSpec::BinaryAssocLeft:
+			if(i != term.end())
+				switch(trans.Kind)
 				{
-					const auto ri(std::find_if(term.rbegin(), term.rend(),
-						filter));
+				case TransformationSpec::NAry:
+					term = SeparatorTransformer::Process(std::move(term),
+						trans.MakePrefix(i->Value), filter);
+					break;
+				case TransformationSpec::BinaryAssocLeft:
+				case TransformationSpec::BinaryAssocRight:
+					if(skip_binary)
+						break;
+					if(trans.Kind == TransformationSpec::BinaryAssocLeft)
+					{
+						const auto ri(std::find_if(term.rbegin(), term.rend(),
+							filter));
 
-					assert(ri != term.rend());
-					i = ri.base();
-					--i;
-				}
-				YB_ATTR_fallthrough;
-			case TransformationSpec::BinaryAssocRight:
-				if(i != term.begin() && std::next(i) != term.end())
-				{
-					const auto a(term.get_allocator());
-					auto res(Unilang::AsTermNode(yforward(term).Value));
-					auto im(std::make_move_iterator(i));
-					using it_t = decltype(im);
-					const auto range_add([&](it_t b, it_t e){
-						const auto add([&](TermNode& node, it_t j){
-							node.Add(Unilang::Deref(j));
+						assert(ri != term.rend());
+						i = ri.base();
+						--i;
+					}
+					if(i != term.begin() && std::next(i) != term.end())
+					{
+						const auto a(term.get_allocator());
+						auto res(Unilang::AsTermNode(yforward(term).Value));
+						auto im(std::make_move_iterator(i));
+						using it_t = decltype(im);
+						const auto range_add([&](it_t b, it_t e){
+							const auto add([&](TermNode& node, it_t j){
+								node.Add(Unilang::Deref(j));
+							});
+
+							assert(b != e);
+							if(std::next(b) == e)
+								add(res, b);
+							else
+							{
+								auto child(Unilang::AsTermNode());
+
+								do
+								{
+									add(child, b++);
+								}while(b != e);
+								res.Add(std::move(child));
+							}
 						});
 
-						assert(b != e);
-						if(std::next(b) == e)
-							add(res, b);
-						else
-						{
-							auto child(Unilang::AsTermNode());
-
-							do
-							{
-								add(child, b++);
-							}while(b != e);
-							res.Add(std::move(child));
-						}
-					});
-
-					res.Add(Unilang::AsTermNode(trans.MakePrefix(i->Value)));
-					range_add(std::make_move_iterator(term.begin()), im);
-					range_add(++im, std::make_move_iterator(term.end()));
-					term = std::move(res);
+						res.Add(Unilang::AsTermNode(trans.MakePrefix(i->Value)));
+						range_add(std::make_move_iterator(term.begin()), im);
+						range_add(++im, std::make_move_iterator(term.end()));
+						term = std::move(res);
+					}
 				}
-			}
+		}
 	}
 }
 
