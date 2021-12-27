@@ -20,9 +20,9 @@
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
+#include <algorithm> // for std::find_if, std::for_each;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
-#include <algorithm> // for std::for_each;
 #include "Syntax.h" // for ReduceSyntax;
 
 namespace Unilang
@@ -331,18 +331,25 @@ struct SeparatorPass::TransformationSpec final
 		BinaryAssocRight
 	};
 
-	decltype(ystdex::bind1(HasValue<TokenValue>,
-		std::declval<TokenValue&>())) Filter;
-	ValueObject Prefix;
+	function<bool(const TermNode&)> Filter;
+	function<ValueObject(const ValueObject&)> MakePrefix;
 	SeparatorKind Kind;
 
+	TransformationSpec(decltype(Filter), decltype(MakePrefix),
+		SeparatorKind = NAry);
 	TransformationSpec(TokenValue, ValueObject, SeparatorKind = NAry);
 };
 
+SeparatorPass::TransformationSpec::TransformationSpec(
+	decltype(Filter) filter, decltype(MakePrefix) make_pfx, SeparatorKind kind)
+	: Filter(std::move(filter)), MakePrefix(std::move(make_pfx)), Kind(kind)
+{}
 SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
 	ValueObject pfx, SeparatorKind kind)
-	: Filter(ystdex::bind1(HasValue<TokenValue>, delim)), Prefix(pfx),
-	Kind(kind)
+	: TransformationSpec(ystdex::bind1(HasValue<TokenValue>, delim),
+		[=](const ValueObject&){
+		return pfx;
+	}, kind)
 {}
 
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
@@ -381,7 +388,7 @@ SeparatorPass::Transform(TermNode& term, SeparatorPass::TermStack& terms) const
 			{
 			case TransformationSpec::NAry:
 				term = SeparatorTransformer::Process(std::move(term),
-					trans.Prefix, filter);
+					trans.MakePrefix(i->Value), filter);
 				break;
 			case TransformationSpec::BinaryAssocLeft:
 				{
@@ -420,7 +427,7 @@ SeparatorPass::Transform(TermNode& term, SeparatorPass::TermStack& terms) const
 						}
 					});
 
-					res.Add(Unilang::AsTermNode(trans.Prefix));
+					res.Add(Unilang::AsTermNode(trans.MakePrefix(i->Value)));
 					range_add(std::make_move_iterator(term.begin()), im);
 					range_add(++im, std::make_move_iterator(term.end()));
 					term = std::move(res);
