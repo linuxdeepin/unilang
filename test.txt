@@ -14,7 +14,7 @@ $expect 42 $let (('' 42)) '';
 $expect 42 $let ((' ' 42)) ' ';
 
 info "function calls";
-$let ()
+() $let ()
 (
 	subinfo "basic combiner calls";
 	$defl! g fm apply - fm;
@@ -105,7 +105,7 @@ $let ()
 );
 
 info "local bindings";
-$let ()
+() $let ()
 (
 	$expect () $let ();
 	$expect 5 $let ((&x 2) (&y 3)) + x y;
