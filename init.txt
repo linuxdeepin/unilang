@@ -1,4 +1,7 @@
-﻿$import! std.io newline load display puts;
+﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
+"Unilang initialization script.";
+
+$import! std.io newline load display puts;
 $import! std.strings ++;
 
 $defl! putss (.&xs) puts (apply ++ xs);
