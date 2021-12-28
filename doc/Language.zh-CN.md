@@ -215,8 +215,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 <composite-expression> ::= <token-expression> | <expression-token>
 <atom-expression> ::= <token>
 <list-expression> ::= <left-list-bound> <expression>* <right-list-bound>
-<left-list-bound> ::= `(` | <extended-left-list-bound>
-<right-list-bound> ::= `)` | <extended-right-list-bound>
+<left-list-bound> ::= ( | <extended-left-list-bound>
+<right-list-bound> ::= ) | <extended-right-list-bound>
 ```
 
 　　Unilang 基础语言的翻译单元以*表达式(expression)* 作为语法单位。一个表达式可以是：
@@ -2227,6 +2227,23 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　基于基础语言，上层语言提供替代的语法，提供可使具有其它语言背景的用户更易使用的包装特性。
 
 ## 核心语言扩展特性
+
+### 扩展语法
+
+　　补充基本语法的文法元素：
+
+```
+<extended-left-list-bound> ::= [ | {
+<extended-right-list-bound> ::= ] | }
+```
+
+　　每个元素都被视为分隔符，且应满足如下匹配：
+
+* `(` 和 `)` 。
+* `[` 和 `]` 。
+* `{` 和 `}` 。
+
+　　不满足匹配引起语法错误。
 
 ### 扩展中缀变换
 
