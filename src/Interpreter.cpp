@@ -596,7 +596,7 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 			ParseLeaf(term, id);
 		return term;
 	}) != parse_result.cend())
-		throw UnilangException("Redundant ')' found.");
+		throw UnilangException("Redundant ')', ']' or '}' found.");
 	Preprocess(res);
 	return res;
 }
