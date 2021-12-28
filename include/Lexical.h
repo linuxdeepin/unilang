@@ -139,6 +139,10 @@ IsUnilangSymbol(string_view id) noexcept
 	return CategorizeBasicLexeme(id) == LexemeCategory::Symbol;
 }
 
+
+YB_NORETURN void
+ThrowMismatchBoundaryToken(char, char);
+
 } // namespace Unilang;
 
 #endif
