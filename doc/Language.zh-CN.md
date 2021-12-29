@@ -2310,7 +2310,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `<=` ：同数学库函数 `<=?` 。
 	* `>=` ：同数学库函数 `>=?` 。
 
-**注释** 不在此指定为别名的函数也可能实现为别名。
+**注释** 不显式指定为别名的函数也可能实现为别名。
 
 ### 控制操作
 
@@ -2329,16 +2329,96 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　比较不等。
 
+### 字符串扩展库
+
+`putss <string>...`
+
+　　串接参数并输出。输出方式同标准库模块 `std.io` 的 `puts` 。
+
+`stoi-exact <string>`
+
+　　精确转换整数的字符串表示为整数。若失败，则引起错误。
+
+　　使用标准库模块 `std.math` 的操作；同 `stoi` ，但若结果应用 `itos` 得到的结果和参数不相等，则引起错误。
+
+`rmatch? <string1> <string2>`
+
+　　匹配视为正则表达式的字符串。
+
+　　使用标准库模块 `std.strings` 的操作；设参数列表 `(&x &r)` ，结果同求值 `regex-match? x (string->regex r)` 。
+
+### 测试库
+
+　　测试库引入测试接口，具有以下符合标准库命名风格的对象和操作：
+
+`info <string>...`
+
+　　输出测试用例标题，包含串接的参数。
+
+`subinfo <string>...`
+
+　　输出子测试用例标题，包含串接的参数。
+
+`moved? <object>`
+
+　　判断对象具有转移后的状态。不排除假阳性结果。
+
+**原理** 语言显式指定转移后的状态具有未指定值。具体的值和实现相关。
+
+`unit`
+
+　　具有一个和其它类型的值不同的[单元类型](https://en.wikipedia.org/wiki/Unit_type)的值的对象。
+
+**注释** 用于需要左值的测试用例。
+
+`Unilang_TestOpts_QuickFail`
+
+　　值指定是否错误停止测试的对象。
+
+	初始值为 `#t` 。
+
+`report-failure <string>`
+
+　　报告测试错误。
+
+　　当 `Unilang_TestOpts_QuickFail` 为 `#t` 时同核心库的 `raise-error` ，否则同 标准库`puts` 。
+
+　　以下函数中，报告测试失败时使用这个函数。
+
+函数 `pass <object>...` ：输出表示测试检查通过的消息。
+
+　　当前忽略参数。
+
+　　以下函数中，测试通过时以测试结果调用这个函数。
+
+`fail-on-check <object> <object>`
+
+　　报告测试检查失败。参数分别表示表达式和测试结果。
+
+`fail-on-check <object> <object> <object>`
+
+　　报告预期结果不符的检查失败。参数分别表示表达式、测试结果和预期结果。
+
+`$check <expression>...`
+
+　　在当前环境中求值参数整体构成的表达式，求值结果是 `#t` 则测试通过，否则调用 `fail-on-check` 。
+
+`$expect <expression> <expression>...`
+
+　　在当前环境求值第一参数和其余参数整体构成的表达式，其求值结果分别为预期结果和测试结果；以 `equal?` 比较，若结果是 `#t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+
+`$expect-moved <expression>...`
+
+　　在当前环境求值参数整体构成的表达式，其求值结果是测试结果；以 `moved?` 测试，若结果是 `#t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+
 # 初始化
 
 　　用户程序使用的初始环境包括以下初始化：
 
 * 确保基础环境可用，并创建以基础环境为父环境的空环境。
-* 用户环境初始化。
+* 用户环境初始化，默认行为等效在当前环境中引入上层语言的库特性。
 
 　　之后，运行用户程序。
-
-　　其中，用户环境初始化的默认行为等效在当前环境中引入上层语言的库特性。
 
 　　实现可提供其它形式的、由实现定义的用户环境初始化操作补充或替代上述的默认用户环境初始化。
 
