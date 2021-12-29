@@ -1,0 +1,74 @@
+﻿"QuickSort variant, leftmost pivot, in-place.";
+
+$import! std.math <=? >? <? =?;
+
+$defl! list-length (&l)
+	$if (null? l) 0 (+ 1 (list-length (rest& l)));
+
+$defl%! list-at& (&l i)
+	$if (<=? i 0) (first& l) (list-at& (rest& l) (- i 1));
+
+$defl! swap! (&x &y)
+(
+	$def! t move! x;
+	assign! x (move! y);
+	assign! y (move! t);
+	#inert
+);
+
+$defl! log (&title &r)
+(
+	display title;
+	display r;
+	() newline;
+	forward! r
+);
+
+$defl! partition! (&lst i j pivot)
+(
+	$unless (eqv? i j)
+	(
+		$while ($and? (not? (=? i j)) (<? (list-at& lst i) pivot))
+			(assign! i (+ i 1));
+		$unless (=? i j)
+		(
+			$let ((k i))
+			(
+				$until (assign! k (+ k 1); =? k j)
+				(
+					$if (<? (list-at& lst k) pivot)
+					(
+						swap! (list-at& lst i) (list-at& lst k);
+						assign! i (+ i 1)
+					)
+				)
+			)
+		)
+	);
+	i
+);
+
+$defl! sort-range! (&lst lo hi)
+(
+	$if (>? (- hi lo) 1)
+	(
+		$let ((m partition! lst (+ lo 1) hi (list-at& lst lo)))
+		(
+			swap! (list-at& lst lo) (list-at& lst (- m 1));
+			log "partitioned: " lst;
+			sort-range! lst lo (- m 1);
+			log "left sorted: " lst;
+			sort-range! lst m hi;
+			log "right sorted: " lst;
+		)
+	);
+	#inert
+);
+
+$defl! sort! (&lst) sort-range! lst 0 (list-length lst);
+
+$def! data (list 2 3 13 11 5 1 14 6 16 8 10 9 15 7 12 4);
+log "original: " data;
+log "sorted: " (sort! data; data);
+() newline;
+
