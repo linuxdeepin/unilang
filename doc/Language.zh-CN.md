@@ -2309,6 +2309,17 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `>` ：同数学库函数 `>?` 。
 	* `<=` ：同数学库函数 `<=?` 。
 	* `>=` ：同数学库函数 `>=?` 。
+	* `and` ：同核心库函数 `$and?` 。
+	* `def` ：同核心库函数 `$def!` 。
+	* `defn` ：同核心库函数 `$defl!` 。
+	* `lambda` ：同核心库函数 `$lambda` 。
+	* `let` ：同核心库函数 `$let` 。
+	* `import` ：同核心库函数 `$import!` 。
+	* `not` ：同核心库函数 `not?` 。
+	* `or` ：同核心库函数 `$or?` 。
+	* `unless` ：同核心库函数 `$unless` 。
+	* `until` ：同核心库函数 `$until` 。
+	* `when` ：同核心库函数 `$when` 。
 
 **注释** 不显式指定为别名的函数也可能实现为别名。
 
@@ -2410,6 +2421,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 `$expect-moved <expression>...`
 
 　　在当前环境求值参数整体构成的表达式，其求值结果是测试结果；以 `moved?` 测试，若结果是 `#t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
+
+　　此外，引入以下别名：
+
+* `check` ：同 `$check` 。
+* `expect` ：同 `$expect` 。
 
 # 初始化
 
