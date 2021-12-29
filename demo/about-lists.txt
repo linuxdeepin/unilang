@@ -1,0 +1,21 @@
+﻿"About lists.";
+
+def a "a";
+def b "b";
+def c "c";
+def l list a b c;
+
+expect (list "a" "b" "c") l;
+
+info "empty test";
+expect #t null? ();
+expect #f null? l;
+
+info "list element extraction";
+expect "a" first l;
+expect (list "b" "c") rest l;
+
+info "list concatenation";
+expect (list "a" "b" "c" "d") list-concat l (list "d");
+expect (list "a" "b" "c" "d" "e") append l (list "d") (list "e");
+

@@ -1,0 +1,24 @@
+﻿"About loops.";
+
+def l list "a" "b" "c" "d";
+
+info "while loops: test a list element in a list";
+defn list-contains? (l x)
+(
+	def not-found #t;
+	while (and not-found (not (null? l)))
+	{
+		if (eqv? (first l) x)
+		{
+			def not-found #f;
+		}
+		else
+		{
+			def l rest l;
+		}
+	};
+	not not-found
+);
+expect #t list-contains? l "b";
+expect #f list-contains? l "e";
+
