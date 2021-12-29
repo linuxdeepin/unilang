@@ -1,0 +1,49 @@
+﻿"About strings.";
+import std.strings
+	++ string-empty? string=? string<- string-split string-contains?;
+
+def (a b c) list "a" "b" "c";
+
+info "object comparison";
+expect #t eqv? a a;
+expect #t eqv? a "a";
+expect #f eqv? a "b";
+
+info "string concatenation";
+expect "abc" ++ "a" b c;
+expect "abc" ++ a "b" c;
+expect "abc" ++ a b "c";
+
+info "string empty test";
+expect #t string-empty? "";
+expect #f string-empty? "a";
+expect #f string-empty? a;
+
+info "string equality: similar to eqv?,"
+	" but enforcing the type of the operands as strings";
+expect #t string=? a a;
+expect #t string=? a "a";
+expect #f string=? a "b";
+
+info
+	"typed assignment: requires the 1st operand as a modifiable string lvalue";
+string<- a "b";
+expect #t string=? a "b";
+
+info "string split";
+expect (list "1" "2" "3") string-split "1,2,3" ",";
+
+info "string element tests";
+expect #t string-contains? "123" "1";
+expect #t string-contains? "123" "2";
+expect #t string-contains? "123" "3";
+expect #f string-contains? "123" "4";
+
+"TODO",
+	"type predicate",
+	"more element access",
+	"character extraction",
+	"trimming",
+	"lexicographical compare",
+	"...";
+
