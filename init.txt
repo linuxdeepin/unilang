@@ -12,6 +12,17 @@ $def! &< $remote-eval% <? std.math;
 $def! &> $remote-eval% >? std.math;
 $def! &<= $remote-eval% <=? std.math;
 $def! &>= $remote-eval% >=? std.math;
+$def! &and $and?;
+$def! &def $def!;
+$def! &defn $defl!;
+$def! &lambda $lambda;
+$def! &let $let;
+$def! &import $import!;
+$def! &not not?;
+$def! &or $or?;
+$def! &unless $unless;
+$def! &until $until;
+$def! &when $when;
 
 $defv%! if (&test &consequent .&opt) e $let*%
 (
@@ -53,8 +64,6 @@ $def! while $while;
 	" transformation.";
 () $defl! != (&x &y) not? (= x y);
 
-"NOTE", "The following are extensions provided by the Unilang implementation.";
-
 $defl! putss (.&xs) puts (apply ++ xs);
 
 $defl! stoi-exact (&x)
@@ -65,18 +74,23 @@ $defl! stoi-exact (&x)
 $defl/e! rmatch? std.strings (&x &r) regex-match? x (string->regex r);
 
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
+
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
 
 "XXX", "Assume the move-after state is deterministic of a stable value,",
 	" which is the empty list at current.";
 $def! moved? null?;
+
 "XXX", "Assume moved-after states are not the unit value,",
 	"otherwise the expectations on equality to the value is false negative.";
 $def! unit (first (() make-encapsulation-type)) #inert;
 
 $def! Unilang_TestOpts_QuickFail #t;
+
 $def! report-failure $if Unilang_TestOpts_QuickFail raise-error puts;
+
 $defl! pass (.) puts "PASS.";
+
 $defl! fail-on-check (&expr &res) $sequence
 	(puts "FAIL: Check failed, with the expression:")
 	(display expr)
@@ -85,6 +99,7 @@ $defl! fail-on-check (&expr &res) $sequence
 	(display res)
 	(() newline)
 	(report-failure "Test case failed.");
+
 $defl! fail-on-expect (&expr &res &expected) $sequence
 	(puts "FAIL: Check failed, with the expression:")
 	(display expr)
@@ -96,16 +111,24 @@ $defl! fail-on-expect (&expr &res &expected) $sequence
 	(display (forward! expected))
 	(() newline)
 	(report-failure "Test case failed.");
+
 $defv! $check (.&expr) d
 	$let ((res eval expr d))
 		$if (res) (pass res) (fail-on-check expr res);
+
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass res)
 			(fail-on-expect expr (forward! res) (forward! expected));
+
 $defv! $expect-moved (.&expr) d
 	$let ((&res eval expr d))
 		$if (moved? res) (pass res) (fail-on-expect expr (forward! res) ());
+
+$def! &check $check;
+$def! &expect $expect;
+
+"NOTE", "The following are extensions provided by the Unilang implementation.";
 
 $provide/let! (version? string->version version->string version<?)
 ((mods $as-environment (
