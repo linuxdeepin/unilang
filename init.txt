@@ -38,12 +38,12 @@ $if (null? opt)
 		#inert
 )
 (
-	$let% (((&k .&opt2) forward! opt)) $if (eqv? k else-sym)
+	$let% (((&k .&opt2) move! opt)) $if (eqv? k else-sym)
 	(
 		$if (null? opt2)
 		(raise-error
 			"Syntax error: expected an expression after 'else'.")
-		($let (((&alternative .&opt3) opt2)) $if (null? opt3)
+		($let% (((&alternative .&opt3) move! opt2)) $if (null? opt3)
 			(
 				check-expr% consequent,
 				check-expr% alternative;
