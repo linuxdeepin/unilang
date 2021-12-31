@@ -1,8 +1,8 @@
 ﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
 
-#include "Lexical.h" // for string;
-#include <cassert> // for assert;
+#include "Lexical.h" // for string, assert, std::string;
 #include <ystdex/string.hpp> // for ystdex::get_mid, ystdex::quote;
+#include "Exception.h" // for UnilangException;
 
 namespace Unilang
 {
@@ -226,6 +226,14 @@ CategorizeBasicLexeme(string_view id) noexcept
 	if(c != char())
 		return LexemeCategory::Data;
 	return LexemeCategory::Symbol;
+}
+
+
+void
+ThrowMismatchBoundaryToken(char ldelim, char rdelim)
+{
+	throw UnilangException(std::string("Mismatched right boundary token '")
+		+ rdelim + "' found for left boundary token '" + ldelim + "'.");
 }
 
 } // namespace Unilang;

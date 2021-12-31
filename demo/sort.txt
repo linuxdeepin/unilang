@@ -1,0 +1,41 @@
+﻿"QuickSort variant, leftmost pivot, non-in-place.";
+
+defn log (&title &r)
+(
+	display title;
+	display r;
+	() newline;
+	forward! r
+);
+
+defn sort (&lst)
+(
+	if (or (null? lst) (null? (rest lst)))
+	{
+		forward! lst
+	}
+	else
+	{
+		log "partial result: "
+		(
+			let ([(pivot .rlst) expire lst])
+			(
+				log "selected pivot: " pivot;
+				append
+					(log "sorted left: "
+						(sort (log "filtered less than pivot: "
+							(filter (lambda (x) {x < pivot}) rlst))))
+					(list pivot)
+					(log "sorted right: "
+						(sort (log "filtered not less than pivot: "
+							(filter (lambda (x) {x > pivot}) rlst))))
+			)
+		)
+	}
+);
+
+def data (list 2 3 13 11 5 1 14 6 16 8 10 9 15 7 12 4);
+log "original: " data;
+log "sorted: " (sort data);
+() newline;
+
