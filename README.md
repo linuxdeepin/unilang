@@ -234,16 +234,9 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 
 # 支持的语言特性
 
-　　参照[《Unilang 介绍》](https://gitlabwh.uniontech.com/ut001269/working-docs/-/blob/master/Unilang%20%E4%BB%8B%E7%BB%8D.md)中的例子（尚未完全支持）。
+　　语言特性可参照[《Unilang 介绍》](doc/Introduction.zh-CN.md)中的例子（尚未完全支持）和[特性清单](doc/Features.zh-CN.md)。
 
-　　详细的语言规范和设计文档待补充。
-
-　　当前支持的特性清单：
-
-* 基本语法和求值算法：
-	* 环境和变量解析。
-	* 函数应用。
-* 函数：详见[语言规范文档](doc/Language.zh-CN.md)。
+　　另见[语言规范](doc/Language.zh-CN.md)和[解释器设计和实现文档](Interpreter.zh-CN.md)。
 
 ## 已知问题
 
@@ -577,6 +570,7 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 				* `unit`
 				* `$expect-moved`
 		* 新增支持基本转义字符序列。
+		* 支持使用 `'` 分隔的字面量构成符号。
 		* 新增非符整数以外的数值字面量及对应的数值类型。
 	* 调整支持特性：
 		* 调整标准库函数：
@@ -588,6 +582,7 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 				* 移除函数：
 					* `add2`
 					* `multiply2`
+		* `#ignore` 是具有单独的类型的字面量，不再是符号。
 	* 测试脚本 `test.txt` 添加测试用例。
 	* 调整和优化解释器实现：
 		* 简化部分标准库实现。
@@ -595,4 +590,15 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 			* 选项 `-e` 支持重复多次。
 			* 新增脚本模式，支持从命令行指定文件名或标准输入 `-` 。
 			* 新增显示命令行帮助的选项。
+* **V0.10**
+	* 新增上层语言特性：
+		* 语法：扩展中缀变换，包括中缀的赋值和算术操作。
+		* 语法： `()` 以外的括号的解析和匹配。
+		* 启动脚本实现上层语言函数：
+			* `if`
+			* `while`
+			* `!=`
+			* 标准库函数的若干其它别名
+		* 测试库 API 作为上层语言特性。
+	* 添加新的示例程序，包括使用基础语言和上层语言版本。
 

@@ -110,7 +110,8 @@ EscapeLiteral(string_view);
 YB_ATTR_nodiscard YB_STATELESS constexpr bool
 IsGraphicalDelimiter(char c) noexcept
 {
-	return c == '(' || c == ')' || c == ',' || c == ';';
+	return c == '(' || c == ')' || c == ',' || c == ';'
+		|| c == '[' || c == ']' || c == '{' || c == '}';
 }
 
 YB_ATTR_nodiscard constexpr bool
@@ -137,6 +138,10 @@ IsUnilangSymbol(string_view id) noexcept
 {
 	return CategorizeBasicLexeme(id) == LexemeCategory::Symbol;
 }
+
+
+YB_NORETURN void
+ThrowMismatchBoundaryToken(char, char);
 
 } // namespace Unilang;
 

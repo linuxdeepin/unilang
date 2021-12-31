@@ -23,6 +23,7 @@
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
 #endif
+#include "Forms.h" // for Forms;
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
 #include "Evaluation.h" // for ReduceCombinedBranch;
 
