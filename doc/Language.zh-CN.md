@@ -591,11 +591,17 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	2. 对第一个子表达式求值；
 	3. 把第一个子表达式求值的结果作为*操作符(operator)* ，以其余子表达式作为操作数，求值*合并(combination)* 。
 
-	被求值时，标识符的值是构成标识符的符号。代码字面量的值是去除其边界的 `'` 的标识符构成的符号。数值字面量求值为*数值(numerical value)* 。
-	
-**注释** 被支持的数值的范围详见以下标准库数值操作中关于数值类型的相关描述。
+	非列表的表达式被求值时：
 
-**注释** 代码字面量可表达直接作为标识符时不能作为符号的词素的转义，例如 `''` 是一个空的符号；而 `'#ignore'` 和 `42` 这样的形式允许其中的表达作为变量名，而不是字面量。
+* 标识符的值是构成标识符的符号。
+* 代码字面量的值是去除其边界的 `'` 的标识符构成的符号。
+	**注释** 代码字面量可表达直接作为标识符时不能作为符号的词素的转义，例如 `''` 是一个空的符号；而 `'#ignore'` 和 `42` 这样的形式允许其中的表达作为变量名，而不是字面量。
+* `#t` 和 `#f` 求值为自身，是布尔值(boolean value) 。
+	* **注释** 布尔值只有这两种不同的取值。
+* `#ignore` 和 `#inert` 求值为自身，具有和其它值不同的单元类型(unit type) 。
+	* **注释** 单元类型只有一种不同的取值。
+* 数值字面量求值为*数值(numerical value)* 。
+	* **注释** 被支持的数值的范围详见以下标准库数值操作中关于数值类型的相关描述。
 
 	非空列表和代码字面量以外的对象作为表达式，都是自求值表达式。
 
@@ -759,6 +765,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* 若 `<test>` 求值为 `#f` ，则条件不成立。此时，若操作没有约定其它结果，则结果是 `#inert` 。
 * `<combiner>` ：合并子。
 * `<applicative>` ：应用子。
+* `<operative>` ：操作子。
 * `<predicate>` ：谓词，是应用操作数的求值结果的值为 `<test>` 的 `<applicative>` 。
 * `<environment>` 一等环境。
 * `<string>` ：字符串。
@@ -2437,4 +2444,54 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　之后，运行用户程序。
 
 　　实现可提供其它形式的、由实现定义的用户环境初始化操作补充或替代上述的默认用户环境初始化。
+
+# 附录
+
+　　本章内容是说明性的。
+
+## 类型概要
+
+　　本节汇总本文档定义的 Unilang 语言的语义规则中首先蕴含的可能作为被求值的结果的类型。其中，类型约束若在库的描述中出现，使用和库的描述相同的文法约定，即使未在对应的正式规则中出现。
+
+　　除非派生实现另行指定，在程序运行中的值属于这些类型。
+
+**注释** PTC 等要求的 `<test>` 和 `<body>` 等因仅通过约束表达式的结构进行构造得到，实际仅要求是 `<object>` 的子类型，也没有指定类型谓词，不在此视为类型约束；尽管实现仍然可以把这些表达式视为特定类型的值。
+
+* 核心语言：
+	* `<object>`
+	* `<reference>`
+	* 求值算法：
+		* `<environment>`
+		* `<list>`
+		* `<symbol>`
+		* `<combiner>`
+		* `<operative>`
+		* `<applicative>`
+		* 字面量求值结果：
+			* `<boolean>`
+			* `<string>`
+			* `<number>`
+			* 单元类型：`#inert` 的类型
+			* 单元类型：`#ignore` 的类型
+	* **注释** 一般地，实现需要对以上类型提供对应的直接支持。
+* 库：
+	* `<symbols>`
+	* `<eformal>`
+	* `<lists>`
+	* `<predicate>`
+	* `<parent>`
+	* 封装类型（通过 `make-encapsulation-type` 创建的和以上类型都不同的类型）
+
+	以上类型满足以下类型包含关系：
+
+* 任意类型都是 `<object>` 的子类型。
+* 以下类型是派生类型：
+	* `<combiner>` 是 `<applicative>` 和 `<operative>` 的并。
+	* `<symbols>` 是 `<list>` 的子类型。
+	* `<eformal>` 是 `<symbol>` 和 `#ignore` 的类型的并。
+	* `<lists>` 是 `<lists>` 的子类型。
+	* `<predicate>` 是 `<applicative>` 的子类型。
+	* `<parent>` 是 `<environment>` 和元素限定为 `<environment>` 的 `<list>` 的并。
+* 除 `<object>` 外的核心语言类型及封装类型中是非派生类型。
+* 除 `<object>` 外的任意非派生类型之间两两不相交。
 
