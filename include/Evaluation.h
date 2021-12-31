@@ -44,48 +44,36 @@ struct SeparatorTransformer
 	operator()(_func trans, _tTerm&& term, const ValueObject& pfx,
 		_fPred filter) const
 	{
-		using it_t = decltype(std::make_move_iterator(term.begin()));
-
-		return AddRange([&](TermNode& res, it_t b, it_t e){
-			const auto add([&](TermNode& node, it_t i){
-				node.Add(trans(Unilang::Deref(i)));
-			});
-
-			if(b != e)
-			{
-				if(std::next(b) == e)
-					add(res, b);
-				else
-				{
-					auto child(Unilang::AsTermNode());
-
-					do
-					{
-						add(child, b++);
-					}
-					while(b != e);
-					res.Add(std::move(child));
-				}
-			}
-		}, yforward(term), pfx, filter);
-	}
-
-	template<typename _func, class _tTerm, class _fPred>
-	YB_ATTR_nodiscard TermNode
-	AddRange(_func add_range, _tTerm&& term, const ValueObject& pfx,
-		_fPred filter) const
-	{
-		using it_t = decltype(std::make_move_iterator(term.begin()));
 		const auto a(term.get_allocator());
 		auto res(Unilang::AsTermNode(yforward(term).Value));
 
 		if(IsBranch(term))
 		{
+			using it_t = decltype(std::make_move_iterator(term.begin()));
+
 			res.Add(Unilang::AsTermNode(pfx));
 			ystdex::split(std::make_move_iterator(term.begin()),
 				std::make_move_iterator(term.end()), filter,
 				[&](it_t b, it_t e){
-				add_range(res, b, e);
+				const auto add([&](TermNode& node, it_t i){
+					node.Add(trans(Unilang::Deref(i)));
+				});
+
+				if(b != e)
+				{
+					if(std::next(b) == e)
+						add(res, b);
+					else
+					{
+						auto child(Unilang::AsTermNode());
+
+						do
+						{
+							add(child, b++);
+						}while(b != e);
+						res.Add(std::move(child));
+					}
+				}
 			});
 		}
 		return res;
@@ -98,15 +86,6 @@ struct SeparatorTransformer
 		return SeparatorTransformer()([&](_tTerm&& tm) noexcept{
 			return yforward(tm);
 		}, yforward(term), pfx, filter);
-	}
-
-	template<class _fPred>
-	static void
-	ReplaceChildren(TermNode& term, const ValueObject& pfx,
-		_fPred filter)
-	{
-		if(std::find_if(term.begin(), term.end(), filter) != term.end())
-			term = Process(std::move(term), pfx, filter);
 	}
 };
 
