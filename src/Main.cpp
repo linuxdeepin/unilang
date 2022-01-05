@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter, ValueObject;
 #include <cstdlib> // for std::getenv;
@@ -147,7 +147,8 @@ struct LeafPred
 {
 	template<typename _func>
 	YB_ATTR_nodiscard YB_PURE bool
-	operator()(const TermNode& nd, _func f) const ynoexcept_spec(f(nd.Value))
+	operator()(const TermNode& nd, _func f) const
+		noexcept(noexcept(f(nd.Value)))
 	{
 		return IsLeaf(nd) && f(nd.Value);
 	}
@@ -933,7 +934,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.0"
+#define APP_VER "0.10.3"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

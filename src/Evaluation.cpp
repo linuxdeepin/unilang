@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
 //	Context, TermToNamePtr, Unilang::TryAccessLeaf TermReference,
