@@ -1,4 +1,4 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Math.h" // for size_t, type_info, Unilang::TryAccessValue, ptrdiff_t.
 //	string_view, sfmt;
