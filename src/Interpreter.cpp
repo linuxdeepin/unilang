@@ -352,22 +352,22 @@ SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
 	: allocator(a), transformations({{";", ContextHandler(Forms::Sequence)},
 	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, ":=");
 	}, [](const ValueObject&){
 		return TokenValue("assign!");
 	}, TransformationSpec::BinaryAssocRight},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "=") || HasValue<TokenValue>(nd, "!=");
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "<") || HasValue<TokenValue>(nd, ">")
 			|| HasValue<TokenValue>(nd, "<=") || HasValue<TokenValue>(nd, ">=");
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "+") || HasValue<TokenValue>(nd, "-"); 
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "*") || HasValue<TokenValue>(nd, "/"); 
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft}}, a)
 {}

@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
 //	Context, TermToNamePtr, Unilang::TryAccessLeaf TermReference,
@@ -35,7 +35,7 @@ public:
 	lref<const ContextHandler> HandlerRef;
 
 	RefContextHandler(const ContextHandler& h,
-		const EnvironmentReference& env_ref) ynothrow
+		const EnvironmentReference& env_ref) noexcept
 		: anchor_ptr(env_ref.GetAnchorPtr()), HandlerRef(h)
 	{}
 	DefDeCopyMoveCtorAssignment(RefContextHandler)
@@ -835,7 +835,7 @@ ReduceForCombinerRef(TermNode& term, const TermReference& ref,
 void
 CheckParameterTree(const TermNode& term)
 {
-	MakeParameterValueMatcher([&](const TokenValue&) ynothrow{})(term);
+	MakeParameterValueMatcher([&](const TokenValue&) noexcept{})(term);
 }
 
 void

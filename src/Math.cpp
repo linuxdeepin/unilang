@@ -1,4 +1,4 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Math.h" // for size_t, type_info, Unilang::TryAccessValue, ptrdiff_t.
 //	string_view, sfmt;
@@ -917,13 +917,13 @@ using ReadExtIntType = long long;
 using ReadCommonType = ystdex::common_type_t<ReadExtIntType, std::uint64_t>;
 
 YB_ATTR_nodiscard YB_STATELESS yconstfn bool
-IsDecimalPoint(char c) ynothrow
+IsDecimalPoint(char c) noexcept
 {
 	return c == '.';
 }
 
 YB_ATTR_nodiscard YB_STATELESS yconstfn
-bool IsExponent(char c) ynothrow
+bool IsExponent(char c) noexcept
 {
 	return c == 'e' || c == 'E';
 }
@@ -1043,7 +1043,7 @@ ReadDecimalExact(ValueObject& vo, string_view id,
 	string_view::const_iterator& first, _tInt& ans)
 {
 	assert(!id.empty() &&  "Invalid lexeme found.");
-	return ystdex::retry_on_cond([&](ReductionStatus r) ynothrow -> bool{
+	return ystdex::retry_on_cond([&](ReductionStatus r) noexcept -> bool{
 		if(r == ReductionStatus::Retrying)
 		{
 			if(++first != id.end())
