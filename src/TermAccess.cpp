@@ -1,10 +1,11 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, ystdex::sfmt, Unilang::Nonnull;
+#include "TermAccess.h" // for sfmt, ystdex::sfmt, Unilang::TryAccessLeaf,
+//	IsTyped, Unilang::Nonnull;
 #include "Exception.h" // for ListTypeError, TypeError, ValueCategoryMismatch;
+#include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
 //	ystdex::invoke_value_or;
-#include <ystdex/deref_op.hpp> // for ystdex::call_valu_or;
 #include "Context.h" // for complete Environment;
 
 namespace Unilang
@@ -101,10 +102,9 @@ TermReference::get() const
 TermNode
 PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 {
-	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
-		return term;
-	return Unilang::AsTermNode(term.get_allocator(), TermReference(
-		p_env->MakeTermTags(term), term, Unilang::Nonnull(p_env)));
+	return IsTyped<TermReference>(term) ? term : Unilang::AsTermNode(
+		term.get_allocator(), TermReference(p_env->MakeTermTags(term), term,
+		Unilang::Nonnull(p_env)));
 }
 
 
