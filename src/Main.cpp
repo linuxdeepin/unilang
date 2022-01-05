@@ -77,6 +77,7 @@ DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 	RetainN(term);
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		f(term, nd, !p_ref || p_ref->IsModifiable());
+		EnsureValueTags(term.Tags);
 	}, *std::next(term.begin()));
 	return ReductionStatus::Retained;
 }
@@ -90,6 +91,15 @@ Qualify(TermNode& term, TermTags tag_add)
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
 	}, term);
+}
+
+YB_ATTR_nodiscard TermNode
+MoveResolvedValue(const Context& ctx, string_view id)
+{
+	auto tm(MoveResolved(ctx, id));
+
+	EnsureValueTags(tm.Tags);
+	return tm;
 }
 
 void
@@ -557,7 +567,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 		return wenv.Lock();
 	});
 	RegisterForm(ctx, "$move-resolved!",
-		std::bind(DoResolve, std::ref(MoveResolved), _1, _2));
+		std::bind(DoResolve, std::ref(MoveResolvedValue), _1, _2));
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterUnary<Strict, const shared_ptr<Environment>>(ctx,
 		"weaken-environment", [](const shared_ptr<Environment>& p_env) noexcept{
@@ -934,7 +944,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.3"
+#define APP_VER "0.10.4"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
