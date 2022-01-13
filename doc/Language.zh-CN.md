@@ -1015,15 +1015,19 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　判断操作数是否具有枝节点表示。非空列表和其它由派生实现定义的数据的内部表示具有枝节点表示。
 
+`reference? <object>`
+
+　　判断操作数是否为引用值。
+
+`uncollapsed? <object>`
+
+　　判断操作数是否为未折叠的引用值。
+
 `bound-lvalue? <object>`
 
 　　判断操作数是否为被引用的被绑定对象左值。
 
 **注释** 绑定临时对象的引用类型的参数不被视为左值引用。
-
-`uncollapsed? <object>`
-
-　　判断操作数是否为未折叠的引用值。
 
 `as-const <object>`
 
