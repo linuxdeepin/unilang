@@ -129,5 +129,12 @@ IsUncollapsedTerm(const TermNode& term)
 		Unilang::TryAccessLeaf<const TermReference>(term));
 }
 
+bool
+IsUniqueTerm(const TermNode& term)
+{
+	return ystdex::invoke_value_or(&TermReference::IsUnique,
+		Unilang::TryAccessLeaf<const TermReference>(term), true);
+}
+
 } // namespace Unilang;
 

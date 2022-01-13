@@ -12,8 +12,8 @@
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, ComposeReferencedTermOp, IsReferenceTerm,
-//	IsBoundLValueTerm, IsUncollapsedTerm, EnvironmentReference, TermNode,
-//	IsBranchedList, ThrowInsufficientTermsError;
+//	IsBoundLValueTerm, IsUncollapsedTerm, IsUniqueTerm, EnvironmentReference,
+//	TermNode, IsBranchedList, ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
 //	form implementations;
@@ -539,6 +539,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterUnary(ctx, "reference?", IsReferenceTerm);
 	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
+	RegisterUnary(ctx, "unique?", IsUniqueTerm);
 	RegisterStrict(ctx, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
 	RegisterStrict(ctx, "expire",
@@ -945,7 +946,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.5"
+#define APP_VER "0.10.6"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
