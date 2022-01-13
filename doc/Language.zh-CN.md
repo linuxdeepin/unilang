@@ -1023,6 +1023,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　判断操作数是否为未折叠的引用值。
 
+`unique? <object>`
+
+　　判断操作数是否为唯一引用。
+
 `bound-lvalue? <object>`
 
 　　判断操作数是否为被引用的被绑定对象左值。

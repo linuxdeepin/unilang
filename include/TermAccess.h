@@ -228,6 +228,11 @@ public:
 		return !(bool(tags & TermTags::Unique)
 			|| bool(tags & TermTags::Temporary));
 	}
+	YB_ATTR_nodiscard YB_PURE bool
+	IsUnique() const noexcept
+	{
+		return bool(tags & TermTags::Unique);
+	}
 
 	YB_ATTR_nodiscard YB_PURE TermTags
 	GetTags() const noexcept
@@ -337,6 +342,9 @@ IsBoundLValueTerm(const TermNode&);
 
 YB_ATTR_nodiscard YB_PURE bool
 IsUncollapsedTerm(const TermNode&);
+
+YB_ATTR_nodiscard YB_PURE bool
+IsUniqueTerm(const TermNode&);
 
 template<typename _func, class _tTerm>
 auto
