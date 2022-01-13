@@ -1,7 +1,7 @@
-﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
+﻿"#", "(C) 2021-2022 Uniontech Software Technology Co.,Ltd.",
 "Unilang test script.";
 
-$import! std.math =? <? <=? >? >=? stoi itos;
+$import! std.math &=? &<? &<=? &>? &>=? &stoi &itos;
 
 $def! $rem $vau . #ignore "";
 
