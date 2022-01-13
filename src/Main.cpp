@@ -11,9 +11,9 @@
 #include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
-//	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
-//	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
-//	ThrowInsufficientTermsError;
+//	ThrowValueCategoryError, ComposeReferencedTermOp, IsReferenceTerm,
+//	IsBoundLValueTerm, IsUncollapsedTerm, EnvironmentReference, TermNode,
+//	IsBranchedList, ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
 //	form implementations;
@@ -536,6 +536,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterUnary(ctx, "reference?", IsReferenceTerm);
 	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
 	RegisterStrict(ctx, "as-const",
@@ -944,7 +945,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.4"
+#define APP_VER "0.10.5"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
