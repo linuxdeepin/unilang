@@ -11,6 +11,8 @@
 //	AnchorPtr, type_info, std::allocator_arg, lref, Unilang::allocate_shared,
 //	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
+#include <ystdex/allocator.hpp> // for ystdex::allocator_delete,
+//	ystdex::rebind_alloc_t, ystdex::make_obj_using_allocator;
 #include <ystdex/base.h> // for ystdex::cloneable;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/function.hpp> // for ystdex::unchecked_function;
@@ -24,7 +26,6 @@
 #include <ystdex/expanded_function.hpp> // for ystdex::expanded_function;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 #include <cassert> // for assert;
-#include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <exception> // for std::exception_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
@@ -59,6 +60,9 @@ using NameResolution
 struct IParent;
 
 using ParentAllocator = default_allocator<IParent>;
+template<class _tParent>
+using GParentDeleter = ystdex::allocator_delete<ystdex::rebind_alloc_t<
+	ParentAllocator, _tParent>>;
 
 struct IParent : public ystdex::cloneable,
 	private ystdex::equality_comparable<IParent>
