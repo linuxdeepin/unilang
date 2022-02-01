@@ -13,7 +13,6 @@
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/allocator.hpp> // for ystdex::allocator_delete,
 //	ystdex::rebind_alloc_t, ystdex::make_obj_using_allocator;
-#include <ystdex/base.h> // for ystdex::cloneable;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/function.hpp> // for ystdex::unchecked_function;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
@@ -66,8 +65,7 @@ template<class _tParent>
 using GParentDeleter = ystdex::allocator_delete<ystdex::rebind_alloc_t<
 	ParentAllocator, _tParent>>;
 
-struct IParent : public ystdex::cloneable,
-	private ystdex::equality_comparable<IParent>
+struct IParent : private ystdex::equality_comparable<IParent>
 {
 	using Redirector
 		= ystdex::unchecked_function<observer_ptr<const IParent>()>;
@@ -89,9 +87,6 @@ struct IParent : public ystdex::cloneable,
 
 	YB_ATTR_nodiscard virtual shared_ptr<Environment>
 	TryRedirect(Redirector&) const = 0;
-
-	YB_ATTR_nodiscard IParent*
-	clone() const override = 0;
 
 	YB_ATTR_nodiscard YB_PURE virtual const type_info&
 	type() const noexcept = 0;
@@ -129,12 +124,6 @@ public:
 	TryRedirect(Redirector&) const override
 	{
 		return {};
-	}
-
-	YB_ATTR_nodiscard EmptyParent*
-	clone() const override
-	{
-		return new EmptyParent(*this);
 	}
 
 	void
@@ -221,12 +210,6 @@ public:
 
 	YB_ATTR_nodiscard shared_ptr<Environment>
 	TryRedirect(Redirector&) const override;
-
-	YB_ATTR_nodiscard SingleWeakParent*
-	clone() const override
-	{
-		return new SingleWeakParent(*this);
-	}
 
 	void
 	destroy() const noexcept override
@@ -323,12 +306,6 @@ public:
 
 	YB_ATTR_nodiscard shared_ptr<Environment>
 	TryRedirect(Redirector&) const override;
-
-	YB_ATTR_nodiscard SingleStrongParent*
-	clone() const override
-	{
-		return new SingleStrongParent(*this);
-	}
 
 	void
 	destroy() const noexcept override
@@ -511,12 +488,6 @@ public:
 
 	YB_ATTR_nodiscard shared_ptr<Environment>
 	TryRedirect(Redirector&) const override;
-
-	YB_ATTR_nodiscard ParentList*
-	clone() const override
-	{
-		return new ParentList(*this);
-	}
 
 	void
 	destroy() const noexcept override
