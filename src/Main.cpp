@@ -675,11 +675,11 @@ $defv! $defl/e%! (&f &p &formals .&body) d
 	eval (list* $def! f $lambda/e% p formals (move! body)) d;
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
-$defl%! first (%l)
+$defl%! first (&l)
 	$if ($lvalue-identifier? l) (($lambda% ((@x .)) collapse x) l)
 		(forward-first% idv (expire l));
 $defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
-$defl%! first% (%l)
+$defl%! first% (&l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
 	($lambda% ((@x .)) collapse x) (check-list-reference (forward! l));
@@ -946,7 +946,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.6"
+#define APP_VER "0.10.7"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
