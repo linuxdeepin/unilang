@@ -73,6 +73,44 @@ $defl! stoi-exact (&x)
 
 $defl/e! rmatch? std.strings (&x &r) regex-match? x (string->regex r);
 
+$provide/let! (type? type->string Any List String Number)
+((mods $as-environment (
+	$def! (encapsulate% type? decapsulate) () make-encapsulation-type
+)))
+(
+	$import! mods &type?,
+	$defl/e! type->string mods (&x) idv (decapsulate x),
+	(
+	$import! mods encapsulate%;
+
+	$def! Any encapsulate% "object",
+	$def! List encapsulate% "list",
+	$def! String encapsulate% "string",
+	$def! Number encapsulate% "number"
+	)
+);
+
+$defl! : (#ignore &t)
+	$unless (type? t) (raise-type-error "Type expected in annotation.");
+
+$defw! typed-ptree->ptree (&x) d
+(
+	$if (null? x) ()
+	(
+		$if (branch? x)
+		(
+			$let% (((sym .opt) x))
+			(
+				$if (null? opt) (list sym)
+					($if (eqv? (first% opt) ((unwrap idv) :))
+						($sequence (eval (rest% opt) d) sym)
+						(map1 typed-ptree->ptree x))
+			)
+		)
+		(forward! x)
+	)
+);
+
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
