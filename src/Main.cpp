@@ -1,8 +1,9 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for Interpreter, ValueObject;
+#include "Interpreter.h" // for Interpreter, ValueObject, string_view,
+//	string;
 #include <cstdlib> // for std::getenv;
-#include "Context.h" // for EnvironmentSwitcher,
+#include "Context.h" // for Context, EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
@@ -11,9 +12,9 @@
 #include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
-//	ThrowValueCategoryError, ComposeReferencedTermOp, IsReferenceTerm,
-//	IsBoundLValueTerm, IsUncollapsedTerm, IsUniqueTerm, EnvironmentReference,
-//	TermNode, IsBranchedList, ThrowInsufficientTermsError;
+//	ThrowValueCategoryError, IsTypedRegular, ComposeReferencedTermOp,
+//	IsReferenceTerm, IsBoundLValueTerm, IsUncollapsedTerm, IsUniqueTerm,
+//	EnvironmentReference, TermNode, IsBranchedList, ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
 //	form implementations;
@@ -216,6 +217,9 @@ LoadModule_std_strings(Interpreter& intp)
 	using namespace Forms;
 	auto& ctx(intp.Root.GetRecordRef());
 
+	RegisterUnary(ctx, "string?", [](const TermNode& x) noexcept{
+		return IsTypedRegular<string>(ReferenceTerm(x));
+	});
 	RegisterStrict(ctx, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
 		string(), std::placeholders::_1));
@@ -947,7 +951,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.9"
+#define APP_VER "0.10.10"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
