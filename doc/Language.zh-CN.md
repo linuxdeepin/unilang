@@ -1031,6 +1031,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　判断操作数是否具有枝节点表示。非空列表和其它由派生实现定义的数据的内部表示具有枝节点表示。
 
+`list? <object>`
+
+　　`<list>` 的类型谓词。
+
 `reference? <object>`
 
 　　判断操作数是否为引用值。
