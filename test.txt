@@ -363,6 +363,18 @@ $let ()
 );
 
 info "typing library tests";
+subinfo "type?";
+$check type? Any;
+$check type? List;
+$check type? String;
+$check type? Number;
+subinfo "has-type?";
+$check has-type? () Any;
+$check has-type? () List;
+$check not? (has-type? "" List);
+$check (has-type? "" String);
+$check has-type? 0 Number;
+subinfo "typed-ptree->ptree";
 $expect ((unwrap idv) ((x y z) a n s))
 	(typed-ptree->ptree
 		((unwrap idv) ((x (y : List) z) (a : Any) (n : Number) s)));
