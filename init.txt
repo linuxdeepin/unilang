@@ -90,6 +90,20 @@ $provide/let! (type? type->string Any List String Number)
 	)
 );
 
+$defl! has-type? (&x &t)
+(
+	$if (type? t)
+	(
+		$cond
+			((eqv? t Any) #t)
+			((eqv? t List) list? x)
+			((eqv? t String) ($remote-eval% string? std.strings) x)
+			((eqv? t Number) ($remote-eval% number? std.math) x)
+			(#t raise-error "Unsupported type found.")
+	)
+	(raise-type-error "Type expected for 2nd argument in has-type?.");
+);
+
 $defl! : (#ignore &t)
 	$unless (type? t) (raise-type-error "Type expected in annotation.");
 
