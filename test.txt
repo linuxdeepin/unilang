@@ -390,6 +390,15 @@ $expect ((unwrap idv) ((x y z) a n s))
 	(typed-ptree->ptree
 		((unwrap idv) ((x (y : List) z) (a : Any) (n : Number) s)));
 
+info "typed operations tests";
+$let ()
+(
+	$def! nid lambda ((x : Number)) x;
+	$expect 42 nid 42;
+	$def! streq? lambda ((x : String) y) eqv? x y;
+	$check streq? "x" "x"
+);
+
 info "dependency library tests";
 $let ()
 (
