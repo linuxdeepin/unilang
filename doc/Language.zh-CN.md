@@ -2365,7 +2365,6 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `and` ：同核心库函数 `$and?` 。
 	* `def` ：同核心库函数 `$def!` 。
 	* `defn` ：同核心库函数 `$defl!` 。
-	* `lambda` ：同核心库函数 `$lambda` 。
 	* `let` ：同核心库函数 `$let` 。
 	* `import` ：同核心库函数 `$import!` 。
 	* `not` ：同核心库函数 `not?` 。
@@ -2459,6 +2458,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　若参数不符类型标注的语法要求，则引起错误。
 
 **注释** 不要求检查类型标注以外的部分符合形式参数树的要求。
+
+### 类型标注操作
+
+　　基于标准库和类型库，以下操作除在形式参数树上支持类型标注外，和标准库函数功能相同：
+
+* `lambda` ：同核心库函数 `$lambda` 。
 
 ### 测试库
 
