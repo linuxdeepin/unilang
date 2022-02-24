@@ -1808,6 +1808,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 * `<regex>` 正则表达式类型。
 
+`string? <object>`
+
+　　`<string>` 的类型谓词。
+
 `++ <string>...`
 
 　　字符串串接。
