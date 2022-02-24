@@ -15,7 +15,6 @@ $def! &>= $remote-eval% >=? std.math;
 $def! &and $and?;
 $def! &def $def!;
 $def! &defn $defl!;
-$def! &lambda $lambda;
 $def! &let $let;
 $def! &import $import!;
 $def! &not not?;
@@ -124,6 +123,10 @@ $defw! typed-ptree->ptree (&x) d
 		(forward! x)
 	)
 );
+
+$def! lambda $vau (&formals .&body) d
+	wrap (eval (cons $vau (cons (typed-ptree->ptree formals)
+		(cons ignore (move! body)))) d);
 
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 
