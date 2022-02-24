@@ -113,11 +113,11 @@ $defw! typed-ptree->ptree (&x) d
 	(
 		$if (branch? x)
 		(
-			$let% (((sym .opt) x))
+			$let% (((n .opt) x))
 			(
-				$if (null? opt) (list sym)
+				$if (null? opt) (list (typed-ptree->ptree n))
 					($if (eqv? (first% opt) ((unwrap idv) :))
-						($sequence (eval (rest% opt) d) sym)
+						($sequence (eval (rest% opt) d) n)
 						(map1 typed-ptree->ptree x))
 			)
 		)
