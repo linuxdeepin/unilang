@@ -375,6 +375,17 @@ $check not? (has-type? "" List);
 $check (has-type? "" String);
 $check has-type? 0 Number;
 subinfo "typed-ptree->ptree";
+$expect ((unwrap idv) (x))
+	(typed-ptree->ptree ((unwrap idv) (x)));
+$expect ((unwrap idv) x)
+	(typed-ptree->ptree ((unwrap idv) (x : Any)));
+$expect ((unwrap idv) (x))
+	(typed-ptree->ptree ((unwrap idv) ((x : Any))));
+$expect ((unwrap idv) (a n s))
+	(typed-ptree->ptree ((unwrap idv) (a n s)));
+$expect ((unwrap idv) ((x y z) a n s))
+	(typed-ptree->ptree
+		((unwrap idv) ((x y z) a n s)));
 $expect ((unwrap idv) ((x y z) a n s))
 	(typed-ptree->ptree
 		((unwrap idv) ((x (y : List) z) (a : Any) (n : Number) s)));
