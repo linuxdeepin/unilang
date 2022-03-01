@@ -2317,6 +2317,20 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<`、`>`、`<=` 和 `>=` ：左结合，替换为作为前缀操作的对应符号。
 * `=` 和 `!=` ：左结合，替换为作为前缀操作的对应符号。
 * `:=` ：右结合，替换为作为前缀操作的符号 `assign!` 。
+	* **注释** 使用 `=` 而不是 `:=` 表示赋值，这和 C 、C++ 和 Java 等语言不同，而和 ALGOL 、Effiel 和 Ada 等语言的设计类似。另外的非对称选项如 APL 使用的 `←`（转写为 R 的 `<-`）。
+	* **原理** 和 C 、C++ 和 Java 等语言不同，操作符 `=` 遵循更传统的含义表示等于，其对称性蕴含作为等价关系交换左右操作数不改变程序的语义，避免和赋值混淆。
+		* 使用 `:=` 表示赋值，和 ALGOL 、Effiel 和 Ada 等语言的设计类似。
+		* 另外的非对称选项如 APL 使用的 `←`（转写为 R 的 `<-`）。
+		* BASIC 以 `LET ... = ` 语法表示赋值，允许省略 `LET` 后也会造成类似的混淆。
+		* 注意使用 `==` 表示赋值的设计的其它论断在当前程序设计的实践中普遍缺乏实证，而不被采用。
+			* [K.Thompson 曾评价 C 使用 `==` 的设计理由](https://ia801303.us.archive.org/1/items/TheCProgrammingLanguageFirstEdition/The%20C%20Programming%20Language%20First%20Edition%20%5BUA-07%5D.pdf)：Since assignment is about twice as frequent as equality testing in typical programs, it’s appropriate that the operator be half as long. 这在大多数不使用 C 的语言中并不适用，因为配合其它特性，实践中赋值更多地作为局部实现细节，而不需要大部分在高级语言操作中出现。
+			* 特别地，还存在许多完全不支持赋值的纯函数式风格为了消除副作用，鼓励尽量或者完全不使用赋值。
+			* `==` 可能在其它语言中也表示其它的含义。例如，形式验证语言 [TLA+](http://lamport.azurewebsites.net/tla/tla.html) 中，[`==` 是符号 ≜ 的 ASCII 转写](https://github.com/tlaplus-community/tlaplus-standard/blob/main/unicode/tla-unicode.csv)，表示操作定义相等。
+		* 因此，即便不考虑混淆风险，赋值占用 `=` 经常是一种语法上的浪费。
+			* 即便是类似 C 的不限制使用副作用的语言，也存在赋值以外的一些可能更基本的具有副作用的操作。例如，C++ 的对象交换操作在考虑异常安全性时比赋值是更基本的操作，并[因此曾被提议为单独的操作符](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2013/n3746.pdf)。
+			* 即便是兼容 C 的语言，如 C++ ，初始化被独立于赋值强调。没有遵循 C 之前参照的更早的 CPL 等语言对初始化和赋值的不同语法的设计，对 C++ 只是兼容 C 的历史偶然。
+		* [Go 使用 `:=` 表示带初始化的声明](https://go.dev/ref/spec)。尽管没有 C（以及 C++ 的部分）初始化和赋值语法的混淆，仍然支持 `=` 表示赋值不能消除对称性预期的破坏。因此这里不采用这种设计。
+		* 关于赋值操作符在相关语言中的演化的历史，另见[这里](https://www.hillelwayne.com/equals-as-assignment/)。
 
 ## 库特性
 
