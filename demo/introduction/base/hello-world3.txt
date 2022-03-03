@@ -1,0 +1,20 @@
+﻿"Hello world demo: alternatives.";
+
+(display "Hello, world!");
+
+() newline;
+
+() display "Hello, world!";
+
+"The following two cases are equivalent.";
+
+display "Hello, world!";
+
+$sequence (display "Hello, world!");
+
+"The following two cases are equivalent.";
+
+display "Hello, "; display "world!";
+
+$sequence (display "Hello, ") (display "world!");
+

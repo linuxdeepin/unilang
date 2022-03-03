@@ -1,0 +1,41 @@
+﻿"Core library utility demos.";
+
+$def! x "a";
+$cond (x)
+	((eqv? x "a") "x is a")
+	((eqv? x "b") "x is b")
+	(#t "x is other");
+
+$sequence ($def! l ()) ($when (null? l) "list is null" (display l));
+$sequence ($def! l list "x") ($unless (null? l) "list is not null" (display l));
+
+$def! l list "x" "y" "z";
+display (first l);
+display (rest l);
+
+$defv! $defw! (f formals ef .body) d
+	eval (list $set! d f wrap (list* $vau formals ef body)) d;
+
+$defw! foldr1 (kons knil l) d
+	apply accr (list l null? knil first rest kons) d;
+
+$defw! map1 (appv l) d
+	foldr1 ($lambda (x xs) cons% (apply appv (list x) d) xs) () (forward! l);
+
+$defv! $let (bindings .body) d
+	eval (list* () (list* $lambda (map1 first bindings)
+		(list body)) (map1 ($lambda (x) list (rest x)) bindings)) d;
+
+$let ()
+	$def! e $provide! (a b c) $def! a list "a" "b" "c";
+
+$let ()
+(
+	$def! library-module () make-environment;
+	$set! library-module v 42;
+	$set! library-module id $lambda (x) x;
+
+	$import! library-module id v;
+	display (id v);
+);
+

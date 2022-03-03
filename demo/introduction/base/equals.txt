@@ -1,0 +1,7 @@
+﻿"Equality demos.";
+
+$def! x "x";
+display (eq? x "x");
+display (eqv? x "x");
+display (equal? (list x) (list "x"));
+

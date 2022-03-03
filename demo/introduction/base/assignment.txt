@@ -1,0 +1,6 @@
+﻿"Assignment demos.";
+
+$def! x "hello";
+assign! x "world";
+display x;
+
