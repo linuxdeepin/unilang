@@ -233,7 +233,7 @@ display "Hello, world!";
 　　这里，以 `;` 结尾的表达式是**语句**。记号 ';' 只是一个作为中缀标点的语法糖，它被变换为：
 
 ```
-$sequence display "Hello, world!"
+$sequence (display "Hello, world!")
 ```
 
 　　而
@@ -811,7 +811,7 @@ assign! x y
 　　这种“注释”具有的优点是简化语言规则。并且，可以类似地引入其它形式的“注释”，提供更灵活的处理——例如，扩展为更一般的函数调用，用来生成文档（约定生成文档的语法具体应符合什么样的约束以及如何实现文档生成则涉及其它问题)，如：
 
 ```
-$docuemnt-block
+$document-block
 (
 	"@brief brief xxx"
 	"@param p param"
@@ -975,6 +975,8 @@ display (rest l);
 	$defw! map1 (appv l) d
 		foldr1 ($lambda (x xs) cons% (apply appv (list x) d) xs) () (forward! l);
 ```
+
+**注释** 因为需要正确地实现值类别(value category) 、转发(forwarding) 和复制消除(copy elision) ，标准库的实际实现更加复杂。但是，对足够简单的（大多数）类型的值，这里的行为是一致的。
 
 　　函数 `list-concat` 顺序连接两个列表。函数 `append` 顺序连接零个或多个列表。
 
