@@ -1,0 +1,32 @@
+﻿"Binding and environment demos.";
+
+eval (list display "Hello, world!") (() get-current-environment);
+
+$def! (x y) list "hello" "world";
+display x;
+display y;
+
+"The following 3 cases are equivalent when the order is not cared.";
+
+$def! (x y) list "hello" "world";
+
+$sequence (list ($def! x "hello") ($def! y "world")) #inert;
+
+$def! x "hello";
+$def! y "world";
+
+let ([x "hello"] [y "world"]) display (list x y);
+
+$def! $lambda $vau (formals .body) d
+	wrap (eval (cons $vau (cons formals (cons #ignore body))) d);
+
+$def! $set! $vau (e formals .expr) d
+	eval (list $def! formals (unwrap eval) expr d) (eval e d);
+
+$def! $defv! $vau ($f formals ef .body) d
+	eval (list $set! d $f $vau formals ef body) d;
+$defv! $defl! (f formals .body) d
+	eval (list $set! d f $lambda formals body) d;
+
+$def! defn $defl!;
+

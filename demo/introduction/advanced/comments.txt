@@ -1,0 +1,19 @@
+﻿"Comments demos.";
+
+"This is a single-line comment.";
+
+"This is a",
+	"multi-line comment.";
+
+"The following case shows an example of custom comments operator.",
+	"It does nothing, by ignoring all of its arguments";
+
+$def! $document-block $vau . #ignore "";
+
+$document-block
+(
+	"@brief brief xxx"
+	"@param p param"
+);
+
+

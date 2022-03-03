@@ -1,0 +1,25 @@
+﻿"Environment ownership demos.";
+
+$let ()
+(
+	$defl! foo (x) $lambda () display x;
+	() (foo 1);
+);
+
+$let ()
+(
+	$defl! foo (x d)
+	(
+		$def! se make-environment d;
+		$set! se x x;
+		$lambda/e se () display x;
+	);
+	() (foo 1 (() get-current-environment));
+);
+
+$let ()
+(
+	$defl! foo (x) $lambda/e (() lock-current-environment) () display x;
+	() (foo 1);
+);
+

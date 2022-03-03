@@ -1,0 +1,18 @@
+﻿"List demos.";
+
+list "hello" "world";
+
+();
+
+() list;
+
+list "hello" (list "world");
+
+list ();
+
+"The following two cases are equivalent.";
+
+cons "x" ();
+
+list "x";
+
