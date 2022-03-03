@@ -1,0 +1,14 @@
+﻿"Variable and objects.";
+
+$def! x "hello";
+
+$def! def $def!;
+
+"Simple syntax sugars.";
+
+"The following two cases are equivalent.";
+
+def x "hello";
+
+$def! x "hello";
+
