@@ -27,7 +27,7 @@ $defv! $let (bindings .body) d
 		(list body)) (map1 ($lambda (x) list (rest x)) bindings)) d;
 
 $let ()
-	$def! e $provide! (a b c) $def! a list "a" "b" "c";
+	$def! e $provide! (a b c) $def! (a b c) list "a" "b" "c";
 
 $let ()
 (
