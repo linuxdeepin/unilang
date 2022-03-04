@@ -1,6 +1,10 @@
 ﻿"Environment ownership demos.";
 
-$let ()
+$def! $rem $vau . #ignore "";
+
+"The following program commented out is incorrect.";
+
+$rem $let ()
 (
 	$defl! foo (x) $lambda () display x;
 	() (foo 1);
