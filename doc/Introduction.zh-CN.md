@@ -1001,7 +1001,7 @@ display (rest l);
 　　函数 `$provide!` 提供另一种通过求值表达式初始化指定名称的变量创建新环境的方法，如：
 
 ```
-	$def! e $provide! (a b c) $def! a list "a" "b" "c";
+	$def! e $provide! (a b c) $def! (a b c) list "a" "b" "c";
 ```
 
 　　`$provide!` 和 `$let` 类似，在求值表达式时隐含创建新的环境。`$provide!` 返回这个环境，以便被保存。这样，在求值后，其中定义的对象可以继续引用这个环境。
