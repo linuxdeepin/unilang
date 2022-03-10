@@ -247,7 +247,7 @@ $def! x "FOO";
 
 ```
 $def! $f $vau/e (() get-current-environment) (body) d eval body d;
-$def! $f2 $vau/e (body) d eval body d;
+$def! $f2 $vau (body) d eval body d;
 ```
 
 　　其中形式参数支持类似变量定义的模式匹配，实际上是形式参数树而不只是参数列表。
@@ -379,7 +379,7 @@ $unless (eqv? x "a") (display "x") (display " is not a");
 not? #t; "=> #f";
 not? "x"; "=> #f";
 not? #f; "=> #t";
-$and? (eqv? "x" "y") () "z"; "=> ()";
+$and? (eqv? "x" "x") () "z"; "=> "z";
 $or? #f (eqv? "x" "y"); "=> #f";
 ```
 
@@ -388,7 +388,8 @@ $or? #f (eqv? "x" "y"); "=> #f";
 　　函数 `accr`、 `foldr` 和 `map1` 对列表元素应用。如：
 
 ```
-map1 ($lambda (x) ++ x "s") (list "a" "b" "c");
+$import! std.strings ++;
+map1 ($lambda (x) ++ x "s") (list "a" "b" "c"); "=> (as bs cs)";
 ```
 
 　　函数 `map1` 的 `1` 表示接受的应用子具有一个参数。相对 `map1` ，`accr` 和 `foldr1` 提供更多的参数，允许更底层的定制功能。
@@ -398,9 +399,12 @@ map1 ($lambda (x) ++ x "s") (list "a" "b" "c");
 　　函数 `$let` 提供词法局部作用域，如：
 
 ```
+$import! std.strings ++;
 $let ((x "a") (y "b"))
 	++ x y;
 ```
+
+　　以上示例的结果是字符串 `"ab"` 。
 
 　　同合并子调用一样，求值 `$let` 内部的表达式时，使用新创建的环境。在 `$let` 中声明的局部对象在外部不会自动可用而影响外部环境。
 
@@ -411,7 +415,7 @@ $let ((x "a") (y "b"))
 　　函数 `$bindings->environment` 转换 `$let` 语法相同的局部对象定义为环境，如：
 
 ```
-$def! new-env $bindings->environment (x "x") (y "y);
+$def! new-env $bindings->environment (x "x") (y "y");
 ```
 
 　　这是一个创建环境的简便方法。创建的环境以 `() make-standard-environment` 为父环境。
@@ -425,6 +429,7 @@ $def! new-env $bindings->environment (x "x") (y "y);
 ```
 $def! my-module $provide! (exported-symbol-x exported-symbol-y)
 (
+	$import! std.strings ++;
 	$def! internal-symbol "FOO";
 	$def! exported-symbol-x internal-symbol;
 	$def! exported-symbol-y ++ internal-symbol "BAR";
