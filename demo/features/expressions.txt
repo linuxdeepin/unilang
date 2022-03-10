@@ -1,0 +1,13 @@
+﻿"Expression demos.";
+
+"Each expression in a statement shall be well-formed with appropriate bindings.";
+
+();
+
+"hello";
+
+();
+
+$let ((x idv) (y 1))
+	(x y);
+

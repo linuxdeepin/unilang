@@ -1,0 +1,8 @@
+"Logical operation demos.";
+
+$expect #f (not? #t);
+$expect #f (not? "x");
+$expect #t (not? #f);
+$expect "z" $and? (eqv? "x" "x") () "z";
+$expect #f $or? #f (eqv? "x" "y");
+

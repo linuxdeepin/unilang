@@ -1,0 +1,5 @@
+﻿"Variable definition demos.";
+
+$def! x "FOO";
+$def! ((x #ignore .y) z) list (list "X" "NOT USED" "Y1" "Y2") "Z";
+
