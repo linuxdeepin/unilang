@@ -319,12 +319,12 @@ $sequence (display "x") (display "y");
 
 ## 列表访问
 
-　　函数 `first` 和 `rest` 接受一个应为非空列表的参数，分别取列表的第一个元素和剩余元素：
+　　函数 `first` 和 `rest%` 接受一个应为非空列表的参数，分别取列表的第一个元素和剩余元素：
 
 ```
 $def! li list "a" "b" "c";
 first li; "same to: "; "a";
-rest li; "same to: "; list "b" "c";
+rest% li; "same to: "; list "b" "c";
 ```
 
 ## 列表函数应用
