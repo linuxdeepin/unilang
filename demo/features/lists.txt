@@ -1,0 +1,22 @@
+"List demos.";
+
+"List construction.";
+
+$expect (list "x") cons "x" ();
+$expect (list "y" "a" "b") cons "y" (list "a" "b");
+$expect (list "0" "1" "2" "3" "4") list* "0" "1" "2" (list "3" "4");
+
+"List accesses.";
+
+$def! li list "a" "b" "c";
+$expect "a" first li;
+$expect (list "b" "c") rest% li;
+
+"Apply.";
+
+$def! e () get-current-environment;
+$def! foo list;
+
+apply foo (list "x" "y") e;
+eval (list () foo "x" "y") e;
+

@@ -1,0 +1,8 @@
+﻿"Variable setting demos.";
+
+$set! (() get-current-environment) x "FOO";
+$expect "FOO" x;
+
+$def! x "FOO";
+$expect "FOO" x;
+

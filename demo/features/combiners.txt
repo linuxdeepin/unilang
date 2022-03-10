@@ -1,0 +1,15 @@
+﻿"Combiner operation and definition demos.";
+
+$def! $f $vau/e (() get-current-environment) (body) d eval body d;
+$def! $f2 $vau (body) d eval body d;
+
+$def! id $lambda (x) x;
+
+$def! $lambda $vau (formals .body) d wrap
+	(eval (cons $vau (cons formals (cons ignore body))) d);
+
+$defl! id (x) x;
+
+$def! id $lambda (x) x;
+
+
