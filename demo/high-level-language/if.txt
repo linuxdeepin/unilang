@@ -1,0 +1,8 @@
+﻿"Control operator demos using high-level language features.";
+
+def x ();
+display "x is ";
+display (if (null? x) "empty" else "not empty");
+
+
+
