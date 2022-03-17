@@ -1,0 +1,15 @@
+"High-level language aliases demos.";
+
+def $expect expect;
+
+expect #f (not #t);
+expect #f (not "x");
+expect #t (not #f);
+expect "z" and (eqv? "x" "x") () "z";
+expect #f or #f (eqv? "x" "y");
+
+"The following function definitions are equivalent.";
+def f 42;
+def id1 lambda (x) 42;
+defn id2 (x) 42;
+
