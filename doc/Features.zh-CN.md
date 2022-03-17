@@ -418,7 +418,7 @@ $let ((x "a") (y "b"))
 $def! new-env $bindings->environment (x "x") (y "y");
 ```
 
-　　这是一个创建环境的简便方法。创建的环境以 `() make-standard-environment` 为父环境。
+　　这是一个创建环境的简便方法。创建的环境不具有父环境。
 
 　　类似地，函数 `$bindings->environment` 也能转换绑定得到环境，但同时支持显式指定父环境。
 
