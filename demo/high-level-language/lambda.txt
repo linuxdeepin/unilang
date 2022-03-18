@@ -1,6 +1,14 @@
 "High-level language lambda demos.";
 
+def fn lambda ((x : Number)) x;
+
+fn 2;
+
 defn f ((x : List)) x;
 
 f (list 1 2 3);
+
+defn f ((x : Number) (y : List)) x;
+
+f 2 (list 3 4);
 
