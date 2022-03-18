@@ -1,9 +1,6 @@
 "High-level language lambda demos.";
 
-import std.typing Int;
+defn f ((x : List)) x;
 
-def f (x : Int) x;
-
-f 42;
-
+f (list 1 2 3);
 
