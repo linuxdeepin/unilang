@@ -2378,7 +2378,6 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `>=` ：同数学库函数 `>=?` 。
 	* `and` ：同核心库函数 `$and?` 。
 	* `def` ：同核心库函数 `$def!` 。
-	* `defn` ：同核心库函数 `$defl!` 。
 	* `let` ：同核心库函数 `$let` 。
 	* `import` ：同核心库函数 `$import!` 。
 	* `not` ：同核心库函数 `not?` 。
@@ -2478,6 +2477,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　基于标准库和类型库，以下操作除在形式参数树上支持类型标注外，和标准库函数功能相同：
 
 * `lambda` ：同核心库函数 `$lambda` 。
+* `defn` ：同核心库函数 `$defl!` ，但其中的 `$lambda` 被本库中的 `lambda` 取代。
 
 ### 测试库
 
