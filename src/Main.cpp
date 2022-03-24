@@ -750,20 +750,16 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 		$defl%! rulist (&l)
 			$if ($lvalue-identifier? l)
 				(accr (($lambda ((.@xs)) xs) l) null? ()
-					($lambda% (%l) $sequence
-						($def! %x idv (($lambda% ((@x .)) x) l))
+					($lambda% (%l) $sequence ($def! %x idv (first@ l))
 						(($if (uncollapsed? x) idv expire) (expire x))) rest%
-					($lambda (%x &xs)
-						(cons% ($resolve-identifier x) (move! xs))))
+					($lambda (%x &xs) (cons% ($resolve-identifier x) (move! xs))))
 				(idv (forward! l));
-		$defl%! list-extract-first (&l) map1 first l;
-		$defl%! list-extract-rest% (&l) map1 rest% l;
+		$defl%! list-extract-first (&l) map1 first (forward! l);
+		$defl%! list-extract-rest% (&l) map1 rest% (forward! l);
 		$defv%! $lqual (&ls) d
-			($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
-				(eval% ls d);
+			($if (eval (list $lvalue-identifier? ls) d) id rulist) (eval% ls d);
 		$defv%! $lqual* (&x) d
-			($if (eval (list $lvalue-identifier? x) d) as-const expire)
-				(eval% x d);
+			($if (eval (list $lvalue-identifier? x) d) id expire) (eval% x d);
 		$defl%! mk-let ($ctor &bindings &body)
 			list* () (list* $ctor (list-extract-first bindings)
 				(list (move! body))) (list-extract-rest% bindings);
@@ -951,7 +947,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.10"
+#define APP_VER "0.10.16"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
