@@ -1,0 +1,17 @@
+"High-level language demo of swapping.";
+
+defn swap! (&x &y)
+(
+	def t move! x;
+	x := move! y;
+	y := move! t;
+	#inert
+);
+
+def expect $expect;
+def x 1;
+def y 2;
+expect (list 1 2) list x y;
+swap! x y;
+expect (list 2 1) list x y;
+
