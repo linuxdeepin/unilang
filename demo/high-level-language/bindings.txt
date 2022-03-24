@@ -1,0 +1,18 @@
+"High-level language bindings demos.";
+
+def i 42;
+def (i : Number) 42;
+
+defn test (let)
+(
+	"Compability case to plain bindings without annotations.";
+	expect 42 let ([x 42]) x;
+	"Typed cases.";
+	expect 42 let ([(x : Number) 42]) x;
+	expect "foo" let ([(x : Number) 42][(y : string) "foo"]) y;
+);
+
+test let;
+test let*;
+test letrec;
+
