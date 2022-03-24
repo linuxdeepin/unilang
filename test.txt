@@ -389,6 +389,9 @@ $expect ((unwrap idv) ((x y z) a n s))
 $expect ((unwrap idv) ((x y z) a n s))
 	(typed-ptree->ptree
 		((unwrap idv) ((x (y : List) z) (a : Any) (n : Number) s)));
+$expect ((unwrap idv) ((x y z) a n s))
+	(typed-ptree->ptree
+		((unwrap idv) ((x, y : List, z), a : Any, n : Number, s)));
 
 info "typed operations tests";
 $let ()
