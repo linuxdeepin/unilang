@@ -387,6 +387,17 @@ $and (eqv? "x" "x") () "z"; "=> "z";
 $or #f (eqv? "x" "y"); "=> #f";
 ```
 
+　　函数 `and` 和 `or` 分别同 `$and` 和 `$or` ，但不短路求值。
+
+　　下列表达式的求值能体现这种不同：
+
+```
+$and (eqv? "x" "y") (display "unexpected evaluated again\n"; eqv? "x" "y");
+and (eqv? "x" "y") (display "expected evaluated again\n"; eqv? "x" "y");
+$or (eqv? "x" "x") (display "unexpected evaluated again\n"; eqv? "x" "x");
+or (eqv? "x" "x") (display "expected evaluated again\n"; eqv? "x" "x");
+```
+
 ## 列表算法
 
 　　函数 `accr`、 `foldr` 和 `map1` 对列表元素应用。如：
