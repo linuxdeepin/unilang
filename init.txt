@@ -12,11 +12,11 @@ $def! &< $remote-eval% <? std.math;
 $def! &> $remote-eval% >? std.math;
 $def! &<= $remote-eval% <=? std.math;
 $def! &>= $remote-eval% >=? std.math;
-$def! &and $and?;
+$def! &and $and;
 $def! &let $let;
 $def! &import $import!;
 $def! &not not?;
-$def! &or $or?;
+$def! &or $or;
 $def! &unless $unless;
 $def! &until $until;
 $def! &when $when;
@@ -240,8 +240,8 @@ $provide/let! (version? string->version version->string version<?)
 			++ (itos xmajor) "." (itos xminor) "." (itos xpatch),
 	$defl! semver<? (&x &y)
 		$let ((=? eqv?) ((xmajor xminor xpatch) x) ((ymajor yminor ypatch) y))
-			$or? (<? xmajor ymajor) ($and? (=? xmajor ymajor)
-				($or? (<? xminor yminor) ($and? (=? xminor yminor)
+			$or (<? xmajor ymajor) ($and (=? xmajor ymajor)
+				($or (<? xminor yminor) ($and (=? xminor yminor)
 				(<? xpatch ypatch)))),
 	$defl! semver-parse (&x)
 		$let* ((normalized string-split x "-")
@@ -280,7 +280,7 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 						(vstr regex-replace ver-con pattern "$3"))
 					(
 						$cond
-							(($and? (not? (string-empty? op))
+							(($and (not? (string-empty? op))
 								(rmatch? vstr ".*\*.*"))
 								raise-error (++ "Unexpected operator '" op
 									"' found for wildcard requirement string '"
@@ -363,7 +363,7 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 		string->version (carry-tilde-vstr vstr)
 	),
 	$defl! version-in-range? (&ver &x &y)
-		$and? ($or? (eqv? ver x) (version<? x ver)) (version<? ver y);
+		$and ($or (eqv? ver x) (version<? x ver)) (version<? ver y);
 	$defl! check-caret-req (&ver &vstr)
 		version-in-range? ver (vstr->version vstr) (vstr-caret->version vstr),
 	(
@@ -378,18 +378,18 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 	),
 	$defl! check-ge-req (&ver &vstr)
 		$let ((nver vstr->version vstr))
-			$or? (eqv? ver nver) (version<? nver ver);
+			$or (eqv? ver nver) (version<? nver ver);
 	$defl! check-ver-con (&ver &ver-con)
 		$let (((op vstr) parse-ver-con ver-con))
 			$cond
-				(($or? (eqv? op "<") (eqv? op "!>="))
+				(($or (eqv? op "<") (eqv? op "!>="))
 					version<? ver (vstr->version vstr))
-				(($or? (eqv? op ">") (eqv? op "!<="))
+				(($or (eqv? op ">") (eqv? op "!<="))
 					version<? (vstr->version vstr) ver)
-				(($or? (eqv? op "<=") (eqv? op "!>"))
+				(($or (eqv? op "<=") (eqv? op "!>"))
 					$let ((nver vstr->version vstr))
-						$or? (eqv? ver nver) (version<? ver nver))
-				(($or? (eqv? op ">=") (eqv? op "!<"))
+						$or (eqv? ver nver) (version<? ver nver))
+				(($or (eqv? op ">=") (eqv? op "!<"))
 					check-ge-req ver vstr)
 				((eqv? op "=") check-eq-req ver vstr)
 				((eqv? op "!=") not? (eqv? ver (vstr->version vstr)))
@@ -419,14 +419,14 @@ $provide/let! (dependency? make-dependency name-of version-of check-of validate
 					"' found in the version constrait."));
 	$defl! check-ver-cons (&ver &ver-cons)
 		$if (null? ver-cons) #t
-			($and? (check-ver-con ver (first ver-cons))
+			($and (check-ver-con ver (first ver-cons))
 				(check-ver-cons ver (rest& ver-cons)));
 	$defl! check-dep (&dep &name &ver-cons)
-		$and? (eqv? (name-of dep) name)
+		$and (eqv? (name-of dep) name)
 			(check-ver-cons (version-of dep) ver-cons);
 	$defl! check-deps (&deps &name &ver-cons)
 		$if (null? deps) #t
-			($and? (check-dep (first deps) name ver-cons)
+			($and (check-dep (first deps) name ver-cons)
 				(check-deps (rest& deps) name ver-cons))
 	)
 )))
@@ -461,14 +461,14 @@ $provide/let! (dependency-set? make-dependency-set has-dependency?)
 	$defl! match-dependency? (&dep &name) eqv? (name-of dep) name;
 	$defl! match-dependencies? (&deps &name)
 		$if (null? deps) #f
-			($or? (match-dependency? (first deps) name)
+			($or (match-dependency? (first deps) name)
 				(match-dependencies? (rest& deps) name)),
 	(
 	$defl! match-ver-dependency? (&dep &name &ver)
-		$and? (match-dependency? dep name) (eqv? (version-of dep) ver);
+		$and (match-dependency? dep name) (eqv? (version-of dep) ver);
 	$defl! match-ver-dependencies? (&deps &name &ver)
 		$if (null? deps) #f
-			($or? (match-ver-dependency? (first deps) name ver)
+			($or (match-ver-dependency? (first deps) name ver)
 				(match-ver-dependencies? (rest& deps) name ver))
 	)
 	)

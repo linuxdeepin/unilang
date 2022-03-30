@@ -28,7 +28,7 @@ $defl! partition! (&lst i j pivot)
 (
 	$unless (eqv? i j)
 	(
-		$while ($and? (not? (=? i j)) (<? (list-at& lst i) pivot))
+		$while ($and (not? (=? i j)) (<? (list-at& lst i) pivot))
 			(assign! i (+ i 1));
 		$unless (=? i j)
 		(
