@@ -386,6 +386,24 @@ struct GUOp : GUAssertMismatch<_tRet>, _tBase
 };
 
 
+template<class _tBase, typename _tRet = ValueObject>
+struct GBOp : GBAssertMismatch<_tRet>, _tBase
+{
+	using _tBase::_tBase;
+
+	using GBAssertMismatch<_tRet>::operator();
+	template<typename _tParam1, typename _tParam2,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _tParam1>)>
+	YB_ATTR_nodiscard constexpr
+		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam2, _tRet>
+	operator()(_tParam1&& x, _tParam2&& y) const
+		noexcept(noexcept(_tBase::operator()(yforward(x), yforward(y))))
+	{
+		return _tBase::operator()(yforward(x), yforward(y));
+	}
+};
+
+
 struct EqZero
 {
 	template<typename _type>
@@ -482,26 +500,10 @@ struct Even
 };
 
 
-template<class _tBase>
-struct GBCompare : GBAssertMismatch<bool>, _tBase
+struct BMax
 {
-	using GBAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline bool
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return _tBase::operator()(x, y);
-	}
-};
-
-
-struct BMax : GBAssertMismatch<>
-{
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
 	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x > y ? x : y;
@@ -509,12 +511,10 @@ struct BMax : GBAssertMismatch<>
 };
 
 
-struct BMin : GBAssertMismatch<>
+struct BMin
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
 	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x < y ? x : y;
@@ -575,30 +575,19 @@ struct SubOne
 };
 
 
-struct BPlus : GBAssertMismatch<>
+struct BPlus
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return Do(x, y);
-	}
-
-private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x + y;
 	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_add_overflow)
 		_type r;
@@ -618,8 +607,8 @@ private:
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_add_overflow)
 		_type r;
@@ -637,30 +626,19 @@ private:
 };
 
 
-struct BMinus : GBAssertMismatch<>
+struct BMinus
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return Do(x, y);
-	}
-
-private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x - y;
 	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_sub_overflow)
 		_type r;
@@ -682,8 +660,8 @@ private:
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 		if(y <= x)
 			return x - y;
@@ -692,29 +670,19 @@ private:
 };
 
 
-struct BMultiplies : GBAssertMismatch<>
+struct BMultiplies
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return Do(x, y);
-	}
-
-private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x * y;
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_integral<_type>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_mul_overflow)
 		_type r;
@@ -734,61 +702,42 @@ private:
 };
 
 
-struct BDivides : GBAssertMismatch<>
+struct BDivides
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return x / y;
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
 	operator()(const _type& x, const _type& y) const
 	{
-		return Do(x, y);
+		return y != 0 ? (y != _type(-1) || x != std::numeric_limits<
+			_type>::min() ? DoInt(x, y) : QuotientOverflow(x))
+			: ThrowDivisionByZero();
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_unsigned<_type>::value, long> = 0L)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
+	{
+		return y != 0 ? DoInt(x, y) : ThrowDivisionByZero();
 	}
 
 private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
-	{
-		return x / y;
-	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
-	{
-		if(y != 0)
-		{
-			if(y != _type(-1) || x != std::numeric_limits<_type>::min())
-				return DoInt(x, y);
-			if(std::numeric_limits<_type>::min()
-				== std::numeric_limits<long long>::min())
-				return -double(x);
-			return -MakeExtType<_type>(x);
-		}
-		ThrowDivisionByZero();
-	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		std::is_unsigned<_type>::value, long> = 0L)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
-	{
-		if(y != 0)
-			return DoInt(x, y);
-		ThrowDivisionByZero();
-	}
-
-	template<typename _type>
-	static inline ValueObject
+	YB_ATTR_nodiscard YB_PURE static inline ValueObject
 	DoInt(const _type& x, const _type& y) noexcept
 	{
 		static_assert(std::is_integral<_type>(), "Invalid type found.");
 
 		assert(y != 0 && "Invalid value found.");
 
-		_type r(x / y);
+		const _type r(x / y);
 
 		if(r * y == x)
 			return r;
@@ -861,21 +810,21 @@ NumBinaryComp(const ValueObject& x, const ValueObject& y) noexcept
 	const auto xcode(MapTypeIdToNumCode(x));
 	const auto ycode(MapTypeIdToNumCode(y));
 	const auto ret_bin([](ValueObject u, ValueObject v, NumCode code){
-		return DoNumLeafHinted<bool>(code, _fBinary(), u, v);
+		return DoNumLeafHinted<bool>(code, GBOp<_fBinary, bool>(), u, v);
 	});
 
 	return size_t(xcode) >= size_t(ycode) ? ret_bin(x, Promote(xcode, y, ycode),
 		xcode) : ret_bin(Promote(ycode, x, xcode), y, ycode);
 }
 
-template<class _fBinary>
-ValueObject
+template<class _fBinary, typename _tRet = ValueObject>
+YB_ATTR_nodiscard _tRet
 NumBinaryOp(ResolvedArg<>& x, ResolvedArg<>& y)
 {
 	const auto xcode(MapTypeIdToNumCode(x));
 	const auto ycode(MapTypeIdToNumCode(y));
 	const auto ret_bin([](ValueObject u, ValueObject v, NumCode code){
-		return DoNumLeafHinted<ValueObject>(code, _fBinary(), u, v);
+		return DoNumLeafHinted<_tRet>(code, GBOp<_fBinary, _tRet>(), u, v);
 	});
 
 	return size_t(xcode) >= size_t(ycode) ?
@@ -1157,31 +1106,31 @@ IsNaN(const ValueObject& x) noexcept
 bool
 Equal(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::equal_to<>>>(x, y);
+	return NumBinaryComp<ystdex::equal_to<>>(x, y);
 }
 
 bool
 Less(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::less<>>>(x, y);
+	return NumBinaryComp<ystdex::less<>>(x, y);
 }
 
 bool
 Greater(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::greater<>>>(x, y);
+	return NumBinaryComp<ystdex::greater<>>(x, y);
 }
 
 bool
 LessEqual(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::less_equal<>>>(x, y);
+	return NumBinaryComp<ystdex::less_equal<>>(x, y);
 }
 
 bool
 GreaterEqual(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::greater_equal<>>>(x, y);
+	return NumBinaryComp<ystdex::greater_equal<>>(x, y);
 }
 
 
