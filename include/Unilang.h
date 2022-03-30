@@ -42,6 +42,7 @@ namespace pmr = YSLib::pmr;
 
 using YSLib::basic_string;
 using YSLib::string;
+using YSLib::array;
 using YSLib::forward_list;
 using YSLib::list;
 using YSLib::map;
