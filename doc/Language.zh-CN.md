@@ -1595,13 +1595,13 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　若参数非 `#f` 时结果是 `#f` ，否则结果是 `#t` 。
 
-`$and? <test>...`
+`$and <test>...`
 
 　　逻辑与。
 
 　　顺序短路求值。操作数为空时结果是 `#t` ；参数求值存在 `#f` 时结果是 `#f` ；否则结果是最后一个参数的值。
 
-`$or? <test>...`
+`$or <test>...`
 
 　　逻辑或。
 
@@ -2376,11 +2376,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `>` ：同数学库函数 `>?` 。
 	* `<=` ：同数学库函数 `<=?` 。
 	* `>=` ：同数学库函数 `>=?` 。
-	* `and` ：同核心库函数 `$and?` 。
+	* `and` ：同核心库函数 `$and` 。
 	* `def` ：同核心库函数 `$def!` 。
 	* `import` ：同核心库函数 `$import!` 。
 	* `not` ：同核心库函数 `not?` 。
-	* `or` ：同核心库函数 `$or?` 。
+	* `or` ：同核心库函数 `$or` 。
 	* `unless` ：同核心库函数 `$unless` 。
 	* `until` ：同核心库函数 `$until` 。
 	* `when` ：同核心库函数 `$when` 。

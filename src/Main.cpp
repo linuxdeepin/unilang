@@ -462,7 +462,7 @@ $provide/let! (registered-requirement? register-requirement!
 	(
 	$def! registry () make-environment;
 	$defl! bound-name? (&req)
-		$and? (eval (list bound? req) registry)
+		$and (eval (list bound? req) registry)
 			(not? (string-empty? (eval (string->symbol req) registry))),
 	$defl! set-value! (&req &v)
 		eval (list $def! (string->symbol req) v) registry
@@ -717,16 +717,16 @@ $defv%! $until (&test .&exprseq) d
 		(eval% (list* () $sequence exprseq) d)
 		(eval% (list* () $until (move! test) (move! exprseq)) d);
 $defl! not? (x) eqv? x #f;
-$defv! $and? x d $cond
+$defv! $and x d $cond
 	((null? x) #t)
 	((null? (rest x)) eval (first x) d)
-	((eval (first x) d) apply (wrap $and?) (rest x) d)
+	((eval (first x) d) apply (wrap $and) (rest x) d)
 	(#t #f);
-$defv! $or? x d $cond
+$defv! $or x d $cond
 	((null? x) #f)
 	((null? (rest x)) eval (first x) d)
 	(#t ($lambda (r) $if r r
-		(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
+		(apply (wrap $or) (rest x) d)) (eval (move! (first x)) d));
 $defw%! accr (&l &pred? &base &head &tail &sum) d
 	$if (apply pred? (list% l) d) (forward! base)
 		(apply sum (list% (apply head (list% l) d)
@@ -947,7 +947,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.16"
+#define APP_VER "0.10.18"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
