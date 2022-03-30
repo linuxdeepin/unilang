@@ -731,6 +731,11 @@ $defl%! and &x $sequence
 	($defl%! and-aux (&h &l) $if (null? l) (forward! h)
 		(and-aux ($if h (forward! (first% l)) #f) (forward! (rest% l))))
 	(and-aux #t (forward! x));
+$defl%! or &x $sequence
+	($defl%! or-aux (&h &l) $if (null? l) (forward! h)
+		($let% ((&c forward! (first% l)))
+			or-aux (forward! ($if c c h)) (forward! (rest% l))))
+	(or-aux #f (forward! x));
 $defw%! accr (&l &pred? &base &head &tail &sum) d
 	$if (apply pred? (list% l) d) (forward! base)
 		(apply sum (list% (apply head (list% l) d)
@@ -951,7 +956,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.19"
+#define APP_VER "0.10.20"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
