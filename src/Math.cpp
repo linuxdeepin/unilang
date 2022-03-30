@@ -1,11 +1,13 @@
 ﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue, ptrdiff_t.
-//	string_view, sfmt;
+#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue,
+//	Unilang::Nonnull, Unilang::Deref, ptrdiff_t, string_view, sfmt;
 #include <ystdex/exception.h> // for ystdex::unsupported;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::_t, ystdex::exclude_self_t,
 //	ystdex::enable_if_t, std::is_floating_point, ystdex::common_type_t;
 #include <cassert> // for assert;
+#include <cstdlib> // for std::abs;
 #include <cmath> // for std::isfinite, std::nearbyint, std::isinf, std::isnan,
 //	std::fmod, std::ldexp, std::pow, std::fp_classify, FP_INFINITE, FP_NAN;
 #include <string> // for std::to_string;
@@ -193,7 +195,7 @@ DoNumLeaf(_tValue& x, _func f)
 	return f(x);
 }
 
-template<typename _type, typename _func, class... _tValue>
+template<typename _type, class... _tValue, typename _func>
 YB_ATTR_nodiscard _type
 DoNumLeafHinted(NumCode code, _func f, _tValue&... xs)
 {
@@ -231,6 +233,14 @@ DoNumLeafHinted(NumCode code, _func f, _tValue&... xs)
 }
 
 
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline ValueObject
+QuotientOverflow(const _type& x)
+{
+	return -MakeExtType<_type>(x);
+}
+
+
 YB_NORETURN void
 AssertMismatch()
 {
@@ -238,11 +248,18 @@ AssertMismatch()
 	YB_ASSUME(false);
 }
 
-YB_NORETURN void
-ThrowTypeErrorForInteger(const std::string& val)
+YB_NORETURN YB_NONNULL(1) void
+ThrowTypeErrorForInteger(const char* val)
 {
-	throw TypeError(ystdex::sfmt(
-		"Expected a value of type 'integer', got '%s'.", val.c_str()));
+	throw
+		TypeError(ystdex::sfmt("Expected a value of type 'integer', got '%s'.",
+		Unilang::Nonnull(val)));
+}
+template<typename _type>
+YB_NORETURN yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value>
+ThrowTypeErrorForInteger(const _type& val)
+{
+	ThrowTypeErrorForInteger(std::to_string(val).c_str());
 }
 
 template<typename _type>
@@ -259,12 +276,33 @@ FloatIsInteger(const _type& x) noexcept
 #endif
 }
 
+YB_NORETURN ValueObject
+ThrowDivisionByZero()
+{
+	throw std::domain_error("Division by zero.");
+}
 
-template<typename _type = void>
+
+template<typename _tRet = void>
 struct GUAssertMismatch
 {
-	YB_NORETURN _type
+	using result_type = _tRet;
+
+	YB_NORETURN result_type
 	operator()(const ValueObject&) const noexcept
+	{
+		AssertMismatch();
+	}
+};
+
+
+template<typename _tRet = ValueObject>
+struct GBAssertMismatch
+{
+	using result_type = _tRet;
+
+	YB_NORETURN result_type
+	operator()(const ValueObject&, const ValueObject&) const noexcept
 	{
 		AssertMismatch();
 	}
@@ -402,7 +440,7 @@ private:
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Pop
 #endif
-		ThrowTypeErrorForInteger(std::to_string(x));
+		ThrowTypeErrorForInteger(x);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
@@ -439,7 +477,7 @@ private:
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Pop
 #endif
-		ThrowTypeErrorForInteger(std::to_string(x));
+		ThrowTypeErrorForInteger(x);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
@@ -447,17 +485,6 @@ private:
 	Do(const _type& x) noexcept
 	{
 		return x % _type(2) == _type(0);
-	}
-};
-
-
-template<typename _type = ValueObject>
-struct GBAssertMismatch
-{
-	YB_NORETURN _type
-	operator()(const ValueObject&, const ValueObject&) const noexcept
-	{
-		AssertMismatch();
 	}
 };
 
@@ -766,7 +793,7 @@ private:
 				return -double(x);
 			return -MakeExtType<_type>(x);
 		}
-		ThrowDivideByZero();
+		ThrowDivisionByZero();
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
@@ -775,7 +802,7 @@ private:
 	{
 		if(y != 0)
 			return DoInt(x, y);
-		ThrowDivideByZero();
+		ThrowDivisionByZero();
 	}
 
 	template<typename _type>
@@ -791,12 +818,6 @@ private:
 		if(r * y == x)
 			return r;
 		return double(x) / double(y);
-	}
-
-	YB_NORETURN static ValueObject
-	ThrowDivideByZero()
-	{
-		throw std::domain_error("Division by zero.");
 	}
 };
 
