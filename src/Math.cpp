@@ -369,11 +369,26 @@ struct DynNumCast : ReportMismatch<ValueObject>
 };
 
 
-struct EqZero : GUAssertMismatch<bool>
+template<class _tBase, typename _tRet = void>
+struct GUOp : GUAssertMismatch<_tRet>, _tBase
 {
-	using GUAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	using _tBase::_tBase;
+
+	using GUAssertMismatch<_tRet>::operator();
+	template<typename _tParam>
+	YB_ATTR_nodiscard yconstfn
+		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam, _tRet>
+	operator()(_tParam&& x) const
+		noexcept(noexcept(_tBase::operator()(yforward(x))))
+	{
+		return _tBase::operator()(yforward(x));
+	}
+};
+
+
+struct EqZero
+{
+	template<typename _type>
 	YB_ATTR_nodiscard YB_PURE yconstfn bool
 	operator()(const _type& x) const noexcept
 	{
@@ -389,11 +404,9 @@ struct EqZero : GUAssertMismatch<bool>
 };
 
 
-struct Positive : GUAssertMismatch<bool>
+struct Positive
 {
-	using GUAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	template<typename _type>
 	YB_ATTR_nodiscard YB_PURE yconstfn bool
 	operator()(const _type& x) const noexcept
 	{
@@ -402,11 +415,9 @@ struct Positive : GUAssertMismatch<bool>
 };
 
 
-struct Negative : GUAssertMismatch<bool>
+struct Negative
 {
-	using GUAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	template<typename _type>
 	YB_ATTR_nodiscard YB_PURE yconstfn bool
 	operator()(const _type& x) const noexcept
 	{
@@ -415,28 +426,19 @@ struct Negative : GUAssertMismatch<bool>
 };
 
 
-struct Odd : GUAssertMismatch<bool>
+struct Odd
 {
-	using GUAssertMismatch<bool>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type, bool>)
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value, bool>
 	operator()(const _type& x) const
-	{
-		return Do(x);
-	}
-
-private:
-	template<typename _type>
-	static inline
-		ystdex::enable_if_t<std::is_floating_point<_type>::value, bool>
-	Do(const _type& x)
 	{
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Push
 	YB_Diag_Ignore(float-equal)
 #endif
 		if(FloatIsInteger(x))
-			return std::fmod(x, _type(2)) == _type(1);
+			return std::fmod(x, _type(2)) != _type(0);
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Pop
 #endif
@@ -444,29 +446,20 @@ private:
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
-	static inline bool
-	Do(const _type& x) noexcept
+	YB_ATTR_nodiscard YB_PURE inline bool
+	operator()(const _type& x) const noexcept
 	{
 		return x % _type(2) != _type(0);
 	}
 };
 
 
-struct Even : GUAssertMismatch<bool>
+struct Even
 {
-	using GUAssertMismatch<bool>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type, bool>)
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value, bool>
 	operator()(const _type& x) const
-	{
-		return Do(x);
-	}
-
-private:
-	template<typename _type>
-	static inline
-		ystdex::enable_if_t<std::is_floating_point<_type>::value, bool>
-	Do(const _type& x)
 	{
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Push
@@ -481,8 +474,8 @@ private:
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
-	static inline bool
-	Do(const _type& x) noexcept
+	YB_ATTR_nodiscard YB_PURE inline bool
+	operator()(const _type& x) const noexcept
 	{
 		return x % _type(2) == _type(0);
 	}
@@ -529,73 +522,55 @@ struct BMin : GBAssertMismatch<>
 };
 
 
-struct AddOne : GUAssertMismatch<>
+struct AddOne
 {
-	ValueObject& Result;
+	lref<ValueObject> Result;
 
-	AddOne(ValueObject& res)
+	AddOne(ValueObject& res) noexcept
 		: Result(res)
 	{}
 
-	using GUAssertMismatch<>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	inline yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value>
 	operator()(_type& x) const noexcept
-	{
-		Perform(x);
-	}
-
-private:
-	template<typename _type>
-	inline ystdex::enable_if_t<std::is_floating_point<_type>::value>
-	Perform(_type& x) const noexcept
 	{
 		x += _type(1);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
 	inline void
-	Perform(_type& x) const
+	operator()(_type& x) const
 	{
 		if(x != std::numeric_limits<_type>::max())
 			++x;
 		else
-			Result = ValueObject(MakeExtType<_type>(x) + 1);
+			Result.get() = ValueObject(MakeExtType<_type>(x) + 1);
 	}
 };
 
-struct SubOne : GUAssertMismatch<>
+struct SubOne
 {
-	ValueObject& Result;
+	lref<ValueObject> Result;
 
-	SubOne(ValueObject& res)
+	SubOne(ValueObject& res) noexcept
 		: Result(res)
 	{}
 
-	using GUAssertMismatch<>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	inline yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value>
 	operator()(_type& x) const noexcept
-	{
-		Perform(x);
-	}
-
-private:
-	template<typename _type>
-	inline ystdex::enable_if_t<std::is_floating_point<_type>::value>
-	Perform(_type& x) const noexcept
 	{
 		x -= _type(1);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
 	inline void
-	Perform(_type& x) const
+	operator()(_type& x) const
 	{
 		if(x != std::numeric_limits<_type>::min())
 			--x;
 		else
-			Result = ValueObject(MakeNExtType<_type>(x) - 1);
+			Result.get() = ValueObject(MakeNExtType<_type>(x) - 1);
 	}
 };
 
@@ -822,46 +797,36 @@ private:
 };
 
 
-struct ReplaceAbs : GUAssertMismatch<>
+struct ReplaceAbs
 {
-	ValueObject& Result;
+	lref<ValueObject> Result;
 
-	ReplaceAbs(ValueObject& res)
+	ReplaceAbs(ValueObject& res) noexcept
 		: Result(res)
 	{}
 
-	using GUAssertMismatch<>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	inline yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value>
 	operator()(_type& x) const
-	{
-		Perform(x);
-	}
-
-private:
-	template<typename _type>
-	inline ystdex::enable_if_t<!std::is_integral<_type>::value>
-	Perform(_type& x) const
 	{
 		using std::abs;
 
 		x = abs(x);
 	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
 	inline void
-	Perform(_type& x) const
+	operator()(_type& x) const
 	{
 		if(x != std::numeric_limits<_type>::min())
 			x = _type(std::abs(x));
 		else
-			Result = -MakeExtType<_type>(x);
+			Result.get() = QuotientOverflow(x);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
 	inline void
-	Perform(_type&) const noexcept
+	operator()(_type&) const noexcept
 	{}
 };
 
@@ -870,6 +835,23 @@ YB_ATTR_nodiscard YB_PURE ValueObject
 Promote(NumCode code, const ValueObject& x, NumCode src_code)
 {
 	return DoNumLeafHinted<ValueObject>(src_code, DynNumCast(code), x);
+}
+
+template<class _tBase>
+YB_ATTR_nodiscard bool
+NumUnaryPredicate(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, GUOp<_tBase, bool>());
+}
+
+template<class _fUnary, typename _tRet = void>
+YB_ATTR_nodiscard ValueObject
+NumUnaryOp(ResolvedArg<>& x)
+{
+	auto res(MoveUnary(x));
+
+	DoNumLeaf<void>(res, GUOp<_fUnary, _tRet>(res));
+	return res;
 }
 
 template<class _fBinary>
@@ -905,7 +887,6 @@ NumBinaryOp(ResolvedArg<>& x, ResolvedArg<>& y)
 YB_NORETURN YB_NONNULL(1, 2) void
 ThrowForInvalidLiteralSuffix(const char* sfx, const char* id)
 {
-	// TODO: Use %ThrowInvalidSyntaxError lift from %A1?
 	throw InvalidSyntax(ystdex::sfmt(
 		"Literal suffix '%s' is unsupported in identifier '%s'.", sfx, id));
 }
@@ -1207,31 +1188,31 @@ GreaterEqual(const ValueObject& x, const ValueObject& y) noexcept
 bool
 IsZero(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, EqZero());
+	return NumUnaryPredicate<EqZero>(x);
 }
 
 bool
 IsPositive(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Positive());
+	return NumUnaryPredicate<Positive>(x);
 }
 
 bool
 IsNegative(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Negative());
+	return NumUnaryPredicate<Negative>(x);
 }
 
 bool
 IsOdd(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Odd());
+	return NumUnaryPredicate<Odd>(x);
 }
 
 bool
 IsEven(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Even());
+	return NumUnaryPredicate<Even>(x);
 }
 
 
@@ -1250,19 +1231,13 @@ Min(ResolvedArg<>&& x, ResolvedArg<>&& y)
 ValueObject
 Add1(ResolvedArg<>&& x)
 {
-	auto res(MoveUnary(x));
-
-	DoNumLeaf<void>(res, AddOne(res));
-	return res;
+	return NumUnaryOp<AddOne>(x);
 }
 
 ValueObject
 Sub1(ResolvedArg<>&& x)
 {
-	auto res(MoveUnary(x));
-
-	DoNumLeaf<void>(res, SubOne(res));
-	return res;
+	return NumUnaryOp<SubOne>(x);
 }
 
 ValueObject
@@ -1292,10 +1267,7 @@ Divides(ResolvedArg<>&& x, ResolvedArg<>&& y)
 ValueObject
 Abs(ResolvedArg<>&& x)
 {
-	auto res(MoveUnary(x));
-
-	DoNumLeaf<void>(res, ReplaceAbs(res));
-	return res;
+	return NumUnaryOp<ReplaceAbs>(x);
 }
 
 
