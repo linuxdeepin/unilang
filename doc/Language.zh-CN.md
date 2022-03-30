@@ -1616,6 +1616,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　同 `$and?` ，但作为应用子，对每个参数都求值一次，而不短路求值，也不保证参数求值顺序。
 
+`or <test>...`
+
+　　求值参数的逻辑或。
+
+　　同 `$or?` ，但作为应用子，对每个参数都求值一次，而不短路求值，也不保证参数求值顺序。
+
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
 　　在抽象列表的元素上应用右结合的二元操作。
