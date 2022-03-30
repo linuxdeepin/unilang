@@ -83,6 +83,17 @@ EmplaceCallResultOrReturn(TermNode& term, _tParam&& arg)
 	YSLib::EmplaceCallResult(term.Value, yforward(arg), term.get_allocator());
 	return ReductionStatus::Clean;
 }
+template<size_t _vN>
+YB_ATTR_nodiscard inline ReductionStatus
+EmplaceCallResultOrReturn(TermNode& term, array<ValueObject, _vN> arg)
+{
+	TermNode::Container con(term.get_allocator());
+
+	for(auto& vo : arg)
+		con.emplace_back(NoContainer, std::move(vo));
+	con.swap(term.GetContainerRef());
+	return ReductionStatus::Retained;
+}
 
 } // namespace Unilang;
 
