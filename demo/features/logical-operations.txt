@@ -6,3 +6,8 @@ $expect #t (not? #f);
 $expect "z" $and (eqv? "x" "x") () "z";
 $expect #f $or #f (eqv? "x" "y");
 
+$and (eqv? "x" "y") (display "unexpected evaluated again\n"; eqv? "x" "y");
+and (eqv? "x" "y") (display "expected evaluated again\n"; eqv? "x" "y");
+$or (eqv? "x" "x") (display "unexpected evaluated again\n"; eqv? "x" "x");
+or (eqv? "x" "x") (display "expected evaluated again\n"; eqv? "x" "x");
+
