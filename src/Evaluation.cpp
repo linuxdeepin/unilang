@@ -768,16 +768,15 @@ ReductionStatus
 FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 {
 	if(n == 0 || term.size() <= 1)
-		return Handler(ctx.GetNextTermRef(), ctx);
-	ctx.SetupFront([&, n](Context& c){
-		c.SetNextTermRef( term);
-		return CallN(n - 1, term, c);
+ 		return Unilang::RelayCurrentOrDirect(ctx, std::ref(Handler), term);
+ 	return Unilang::RelayCurrentNext(ctx, term, [](TermNode& t, Context& c){
+ 		assert(!t.empty() && "Invalid term found.");
+ 		ReduceChildrenOrderedAsyncUnchecked(std::next(t.begin()), t.end(), c);
+ 		return ReductionStatus::Partial;
+	}, [&, n](Context& c){
+ 		c.SetNextTermRef(term);
+ 		return CallN(n - 1, term, c);
 	});
-	ctx.SetNextTermRef(term);
-	assert(!term.empty());
-	ReduceChildrenOrderedAsyncUnchecked(std::next(term.begin()), term.end(),
-		ctx);
-	return ReductionStatus::Partial;
 }
 
 bool
