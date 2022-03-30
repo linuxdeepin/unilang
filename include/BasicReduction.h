@@ -1,10 +1,12 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_BasicReduction_h_
 #define INC_Unilang_BasicReduction_h_ 1
 
-#include "TermNode.h" // for TermNode, ystdex::ref_eq;
+#include "TermNode.h" // for TermNode, ystdex::ref_eq, yforward;
 #include <algorithm> // for std::for_each;
+#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
+#include YFM_YSLib_Core_YObject // for YSLib::EmplaceCallResult;
 
 namespace Unilang
 {
@@ -65,6 +67,21 @@ ReduceForLiftedResult(TermNode& term)
 {
 	LiftToReturn(term);
 	return ReductionStatus::Retained;
+}
+
+
+YB_ATTR_nodiscard YB_STATELESS constexpr ReductionStatus
+EmplaceCallResultOrReturn(TermNode&, ReductionStatus status) noexcept
+{
+	return status;
+}
+template<typename _tParam, typename... _tParams, yimpl(
+	typename = ystdex::exclude_self_t<ReductionStatus, _tParam>)>
+YB_ATTR_nodiscard inline ReductionStatus
+EmplaceCallResultOrReturn(TermNode& term, _tParam&& arg)
+{
+	YSLib::EmplaceCallResult(term.Value, yforward(arg), term.get_allocator());
+	return ReductionStatus::Clean;
 }
 
 } // namespace Unilang;
