@@ -689,7 +689,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * 求值算法中的操作合并的求值。
 * 以下标准库中的求值：
 	* 对 `<body>` 的求值；
-	* 由 `<test>` 控制或连续求值多个表达式中最后被求值的子表达式求值。
+	* 由 `<test>` 控制或操作子中连续求值多个表达式中最后被求值的子表达式求值。
+		* **注释** 这包括 `$if` 、`$sequence` 、`$and` 和 `$or` 的最后的参数（若存在）的求值。应用子对参数的求值明确非 PTC 。
+	* 函数 `eval` 、`eval%`、 `id` 和 `idv` 的调用中蕴含的求值或替换。
+		* **注释** 这不是作为参数的 <expression> 的求值。
 	* 函数 `apply` 对 `<applicative>` 和 `<object>` 在 `<environment>` 或默认的动态环境中的应用。
 
 　　不改变程序的可观察行为时，实现可支持任意其它的尾上下文上的 PTC 。
