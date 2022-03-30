@@ -11,7 +11,7 @@ $defl! log (&title &r)
 $defl! sort (&lst)
 (
 	$import! std.math <? >=?;
-	$if ($or? (null? lst) (null? (rest& lst))) (forward! lst)
+	$if ($or (null? lst) (null? (rest& lst))) (forward! lst)
 	(
 		log "partial result: "
 		(
