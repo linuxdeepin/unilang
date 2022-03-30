@@ -1616,7 +1616,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　同 `$and?` ，但作为应用子，对每个参数都求值一次，而不短路求值，也不保证参数求值顺序。
 
-`or <test>...`
+`or <object>...`
 
 　　求值参数的逻辑或。
 
@@ -2391,11 +2391,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `>` ：同数学库函数 `>?` 。
 	* `<=` ：同数学库函数 `<=?` 。
 	* `>=` ：同数学库函数 `>=?` 。
-	* `and` ：同核心库函数 `$and` 。
 	* `def` ：同核心库函数 `$def!` 。
 	* `import` ：同核心库函数 `$import!` 。
 	* `not` ：同核心库函数 `not?` 。
-	* `or` ：同核心库函数 `$or` 。
 	* `unless` ：同核心库函数 `$unless` 。
 	* `until` ：同核心库函数 `$until` 。
 	* `when` ：同核心库函数 `$when` 。
