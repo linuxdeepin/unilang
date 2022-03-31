@@ -2120,6 +2120,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　数论除法：计算参数截断取整的整除的商。
 
+`truncate-remainder <integer1> <integer2>`
+
+　　数论除法：计算参数截断取整的整除的余数。
+
 `div <int> <int>`
 
 　　整除：结果是 `<int>` 类型的商。

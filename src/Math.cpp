@@ -1471,6 +1471,12 @@ TruncateQuotient(ResolvedArg<>&& x, ResolvedArg<>&& y)
 	return NumBinaryOp<GBDivRem<BTruncatePolicy, BQuotientPolicy>>(x, y);
 }
 
+ValueObject
+TruncateRemainder(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BTruncatePolicy, BRemainderPolicy>>(x, y);
+}
+
 
 void
 ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
