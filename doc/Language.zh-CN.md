@@ -1971,6 +1971,15 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 		* 计算结果中真值等于 0 的数值以及 NaN 值的符号是未指定的。
 		* 若计算结果中无限大数值不能通过数学上有意义的方式确定符号，则对应的数值操作结果是无限大值或 NaN 之一，具体选择未指定。
 
+　　所有除法和取余数的计算符合除法约定：
+
+* 二元除法或者取余数的操作中，第一个参数是被除数，第二个参数是除数。
+* 当除数是不精确数 0 时：
+	* 若被除数是非零有限数值或无限大值，则商的符号同被除数的符号。
+	* 否则，商的符号未指定。
+* 当被除数是不精确数时，若除数是精确数 0 ，则结果除符号外同除数是不精确数 0 的情形。
+* 同时计算商和余数的操作的结果是商和余数构成的列表。
+
 `number? <object>`
 
 　　`<number>` 的类型谓词。
@@ -2090,6 +2099,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 `abs <real>`
 
 　　计算参数的绝对值。
+
+`floor/ <integer1> <integer2>`
+
+　　数论除法：计算参数向下取整的整除的商和余数。
 
 `div <int> <int>`
 
