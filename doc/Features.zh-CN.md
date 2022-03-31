@@ -459,26 +459,40 @@ $def! my-module $provide! (exported-symbol-x exported-symbol-y)
 $import! my-module exported-symbol-x;
 ```
 
-## 加载外部翻译单元
+## I/O 库
 
-　　函数 `load` 以参数指定路径的文件作为 Unilang 基础语言源文件，在当前环境中加载并求值，如：
+　　输入/输出(I/O) 的接口在标准库模块 `std.io` 提供。
+
+　　大多数函数只考虑副作用，因此结果是 `#inert` 。
+
+　　一些函数也直接在初始化时被自动隐式地导入，包括：
+
+* `newline`
+* `load`
+* `display`
+* `puts`
+
+　　函数 `newline` 在标准输出中输出换行，调用方式为：
 
 ```
-load "external.txt"
+() newline;
 ```
-
-## 标准输出
-
 　　函数 `display` 在标准输出中输出参数的人类可读的外部表示，如：
 
 ```
 display "FOO";
 ```
 
-　　函数 `newline` 在标准输出中输出换行，调用方式为：
+　　函数 `load` 以参数指定路径的文件作为 Unilang 基础语言源文件，读取其中的内容作为源代码在当前环境中并求值，如：
 
 ```
-() newline;
+load "external.txt"
+```
+
+　　函数 `puts` 在标准输出中输出参数字符串并换行，如：
+
+```
+puts "FOO";
 ```
 
 # 上层语言
