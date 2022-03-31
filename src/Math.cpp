@@ -780,6 +780,127 @@ struct ReplaceAbs
 };
 
 
+template<class _tOpPolicy>
+struct GBDivRemBase
+{
+	using result_type = typename _tOpPolicy::result_type;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline result_type
+	operator()(const _type& x, const _type& y, yimpl(
+		ystdex::enable_if_t<std::is_unsigned<_type>::value, int> = 0)) const
+	{
+		if(y != 0)
+			return _tOpPolicy::DoInt(x, y);
+		ThrowDivisionByZero();
+	}
+};
+
+
+template<class _tPolicy, class _tOpPolicy>
+struct GBDivRem : GBDivRemBase<_tOpPolicy>
+{
+	using typename GBDivRemBase<_tOpPolicy>::result_type;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline yimpl(ystdex::enable_if_t)<
+		std::is_floating_point<_type>::value, result_type>
+	operator()(const _type& x, const _type& y) const
+	{
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Push
+	YB_Diag_Ignore(float-equal)
+#endif
+		if(FloatIsInteger(x))
+		{
+			if(FloatIsInteger(y))
+				return _tOpPolicy::DoFloat(_tPolicy::FloatQuotient(x, y), x, y);
+			ThrowTypeErrorForInteger(y);
+		}
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Pop
+#endif
+		ThrowTypeErrorForInteger(x);
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline result_type
+	operator()(const _type& x, const _type& y) const
+	{
+		return _tPolicy::Int(_tOpPolicy(), x, y);
+	}
+	using GBDivRemBase<_tOpPolicy>::operator();
+};
+
+
+using DivRemResult = array<ValueObject, 2>;
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline DivRemResult
+DividesOverflow(const _type& x)
+{
+	return {QuotientOverflow(x), _type(0)};
+}
+
+
+struct BDividesPolicy final
+{
+	using result_type = DivRemResult;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoFloat(const _type& q, const _type& x, const _type& y) noexcept
+	{
+		return {q, x - y * q};
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return {_type(x / y), _type(x % y)};
+	}
+};
+
+
+struct BFloorPolicy final
+{
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	FloatQuotient(const _type& x, const _type& y) noexcept
+	{
+		return std::floor(x / y);
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline DivRemResult
+	Int(BDividesPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		if(y > 0)
+		{
+			const _type r(x % y);
+
+			return {_type(x < 0 ? (x + 1) / y - 1 : x / y), r < 0 ? r + y : r};
+		}
+		if(x != std::numeric_limits<_type>::min())
+		{
+			const _type r(x % y);
+
+			return {_type((x - 1) / y - 1), r > 0 ? r + y : r};
+		}
+		if(y != _type(-1))
+		{
+			const _type r(x % y);
+
+			return {_type((x - y + 1) / y), r > 0 ? r + y : r};
+		}
+		return DividesOverflow(x);
+	}
+};
+
+
 YB_ATTR_nodiscard YB_PURE ValueObject
 Promote(NumCode code, const ValueObject& x, NumCode src_code)
 {
@@ -1217,6 +1338,13 @@ ValueObject
 Abs(ResolvedArg<>&& x)
 {
 	return NumUnaryOp<ReplaceAbs>(x);
+}
+
+array<ValueObject, 2>
+FloorDivides(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BFloorPolicy, BDividesPolicy>,
+		BDividesPolicy::result_type>(x, y);
 }
 
 
