@@ -966,6 +966,40 @@ struct BFloorPolicy final
 };
 
 
+struct BTruncatePolicy final
+{
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	FloatQuotient(const _type& x, const _type& y) noexcept
+	{
+		return std::trunc(x / y);
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline DivRemResult
+	Int(BDividesPolicy, const _type& x, const _type& y) noexcept
+	{
+		return y != _type(-1) || x != std::numeric_limits<_type>::min()
+			? DivRemResult{_type(x / y), _type(x % y)} : DividesOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline ValueObject
+	Int(BQuotientPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return y != _type(-1) || x != std::numeric_limits<_type>::min()
+			? _type(x / y) : QuotientOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	Int(BRemainderPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return x % y;
+	}
+};
+
+
 YB_ATTR_nodiscard YB_PURE ValueObject
 Promote(NumCode code, const ValueObject& x, NumCode src_code)
 {
@@ -1422,6 +1456,13 @@ ValueObject
 FloorRemainder(ResolvedArg<>&& x, ResolvedArg<>&& y)
 {
 	return NumBinaryOp<GBDivRem<BFloorPolicy, BRemainderPolicy>>(x, y);
+}
+
+array<ValueObject, 2>
+TruncateDivides(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BTruncatePolicy, BDividesPolicy>,
+		BDividesPolicy::result_type>(x, y);
 }
 
 
