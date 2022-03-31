@@ -123,6 +123,9 @@ TruncateDivides(ResolvedArg<>&&, ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 TruncateQuotient(ResolvedArg<>&&, ResolvedArg<>&&);
 
+YB_ATTR_nodiscard YB_PURE ValueObject
+TruncateRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
+
 
 void
 ReadDecimal(ValueObject&, string_view, string_view::const_iterator);
