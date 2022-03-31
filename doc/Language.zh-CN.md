@@ -2108,6 +2108,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　数论除法：计算参数向下取整的整除的商。
 
+`floor-remainder <integer1> <integer2>`
+
+　　数论除法：计算参数向下取整的整除的余数。
+
 `div <int> <int>`
 
 　　整除：结果是 `<int>` 类型的商。

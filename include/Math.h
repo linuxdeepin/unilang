@@ -114,6 +114,9 @@ FloorDivides(ResolvedArg<>&&, ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 FloorQuotient(ResolvedArg<>&&, ResolvedArg<>&&);
 
+YB_ATTR_nodiscard YB_PURE ValueObject
+FloorRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
+
 
 void
 ReadDecimal(ValueObject&, string_view, string_view::const_iterator);

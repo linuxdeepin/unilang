@@ -885,6 +885,27 @@ struct BQuotientPolicy final
 };
 
 
+struct BRemainderPolicy final
+{
+	using result_type = ValueObject;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoFloat(const _type& q, const _type& x, const _type& y) noexcept
+	{
+		return x - y * q;
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return _type(x % y);
+	}
+};
+
+
 struct BFloorPolicy final
 {
 	template<typename _type>
@@ -931,6 +952,16 @@ struct BFloorPolicy final
 		if(y != _type(-1))
 			return _type((x - y + 1) / y);
 		return QuotientOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	Int(BRemainderPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+
+		const _type r(x % y);
+
+		return (y > 0 ? r < 0 : r > 0) ? r + y : r;
 	}
 };
 
@@ -1385,6 +1416,12 @@ ValueObject
 FloorQuotient(ResolvedArg<>&& x, ResolvedArg<>&& y)
 {
 	return NumBinaryOp<GBDivRem<BFloorPolicy, BQuotientPolicy>>(x, y);
+}
+
+ValueObject
+FloorRemainder(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BFloorPolicy, BRemainderPolicy>>(x, y);
 }
 
 
