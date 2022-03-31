@@ -375,6 +375,8 @@ LoadModule_std_math(Interpreter& intp)
 	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
 	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
 	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor/", FloorDivides);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor-quotient",
+		FloorQuotient);
 	RegisterBinary<Strict, const int, const int>(ctx, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
@@ -957,7 +959,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.28"
+#define APP_VER "0.10.29"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
