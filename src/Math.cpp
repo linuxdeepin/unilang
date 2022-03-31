@@ -864,6 +864,27 @@ struct BDividesPolicy final
 };
 
 
+struct BQuotientPolicy final
+{
+	using result_type = ValueObject;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoFloat(const _type& q, const _type&, const _type&) noexcept
+	{
+		return q;
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		YAssert(y != 0, "Invalid divisor found.");
+		return _type(x / y);
+	}
+};
+
+
 struct BFloorPolicy final
 {
 	template<typename _type>
@@ -897,6 +918,19 @@ struct BFloorPolicy final
 			return {_type((x - y + 1) / y), r > 0 ? r + y : r};
 		}
 		return DividesOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline ValueObject
+	Int(BQuotientPolicy, const _type& x, const _type& y) noexcept
+	{
+		YAssert(y != 0, "Invalid divisor found.");
+		if(y > 0)
+			return _type(x < 0 ? (x + 1) / y - 1 : x / y);
+		if(x != std::numeric_limits<_type>::min())
+			return _type((x - 1) / y - 1);
+		if(y != _type(-1))
+			return _type((x - y + 1) / y);
+		return QuotientOverflow(x);
 	}
 };
 
@@ -1345,6 +1379,12 @@ FloorDivides(ResolvedArg<>&& x, ResolvedArg<>&& y)
 {
 	return NumBinaryOp<GBDivRem<BFloorPolicy, BDividesPolicy>,
 		BDividesPolicy::result_type>(x, y);
+}
+
+ValueObject
+FloorQuotient(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BFloorPolicy, BQuotientPolicy>>(x, y);
 }
 
 
