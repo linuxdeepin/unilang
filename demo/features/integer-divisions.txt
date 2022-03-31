@@ -1,0 +1,34 @@
+"Integer division demos.";
+
+$import! std.math floor/ floor-quotient floor-remainder truncate/
+	truncate-quotient truncate-remainder;
+
+$expect (list 2 1) floor/ 5 2;
+$expect 2 floor-quotient 5 2;
+$expect 1 floor-remainder 5 2;
+$expect (list -3 1) floor/ -5 2;
+$expect -3 floor-quotient -5 2;
+$expect 1 floor-remainder -5 2;
+$expect (list -3 -1) floor/ 5 -2;
+$expect -3 floor-quotient 5 -2;
+$expect -1 floor-remainder 5 -2;
+$expect (list 2 -1) floor/ -5 -2;
+$expect 2 floor-quotient -5 -2;
+$expect -1 floor-remainder -5 -2;
+$expect (list 2 1) truncate/ 5 2;
+$expect 2 truncate-quotient 5 2;
+$expect 1 truncate-remainder 5 2;
+$expect (list -2 -1) truncate/ -5 2;
+$expect -2 truncate-quotient -5 2;
+$expect -1 truncate-remainder -5 2;
+$expect (list -2 1) truncate/ 5 -2;
+$expect -2 truncate-quotient 5 -2;
+$expect 1 truncate-remainder 5 -2;
+$expect (list 2 -1) truncate/ -5 -2;
+$expect 2 truncate-quotient -5 -2;
+$expect -1 truncate-remainder -5 -2;
+$expect (list 2.0 -1.0) truncate/ -5.0 -2;
+$expect 2.0 truncate-quotient -5.0 -2;
+$expect -1.0 truncate-remainder -5.0 -2;
+
+		
