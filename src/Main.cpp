@@ -545,7 +545,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 
 	if(jit)
 		SetupJIT(ctx);
-	env.Bindings["ignore"].Value = TokenValue("#ignore");
+	env.Bindings["ignore"].Value = ValueToken::Ignore;
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
@@ -967,7 +967,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.33"
+#define APP_VER "0.10.34"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
