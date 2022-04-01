@@ -635,15 +635,15 @@ $def! $wvau/e $vau (&p &formals &ef .&body) d
 $def! $wvau/e% $vau (&p &formals &ef .&body) d
 	wrap (eval (cons $vau/e% (cons p (cons formals (cons ef (move! body))))) d);
 $def! $lambda $vau (&formals .&body) d
-	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
+	wrap (eval (cons $vau (cons formals (cons #ignore (move! body)))) d);
 $def! $lambda% $vau (&formals .&body) d
-	wrap (eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+	wrap (eval (cons $vau% (cons formals (cons #ignore (move! body)))) d);
 $def! $lambda/e $vau (&p &formals .&body) d
 	wrap (eval
-		(cons $vau/e (cons p (cons formals (cons ignore (move! body))))) d);
+		(cons $vau/e (cons p (cons formals (cons #ignore (move! body))))) d);
 $def! $lambda/e% $vau (&p &formals .&body) d
 	wrap (eval
-		(cons $vau/e% (cons p (cons formals (cons ignore (move! body))))) d);
+		(cons $vau/e% (cons p (cons formals (cons #ignore (move! body))))) d);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
@@ -967,7 +967,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.34"
+#define APP_VER "0.10.35"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
