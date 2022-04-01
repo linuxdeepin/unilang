@@ -43,6 +43,10 @@
 * GNU coreutils
 * 支持 ISO C++ 11 的 G++ 和与之兼容的 GNU binutils
 
+　　可选依赖：
+
+* 可使用 Clang++ 代替 G++ 。
+
 　　构建使用外部二进制依赖和相关工具：
 
 * libffi
