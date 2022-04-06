@@ -379,7 +379,7 @@ struct GUOp : GUAssertMismatch<_tRet>, _tBase
 	YB_ATTR_nodiscard yconstfn
 		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam, _tRet>
 	operator()(_tParam&& x) const
-		noexcept(noexcept(_tBase::operator()(yforward(x))))
+		noexcept(noexcept(std::declval<GUOp>()._tBase::operator()(yforward(x))))
 	{
 		return _tBase::operator()(yforward(x));
 	}
@@ -397,7 +397,8 @@ struct GBOp : GBAssertMismatch<_tRet>, _tBase
 	YB_ATTR_nodiscard yconstfn
 		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam2, _tRet>
 	operator()(_tParam1&& x, _tParam2&& y) const
-		noexcept(noexcept(_tBase::operator()(yforward(x), yforward(y))))
+		noexcept(noexcept(
+			std::declval<GBOp>()._tBase::operator()(yforward(x), yforward(y))))
 	{
 		return _tBase::operator()(yforward(x), yforward(y));
 	}
