@@ -693,7 +693,8 @@ $defv! $defl/e%! (&f &p &formals .&body) d
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
 $defl%! first (&l)
-	$if ($lvalue-identifier? l) (($lambda% ((@x .)) collapse x) l)
+	$if ($lvalue-identifier? l) (($lambda% ((@x .)) $if (uncollapsed? x)
+		($if (modifiable? x) (idv x) (as-const (idv x))) x) l)
 		(forward-first% idv (expire l));
 $defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
 $defl%! first% (&l)
@@ -968,7 +969,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.38"
+#define APP_VER "0.10.39"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
