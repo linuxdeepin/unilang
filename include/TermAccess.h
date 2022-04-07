@@ -338,13 +338,16 @@ YB_ATTR_nodiscard YB_PURE bool
 IsReferenceTerm(const TermNode&);
 
 YB_ATTR_nodiscard YB_PURE bool
+IsUniqueTerm(const TermNode&);
+
+YB_ATTR_nodiscard YB_PURE bool
+IsModifiableTerm(const TermNode&);
+
+YB_ATTR_nodiscard YB_PURE bool
 IsBoundLValueTerm(const TermNode&);
 
 YB_ATTR_nodiscard YB_PURE bool
 IsUncollapsedTerm(const TermNode&);
-
-YB_ATTR_nodiscard YB_PURE bool
-IsUniqueTerm(const TermNode&);
 
 template<typename _func, class _tTerm>
 auto
