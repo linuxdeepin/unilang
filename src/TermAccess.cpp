@@ -115,6 +115,21 @@ IsReferenceTerm(const TermNode& term)
 }
 
 bool
+IsUniqueTerm(const TermNode& term)
+{
+	return ystdex::invoke_value_or(&TermReference::IsUnique,
+		Unilang::TryAccessLeaf<const TermReference>(term), true);
+}
+
+bool
+IsModifiableTerm(const TermNode& term)
+{
+	return ystdex::invoke_value_or(&TermReference::IsModifiable,
+		Unilang::TryAccessLeaf<const TermReference>(term),
+		!bool(term.Tags & TermTags::Nonmodifying));
+}
+
+bool
 IsBoundLValueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
@@ -127,13 +142,6 @@ IsUncollapsedTerm(const TermNode& term)
 	return ystdex::call_value_or(ystdex::compose(IsReferenceTerm,
 		std::mem_fn(&TermReference::get)),
 		Unilang::TryAccessLeaf<const TermReference>(term));
-}
-
-bool
-IsUniqueTerm(const TermNode& term)
-{
-	return ystdex::invoke_value_or(&TermReference::IsUnique,
-		Unilang::TryAccessLeaf<const TermReference>(term), true);
 }
 
 } // namespace Unilang;
