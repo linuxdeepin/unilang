@@ -191,6 +191,30 @@ cons "y" (list "a" "b"); "same to: "; list "y" "a" "b";
 list* "0" "1" "2" (list "3" "4"); "same to: "; list "0" "1" "2" "3" "4";
 ```
 
+## 对象基本操作
+
+　　以下一元谓词判断操作数指定的一般对象是否满足要求。
+
+* `reference?` 判断参数是否为引用值。
+* `unique?` 判断参数是否为被引用的被绑定对象左值。
+* `modifiable?` 判断参数是否为可修改对象或可修改对象的引用值。
+* `bound-lvalue?` 判断参数是否为未折叠的引用值。
+* `uncollapsed?` 判断参数是否为未折叠的引用值。
+
+　　以下一元函数取对象对应的引用值；当参数不是引用值时，结果是参数。
+
+* `as-const <object>` 取指定对象的不可修改的引用。
+* `expire <object>` 取指定对象的唯一引用。
+
+　　结合以上函数可以通过现有的引用值取其它引用值或判断引用值具有的性质。如：
+
+```
+$def! x "";
+reference? x; "=> #t";
+unique? (expire x); "=> #t";
+modifiable? (as-const x); "#f";
+```
+
 ## 环境和求值操作
 
 　　函数 `get-current-environment` 取当前环境的弱引用。
