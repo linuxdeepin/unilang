@@ -191,12 +191,19 @@ $let ()
 (
 	$expect () list* ();
 	$expect () list*% ();
-	$def! a list 2 3;
-	subinfo "list lvalue elements read and move";
-	$expect 2 first (id a);
-	$expect 2 first a;
-	$expect 2 first (as-const (expire a));
-	$expect 2 first (expire a)
+	$let ((a list 2 3))
+	(
+		subinfo "list lvalue elements accesses";
+		$expect 2 first (id a);
+		$expect 2 first a;
+		$check reference? (first a);
+		$def! n 1;
+		$check reference? (first% (list% n 2));
+		subinfo "list xvalue elements accesses";
+		$expect 2 first (as-const (expire a));
+		$expect 2 first (expire a);
+		$expect-moved first a
+	)
 );
 
 info "local bindings";
