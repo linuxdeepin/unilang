@@ -1,0 +1,7 @@
+"Object primitives demos.";
+
+$def! x "";
+$check reference? x;
+$check unique? (expire x);
+$check not? (modifiable? (as-const x));
+
