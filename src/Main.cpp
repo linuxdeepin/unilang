@@ -553,9 +553,10 @@ LoadFunctions(Interpreter& intp, bool jit)
 	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
 	RegisterUnary(ctx, "list?", ComposeReferencedTermOp(IsList));
 	RegisterUnary(ctx, "reference?", IsReferenceTerm);
+	RegisterUnary(ctx, "unique?", IsUniqueTerm);
+	RegisterUnary(ctx, "modifiable?", IsModifiableTerm);
 	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
-	RegisterUnary(ctx, "unique?", IsUniqueTerm);
 	RegisterStrict(ctx, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
 	RegisterStrict(ctx, "expire",
@@ -967,7 +968,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.35"
+#define APP_VER "0.10.37"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

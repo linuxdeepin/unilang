@@ -1042,19 +1042,23 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　判断操作数是否为引用值。
 
-`uncollapsed? <object>`
-
-　　判断操作数是否为未折叠的引用值。
-
 `unique? <object>`
 
 　　判断操作数是否为唯一引用。
+
+`modifiable? <object>`
+
+　　判断操作数是否为可修改对象或可修改对象的引用值。
 
 `bound-lvalue? <object>`
 
 　　判断操作数是否为被引用的被绑定对象左值。
 
 **注释** 绑定临时对象的引用类型的参数不被视为左值引用。
+
+`uncollapsed? <object>`
+
+　　判断操作数是否为未折叠的引用值。
 
 `as-const <object>`
 
