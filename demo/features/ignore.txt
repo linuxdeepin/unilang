@@ -1,0 +1,7 @@
+"The ignore object demo.";
+
+$def! $lambda $vau (formals .body) d wrap
+	(eval (cons $vau (cons formals (cons ignore body))) d);
+
+($lambda (x) x) 42;
+

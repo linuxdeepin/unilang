@@ -108,6 +108,24 @@ Divides(ResolvedArg<>&&, ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 Abs(ResolvedArg<>&&);
 
+YB_ATTR_nodiscard YB_PURE array<ValueObject, 2>
+FloorDivides(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+FloorQuotient(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+FloorRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE array<ValueObject, 2>
+TruncateDivides(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+TruncateQuotient(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+TruncateRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
+
 
 void
 ReadDecimal(ValueObject&, string_view, string_view::const_iterator);

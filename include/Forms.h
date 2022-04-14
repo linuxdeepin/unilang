@@ -1,11 +1,12 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Forms_h_
 #define INC_Unilang_Forms_h_ 1
 
 #include "Evaluation.h" // for ReductionStatus, TermNode, ReferenceTerm,
 //	YSLib::EmplaceCallResult, yforward, Unilang::Deref,
-//	Unilang::AccessTypedValue, Strict, Unilang::RegisterHandler, Context;
+//	Unilang::EmplaceCallResultOrReturn, Unilang::AccessTypedValue, Strict,
+//	Unilang::RegisterHandler, Context;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <cassert> // for assert;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy,
@@ -172,20 +173,6 @@ public:
 namespace Forms
 {
 
-YB_ATTR_nodiscard YB_STATELESS constexpr ReductionStatus
-EmplaceCallResultOrReturn(TermNode&, ReductionStatus status) noexcept
-{
-	return status;
-}
-template<typename _tParam, typename... _tParams, yimpl(
-	typename = ystdex::exclude_self_t<ReductionStatus, _tParam>)>
-YB_ATTR_nodiscard inline ReductionStatus
-EmplaceCallResultOrReturn(TermNode& term, _tParam&& arg)
-{
-	YSLib::EmplaceCallResult(term.Value, yforward(arg), term.get_allocator());
-	return ReductionStatus::Clean;
-}
-
 template<typename _func, typename... _tParams>
 inline auto
 CallRawUnary(_func&& f, TermNode& term, _tParams&&... args)
@@ -232,7 +219,7 @@ ReductionStatus
 CallUnary(_func&& f, TermNode& term, _tParams&&... args)
 {
 	return Forms::CallRawUnary([&](TermNode& tm){
-		return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
+		return Unilang::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 			ystdex::make_expanded<void(TermNode&, _tParams&&...)>(std::ref(f)),
 			tm, yforward(args)...));
 	}, term);
@@ -258,7 +245,7 @@ CallBinary(_func&& f, TermNode& term, _tParams&&... args)
 	auto i(term.begin());
 	auto& x(Unilang::Deref(++i));
 
-	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
+	return Unilang::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 		ystdex::make_expanded<void(TermNode&, TermNode&, _tParams&&...)>(
 		std::ref(f)), x, Unilang::Deref(++i), yforward(args)...));
 }
@@ -272,7 +259,7 @@ CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
 	auto i(term.begin());
 	auto&& x(Unilang::AccessTypedValue<_type>(Unilang::Deref(++i)));
 
-	return Forms::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
+	return Unilang::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 		ystdex::make_expanded<void(decltype(x), decltype(
 		Unilang::AccessTypedValue<_type2>(*i)), _tParams&&...)>(std::ref(f)),
 		yforward(x), Unilang::AccessTypedValue<_type2>(Unilang::Deref(++i)),
@@ -289,7 +276,7 @@ CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
 		return Unilang::AccessTypedValue<_type>(Unilang::Deref(it));
 	}));
 
-	return Forms::EmplaceCallResultOrReturn(term, std::accumulate(j, std::next(
+	return Unilang::EmplaceCallResultOrReturn(term, std::accumulate(j, std::next(
 		j, typename std::iterator_traits<decltype(j)>::difference_type(n)), val,
 		ystdex::bind1(f, std::placeholders::_2, yforward(args)...)));
 }

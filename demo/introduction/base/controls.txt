@@ -1,0 +1,8 @@
+﻿"Control operator demos.";
+
+$def! x ();
+display "x is ";
+display ($if (null? x) "empty" "not empty");
+
+
+

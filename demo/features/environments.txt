@@ -1,0 +1,23 @@
+﻿"Environments demos.";
+
+$def! $quote unwrap idv;
+
+"Environments can be referred like the following statements.";
+
+$def! current () get-current-environment;
+$def! new () make-environment;
+$def! locked lock-environment current;
+$def! locked-current () lock-current-environment;
+$def! base-env () make-standard-environment;
+
+"Evaluation uses environments.";
+
+$expect current eval ($quote current) current;
+$expect new eval ($quote new) current;
+
+"The following evaluations are equivalent.";
+eval (list display "Hello, world") (() get-current-environment);
+display "Hello, world";
+
+"However, the ground environment is not available directly in user programs.";
+

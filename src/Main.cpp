@@ -1,8 +1,9 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for Interpreter, ValueObject;
+#include "Interpreter.h" // for Interpreter, ValueObject, string_view,
+//	string;
 #include <cstdlib> // for std::getenv;
-#include "Context.h" // for EnvironmentSwitcher,
+#include "Context.h" // for Context, EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
@@ -11,9 +12,9 @@
 #include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
-//	ThrowValueCategoryError, ComposeReferencedTermOp, IsBoundLValueTerm,
-//	IsUncollapsedTerm, EnvironmentReference, TermNode, IsBranchedList,
-//	ThrowInsufficientTermsError;
+//	ThrowValueCategoryError, IsTypedRegular, ComposeReferencedTermOp,
+//	IsReferenceTerm, IsBoundLValueTerm, IsUncollapsedTerm, IsUniqueTerm,
+//	EnvironmentReference, TermNode, IsBranchedList, ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
 //	form implementations;
@@ -78,6 +79,7 @@ DoMoveOrTransfer(void(&f)(TermNode&, TermNode&, bool), TermNode& term)
 	RetainN(term);
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		f(term, nd, !p_ref || p_ref->IsModifiable());
+		EnsureValueTags(term.Tags);
 	}, *std::next(term.begin()));
 	return ReductionStatus::Retained;
 }
@@ -91,6 +93,15 @@ Qualify(TermNode& term, TermTags tag_add)
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
 	}, term);
+}
+
+YB_ATTR_nodiscard TermNode
+MoveResolvedValue(const Context& ctx, string_view id)
+{
+	auto tm(MoveResolved(ctx, id));
+
+	EnsureValueTags(tm.Tags);
+	return tm;
 }
 
 void
@@ -148,7 +159,8 @@ struct LeafPred
 {
 	template<typename _func>
 	YB_ATTR_nodiscard YB_PURE bool
-	operator()(const TermNode& nd, _func f) const ynoexcept_spec(f(nd.Value))
+	operator()(const TermNode& nd, _func f) const
+		noexcept(noexcept(f(nd.Value)))
 	{
 		return IsLeaf(nd) && f(nd.Value);
 	}
@@ -206,6 +218,9 @@ LoadModule_std_strings(Interpreter& intp)
 	using namespace Forms;
 	auto& ctx(intp.Root.GetRecordRef());
 
+	RegisterUnary(ctx, "string?", [](const TermNode& x) noexcept{
+		return IsTypedRegular<string>(ReferenceTerm(x));
+	});
 	RegisterStrict(ctx, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
 		string(), std::placeholders::_1));
@@ -360,6 +375,17 @@ LoadModule_std_math(Interpreter& intp)
 	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "*", Multiplies);
 	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
 	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor/", FloorDivides);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor-quotient",
+		FloorQuotient);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor-remainder",
+		FloorRemainder);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "truncate/",
+		TruncateDivides);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "truncate-quotient",
+		TruncateQuotient);
+	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "truncate-remainder",
+		TruncateRemainder);
 	RegisterBinary<Strict, const int, const int>(ctx, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
@@ -448,7 +474,7 @@ $provide/let! (registered-requirement? register-requirement!
 	(
 	$def! registry () make-environment;
 	$defl! bound-name? (&req)
-		$and? (eval (list bound? req) registry)
+		$and (eval (list bound? req) registry)
 			(not? (string-empty? (eval (string->symbol req) registry))),
 	$defl! set-value! (&req &v)
 		eval (list $def! (string->symbol req) v) registry
@@ -520,12 +546,16 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 
 	if(jit)
 		SetupJIT(ctx);
-	env.Bindings["ignore"].Value = TokenValue("#ignore");
+	env.Bindings["ignore"].Value = ValueToken::Ignore;
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eqv?", EqValue);
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterUnary(ctx, "list?", ComposeReferencedTermOp(IsList));
+	RegisterUnary(ctx, "reference?", IsReferenceTerm);
+	RegisterUnary(ctx, "unique?", IsUniqueTerm);
+	RegisterUnary(ctx, "modifiable?", IsModifiableTerm);
 	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
 	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
 	RegisterStrict(ctx, "as-const",
@@ -557,7 +587,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 		return wenv.Lock();
 	});
 	RegisterForm(ctx, "$move-resolved!",
-		std::bind(DoResolve, std::ref(MoveResolved), _1, _2));
+		std::bind(DoResolve, std::ref(MoveResolvedValue), _1, _2));
 	RegisterStrict(ctx, "make-environment", MakeEnvironment);
 	RegisterUnary<Strict, const shared_ptr<Environment>>(ctx,
 		"weaken-environment", [](const shared_ptr<Environment>& p_env) noexcept{
@@ -607,15 +637,15 @@ $def! $wvau/e $vau (&p &formals &ef .&body) d
 $def! $wvau/e% $vau (&p &formals &ef .&body) d
 	wrap (eval (cons $vau/e% (cons p (cons formals (cons ef (move! body))))) d);
 $def! $lambda $vau (&formals .&body) d
-	wrap (eval (cons $vau (cons formals (cons ignore (move! body)))) d);
+	wrap (eval (cons $vau (cons formals (cons #ignore (move! body)))) d);
 $def! $lambda% $vau (&formals .&body) d
-	wrap (eval (cons $vau% (cons formals (cons ignore (move! body)))) d);
+	wrap (eval (cons $vau% (cons formals (cons #ignore (move! body)))) d);
 $def! $lambda/e $vau (&p &formals .&body) d
 	wrap (eval
-		(cons $vau/e (cons p (cons formals (cons ignore (move! body))))) d);
+		(cons $vau/e (cons p (cons formals (cons #ignore (move! body))))) d);
 $def! $lambda/e% $vau (&p &formals .&body) d
 	wrap (eval
-		(cons $vau/e% (cons p (cons formals (cons ignore (move! body))))) d);
+		(cons $vau/e% (cons p (cons formals (cons #ignore (move! body))))) d);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
@@ -663,15 +693,16 @@ $defv! $defl/e%! (&f &p &formals .&body) d
 	eval (list* $def! f $lambda/e% p formals (move! body)) d;
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
-$defl%! first (%l)
-	$if ($lvalue-identifier? l) (($lambda% ((@x .)) collapse x) l)
+$defl%! first (&l)
+	$if ($lvalue-identifier? l) (($lambda% ((@x .)) $if (uncollapsed? x)
+		($if (modifiable? x) (idv x) (as-const (idv x))) x) l)
 		(forward-first% idv (expire l));
 $defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
-$defl%! first% (%l)
+$defl%! first% (&l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
 	($lambda% ((@x .)) collapse x) (check-list-reference (forward! l));
-$defl! firstv ((&x .)) x;
+$defl! firstv ((&x .)) $move-resolved! x;
 $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
 $defl%! rest& (&l)
@@ -700,16 +731,25 @@ $defv%! $until (&test .&exprseq) d
 		(eval% (list* () $sequence exprseq) d)
 		(eval% (list* () $until (move! test) (move! exprseq)) d);
 $defl! not? (x) eqv? x #f;
-$defv! $and? x d $cond
+$defv! $and x d $cond
 	((null? x) #t)
 	((null? (rest x)) eval (first x) d)
-	((eval (first x) d) apply (wrap $and?) (rest x) d)
+	((eval (first x) d) apply (wrap $and) (rest x) d)
 	(#t #f);
-$defv! $or? x d $cond
+$defv! $or x d $cond
 	((null? x) #f)
 	((null? (rest x)) eval (first x) d)
 	(#t ($lambda (r) $if r r
-		(apply (wrap $or?) (rest x) d)) (eval (move! (first x)) d));
+		(apply (wrap $or) (rest x) d)) (eval (move! (first x)) d));
+$defl%! and &x $sequence
+	($defl%! and-aux (&h &l) $if (null? l) (forward! h)
+		(and-aux ($if h (forward! (first% l)) #f) (forward! (rest% l))))
+	(and-aux #t (forward! x));
+$defl%! or &x $sequence
+	($defl%! or-aux (&h &l) $if (null? l) (forward! h)
+		($let% ((&c forward! (first% l)))
+			or-aux (forward! ($if c c h)) (forward! (rest% l))))
+	(or-aux #f (forward! x));
 $defw%! accr (&l &pred? &base &head &tail &sum) d
 	$if (apply pred? (list% l) d) (forward! base)
 		(apply sum (list% (apply head (list% l) d)
@@ -733,20 +773,16 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 		$defl%! rulist (&l)
 			$if ($lvalue-identifier? l)
 				(accr (($lambda ((.@xs)) xs) l) null? ()
-					($lambda% (%l) $sequence
-						($def! %x idv (($lambda% ((@x .)) x) l))
+					($lambda% (%l) $sequence ($def! %x idv (first@ l))
 						(($if (uncollapsed? x) idv expire) (expire x))) rest%
-					($lambda (%x &xs)
-						(cons% ($resolve-identifier x) (move! xs))))
+					($lambda (%x &xs) (cons% ($resolve-identifier x) (move! xs))))
 				(idv (forward! l));
-		$defl%! list-extract-first (&l) map1 first l;
-		$defl%! list-extract-rest% (&l) map1 rest% l;
+		$defl%! list-extract-first (&l) map1 first (forward! l);
+		$defl%! list-extract-rest% (&l) map1 rest% (forward! l);
 		$defv%! $lqual (&ls) d
-			($if (eval (list $lvalue-identifier? ls) d) as-const rulist)
-				(eval% ls d);
+			($if (eval (list $lvalue-identifier? ls) d) id rulist) (eval% ls d);
 		$defv%! $lqual* (&x) d
-			($if (eval (list $lvalue-identifier? x) d) as-const expire)
-				(eval% x d);
+			($if (eval (list $lvalue-identifier? x) d) id expire) (eval% x d);
 		$defl%! mk-let ($ctor &bindings &body)
 			list* () (list* $ctor (list-extract-first bindings)
 				(list (move! body))) (list-extract-rest% bindings);
@@ -936,7 +972,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.10.0"
+#define APP_VER "0.11.0"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

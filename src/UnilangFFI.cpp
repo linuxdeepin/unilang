@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #if __GNUC__
 #	pragma GCC diagnostic push
@@ -324,8 +324,16 @@ public:
 		}
 	}
 
-	DefGetter(const noexcept, size_t, BufferSize, buffer_size)
-	DefGetter(const noexcept, size_t, ParameterCount, n_params)
+	size_t
+	GetBufferSize() const noexcept
+	{
+		return buffer_size;
+	}
+	size_t
+	GetParameterCount() const noexcept
+	{
+		return n_params;
+	}
 };
 
 CallInterface&

@@ -1,11 +1,13 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue, ptrdiff_t.
-//	string_view, sfmt;
+#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue,
+//	Unilang::Nonnull, Unilang::Deref, ptrdiff_t, string_view, sfmt;
 #include <ystdex/exception.h> // for ystdex::unsupported;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::_t, ystdex::exclude_self_t,
 //	ystdex::enable_if_t, std::is_floating_point, ystdex::common_type_t;
 #include <cassert> // for assert;
+#include <cstdlib> // for std::abs;
 #include <cmath> // for std::isfinite, std::nearbyint, std::isinf, std::isnan,
 //	std::fmod, std::ldexp, std::pow, std::fp_classify, FP_INFINITE, FP_NAN;
 #include <string> // for std::to_string;
@@ -193,7 +195,7 @@ DoNumLeaf(_tValue& x, _func f)
 	return f(x);
 }
 
-template<typename _type, typename _func, class... _tValue>
+template<typename _type, class... _tValue, typename _func>
 YB_ATTR_nodiscard _type
 DoNumLeafHinted(NumCode code, _func f, _tValue&... xs)
 {
@@ -231,6 +233,14 @@ DoNumLeafHinted(NumCode code, _func f, _tValue&... xs)
 }
 
 
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline ValueObject
+QuotientOverflow(const _type& x)
+{
+	return -MakeExtType<_type>(x);
+}
+
+
 YB_NORETURN void
 AssertMismatch()
 {
@@ -238,11 +248,18 @@ AssertMismatch()
 	YB_ASSUME(false);
 }
 
-YB_NORETURN void
-ThrowTypeErrorForInteger(const std::string& val)
+YB_NORETURN YB_NONNULL(1) void
+ThrowTypeErrorForInteger(const char* val)
 {
-	throw TypeError(ystdex::sfmt(
-		"Expected a value of type 'integer', got '%s'.", val.c_str()));
+	throw
+		TypeError(ystdex::sfmt("Expected a value of type 'integer', got '%s'.",
+		Unilang::Nonnull(val)));
+}
+template<typename _type>
+YB_NORETURN yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value>
+ThrowTypeErrorForInteger(const _type& val)
+{
+	ThrowTypeErrorForInteger(std::to_string(val).c_str());
 }
 
 template<typename _type>
@@ -259,12 +276,33 @@ FloatIsInteger(const _type& x) noexcept
 #endif
 }
 
+YB_NORETURN ValueObject
+ThrowDivisionByZero()
+{
+	throw std::domain_error("Division by zero.");
+}
 
-template<typename _type = void>
+
+template<typename _tRet = void>
 struct GUAssertMismatch
 {
-	YB_NORETURN _type
+	using result_type = _tRet;
+
+	YB_NORETURN result_type
 	operator()(const ValueObject&) const noexcept
+	{
+		AssertMismatch();
+	}
+};
+
+
+template<typename _tRet = ValueObject>
+struct GBAssertMismatch
+{
+	using result_type = _tRet;
+
+	YB_NORETURN result_type
+	operator()(const ValueObject&, const ValueObject&) const noexcept
 	{
 		AssertMismatch();
 	}
@@ -331,11 +369,45 @@ struct DynNumCast : ReportMismatch<ValueObject>
 };
 
 
-struct EqZero : GUAssertMismatch<bool>
+template<class _tBase, typename _tRet = void>
+struct GUOp : GUAssertMismatch<_tRet>, _tBase
 {
-	using GUAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	using _tBase::_tBase;
+
+	using GUAssertMismatch<_tRet>::operator();
+	template<typename _tParam>
+	YB_ATTR_nodiscard constexpr
+		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam, _tRet>
+	operator()(_tParam&& x) const
+		noexcept(noexcept(std::declval<GUOp>()._tBase::operator()(yforward(x))))
+	{
+		return _tBase::operator()(yforward(x));
+	}
+};
+
+
+template<class _tBase, typename _tRet = ValueObject>
+struct GBOp : GBAssertMismatch<_tRet>, _tBase
+{
+	using _tBase::_tBase;
+
+	using GBAssertMismatch<_tRet>::operator();
+	template<typename _tParam1, typename _tParam2,
+		yimpl(typename = ystdex::exclude_self_t<ValueObject, _tParam1>)>
+	YB_ATTR_nodiscard constexpr
+		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam2, _tRet>
+	operator()(_tParam1&& x, _tParam2&& y) const
+		noexcept(noexcept(
+			std::declval<GBOp>()._tBase::operator()(yforward(x), yforward(y))))
+	{
+		return _tBase::operator()(yforward(x), yforward(y));
+	}
+};
+
+
+struct EqZero
+{
+	template<typename _type>
 	YB_ATTR_nodiscard YB_PURE constexpr bool
 	operator()(const _type& x) const noexcept
 	{
@@ -351,11 +423,9 @@ struct EqZero : GUAssertMismatch<bool>
 };
 
 
-struct Positive : GUAssertMismatch<bool>
+struct Positive
 {
-	using GUAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	template<typename _type>
 	YB_ATTR_nodiscard YB_PURE constexpr bool
 	operator()(const _type& x) const noexcept
 	{
@@ -364,11 +434,9 @@ struct Positive : GUAssertMismatch<bool>
 };
 
 
-struct Negative : GUAssertMismatch<bool>
+struct Negative
 {
-	using GUAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
+	template<typename _type>
 	YB_ATTR_nodiscard YB_PURE constexpr bool
 	operator()(const _type& x) const noexcept
 	{
@@ -377,58 +445,40 @@ struct Negative : GUAssertMismatch<bool>
 };
 
 
-struct Odd : GUAssertMismatch<bool>
+struct Odd
 {
-	using GUAssertMismatch<bool>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type, bool>)
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value, bool>
 	operator()(const _type& x) const
-	{
-		return Do(x);
-	}
-
-private:
-	template<typename _type>
-	static inline
-		ystdex::enable_if_t<std::is_floating_point<_type>::value, bool>
-	Do(const _type& x)
 	{
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Push
 	YB_Diag_Ignore(float-equal)
 #endif
 		if(FloatIsInteger(x))
-			return std::fmod(x, _type(2)) == _type(1);
+			return std::fmod(x, _type(2)) != _type(0);
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Pop
 #endif
-		ThrowTypeErrorForInteger(std::to_string(x));
+		ThrowTypeErrorForInteger(x);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
-	static inline bool
-	Do(const _type& x) noexcept
+	YB_ATTR_nodiscard YB_PURE inline bool
+	operator()(const _type& x) const noexcept
 	{
 		return x % _type(2) != _type(0);
 	}
 };
 
 
-struct Even : GUAssertMismatch<bool>
+struct Even
 {
-	using GUAssertMismatch<bool>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type, bool>)
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value, bool>
 	operator()(const _type& x) const
-	{
-		return Do(x);
-	}
-
-private:
-	template<typename _type>
-	static inline
-		ystdex::enable_if_t<std::is_floating_point<_type>::value, bool>
-	Do(const _type& x)
 	{
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Push
@@ -439,49 +489,22 @@ private:
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
 	YB_Diag_Pop
 #endif
-		ThrowTypeErrorForInteger(std::to_string(x));
+		ThrowTypeErrorForInteger(x);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
-	static inline bool
-	Do(const _type& x) noexcept
+	YB_ATTR_nodiscard YB_PURE inline bool
+	operator()(const _type& x) const noexcept
 	{
 		return x % _type(2) == _type(0);
 	}
 };
 
 
-template<typename _type = ValueObject>
-struct GBAssertMismatch
+struct BMax
 {
-	YB_NORETURN _type
-	operator()(const ValueObject&, const ValueObject&) const noexcept
-	{
-		AssertMismatch();
-	}
-};
-
-
-template<class _tBase>
-struct GBCompare : GBAssertMismatch<bool>, _tBase
-{
-	using GBAssertMismatch<bool>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline bool
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return _tBase::operator()(x, y);
-	}
-};
-
-
-struct BMax : GBAssertMismatch<>
-{
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
 	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x > y ? x : y;
@@ -489,12 +512,10 @@ struct BMax : GBAssertMismatch<>
 };
 
 
-struct BMin : GBAssertMismatch<>
+struct BMin
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
 	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x < y ? x : y;
@@ -502,101 +523,72 @@ struct BMin : GBAssertMismatch<>
 };
 
 
-struct AddOne : GUAssertMismatch<>
+struct AddOne
 {
-	ValueObject& Result;
+	lref<ValueObject> Result;
 
-	AddOne(ValueObject& res)
+	AddOne(ValueObject& res) noexcept
 		: Result(res)
 	{}
 
-	using GUAssertMismatch<>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	inline yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value>
 	operator()(_type& x) const noexcept
-	{
-		Perform(x);
-	}
-
-private:
-	template<typename _type>
-	inline ystdex::enable_if_t<std::is_floating_point<_type>::value>
-	Perform(_type& x) const noexcept
 	{
 		x += _type(1);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
 	inline void
-	Perform(_type& x) const
+	operator()(_type& x) const
 	{
 		if(x != std::numeric_limits<_type>::max())
 			++x;
 		else
-			Result = ValueObject(MakeExtType<_type>(x) + 1);
+			Result.get() = ValueObject(MakeExtType<_type>(x) + 1);
 	}
 };
 
-struct SubOne : GUAssertMismatch<>
+struct SubOne
 {
-	ValueObject& Result;
+	lref<ValueObject> Result;
 
-	SubOne(ValueObject& res)
+	SubOne(ValueObject& res) noexcept
 		: Result(res)
 	{}
 
-	using GUAssertMismatch<>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	inline yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>::value>
 	operator()(_type& x) const noexcept
-	{
-		Perform(x);
-	}
-
-private:
-	template<typename _type>
-	inline ystdex::enable_if_t<std::is_floating_point<_type>::value>
-	Perform(_type& x) const noexcept
 	{
 		x -= _type(1);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		!std::is_floating_point<_type>::value, int> = 0)>
 	inline void
-	Perform(_type& x) const
+	operator()(_type& x) const
 	{
 		if(x != std::numeric_limits<_type>::min())
 			--x;
 		else
-			Result = ValueObject(MakeNExtType<_type>(x) - 1);
+			Result.get() = ValueObject(MakeNExtType<_type>(x) - 1);
 	}
 };
 
 
-struct BPlus : GBAssertMismatch<>
+struct BPlus
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return Do(x, y);
-	}
-
-private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x + y;
 	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_add_overflow)
 		_type r;
@@ -616,8 +608,8 @@ private:
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_add_overflow)
 		_type r;
@@ -635,30 +627,19 @@ private:
 };
 
 
-struct BMinus : GBAssertMismatch<>
+struct BMinus
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return Do(x, y);
-	}
-
-private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x - y;
 	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_sub_overflow)
 		_type r;
@@ -680,8 +661,8 @@ private:
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 		if(y <= x)
 			return x - y;
@@ -690,29 +671,19 @@ private:
 };
 
 
-struct BMultiplies : GBAssertMismatch<>
+struct BMultiplies
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
-	operator()(const _type& x, const _type& y) const noexcept
-	{
-		return Do(x, y);
-	}
-
-private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
 	{
 		return x * y;
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_integral<_type>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
 	{
 #if __has_builtin(__builtin_mul_overflow)
 		_type r;
@@ -732,116 +703,301 @@ private:
 };
 
 
-struct BDivides : GBAssertMismatch<>
+struct BDivides
 {
-	using GBAssertMismatch<>::operator();
-	template<typename _type,
-		yimpl(typename = ystdex::exclude_self_t<ValueObject, _type>)>
-	inline ValueObject
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline
+		yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value, _type>
+	operator()(const _type& x, const _type& y) const noexcept
+	{
+		return x / y;
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
 	operator()(const _type& x, const _type& y) const
 	{
-		return Do(x, y);
+		return y != 0 ? (y != _type(-1) || x != std::numeric_limits<
+			_type>::min() ? DoInt(x, y) : QuotientOverflow(x))
+			: ThrowDivisionByZero();
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		std::is_unsigned<_type>::value, long> = 0L)>
+	YB_ATTR_nodiscard YB_PURE inline ValueObject
+	operator()(const _type& x, const _type& y) const
+	{
+		return y != 0 ? DoInt(x, y) : ThrowDivisionByZero();
 	}
 
 private:
 	template<typename _type>
-	static inline
-		ystdex::enable_if_t<!std::is_integral<_type>::value, _type>
-	Do(const _type& x, const _type& y) noexcept
-	{
-		return x / y;
-	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
-	{
-		if(y != 0)
-		{
-			if(y != _type(-1) || x != std::numeric_limits<_type>::min())
-				return DoInt(x, y);
-			if(std::numeric_limits<_type>::min()
-				== std::numeric_limits<long long>::min())
-				return -double(x);
-			return -MakeExtType<_type>(x);
-		}
-		ThrowDivideByZero();
-	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		std::is_unsigned<_type>::value, long> = 0L)>
-	static inline ValueObject
-	Do(const _type& x, const _type& y)
-	{
-		if(y != 0)
-			return DoInt(x, y);
-		ThrowDivideByZero();
-	}
-
-	template<typename _type>
-	static inline ValueObject
+	YB_ATTR_nodiscard YB_PURE static inline ValueObject
 	DoInt(const _type& x, const _type& y) noexcept
 	{
 		static_assert(std::is_integral<_type>(), "Invalid type found.");
 
 		assert(y != 0 && "Invalid value found.");
 
-		_type r(x / y);
+		const _type r(x / y);
 
 		if(r * y == x)
 			return r;
 		return double(x) / double(y);
 	}
-
-	YB_NORETURN static ValueObject
-	ThrowDivideByZero()
-	{
-		throw std::domain_error("Division by zero.");
-	}
 };
 
 
-struct ReplaceAbs : GUAssertMismatch<>
+struct ReplaceAbs
 {
-	ValueObject& Result;
+	lref<ValueObject> Result;
 
-	ReplaceAbs(ValueObject& res)
+	ReplaceAbs(ValueObject& res) noexcept
 		: Result(res)
 	{}
 
-	using GUAssertMismatch<>::operator();
 	template<typename _type>
-	inline yimpl(ystdex::exclude_self_t<ValueObject, _type>)
+	inline yimpl(ystdex::enable_if_t)<!std::is_integral<_type>::value>
 	operator()(_type& x) const
-	{
-		Perform(x);
-	}
-
-private:
-	template<typename _type>
-	inline ystdex::enable_if_t<!std::is_integral<_type>::value>
-	Perform(_type& x) const
 	{
 		using std::abs;
 
 		x = abs(x);
 	}
-	template<typename _type, yimpl(ystdex::enable_if_t<
-		ystdex::and_<std::is_integral<_type>,
-		std::is_signed<_type>>::value, int> = 0)>
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
 	inline void
-	Perform(_type& x) const
+	operator()(_type& x) const
 	{
 		if(x != std::numeric_limits<_type>::min())
 			x = _type(std::abs(x));
 		else
-			Result = -MakeExtType<_type>(x);
+			Result.get() = QuotientOverflow(x);
 	}
 	template<typename _type, yimpl(ystdex::enable_if_t<
 		std::is_unsigned<_type>::value, long> = 0L)>
 	inline void
-	Perform(_type&) const noexcept
+	operator()(_type&) const noexcept
 	{}
+};
+
+
+template<class _tOpPolicy>
+struct GBDivRemBase
+{
+	using result_type = typename _tOpPolicy::result_type;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline result_type
+	operator()(const _type& x, const _type& y, yimpl(
+		ystdex::enable_if_t<std::is_unsigned<_type>::value, int> = 0)) const
+	{
+		if(y != 0)
+			return _tOpPolicy::DoInt(x, y);
+		ThrowDivisionByZero();
+	}
+};
+
+
+template<class _tPolicy, class _tOpPolicy>
+struct GBDivRem : GBDivRemBase<_tOpPolicy>
+{
+	using typename GBDivRemBase<_tOpPolicy>::result_type;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE inline yimpl(ystdex::enable_if_t)<
+		std::is_floating_point<_type>::value, result_type>
+	operator()(const _type& x, const _type& y) const
+	{
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Push
+	YB_Diag_Ignore(float-equal)
+#endif
+		if(FloatIsInteger(x))
+		{
+			if(FloatIsInteger(y))
+				return _tOpPolicy::DoFloat(_tPolicy::FloatQuotient(x, y), x, y);
+			ThrowTypeErrorForInteger(y);
+		}
+#if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
+	YB_Diag_Pop
+#endif
+		ThrowTypeErrorForInteger(x);
+	}
+	template<typename _type, yimpl(ystdex::enable_if_t<ystdex::and_<
+		std::is_integral<_type>, std::is_signed<_type>>::value, int> = 0)>
+	YB_ATTR_nodiscard YB_PURE inline result_type
+	operator()(const _type& x, const _type& y) const
+	{
+		return _tPolicy::Int(_tOpPolicy(), x, y);
+	}
+	using GBDivRemBase<_tOpPolicy>::operator();
+};
+
+
+using DivRemResult = array<ValueObject, 2>;
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline DivRemResult
+DividesOverflow(const _type& x)
+{
+	return {QuotientOverflow(x), _type(0)};
+}
+
+
+struct BDividesPolicy final
+{
+	using result_type = DivRemResult;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoFloat(const _type& q, const _type& x, const _type& y) noexcept
+	{
+		return {q, x - y * q};
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return {_type(x / y), _type(x % y)};
+	}
+};
+
+
+struct BQuotientPolicy final
+{
+	using result_type = ValueObject;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoFloat(const _type& q, const _type&, const _type&) noexcept
+	{
+		return q;
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return _type(x / y);
+	}
+};
+
+
+struct BRemainderPolicy final
+{
+	using result_type = ValueObject;
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoFloat(const _type& q, const _type& x, const _type& y) noexcept
+	{
+		return x - y * q;
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline result_type
+	DoInt(const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return _type(x % y);
+	}
+};
+
+
+struct BFloorPolicy final
+{
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	FloatQuotient(const _type& x, const _type& y) noexcept
+	{
+		return std::floor(x / y);
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline DivRemResult
+	Int(BDividesPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		if(y > 0)
+		{
+			const _type r(x % y);
+
+			return {_type(x < 0 ? (x + 1) / y - 1 : x / y), r < 0 ? r + y : r};
+		}
+		if(x != std::numeric_limits<_type>::min())
+		{
+			const _type r(x % y);
+
+			return {_type((x - 1) / y - 1), r > 0 ? r + y : r};
+		}
+		if(y != _type(-1))
+		{
+			const _type r(x % y);
+
+			return {_type((x - y + 1) / y), r > 0 ? r + y : r};
+		}
+		return DividesOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline ValueObject
+	Int(BQuotientPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		if(y > 0)
+			return _type(x < 0 ? (x + 1) / y - 1 : x / y);
+		if(x != std::numeric_limits<_type>::min())
+			return _type((x - 1) / y - 1);
+		if(y != _type(-1))
+			return _type((x - y + 1) / y);
+		return QuotientOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	Int(BRemainderPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+
+		const _type r(x % y);
+
+		return (y > 0 ? r < 0 : r > 0) ? r + y : r;
+	}
+};
+
+
+struct BTruncatePolicy final
+{
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	FloatQuotient(const _type& x, const _type& y) noexcept
+	{
+		return std::trunc(x / y);
+	}
+
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline DivRemResult
+	Int(BDividesPolicy, const _type& x, const _type& y) noexcept
+	{
+		return y != _type(-1) || x != std::numeric_limits<_type>::min()
+			? DivRemResult{_type(x / y), _type(x % y)} : DividesOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline ValueObject
+	Int(BQuotientPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return y != _type(-1) || x != std::numeric_limits<_type>::min()
+			? _type(x / y) : QuotientOverflow(x);
+	}
+	template<typename _type>
+	YB_ATTR_nodiscard YB_PURE static inline _type
+	Int(BRemainderPolicy, const _type& x, const _type& y) noexcept
+	{
+		assert(y != 0 && "Invalid divisor found.");
+		return x % y;
+	}
 };
 
 
@@ -851,6 +1007,23 @@ Promote(NumCode code, const ValueObject& x, NumCode src_code)
 	return DoNumLeafHinted<ValueObject>(src_code, DynNumCast(code), x);
 }
 
+template<class _tBase>
+YB_ATTR_nodiscard bool
+NumUnaryPredicate(const ValueObject& x) noexcept
+{
+	return DoNumLeaf<bool>(x, GUOp<_tBase, bool>());
+}
+
+template<class _fUnary, typename _tRet = void>
+YB_ATTR_nodiscard ValueObject
+NumUnaryOp(ResolvedArg<>& x)
+{
+	auto res(MoveUnary(x));
+
+	DoNumLeaf<void>(res, GUOp<_fUnary, _tRet>(res));
+	return res;
+}
+
 template<class _fBinary>
 bool
 NumBinaryComp(const ValueObject& x, const ValueObject& y) noexcept
@@ -858,21 +1031,21 @@ NumBinaryComp(const ValueObject& x, const ValueObject& y) noexcept
 	const auto xcode(MapTypeIdToNumCode(x));
 	const auto ycode(MapTypeIdToNumCode(y));
 	const auto ret_bin([](ValueObject u, ValueObject v, NumCode code){
-		return DoNumLeafHinted<bool>(code, _fBinary(), u, v);
+		return DoNumLeafHinted<bool>(code, GBOp<_fBinary, bool>(), u, v);
 	});
 
 	return size_t(xcode) >= size_t(ycode) ? ret_bin(x, Promote(xcode, y, ycode),
 		xcode) : ret_bin(Promote(ycode, x, xcode), y, ycode);
 }
 
-template<class _fBinary>
-ValueObject
+template<class _fBinary, typename _tRet = ValueObject>
+YB_ATTR_nodiscard _tRet
 NumBinaryOp(ResolvedArg<>& x, ResolvedArg<>& y)
 {
 	const auto xcode(MapTypeIdToNumCode(x));
 	const auto ycode(MapTypeIdToNumCode(y));
 	const auto ret_bin([](ValueObject u, ValueObject v, NumCode code){
-		return DoNumLeafHinted<ValueObject>(code, _fBinary(), u, v);
+		return DoNumLeafHinted<_tRet>(code, GBOp<_fBinary, _tRet>(), u, v);
 	});
 
 	return size_t(xcode) >= size_t(ycode) ?
@@ -884,7 +1057,6 @@ NumBinaryOp(ResolvedArg<>& x, ResolvedArg<>& y)
 YB_NORETURN YB_NONNULL(1, 2) void
 ThrowForInvalidLiteralSuffix(const char* sfx, const char* id)
 {
-	// TODO: Use %ThrowInvalidSyntaxError lift from %A1?
 	throw InvalidSyntax(ystdex::sfmt(
 		"Literal suffix '%s' is unsupported in identifier '%s'.", sfx, id));
 }
@@ -1155,62 +1327,62 @@ IsNaN(const ValueObject& x) noexcept
 bool
 Equal(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::equal_to<>>>(x, y);
+	return NumBinaryComp<ystdex::equal_to<>>(x, y);
 }
 
 bool
 Less(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::less<>>>(x, y);
+	return NumBinaryComp<ystdex::less<>>(x, y);
 }
 
 bool
 Greater(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::greater<>>>(x, y);
+	return NumBinaryComp<ystdex::greater<>>(x, y);
 }
 
 bool
 LessEqual(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::less_equal<>>>(x, y);
+	return NumBinaryComp<ystdex::less_equal<>>(x, y);
 }
 
 bool
 GreaterEqual(const ValueObject& x, const ValueObject& y) noexcept
 {
-	return NumBinaryComp<GBCompare<ystdex::greater_equal<>>>(x, y);
+	return NumBinaryComp<ystdex::greater_equal<>>(x, y);
 }
 
 
 bool
 IsZero(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, EqZero());
+	return NumUnaryPredicate<EqZero>(x);
 }
 
 bool
 IsPositive(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Positive());
+	return NumUnaryPredicate<Positive>(x);
 }
 
 bool
 IsNegative(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Negative());
+	return NumUnaryPredicate<Negative>(x);
 }
 
 bool
 IsOdd(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Odd());
+	return NumUnaryPredicate<Odd>(x);
 }
 
 bool
 IsEven(const ValueObject& x) noexcept
 {
-	return DoNumLeaf<bool>(x, Even());
+	return NumUnaryPredicate<Even>(x);
 }
 
 
@@ -1229,19 +1401,13 @@ Min(ResolvedArg<>&& x, ResolvedArg<>&& y)
 ValueObject
 Add1(ResolvedArg<>&& x)
 {
-	auto res(MoveUnary(x));
-
-	DoNumLeaf<void>(res, AddOne(res));
-	return res;
+	return NumUnaryOp<AddOne>(x);
 }
 
 ValueObject
 Sub1(ResolvedArg<>&& x)
 {
-	auto res(MoveUnary(x));
-
-	DoNumLeaf<void>(res, SubOne(res));
-	return res;
+	return NumUnaryOp<SubOne>(x);
 }
 
 ValueObject
@@ -1271,10 +1437,45 @@ Divides(ResolvedArg<>&& x, ResolvedArg<>&& y)
 ValueObject
 Abs(ResolvedArg<>&& x)
 {
-	auto res(MoveUnary(x));
+	return NumUnaryOp<ReplaceAbs>(x);
+}
 
-	DoNumLeaf<void>(res, ReplaceAbs(res));
-	return res;
+array<ValueObject, 2>
+FloorDivides(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BFloorPolicy, BDividesPolicy>,
+		BDividesPolicy::result_type>(x, y);
+}
+
+ValueObject
+FloorQuotient(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BFloorPolicy, BQuotientPolicy>>(x, y);
+}
+
+ValueObject
+FloorRemainder(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BFloorPolicy, BRemainderPolicy>>(x, y);
+}
+
+array<ValueObject, 2>
+TruncateDivides(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BTruncatePolicy, BDividesPolicy>,
+		BDividesPolicy::result_type>(x, y);
+}
+
+ValueObject
+TruncateQuotient(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BTruncatePolicy, BQuotientPolicy>>(x, y);
+}
+
+ValueObject
+TruncateRemainder(ResolvedArg<>&& x, ResolvedArg<>&& y)
+{
+	return NumBinaryOp<GBDivRem<BTruncatePolicy, BRemainderPolicy>>(x, y);
 }
 
 

@@ -1,0 +1,4 @@
+﻿"Hello world demo: nested display.";
+
+display (display "Hello, world!");
+

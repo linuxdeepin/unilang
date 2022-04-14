@@ -1,0 +1,12 @@
+﻿"Infix transformation demos.";
+
+$let ((A idv) (B 42))
+(
+	"Each group of the following expressions in the are equivalent.";
+	$expect 42 (A; B);
+	$expect 42 ($sequence A B);
+
+	$expect (list A B) (A, B);
+	$expect (list A B) list% A B
+);
+
