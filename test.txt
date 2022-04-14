@@ -1,13 +1,23 @@
-﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
+﻿"#", "(C) 2021-2022 Uniontech Software Technology Co.,Ltd.",
 "Unilang test script.";
 
-$import! std.math =? <? <=? >? >=? stoi itos;
+$import! std.math &=? &<? &<=? &>? &>=? &stoi &itos;
 
 $def! $rem $vau . #ignore "";
 
 info "sanity";
 subinfo "empty expression";
 $expect ();
+subinfo "zeros";
+$expect 0 0;
+$expect 0 +0;
+$expect 0 -0;
+$expect 0 00;
+$expect 0.0 0.0;
+$expect 0.0 +0.0;
+$expect 0.0 0.00;
+$expect 0.0 00.0;
+$expect -0.0 -0.0;
 subinfo "id expressions";
 $expect 42 $let ((a 42)) a;
 $expect 42 $let (('' 42)) '';
@@ -60,6 +70,91 @@ $let ()
 			(fwd? (idv fwd?));
 );
 
+info "reference, reference collapsing and reference assignment";
+$let ()
+(
+	$def! (a b) list 1 2;
+	$def! li list% a 2;
+	$def! lie list% (expire a) 2;
+	$def! li2 list% 3 4;
+	subinfo "expecting different results for 'first&' and 'first@'";
+	$expect #f eq? (first& li) (first@ li);
+	subinfo "collapsing test";
+	$expect #t reference? (first@ li);
+	$expect #t uncollapsed? (first@ li);
+	$expect #t reference? (idv (first@ li));
+	$expect #f uncollapsed? (idv (first@ li));
+	$expect #f unique? (collapse (expire (first@ li)));
+	$expect #t unique? (collapse (expire (first@ lie)));
+	$expect #f unique? (collapse (first@ li));
+	subinfo "the collapsed value category";
+	$expect #f unique? (collapse (first@ lie));
+	subinfo "expecting prvalue for reference to reference";
+	$expect 1 idv (idv (first@ li));
+	$expect 1 idv (idv ((wrap ($vau% (%x) #ignore x)) (first@ li)));
+	$expect 1 idv (idv (($lambda% (%x) x) (first@ li)));
+	subinfo "id and reference tests";
+	$def! a 1;
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #f eqv? (id b) 1;
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #t reference? (id b);
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #t uncollapsed? (id b);
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #t eqv? (idv (idv (id b))) 1;
+	subinfo "idv move! tests";
+	$expect #t eqv? (idv (move! 42)) 42;
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #t eqv? (idv (move! b)) 1;
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #f reference? (idv (move! b));
+	subinfo "move! tests";
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #t eqv? (move! b) 1;
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #t reference? (move! b);
+	$def! b 2;
+	$def! li list% a 2;
+	assign@! b (first@ li);
+	$expect #f uncollapsed? (move! b);
+	subinfo "preventing non-first-class temporary objects";
+	$let ()
+	(
+		$defl! test-nt (&f)
+			$let ((&t (idv unit)) (&u (idv unit)) (&v (idv unit)))
+			(
+				$def! x f t;
+				forward! x;
+				$expect unit x;
+				assign@! x (f u);
+				forward! x;
+				$expect unit x;
+				assign%! x (f v);
+				forward! x;
+				$expect unit x
+			);
+		test-nt move!;
+		test-nt forward!
+	)
+);
+
 info "combiner operations";
 subinfo "combiner equality";
 $let ()
@@ -82,13 +177,13 @@ $let ()
 	subinfo "logical not";
 	$expect #t eqv? ($let ((f #f)) not? f) (not? #f);
 	subinfo "non-strict logical operations";
-	$expect #t () $and?;
-	$expect #f () $or?;
-	$expect #f $and? #f #f;
-	$expect #t $or? #f #t;
-	$expect 2 $and? 1 2;
-	$expect 1 $or? 1 #f;
-	$expect 2 $or? #f 2 #f 3
+	$expect #t () $and;
+	$expect #f () $or;
+	$expect #f $and #f #f;
+	$expect #t $or #f #t;
+	$expect 2 $and 1 2;
+	$expect 1 $or 1 #f;
+	$expect 2 $or #f 2 #f 3
 );
 
 info "list operations";
@@ -96,12 +191,32 @@ $let ()
 (
 	$expect () list* ();
 	$expect () list*% ();
-	$def! a list 2 3;
-	subinfo "list lvalue elements read and move";
-	$expect 2 first (id a);
-	$expect 2 first a;
-	$expect 2 first (as-const (expire a));
-	$expect 2 first (expire a)
+	$def! n 1;
+	$let ((a list 2 3))
+	(
+		subinfo "list lvalue elements accesses";
+		$expect 2 first (id a);
+		$expect 2 first a;
+		$check reference? (first a);
+		$check reference? (first% (list% n 2));
+		subinfo "list xvalue elements accesses";
+		$expect 2 first (as-const (expire a));
+		$expect 2 first (expire a);
+		$expect-moved first a
+	);
+	subinfo "first forwarding";
+	$let ()
+	(
+		$defl! test (f)
+		(
+			$def! li list% (expire (as-const n)) 2;
+			$check not? (modifiable? (f li));
+			$check unique? (f li);
+			$expect 1 f li
+		);
+		test first;
+		test first&
+	)
 );
 
 info "local bindings";
@@ -265,6 +380,46 @@ $let ()
 	$expect #t string-empty? "";
 	$expect #f string-empty? "x";
 	$expect "abc123" ++ "a" "bc" "123"
+);
+
+info "typing library tests";
+subinfo "type?";
+$check type? Any;
+$check type? List;
+$check type? String;
+$check type? Number;
+subinfo "has-type?";
+$check has-type? () Any;
+$check has-type? () List;
+$check not? (has-type? "" List);
+$check (has-type? "" String);
+$check has-type? 0 Number;
+subinfo "typed-ptree->ptree";
+$expect ((unwrap idv) (x))
+	(typed-ptree->ptree ((unwrap idv) (x)));
+$expect ((unwrap idv) x)
+	(typed-ptree->ptree ((unwrap idv) (x : Any)));
+$expect ((unwrap idv) (x))
+	(typed-ptree->ptree ((unwrap idv) ((x : Any))));
+$expect ((unwrap idv) (a n s))
+	(typed-ptree->ptree ((unwrap idv) (a n s)));
+$expect ((unwrap idv) ((x y z) a n s))
+	(typed-ptree->ptree
+		((unwrap idv) ((x y z) a n s)));
+$expect ((unwrap idv) ((x y z) a n s))
+	(typed-ptree->ptree
+		((unwrap idv) ((x (y : List) z) (a : Any) (n : Number) s)));
+$expect ((unwrap idv) ((x y z) a n s))
+	(typed-ptree->ptree
+		((unwrap idv) ((x, y : List, z), a : Any, n : Number, s)));
+
+info "typed operations tests";
+$let ()
+(
+	$def! nid lambda ((x : Number)) x;
+	$expect 42 nid 42;
+	$def! streq? lambda ((x : String) y) eqv? x y;
+	$check streq? "x" "x"
 );
 
 info "dependency library tests";

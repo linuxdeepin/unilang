@@ -1,0 +1,19 @@
+﻿"Function and calls demos.";
+
+$def! $quote unwrap idv;
+$def! f $lambda (x) x;
+
+"The following expressions have the 1st subexpression as a function.";
+
+f 1;
+(id f) 1;
+
+"After the following definitions, expressions above are no longer functions";
+$def! f 42;
+$def! id $lambda (x) 42;
+
+$def! x "x";
+"The expressions in the following statements are simple calls.";
+$quote x;
+id x;
+

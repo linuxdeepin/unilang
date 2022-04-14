@@ -1,0 +1,20 @@
+﻿"Binding demos.";
+
+$import! std.strings ++;
+$expect "ab" $let ((x "a") (y "b")) ++ x y;
+
+$def! new-env $bindings->environment (x "x") (y "y");
+
+$def! my-module $provide! (exported-symbol-x exported-symbol-y)
+(
+	$import! std.strings ++;
+	$def! internal-symbol "FOO";
+	$def! exported-symbol-x internal-symbol;
+	$def! exported-symbol-y ++ internal-symbol "BAR";
+);
+
+$import! my-module exported-symbol-x;
+
+$expect "FOO" exported-symbol-x;
+$expect "FOOBAR" exported-symbol-y;
+

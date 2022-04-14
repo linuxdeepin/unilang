@@ -1,0 +1,5 @@
+﻿"Standard output demos";
+
+display "FOO";
+() newline;
+

@@ -1,0 +1,15 @@
+﻿"Function demos.";
+
+$lambda (x) display x;
+
+"The following two cases are equivalent.";
+
+$defl! id (x) x;
+
+defn id (x) x;
+
+display (($lambda ((x y)) x) (list "hello" "world"));
+
+$def! car $lambda ((x .)) x;
+$def! cdr $lambda ((#ignore .x)) x;
+

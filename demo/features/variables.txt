@@ -1,0 +1,13 @@
+﻿"Well-formed variable name demos.";
+
+$def! x 1;
+$def! xY 1;
+$def! FOO 1;
+$def! Bar123 1;
+$def! __LINE__ 1;
+$def! *STDIN* 1;
+$def! <unknown> 1;
+$def! var-name 1;
+$def! call/cc 1;
+$def! a+b 1;
+

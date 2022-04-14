@@ -1,0 +1,22 @@
+"Conditional operative demos.";
+
+$def! x ();
+display "x is ";
+display ($if (null? x) "empty" "not empty");
+() newline;
+
+$defl! cond-test (x) $cond
+	((eqv? x "a") "x is a")
+	((eqv? x "b") "x is b")
+	((eqv? x "c") "x is c")
+	(#t "unknown");
+
+$expect "x is a" cond-test "a";
+$expect "x is b" cond-test "b";
+$expect "x is c" cond-test "c";
+$expect "unknown" cond-test "d";
+
+$when (eqv? x "a") (display "x") (display " is a");
+
+$unless (eqv? x "a") (display "x") (display " is not a");
+

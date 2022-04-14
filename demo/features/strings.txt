@@ -1,0 +1,10 @@
+"Strings demos.";
+
+$import! std.strings string?;
+
+"TODO: String construction.";
+
+"String type predicate.";
+$check not? (string? ());
+$check string? "";
+
