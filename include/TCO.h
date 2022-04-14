@@ -1,4 +1,4 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TCO_h_
 #define INC_Unilang_TCO_h_ 1
@@ -100,8 +100,11 @@ private:
 	{
 		lref<TermNode> TermRef;
 
-		PDefHOp(void, (), ) const noexcept
-			ImplExpr(TermRef.get().Clear())
+		void
+		operator()() const noexcept
+		{
+			TermRef.get().Clear();
+		}
 	};
 
 	mutable decltype(ystdex::unique_guard(std::declval<GuardFunction>()))

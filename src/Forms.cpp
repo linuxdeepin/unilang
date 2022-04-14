@@ -1,9 +1,10 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for Unilang::TryAccessReferencedTerm,
+#include "Forms.h" // for Unilang::TryAccessReferencedTerm
 //	ThrowTypeErrorForInvalidType, ResolveTerm, TermToNamePtr,
 //	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
-//	FormContextHandler, ReferenceTerm, ThrowValueCategoryError;
+//	FormContextHandler, ReferenceTerm, ThrowValueCategoryError,
+//	Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -45,7 +46,7 @@ ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
 	}
 }
 
-[[noreturn]] inline void
+YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
 	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
@@ -619,7 +620,7 @@ Encapsulate::operator()(TermNode& term) const
 
 	auto& tm(*std::next(term.begin()));
 
-	return Forms::EmplaceCallResultOrReturn(term,
+	return Unilang::EmplaceCallResultOrReturn(term,
 		Encapsulation(GetType(), ystdex::invoke_value_or(&TermReference::get,
 		Unilang::TryAccessReferencedLeaf<const TermReference>(tm),
 		std::move(tm))));
@@ -633,7 +634,7 @@ Encapsulated::operator()(TermNode& term) const
 
 	auto& tm(*std::next(term.begin()));
 
-	return Forms::EmplaceCallResultOrReturn(term,
+	return Unilang::EmplaceCallResultOrReturn(term,
 		ystdex::call_value_or([this](const Encapsulation& enc) noexcept{
 		return Get() == enc.Get();
 	}, Unilang::TryAccessReferencedTerm<Encapsulation>(tm)));

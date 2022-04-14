@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermNode_h_
 #define INC_Unilang_TermNode_h_ 1
@@ -173,7 +173,7 @@ public:
 	ystdex::enable_if_t<
 		ystdex::and_<std::is_assignable<Container, _tCon&&>,
 		std::is_assignable<ValueObject, _type&&>>::value>
-	SetContent(_tCon&& con, _type&& val) ynoexcept(ystdex::and_<
+	SetContent(_tCon&& con, _type&& val) noexcept(ystdex::and_<
 		std::is_nothrow_assignable<Container, _tCon&&>,
 		std::is_nothrow_assignable<ValueObject, _type&&>>())
 	{
@@ -195,7 +195,7 @@ public:
 
 	template<typename _tParam>
 	inline yimpl(ystdex::enable_if_same_param_t<ValueObject, _tParam>)
-	SetValue(_tParam&& arg) ynoexcept_spec(yforward(arg))
+	SetValue(_tParam&& arg) noexcept(noexcept(yforward(arg)))
 	{
 		Value = yforward(arg);
 	}
@@ -205,16 +205,16 @@ public:
 		ystdex::exclude_self_t<std::allocator_arg_t, _tParam, int> = 0)>
 	inline yimpl(ystdex::enable_if_inconvertible_t)<ystdex::decay_t<_tParam>,
 		TermNode::allocator_type, void>
-	SetValue(_tParam&& arg, _tParams&&... args) ynoexcept_spec(Value.assign(
+	SetValue(_tParam&& arg, _tParams&&... args) noexcept(noexcept(Value.assign(
 		std::allocator_arg, std::declval<TermNode::allocator_type&>(),
-		yforward(arg), yforward(args)...))
+		yforward(arg), yforward(args)...)))
 	{
 		SetValue(get_allocator(), yforward(arg), yforward(args)...);
 	}
 	template<typename... _tParams>
 	inline void
-	SetValue(TermNode::allocator_type a, _tParams&&... args)
-		ynoexcept_spec(Value.assign(std::allocator_arg, a, yforward(args)...))
+	SetValue(TermNode::allocator_type a, _tParams&&... args) noexcept(
+		noexcept(Value.assign(std::allocator_arg, a, yforward(args)...)))
 	{
 		Value.assign(std::allocator_arg, a, yforward(args)...);
 	}

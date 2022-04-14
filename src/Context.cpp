@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Context.h" // for Unilang::allocate_shared, lref, type_id;
 #include <cassert> // for assert;
@@ -34,7 +34,7 @@ public:
 
 #if Unilang_CheckParentEnvironment
 YB_ATTR_nodiscard YB_PURE bool
-IsReserved(string_view id) ynothrowv
+IsReserved(string_view id) noexcept
 {
 	YAssertNonnull(id.data());
 	return ystdex::begins_with(id, "__");

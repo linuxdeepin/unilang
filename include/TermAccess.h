@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermAccess_h_
 #define INC_Unilang_TermAccess_h_ 1
@@ -184,7 +184,7 @@ public:
 	template<typename _tParam, typename... _tParams>
 	inline
 	TermReference(TermTags t, TermNode& term, _tParam&& arg, _tParams&&... args)
-		ynothrow
+		noexcept
 		: term_ref(term), tags(t),
 		r_env(yforward(arg), yforward(args)...)
 	{}
@@ -227,6 +227,11 @@ public:
 	{
 		return !(bool(tags & TermTags::Unique)
 			|| bool(tags & TermTags::Temporary));
+	}
+	YB_ATTR_nodiscard YB_PURE bool
+	IsUnique() const noexcept
+	{
+		return bool(tags & TermTags::Unique);
 	}
 
 	YB_ATTR_nodiscard YB_PURE TermTags
@@ -333,6 +338,12 @@ YB_ATTR_nodiscard YB_PURE bool
 IsReferenceTerm(const TermNode&);
 
 YB_ATTR_nodiscard YB_PURE bool
+IsUniqueTerm(const TermNode&);
+
+YB_ATTR_nodiscard YB_PURE bool
+IsModifiableTerm(const TermNode&);
+
+YB_ATTR_nodiscard YB_PURE bool
 IsBoundLValueTerm(const TermNode&);
 
 YB_ATTR_nodiscard YB_PURE bool
@@ -402,8 +413,8 @@ struct TypedValueAccessor<const _type>
 
 template<typename _type, class _tTerm>
 YB_ATTR_nodiscard YB_PURE inline auto
-AccessTypedValue(_tTerm& term) ynoexcept_spec(TypedValueAccessor<_type>()(term))
-	-> yimpl(decltype(TypedValueAccessor<_type>()(term)))
+AccessTypedValue(_tTerm& term) noexcept(noexcept(TypedValueAccessor<_type>()(
+	term))) -> yimpl(decltype(TypedValueAccessor<_type>()(term)))
 {
 	return TypedValueAccessor<_type>()(term);
 }
@@ -419,11 +430,22 @@ struct ResolvedArg : pair<lref<_type>, ResolvedTermReferencePtr>
 
 	using BaseType::BaseType;
 
-	DefPred(const ynothrow, Modifiable, !second || second->IsModifiable())
-	DefPred(const ynothrow, Movable, Unilang::IsMovable(second))
+	bool
+	IsModifiable() const noexcept
+	{
+		return !second || second->IsModifiable();
+	}
+	bool
+	IsMovable() const noexcept
+	{
+		return Unilang::IsMovable(second);
+	}
 
-	PDefH(_type&, get, ) const ynothrow
-		ImplRet(first.get())
+	_type&
+	get() const noexcept
+	{
+		return first.get();
+	}
 };
 
 
@@ -460,7 +482,7 @@ struct ReferenceTermOp
 	template<typename _type>
 	auto
 	operator()(_type&& term) const
-		ynoexcept_spec(Unilang::ReferenceTerm(yforward(term)))
+		noexcept(noexcept(Unilang::ReferenceTerm(yforward(term))))
 		-> decltype(Unilang::ReferenceTerm(yforward(term)))
 	{
 		return Unilang::ReferenceTerm(yforward(term));

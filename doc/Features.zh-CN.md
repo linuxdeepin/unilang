@@ -96,6 +96,10 @@
 
 　　变量名在求值前具有符号类型。一般地，求值符号表达式确定符号指称的实体对应的值，这个值就是表达式求值得到的值。
 
+　　字符串字面量具有字符串类型。
+
+　　数值字面量具有数值类型。另见关于数学库的说明。
+
 　　函数应用的求值蕴含函数调用。
 
 ## 函数调用
@@ -187,6 +191,30 @@ cons "y" (list "a" "b"); "same to: "; list "y" "a" "b";
 list* "0" "1" "2" (list "3" "4"); "same to: "; list "0" "1" "2" "3" "4";
 ```
 
+## 对象基本操作
+
+　　以下一元谓词判断操作数指定的一般对象是否满足要求。
+
+* `reference?` 判断参数是否为引用值。
+* `unique?` 判断参数是否为被引用的被绑定对象左值。
+* `modifiable?` 判断参数是否为可修改对象或可修改对象的引用值。
+* `bound-lvalue?` 判断参数是否为未折叠的引用值。
+* `uncollapsed?` 判断参数是否为未折叠的引用值。
+
+　　以下一元函数取对象对应的引用值；当参数不是引用值时，结果是参数。
+
+* `as-const <object>` 取指定对象的不可修改的引用。
+* `expire <object>` 取指定对象的唯一引用。
+
+　　结合以上函数可以通过现有的引用值取其它引用值或判断引用值具有的性质。如：
+
+```
+$def! x "";
+reference? x; "=> #t";
+unique? (expire x); "=> #t";
+modifiable? (as-const x); "#f";
+```
+
 ## 环境和求值操作
 
 　　函数 `get-current-environment` 取当前环境的弱引用。
@@ -247,7 +275,7 @@ $def! x "FOO";
 
 ```
 $def! $f $vau/e (() get-current-environment) (body) d eval body d;
-$def! $f2 $vau/e (body) d eval body d;
+$def! $f2 $vau (body) d eval body d;
 ```
 
 　　其中形式参数支持类似变量定义的模式匹配，实际上是形式参数树而不只是参数列表。
@@ -273,6 +301,8 @@ $def! $lambda $vau (formals .body) d wrap
 	(eval (cons $vau (cons formals (cons ignore body))) d);
 ```
 
+**注释** 另见以下上层语言章节中的 `lambda` 。
+
 ## 合并子定义
 
 　　许多时候需要定义单个合并子变量而不需要 `$def!` 同时定义多个变量。库提供语法糖满足这个需求，如
@@ -288,6 +318,8 @@ $def! id $lambda (x) x;
 ```
 
 　　类似地，也有 `$defv!` 。此外，`$defw!` 类似 `$defl!` ，但允许指定动态环境。
+
+**注释** 另见以下上层语言章节中的 `defn` 。
 
 ## 封装类型
 
@@ -319,12 +351,12 @@ $sequence (display "x") (display "y");
 
 ## 列表访问
 
-　　函数 `first` 和 `rest` 接受一个应为非空列表的参数，分别取列表的第一个元素和剩余元素：
+　　函数 `first` 和 `rest%` 接受一个应为非空列表的参数，分别取列表的第一个元素和剩余元素：
 
 ```
 $def! li list "a" "b" "c";
 first li; "same to: "; "a";
-rest li; "same to: "; list "b" "c";
+rest% li; "same to: "; list "b" "c";
 ```
 
 ## 列表函数应用
@@ -343,7 +375,7 @@ eval (list () foo "x" "y") e
 
 　　环境参数可省略。若不指定环境参数，则隐含为 `() make-environment` 。
 
-## 条件求值
+## 派生条件求值
 
 　　函数 `$cond` 按分支顺序求值条件，并求值第一个成立的条件对应的表达式，如：
 
@@ -371,7 +403,7 @@ $unless (eqv? x "a") (display "x") (display " is not a");
 
 　　一元函数 `not?` 表示逻辑非运算。
 
-　　函数 `$and?` 和 `$or?` 表示逻辑与和逻辑或运算。两者都支持短路求值。表达式的是求值结束时最后一个子表达式的值（若存在），或默认值（对 `$and?` 为 `#t` ，对 `$or?` 为 `#f` 。）  
+　　函数 `$and` 和 `$or` 表示逻辑与和逻辑或运算。两者都支持短路求值。表达式的是求值结束时最后一个子表达式的值（若存在），或默认值（对 `$and` 为 `#t` ，对 `$or` 为 `#f` 。）  
 
 　　例如：
 
@@ -379,8 +411,19 @@ $unless (eqv? x "a") (display "x") (display " is not a");
 not? #t; "=> #f";
 not? "x"; "=> #f";
 not? #f; "=> #t";
-$and? (eqv? "x" "y") () "z"; "=> ()";
-$or? #f (eqv? "x" "y"); "=> #f";
+$and (eqv? "x" "x") () "z"; "=> "z";
+$or #f (eqv? "x" "y"); "=> #f";
+```
+
+　　函数 `and` 和 `or` 分别同 `$and` 和 `$or` ，但不短路求值。
+
+　　下列表达式的求值能体现这种不同：
+
+```
+$and (eqv? "x" "y") (display "unexpected evaluated again\n"; eqv? "x" "y");
+and (eqv? "x" "y") (display "expected evaluated again\n"; eqv? "x" "y");
+$or (eqv? "x" "x") (display "unexpected evaluated again\n"; eqv? "x" "x");
+or (eqv? "x" "x") (display "expected evaluated again\n"; eqv? "x" "x");
 ```
 
 ## 列表算法
@@ -388,7 +431,8 @@ $or? #f (eqv? "x" "y"); "=> #f";
 　　函数 `accr`、 `foldr` 和 `map1` 对列表元素应用。如：
 
 ```
-map1 ($lambda (x) ++ x "s") (list "a" "b" "c");
+$import! std.strings ++;
+map1 ($lambda (x) ++ x "s") (list "a" "b" "c"); "=> (as bs cs)";
 ```
 
 　　函数 `map1` 的 `1` 表示接受的应用子具有一个参数。相对 `map1` ，`accr` 和 `foldr1` 提供更多的参数，允许更底层的定制功能。
@@ -398,9 +442,12 @@ map1 ($lambda (x) ++ x "s") (list "a" "b" "c");
 　　函数 `$let` 提供词法局部作用域，如：
 
 ```
+$import! std.strings ++;
 $let ((x "a") (y "b"))
 	++ x y;
 ```
+
+　　以上示例的结果是字符串 `"ab"` 。
 
 　　同合并子调用一样，求值 `$let` 内部的表达式时，使用新创建的环境。在 `$let` 中声明的局部对象在外部不会自动可用而影响外部环境。
 
@@ -411,10 +458,10 @@ $let ((x "a") (y "b"))
 　　函数 `$bindings->environment` 转换 `$let` 语法相同的局部对象定义为环境，如：
 
 ```
-$def! new-env $bindings->environment (x "x") (y "y);
+$def! new-env $bindings->environment (x "x") (y "y");
 ```
 
-　　这是一个创建环境的简便方法。创建的环境以 `() make-standard-environment` 为父环境。
+　　这是一个创建环境的简便方法。创建的环境不具有父环境。
 
 　　类似地，函数 `$bindings->environment` 也能转换绑定得到环境，但同时支持显式指定父环境。
 
@@ -425,6 +472,7 @@ $def! new-env $bindings->environment (x "x") (y "y);
 ```
 $def! my-module $provide! (exported-symbol-x exported-symbol-y)
 (
+	$import! std.strings ++;
 	$def! internal-symbol "FOO";
 	$def! exported-symbol-x internal-symbol;
 	$def! exported-symbol-y ++ internal-symbol "BAR";
@@ -439,25 +487,157 @@ $def! my-module $provide! (exported-symbol-x exported-symbol-y)
 $import! my-module exported-symbol-x;
 ```
 
-## 加载外部翻译单元
+## 数学库
 
-　　函数 `load` 以参数指定路径的文件作为 Unilang 基础语言源文件，在当前环境中加载并求值，如：
+　　数学库主要处理数值类型的值。
+
+　　数值是精确数或不精确数。不精确数可包含无限大或 NaN 值。
+
+　　语言中的十进制字面量是数值。若能在精确数范围中表示，则整数字面量是精确数。否则，若字面量包含小数点，或者不能在精确数范围中表示，则数值是不精确数。
+
+　　一些函数提供整数除法，计算商或余数。函数的名称通过前后缀组合，含义如下：
+
+* `floor-` 通过向下取整决定商。
+* `truncate-` 通过截断取整决定商。
+* `/` 除法，结果是商和余数的列表。
+* `quotient` 计算商。
+* `remainder` 计算余数。
+
+　　例如：
 
 ```
-load "external.txt"
+floor/ -5 2;
+"=> (list -3 1)";
+floor-quotient -5 2;
+"=> -3";
+floor-remainder -5 2;
+"=> 1";
+truncate/ 5 -2;
+"=> (list -2 1)";
+truncate-quotient 5 -2;
+"=> -2";
+truncate-remainder 5 -2;
+"=> 1";
 ```
 
-## 标准输出
+## I/O 库
 
-　　函数 `display` 在标准输出中输出参数的人类可读的外部表示，如：
+　　输入/输出(I/O) 的接口在标准库模块 `std.io` 提供。
 
-```
-display "FOO";
-```
+　　大多数函数只考虑副作用，因此结果是 `#inert` 。
+
+　　一些函数也直接在初始化时被自动隐式地导入，包括：
+
+* `newline`
+* `load`
+* `display`
+* `puts`
 
 　　函数 `newline` 在标准输出中输出换行，调用方式为：
 
 ```
 () newline;
 ```
+　　函数 `display` 在标准输出中输出参数的人类可读的外部表示，如：
 
+```
+display "FOO";
+```
+
+　　函数 `load` 以参数指定路径的文件作为 Unilang 基础语言源文件，读取其中的内容作为源代码在当前环境中并求值，如：
+
+```
+load "external.txt"
+```
+
+　　函数 `puts` 在标准输出中输出参数字符串并换行，如：
+
+```
+puts "FOO";
+```
+
+# 上层语言
+
+　　基于核心语言和标准库，上层语言提供更加接近其它常见编程语言的语法和一些扩展的语义特性：
+
+* 上层语言的扩展语法：
+	* 扩展的括号语法。
+	* 扩展的中缀语法。
+	* 类型标注（通过以下库函数支持）。
+* 上层语言库函数：
+	* 一些函数是标准库函数的别名，没有使用 `$` 前缀表示合并子的惯例，而更容易书写。
+	* 一些函数和标准库语言的函数对应，但扩展支持了上层语言的语法。
+	* 其它一些函数不在标准库函数中存在对应。
+
+## 扩展的括号语法
+
+　　除了 `(` 和 `)` ，以下匹配的标点也被视为括号：
+
+* `[` 和 `]` 。
+* `{` 和 `}` 。
+
+## 扩展的中缀变换
+
+　　上层语言支持核心语言的 `,` 和 `;` 的中缀语法外，还支持其它的中缀语法。
+
+　　例如，表示中缀赋值的 `:=` 被变换为前缀的 `assign!` ：
+
+```
+$def! x 1;
+x := 2;
+```
+
+　　上面的程序和以下程序等效：
+
+```
+$def! x 1;
+assign! x 2;
+```
+
+　　其它变换包括：
+
+* `*` 和 `/` ：左结合，替换为作为前缀操作的对应符号。
+* `+` 和 `-` ：左结合，替换为作为前缀操作的对应符号。
+* `<`、`>`、`<=` 和 `>=` ：左结合，替换为作为前缀操作的对应符号。
+* `=` 和 `!=` ：左结合，替换为作为前缀操作的对应符号。
+
+## 数学库
+
+　　二元函数 `!=` 比较不等。
+
+　　这个函数支持了同名的中缀标点。
+
+## 类型库
+
+　　上层语言支持显式的类型标注。
+
+　　类型库为类型标注提供基础支持。直接支持的类型有：
+
+* `Any` ：任意类型，即 `<object>` 类型。
+* `List` ：`<list>` 类型。
+* `String` ：`<string>` 类型。
+* `Number` ：`<number>` 类型。
+
+## 函数
+
+　　上层语言的 `lambda` 及 `defn` 和 `$lambda` 和 `$defl!` 的功能对应相同，此外还支持形式参数树中的类型注解以及中缀语法，如：
+
+```
+def fn lambda ((x : Number)) x;
+fn 2;
+
+def fn lambda (x : Number,) x;
+fn 2;
+
+defn fn ((x : List)) x;
+fn (list 1 2 3);
+
+defn fn (x : List,) x;
+fn (list 1 2 3);
+
+defn fn ((x : Number) (y : List)) x;
+fn 2 (list 3 4);
+
+defn fn (x : Number, y : List) x;
+fn 2 (list 3 4);
+```

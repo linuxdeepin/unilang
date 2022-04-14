@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for std::bind, HasValue, TokenValue, std::declval,
 //	string_view, ystdex::sfmt, Context::DefaultHandleException, ByteParser,
@@ -146,17 +146,13 @@ ParseLeaf(TermNode& term, string_view id)
 	case LexemeCategory::Symbol:
 		if(CheckReducible(DefaultEvaluateLeaf(term, id)))
 		{
-			if(!id.empty())
-			{
-				const char f(id.front());
+			const char f(id.front());
 
-				if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
-					&& id.find_first_not_of("+-") != string_view::npos)
-					|| ystdex::isdigit(f))
-					throw InvalidSyntax(ystdex::sfmt(f != '#'
-						? "Unsupported literal prefix found in literal '%s'."
-						: "Invalid literal '%s' found.", id.data()));
-			}
+			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
+				&& id.find_first_not_of("+-") != string_view::npos))
+				throw InvalidSyntax(ystdex::sfmt(f != '#'
+					? "Unsupported literal prefix found in literal '%s'."
+					: "Invalid literal '%s' found.", id.data()));
 			term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
 		}
 		break;
@@ -356,22 +352,22 @@ SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
 	: allocator(a), transformations({{";", ContextHandler(Forms::Sequence)},
 	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, ":=");
 	}, [](const ValueObject&){
 		return TokenValue("assign!");
 	}, TransformationSpec::BinaryAssocRight},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "=") || HasValue<TokenValue>(nd, "!=");
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "<") || HasValue<TokenValue>(nd, ">")
 			|| HasValue<TokenValue>(nd, "<=") || HasValue<TokenValue>(nd, ">=");
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "+") || HasValue<TokenValue>(nd, "-"); 
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) ynothrow{
+	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, "*") || HasValue<TokenValue>(nd, "/"); 
 	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft}}, a)
 {}

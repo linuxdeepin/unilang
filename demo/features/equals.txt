@@ -1,0 +1,8 @@
+"Equality predicates demos.";
+
+$def! x "FOO";
+$def! y "FOO";
+
+$expect #f eq? x y;
+$expect #t eqv? x y;
+

@@ -1,0 +1,8 @@
+﻿"Encapsulations demos.";
+
+$def! (e p? d) () make-encapsulation-type;
+$def! x e (list ());
+$check p? x;
+$check not? (p? (list ()));
+$expect (list ()) d x;
+

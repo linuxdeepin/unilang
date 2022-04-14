@@ -1,0 +1,6 @@
+"List algorithm demoes.";
+
+$import! std.strings ++;
+
+$expect (list "as" "bs" "cs") map1 ($lambda (x) ++ x "s") (list "a" "b" "c");
+

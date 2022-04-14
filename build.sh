@@ -4,6 +4,9 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
+: "${CXX:=g++}"
+: "${CXXFLAGS=-std=c++11 -Wall -Wextra -g}"
+
 . "$Unilang_BaseDir/detect-llvm.sh"
 
 CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
@@ -26,7 +29,7 @@ $YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
 esac
 
 # shellcheck disable=2086
-g++ -std=c++11 -Wall -Wextra -g -ounilang $Unilang_BaseDir/src/*.cpp \
+"$CXX" $CXXFLAGS -ounilang $Unilang_BaseDir/src/*.cpp \
 $CXXFLAGS_EXTRA \
 -Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \

@@ -641,6 +641,39 @@ using string = basic_string<char>;
 	* 首先需要确定除了类型系统外还需要增强哪些部分，再确定这些部分是否在基线解释器中实现更有利。
 	* 互操作 API 绑定自动化方案的可行性因为工作量问题（参照 Shiboken ）暂时没有明确的解决思路。
 
+# 显式类型扩展
+
+## 概要
+
+　　核心语言中，因使用潜在类型(latent typing) ，类型在源代码是隐式的。为允许实现更好地提供类型检查等功能，并对未来的优化提供更多支持，需要在现有设计中添加显式类型支持，包括：
+
+* 在程序源代码中允许引入变量的绑定构造中添加类型标注语法。
+* 扩充关于类型的语义支持。
+	* 整理现有支持的类型并归类，提供类型系统。
+	* 扩展定型(typing) 机制。
+		* 提供基于显式类型标注的类型构造(type formation) 。
+	* 可选地，提供类型检查(typechecking) 。
+
+　　类型标注是可选的。从现有设计扩充仍允许向后兼容，同时支持渐进类型(gradual typing) 而保留允许程序以其它方式引入和这里的功能近似的机制（包括基于定理证明等其它方式实现的静态类型系统）的扩展能力。
+
+## 实现参考
+
+　　以下是一些从动态语言添加类型标注方案的实例。一些语言通过扩展提供，另一些则是扩展其它语言而以新的语言提供。
+
+* [Python](https://www.python.org/): [PEP 484](https://www.python.org/dev/peps/pep-0484/)
+* [ECMAScript](https://www.ecma-international.org/publications-and-standards/standards/ecma-262/): [TypeScript](https://www.typescriptlang.org/docs/handbook/intro.html)
+	* TypeScript 当前[不能及时提供较新版本的语言规范](https://github.com/microsoft/TypeScript/issues/15711)，这里以手册代替，即使其中的介绍页明确说明它不能代替语言规范。
+* [Racket](https://racket-lang.org/): [TypedRacket](https://docs.racket-lang.org/ts-reference)
+* [CHICKEN Scheme](https://wiki.call-cc.org/): [Types](https://wiki.call-cc.org/man/5/Types)
+
+## 整体演进路线
+
+　　因为类型系统规则和机制设计的复杂多样性，当前首先支持语法，以扩展核心库的方式提供可能引入绑定构造的函数。这些函数兼容原有语法，并支持分析类型为指定的元数据。
+
+　　当前忽略元数据的作用，除类型标注自身的合法性检查，源程序去除类型标注后不影响剩余程序的语义。以后可在语言规范中补充要求语言中总是进行特定的类型检查。类型系统的其它功能可以通过其它库进一步提供。
+
+**注释** 需要访问已知标注类型的功能可能由扩展的工具实现。
+
 # 代码生成方案
 
 　　代码生成方案是上述语言实现演进方案的主要部分。

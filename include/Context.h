@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
@@ -265,7 +265,7 @@ public:
 		operator=(ReducerSequence&&) = default;
 
 		void
-		clear() ynothrow
+		clear() noexcept
 		{
 			while(!empty())
 				pop_front();
@@ -296,13 +296,13 @@ public:
 		ReducerSequence::const_iterator i_stacked;
 
 	public:
-		ReductionGuard(Context& ctx) ynothrow
+		ReductionGuard(Context& ctx) noexcept
 			: p_ctx(&ctx), i_stacked(ctx.stacked.cbegin())
 		{
 			ctx.stacked.splice_after(ctx.stacked.cbefore_begin(),
 				ctx.current);
 		}
-		ReductionGuard(ReductionGuard&& gd) ynothrow
+		ReductionGuard(ReductionGuard&& gd) noexcept
 			: p_ctx(gd.p_ctx), i_stacked(gd.i_stacked)
 		{
 			gd.p_ctx = {};
