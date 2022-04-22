@@ -214,7 +214,8 @@ $let ()
 			$check unique? (f li);
 			$expect 1 f li
 		);
-		test first
+		test first;
+		test first&
 	)
 );
 
