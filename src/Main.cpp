@@ -700,7 +700,8 @@ $defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
 $defl%! first% (&l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
-	($lambda% ((@x .)) collapse x) (check-list-reference (forward! l));
+	($lambda% ((@x .)) $if (uncollapsed? x) (idv x) x)
+		(check-list-reference (forward! l));
 $defl! firstv ((&x .)) $move-resolved! x;
 $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
@@ -969,7 +970,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.0"
+#define APP_VER "0.11.1"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
