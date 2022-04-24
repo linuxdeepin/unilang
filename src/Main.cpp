@@ -167,6 +167,11 @@ struct LeafPred
 
 
 void
+LoadModule_std_continuations(Interpreter&)
+{
+}
+
+void
 LoadModule_std_promises(Interpreter& intp)
 {
 	intp.Perform(R"Unilang(
@@ -862,6 +867,7 @@ $defv! $import! (&e .&symbols) d
 			std::bind(load_module, std::ref(intp)));
 	});
 
+	load_std_module("continuations", LoadModule_std_continuations);
 	load_std_module("promises", LoadModule_std_promises);
 	load_std_module("strings", LoadModule_std_strings);
 	load_std_module("math", LoadModule_std_math);
@@ -970,7 +976,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.1"
+#define APP_VER "0.11.2"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
