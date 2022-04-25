@@ -1,4 +1,4 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "TCO.h" // for Unilang::Nonnull, Unilang::Deref, IsTyped;
 #include <cassert> // for assert;
@@ -127,7 +127,10 @@ TCOAction::TCOAction(const TCOAction& a)
 	: term_guard(std::move(a.term_guard)),
 	req_lift_result(a.req_lift_result), xgds(std::move(a.xgds)),
 	EnvGuard(std::move(a.EnvGuard))
-{}
+{
+	if(a.one_shot_guard.has_value())
+		one_shot_guard.emplace((*a.one_shot_guard).func);
+}
 
 ReductionStatus
 TCOAction::operator()(Context& ctx) const
