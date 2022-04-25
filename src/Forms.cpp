@@ -17,6 +17,7 @@
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
+#include "TCO.h" // for OneShotChecker;
 
 namespace Unilang
 {
@@ -893,6 +894,54 @@ Sequence(TermNode& term, Context& ctx)
 	Retain(term);
 	RemoveHead(term);
 	return ReduceOrdered(term, ctx);
+}
+
+
+ReductionStatus
+Call1CC(TermNode& term, Context& ctx)
+{
+	RetainN(term);
+	yunused(Unilang::ResolveRegular<const ContextHandler>(
+		Unilang::Deref(std::next(term.begin()))));
+	RemoveHead(term);
+
+	auto& current(ctx.GetCurrentRef());
+	const auto i_captured(current.begin());
+
+	term.GetContainerRef().push_back(Unilang::AsTermNode(term.get_allocator(),
+		Continuation(
+		ystdex::bind1([&, i_captured](TermNode& t, OneShotChecker& osc){
+		Retain(t);
+		osc.Check();
+
+		auto& cur(current);
+		const auto i_top(i_captured);
+		auto con(std::move(t.GetContainerRef()));
+		auto vo(std::move(t.Value));
+
+#ifndef NDEBUG
+		{
+			auto i(cur.begin());
+
+			while(i != cur.end() && i != i_captured)
+				++i;
+			assert(i != cur.end() && "The top frame of the reinstated captured"
+				" continuation is missing.");
+		}
+#endif
+		while(cur.begin() != i_top)
+			cur.pop_front();
+		cur.pop_front();
+		yunseq(term.GetContainerRef() = std::move(con),
+			term.Value = std::move(vo));
+		ctx.SetNextTermRef(term);
+		ClearCombiningTags(term);
+		RemoveHead(term);
+		return ReductionStatus::Retained;
+	},
+		RefTCOAction(ctx).MakeOneShotChecker()
+	), ctx)));
+	return ReduceCombinedBranch(term, ctx);
 }
 
 } // namespace Forms;
