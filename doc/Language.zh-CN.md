@@ -1796,6 +1796,16 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 * `<continuation>` ：一等续延。
 
+`call/1cc <combiner>` 
+
+　　捕获*一次(one-shot)* 续延，具现为一等续延作为参数调用合并子。
+
+　　续延首先在尾上下文中被捕获为引用值，再作为操作数，调用 `<combiner>` 。
+
+　　来自同一具现的一次续延的任何副本只允许一次显式（续延应用）或者隐式（如被函数调用的返回蕴含）地成功调用；否则，调用被重入，引起错误。
+
+　　捕获的续延之后允许被复制。
+
 ## 代理求值
 
 　　代理求值操作加载为基础环境下的 `std.promises` 环境。
