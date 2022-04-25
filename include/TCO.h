@@ -9,8 +9,9 @@
 //	ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
-#include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
 #include <tuple> // for std::tuple;
+#include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
+#include <ystdex/optional.h> // for ystdex::optional;
 #include <functional> // for std::bind, std::placeholder, std::ref;
 #include <cassert> // for assert;
 
@@ -148,6 +149,9 @@ public:
 	mutable EnvironmentGuard EnvGuard;
 	mutable FrameRecordList RecordList;
 
+private:
+	mutable ystdex::optional<ystdex::guard<OneShotChecker>> one_shot_guard{};
+
 public:
 	TCOAction(Context&, TermNode&, bool);
 	TCOAction(const TCOAction&);
@@ -186,6 +190,14 @@ public:
 
 	void
 	CompressForGuard(Context&, EnvironmentGuard&&);
+
+	YB_ATTR_nodiscard OneShotChecker
+	MakeOneShotChecker()
+	{
+		if(!one_shot_guard.has_value())
+			one_shot_guard.emplace(EnvGuard.func.ContextRef.get());
+		return (*one_shot_guard).func;
+	}
 
 	YB_ATTR_nodiscard ContextHandler
 	MoveFunction();
