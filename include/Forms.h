@@ -497,6 +497,10 @@ MakeEncapsulationType(TermNode& term);
 ReductionStatus
 Sequence(TermNode&, Context&);
 
+
+ReductionStatus
+Call1CC(TermNode&, Context&);
+
 } // namespace Forms;
 
 } // namespace Unilang;
