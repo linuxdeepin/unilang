@@ -440,6 +440,13 @@ AssertBranchedList(const TermNode& nd) noexcept
 	assert(IsBranchedList(nd) && "Invalid term found.");
 }
 
+inline void
+AssertValueTags(const TermNode& nd) noexcept
+{
+	yunused(nd);
+	assert(nd.Tags == TermTags && "Invalid term of first-class value found.");
+}
+
 YB_ATTR_nodiscard YB_PURE inline TermNode&
 AccessFirstSubterm(TermNode& nd) noexcept
 {
