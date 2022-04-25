@@ -354,6 +354,11 @@ public:
 	{
 		return current;
 	}
+	ReducerSequence&
+	GetCurrentRef() noexcept
+	{
+		return current;
+	}
 	YB_ATTR_nodiscard YB_PURE TermNode&
 	GetNextTermRef() const;
 	YB_ATTR_nodiscard YB_PURE const shared_ptr<Environment>&
