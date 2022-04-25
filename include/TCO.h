@@ -3,9 +3,10 @@
 #ifndef INC_Unilang_TCO_h_
 #define INC_Unilang_TCO_h_ 1
 
-#include "Evaluation.h" // for map, lref, Environment, size_t, set, weak_ptr,
-//	shared_ptr, IsTyped, Unilang::Deref, ContextHandler, list, TermNode,
-//	EnvironmentGuard, Context, ReductionStatus;
+#include "Evaluation.h" // for shared_ptr, Context, YSLib::allocate_shared,
+//	Unilang::Deref, UnilangException, map, lref, Environment, size_t, set,
+//	weak_ptr, IsTyped, ContextHandler, list, TermNode, EnvironmentGuard,
+//	ReductionStatus;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
 #include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
@@ -15,6 +16,36 @@
 
 namespace Unilang
 {
+
+class OneShotChecker final
+{
+private:
+	shared_ptr<bool> p_shot;
+
+public:
+	OneShotChecker(Context& ctx)
+		: p_shot(YSLib::allocate_shared<bool>(ctx.get_allocator()))
+	{}
+
+	void
+	operator()() const noexcept
+	{
+		if(p_shot)
+			Unilang::Deref(p_shot) = true;
+	}
+
+	void
+	Check() const
+	{
+		auto& shot(Unilang::Deref(p_shot));
+
+		if(!shot)
+			shot = true;
+		else
+			throw UnilangException("One-shot continuation expired.");
+	}
+};
+
 
 struct RecordCompressor final
 {
