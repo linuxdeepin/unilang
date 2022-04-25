@@ -349,6 +349,13 @@ IsBoundLValueTerm(const TermNode&);
 YB_ATTR_nodiscard YB_PURE bool
 IsUncollapsedTerm(const TermNode&);
 
+inline void
+ClearCombiningTags(TermNode& term) noexcept
+{
+	EnsureValueTags(term.Tags);
+	AssertValueTags(term);
+}
+
 template<typename _func, class _tTerm>
 auto
 ResolveTerm(_func do_resolve, _tTerm&& term)
