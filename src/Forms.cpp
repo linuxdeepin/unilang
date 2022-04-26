@@ -401,6 +401,22 @@ WrapH(TermNode& term, FormContextHandler h)
 		std::move(h));
 	return ReductionStatus::Clean;
 }
+ReductionStatus
+WrapH(TermNode& term, ContextHandler h, size_t n)
+{
+	term.Value = Unilang::MakeForm(term, std::move(h), n);
+	return ReductionStatus::Clean;
+}
+
+ReductionStatus
+WrapO(TermNode& term, ContextHandler& h, ResolvedTermReferencePtr p_ref)
+{
+	return WrapH(term, MakeValueOrMove(p_ref, [&]{
+		return h;
+	}, [&]{
+		return std::move(h);
+	}), 1);
+}
 
 ReductionStatus
 WrapN(TermNode& term, ResolvedTermReferencePtr p_ref,
@@ -824,11 +840,7 @@ Wrap(TermNode& term)
 {
 	return WrapOrRef<WrapN>(term,
 		[&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
-		return WrapH(term, MakeValueOrMove(p_ref, [&]{
-			return FormContextHandler(h, 1);
-		}, [&]{
-			return FormContextHandler(std::move(h), 1);
-		}));
+		return WrapO(term, h, p_ref);
 	});
 }
 
@@ -942,6 +954,15 @@ Call1CC(TermNode& term, Context& ctx)
 		RefTCOAction(ctx).MakeOneShotChecker()
 	), ctx)));
 	return ReduceCombinedBranch(term, ctx);
+}
+
+ReductionStatus
+ContinuationToApplicative(TermNode& term)
+{
+	return Forms::CallRegularUnaryAs<Continuation>(
+		[&](Continuation& cont, ResolvedTermReferencePtr p_ref){
+		return WrapO(term, cont.Handler, p_ref);
+	}, term);
 }
 
 } // namespace Forms;

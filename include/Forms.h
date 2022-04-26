@@ -501,6 +501,9 @@ Sequence(TermNode&, Context&);
 ReductionStatus
 Call1CC(TermNode&, Context&);
 
+ReductionStatus
+ContinuationToApplicative(TermNode&);
+
 } // namespace Forms;
 
 } // namespace Unilang;
