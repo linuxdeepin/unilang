@@ -1806,6 +1806,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　捕获的续延之后允许被复制。
 
+`continuation->applicative <continuation>`
+
+　　转换续延为应用子。
+
+　　结果是转换的 `<applicative>` 类型的值。
+
 ## 代理求值
 
 　　代理求值操作加载为基础环境下的 `std.promises` 环境。
