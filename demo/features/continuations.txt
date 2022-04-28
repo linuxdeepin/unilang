@@ -1,0 +1,12 @@
+﻿"Continuations demos.";
+
+$import! std.continuations call/1cc continuation->applicative;
+
+$expect 42 call/1cc ($lambda . 42);
+
+$expect 43 $let ((a 43)) call/1cc ($lambda . a);
+
+$expect (list 44) call/1cc
+	($lambda (&k) ((continuation->applicative (move! k)) 44;
+		raise-error "Failed to skip."));
+
