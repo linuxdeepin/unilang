@@ -366,7 +366,7 @@ public:
 	{
 		return p_record;
 	}
-	YB_ATTR_nodiscard Environment&
+	YB_ATTR_nodiscard YB_PURE Environment&
 	GetRecordRef() const noexcept
 	{
 		return *p_record;
