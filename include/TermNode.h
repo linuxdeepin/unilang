@@ -444,7 +444,8 @@ inline void
 AssertValueTags(const TermNode& nd) noexcept
 {
 	yunused(nd);
-	assert(nd.Tags == TermTags && "Invalid term of first-class value found.");
+	assert(nd.Tags == TermTags::Unqualified
+		&& "Invalid term of first-class value found.");
 }
 
 YB_ATTR_nodiscard YB_PURE inline TermNode&
