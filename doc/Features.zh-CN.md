@@ -684,3 +684,16 @@ fn 2 (list 3 4);
 defn fn (x : Number, y : List) x;
 fn 2 (list 3 4);
 ```
+## 异常
+
+　　上层语言提供异常处理机制，允许改变默认的控制，抛出*异常对象(exception object)* 并以此调用指定的*异常处理器(exception handler)* 。
+
+　　使用 `try/catch` 指定可能包含抛出异常的表达式和异常处理器的表达式。使用 `throw` 在 `try/catch` 的第一个操作数的求值中抛出异常。其操作数指定异常对象。如：
+
+```
+try/catch (17 + 4) idv; "=> 21";
+try/catch (17 + (throw (2 + 3))) (lambda (x) x * 2); "=> 10";
+```
+
+　　异常处理器应为合并子。一般应为应用子，以取得异常对象，而不是 `throw` 的未求值的操作数。
+
