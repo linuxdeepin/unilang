@@ -113,7 +113,7 @@ $defw! typed-ptree->ptree (&x) d
 			$let% (((n .&opt) x))
 			(
 				$if (null? opt) (list (typed-ptree->ptree n))
-					($if (eqv? (first% opt) ((unwrap idv) :))
+					($if (eqv? (first% opt) ($quote :))
 						($sequence (eval (rest% opt) d) n)
 						(map1 typed-ptree->ptree x))
 			)
