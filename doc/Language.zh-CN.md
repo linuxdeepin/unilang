@@ -1315,6 +1315,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　类似 `$vau/e%` ，但以当前环境代替额外的求值环境作为静态环境。
 
+`$quote <expression>`
+
+　　求值引用操作。结果是返回值转换后的未被求值的操作数。
+
 `id <object>`
 
 　　结果是不隐含左值到右值转换的参数，在结果保留引用值。
