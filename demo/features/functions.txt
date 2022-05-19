@@ -1,6 +1,5 @@
 ﻿"Function and calls demos.";
 
-$def! $quote unwrap idv;
 $def! f $lambda (x) x;
 
 "The following expressions have the 1st subexpression as a function.";
