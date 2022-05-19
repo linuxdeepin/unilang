@@ -626,7 +626,7 @@ LoadFunctions(Interpreter& intp, bool jit)
 $def! lock-current-environment (wrap ($vau () d lock-environment d));
 $def! $quote $vau% (x) #ignore $move-resolved! x;
 $def! id wrap ($vau% (%x) #ignore $move-resolved! x);
-$def! idv wrap ($vau% (x) #ignore $move-resolved! x);
+$def! idv wrap $quote;
 	)Unilang");
 	RegisterStrict(ctx, "list", ReduceBranchToListValue);
 	RegisterStrict(ctx, "list%", ReduceBranchToList);
@@ -983,7 +983,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.10"
+#define APP_VER "0.11.13"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
