@@ -1,7 +1,5 @@
 ﻿"Environments demos.";
 
-$def! $quote unwrap idv;
-
 "Environments can be referred like the following statements.";
 
 $def! current () get-current-environment;
