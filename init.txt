@@ -170,6 +170,25 @@ $def! (let let* letrec) ($lambda (&ce)
 $defv! defn (&f &formals .&body) d
 	eval (list* $def! f lambda formals (move! body)) d;
 
+$defv%! throw (&ex) d
+	eval% (list% (list% ($remote-eval% continuation->applicative
+		std.continuations) (list% move! ($quote __cc)))
+		(list% (list% ($quote __h)) (forward! ex))) d;
+
+$defv%! try/catch (&expr &h) d
+(
+	$set! d __h (eval% h d);
+	first (eval% (list% ($remote-eval% call/1cc std.continuations)
+		(list% $lambda%
+			(list% ($quote &k))
+			(list% $sequence
+				(list% $set! d ($quote __cc) move! ($quote k))
+				(list% (list% list% (forward! expr)))
+			)
+		)
+	) d)
+);
+
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 
 $defl! subinfo (.&msgs) apply putss (list* "Sub test case: " (move! msgs));
