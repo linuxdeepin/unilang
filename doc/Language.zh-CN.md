@@ -2596,6 +2596,26 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `let*` ：同核心库函数 `$let*` 。
 * `letrec` ：同核心库函数 `$letrec` 。
 
+### 异常库
+
+　　异常库提供异常处理操作。
+
+`try/catch` <expression1> <expression2>
+
+　　求值第二个表达式，保存其结果作为*异常处理器(exception handler)* ；然后求值第一个表达式。
+
+　　若第一个表达式的求值中有 `throw` 的调用（参见以下描述），则中止求值，转移控制，以 `throw` 调用的操作数的求值得到的*异常对象(exception object)* 作为唯一的操作数，调用异常处理器。
+
+　　异常处理器调用同函数应用。
+
+**注释** 若异常调用器不是一个能接受异常对象为参数的合并子，则引起错误
+
+`throw` <expression>
+
+　　求值表达式，并跳转到包含 `throw` 调用的最内一层的 `try/catch` 表达式。
+
+　　若这个 `throw` 调用不在 `try/catch` 的第一个操作数中出现，则引起错误。
+
 ### 测试库
 
 　　测试库引入测试接口，具有以下符合标准库命名风格的对象和操作：
