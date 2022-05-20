@@ -661,8 +661,8 @@ $def! $lambda/e% $vau (&p &formals .&body) d
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
 $def! collapse $lambda% (%x)
-	$if (uncollapsed? x)
-		(($if ($lvalue-identifier? x) ($lambda% (%x) x) id) (idv x)) x;
+	$if (uncollapsed? x) (($if ($lvalue-identifier? x) ($lambda% (%x) x) id)
+		($if (modifiable? x) (idv x) (as-const (idv x)))) ($move-resolved! x);
 $def! assign%! $lambda (&x &y) assign@! (forward! x) (forward! (collapse y));
 $def! assign! $lambda (&x &y) assign@! (forward! x) (idv (collapse y));
 $def! apply $lambda% (&appv &arg .&opt)
@@ -983,7 +983,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.13"
+#define APP_VER "0.11.16"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

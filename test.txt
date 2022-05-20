@@ -89,6 +89,8 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 		$check modifiable? (collapse (first@ li));
 		$expect #f modifiable? (collapse (first@ lic));
 		$expect #f modifiable? (collapse (as-const (first@ lic)));
+		subinfo "collapsed nonmodifying values;" " fixed since V0.11.16";
+		$expect #f modifiable? (collapse (as-const (first@ li)));
 		subinfo "collapsed value category";
 		$expect #f unique? (collapse (first@ lie))
 	);
