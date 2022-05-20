@@ -275,7 +275,7 @@ private:
 		else
 		{
 			ctx.GetRecordRef().Parent = parent;
- 			term.SetContent(Unilang::Deref(p_eval_struct));
+			term.SetContent(Unilang::Deref(p_eval_struct));
 		}
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
