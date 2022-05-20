@@ -76,15 +76,18 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	subinfo "expecting different results for 'first&' and 'first@'";
 	$expect #f eq? (first& li) (first@ li);
 	subinfo "collapsing test";
-	$expect #t reference? (first@ li);
-	$expect #t uncollapsed? (first@ li);
-	$expect #t reference? (idv (first@ li));
-	$expect #f uncollapsed? (idv (first@ li));
-	$expect #f unique? (collapse (expire (first@ li)));
-	$expect #t unique? (collapse (expire (first@ lie)));
-	$expect #f unique? (collapse (first@ li));
-	subinfo "the collapsed value category";
-	$expect #f unique? (collapse (first@ lie));
+	$let ()
+	(
+		$expect #t reference? (first@ li);
+		$expect #t uncollapsed? (first@ li);
+		$expect #t reference? (idv (first@ li));
+		$expect #f uncollapsed? (idv (first@ li));
+		$expect #f unique? (collapse (expire (first@ li)));
+		$expect #t unique? (collapse (expire (first@ lie)));
+		$expect #f unique? (collapse (first@ li));
+		subinfo "collapsed value category";
+		$expect #f unique? (collapse (first@ lie))
+	);
 	subinfo "expecting prvalue for reference to reference";
 	$expect 1 idv (idv (first@ li));
 	$expect 1 idv (idv ((wrap ($vau% (%x) #ignore x)) (first@ li)));
