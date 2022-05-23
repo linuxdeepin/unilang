@@ -235,20 +235,6 @@ TCOAction&
 PrepareTCOEvaluation(Context&, TermNode&, EnvironmentGuard&&);
 
 
-ReductionStatus
-MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept;
-
-using MoveGuardAction = decltype(std::bind(MoveGuard,
-	std::declval<EnvironmentGuard>(), std::placeholders::_1));
-
-YB_ATTR_nodiscard inline
-MoveGuardAction
-MakeMoveGuard(EnvironmentGuard& gd)
-{
-	return std::bind(MoveGuard, std::move(gd), std::placeholders::_1);
-}
-
-
 inline void
 AssertNextTerm(Context& ctx, TermNode& term)
 {
@@ -322,7 +308,7 @@ struct NonTailCall final
 		_fCurrent&& cur)
 	{
 		return Unilang::RelayCurrentNext(ctx, term, yforward(cur),
-			MakeMoveGuard(gd));
+			MoveKeptGuard(gd));
 	}
 
 	template<typename _fCurrent>
@@ -330,7 +316,7 @@ struct NonTailCall final
 	RelayNextGuardedLifted(Context& ctx, TermNode& term,
 		EnvironmentGuard&& gd, _fCurrent&& cur)
 	{
-		auto act(MakeMoveGuard(gd));
+		auto act(MoveKeptGuard(gd));
 		Continuation cont([&]{
 			return ReduceForLiftedResult(term);
 		}, ctx);
@@ -345,7 +331,7 @@ struct NonTailCall final
 	RelayNextGuardedProbe(Context& ctx, TermNode& term,
 		EnvironmentGuard&& gd, bool lift, _fCurrent&& cur)
 	{
-		auto act(MakeMoveGuard(gd));
+		auto act(MoveKeptGuard(gd));
 
 		if(lift)
 		{
