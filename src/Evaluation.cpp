@@ -223,6 +223,16 @@ ThrowNestedParameterTreeCheckError()
 		" parameter tree (expected a symbol or '#ignore')."));
 }
 
+template<typename _func>
+inline void
+HandleOrIgnore(_func f, const TermNode& t, bool t_has_ref)
+{
+	if(const auto p = TermToNamePtr(t))
+		f(*p);
+	else if(!IsIgnore(t))
+		ThrowFormalParameterTypeError(t, t_has_ref);
+}
+
 
 template<typename _fBindValue>
 class GParameterValueMatcher final
@@ -273,10 +283,8 @@ private:
 				Match(nd, true);
 			});
 		}
-		else if(const auto p = TermToNamePtr(t))
-			BindValue(*p);
-		else if(!IsIgnore(t))
-			ThrowFormalParameterTypeError(t, t_has_ref);
+		else
+			HandleOrIgnore(std::ref(BindValue), t, t_has_ref);
 	}
 
 	void
@@ -391,10 +399,7 @@ struct ParameterCheck final
 	static void
 	HandleLeaf(_func f, const TermNode& t, bool t_has_ref)
 	{
-		if(const auto p = TermToNamePtr(t))
-			f(*p);
-		else if(!IsIgnore(t))
-			ThrowFormalParameterTypeError(t, t_has_ref);
+		HandleOrIgnore(std::ref(f), t, t_has_ref);
 	}
 
 	template<typename _func>
@@ -768,14 +773,14 @@ ReductionStatus
 FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 {
 	if(n == 0 || term.size() <= 1)
- 		return Unilang::RelayCurrentOrDirect(ctx, std::ref(Handler), term);
- 	return Unilang::RelayCurrentNext(ctx, term, [](TermNode& t, Context& c){
- 		assert(!t.empty() && "Invalid term found.");
- 		ReduceChildrenOrderedAsyncUnchecked(std::next(t.begin()), t.end(), c);
- 		return ReductionStatus::Partial;
+		return Unilang::RelayCurrentOrDirect(ctx, std::ref(Handler), term);
+	return Unilang::RelayCurrentNext(ctx, term, [](TermNode& t, Context& c){
+		assert(!t.empty() && "Invalid term found.");
+		ReduceChildrenOrderedAsyncUnchecked(std::next(t.begin()), t.end(), c);
+		return ReductionStatus::Partial;
 	}, [&, n](Context& c){
- 		c.SetNextTermRef(term);
- 		return CallN(n - 1, term, c);
+		c.SetNextTermRef(term);
+		return CallN(n - 1, term, c);
 	});
 }
 
