@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
@@ -12,25 +12,31 @@ namespace Unilang
 
 class UnilangException : public std::runtime_error
 {
+public:
 	using runtime_error::runtime_error;
+
+	UnilangException(const UnilangException&) = default;
+	~UnilangException() override;
 };
 
 
 class TypeError : public UnilangException
 {
+public:
 	using UnilangException::UnilangException;
+
+	TypeError(const TypeError&) = default;
+	~TypeError() override;
 };
 
 
 class ValueCategoryMismatch : public TypeError
 {
+public:
 	using TypeError::TypeError;
-};
 
-
-class ListReductionFailure : public TypeError
-{
-	using TypeError::TypeError;
+	ValueCategoryMismatch(const ValueCategoryMismatch&) = default;
+	~ValueCategoryMismatch() override;
 };
 
 
@@ -38,12 +44,39 @@ class ListTypeError : public TypeError
 {
 public:
 	using TypeError::TypeError;
+
+	ListTypeError(const ListTypeError&) = default;
+	~ListTypeError() override;
+};
+
+
+class ListReductionFailure : public TypeError
+{
+public:
+	using TypeError::TypeError;
+
+	ListReductionFailure(const ListReductionFailure&) = default;
+	~ListReductionFailure() override;
+};
+
+
+class InvalidSyntax : public UnilangException
+{
+public:
+	using UnilangException::UnilangException;
+
+	InvalidSyntax(const InvalidSyntax&) = default;
+	~InvalidSyntax() override;
 };
 
 
 class ParameterMismatch : public ListTypeError
 {
+public:
 	using ListTypeError::ListTypeError;
+
+	ParameterMismatch(const ParameterMismatch&) = default;
+	~ParameterMismatch() override;
 };
 
 
@@ -55,6 +88,8 @@ private:
 
 public:
 	ArityMismatch(size_t, size_t);
+	ArityMismatch(const ArityMismatch&) = default;
+	~ArityMismatch() override;
 
 	YB_ATTR_nodiscard YB_PURE size_t
 	GetExpected() const noexcept
@@ -70,12 +105,6 @@ public:
 };
 
 
-class InvalidSyntax : public UnilangException
-{
-	using UnilangException::UnilangException;
-};
-
-
 class BadIdentifier : public InvalidSyntax
 {
 private:
@@ -85,6 +114,8 @@ public:
 	YB_NONNULL(2)
 	BadIdentifier(const char*, size_t = 0);
 	BadIdentifier(string_view, size_t = 0);
+	BadIdentifier(const BadIdentifier&) = default;
+	~BadIdentifier() override;
 
 	YB_ATTR_nodiscard YB_PURE const string&
 	GetIdentifier() const noexcept
@@ -98,6 +129,9 @@ class InvalidReference : public UnilangException
 {
 public:
 	using UnilangException::UnilangException;
+
+	InvalidReference(const InvalidReference&) = default;
+	~InvalidReference() override;
 };
 
 
