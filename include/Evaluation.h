@@ -45,13 +45,13 @@ struct SeparatorTransformer
 		_fPred filter) const
 	{
 		const auto a(term.get_allocator());
-		auto res(Unilang::AsTermNode(yforward(term).Value));
+		auto res(Unilang::AsTermNode(a, yforward(term).Value));
 
 		if(IsBranch(term))
 		{
 			using it_t = decltype(std::make_move_iterator(term.begin()));
 
-			res.Add(Unilang::AsTermNode(pfx));
+			res.Add(Unilang::AsTermNode(a, pfx));
 			ystdex::split(std::make_move_iterator(term.begin()),
 				std::make_move_iterator(term.end()), filter,
 				[&](it_t b, it_t e){
@@ -65,7 +65,7 @@ struct SeparatorTransformer
 						add(res, b);
 					else
 					{
-						auto child(Unilang::AsTermNode());
+						auto child(Unilang::AsTermNode(a));
 
 						do
 						{
