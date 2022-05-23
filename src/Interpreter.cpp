@@ -426,7 +426,7 @@ SeparatorPass::Transform(TermNode& term, bool skip_binary,
 					if(i != term.begin() && std::next(i) != term.end())
 					{
 						const auto a(term.get_allocator());
-						auto res(Unilang::AsTermNode(yforward(term).Value));
+						auto res(Unilang::AsTermNode(a, yforward(term).Value));
 						auto im(std::make_move_iterator(i));
 						using it_t = decltype(im);
 						const auto range_add([&](it_t b, it_t e){
@@ -439,7 +439,7 @@ SeparatorPass::Transform(TermNode& term, bool skip_binary,
 								add(res, b);
 							else
 							{
-								auto child(Unilang::AsTermNode());
+								auto child(Unilang::AsTermNode(a));
 
 								do
 								{
@@ -449,7 +449,8 @@ SeparatorPass::Transform(TermNode& term, bool skip_binary,
 							}
 						});
 
-						res.Add(Unilang::AsTermNode(trans.MakePrefix(i->Value)));
+						res.Add(
+							Unilang::AsTermNode(a, trans.MakePrefix(i->Value)));
 						range_add(std::make_move_iterator(term.begin()), im);
 						range_add(++im, std::make_move_iterator(term.end()));
 						term = std::move(res);
