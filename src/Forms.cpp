@@ -11,7 +11,7 @@
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
 #include "Lexical.h" // for IsUnilangSymbol;
-#include "TCO.h" // for MoveGuard, ReduceSubsequent, Action;
+#include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
 #include "TermNode.h" // for TNCIter;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
@@ -74,27 +74,8 @@ CheckEnvironmentFormal(const TermNode& term)
 }
 
 
-template<typename _fNext>
 ReductionStatus
-RelayForEvalOrDirect(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
-	bool, _fNext&& next)
-{
-	// TODO: Implement TCO.
-	auto act(std::bind(MoveGuard, std::move(gd), std::placeholders::_1));
-
-	Continuation cont([&]{
-		return ReduceForLiftedResult(term);
-	}, ctx);
-
-	ctx.SetupFront(std::move(act));
-	ctx.SetNextTermRef(term);
-	ctx.SetupFront(std::move(cont));
-	return next(ctx);
-}
-
-ReductionStatus
-RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd,
-	bool no_lift)
+RelayForCall(Context& ctx, TermNode& term, EnvironmentGuard&& gd, bool no_lift)
 {
 	return TailCall::RelayNextGuardedProbe(ctx, term, std::move(gd), !no_lift,
 		std::ref(ctx.ReduceOnce));
