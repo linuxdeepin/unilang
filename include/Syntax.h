@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Syntax_h_
 #define INC_Unilang_Syntax_h_ 1
@@ -13,15 +13,18 @@ namespace Unilang
 
 struct LexemeTokenizer final
 {
-	// XXX: Allocator is ignored;
-	LexemeTokenizer(TermNode::allocator_type = {})
+	TermNode::allocator_type Allocator;
+
+	LexemeTokenizer(TermNode::allocator_type a = {})
+		: Allocator(a)
 	{}
 
 	template<class _type>
 	YB_ATTR_nodiscard YB_PURE inline TermNode
 	operator()(const _type& val) const
 	{
-		return AsTermNode(val);
+		return
+			Unilang::AsTermNode(Allocator, std::allocator_arg, Allocator, val);
 	}
 };
 
@@ -55,7 +58,7 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 	for(; first != last; ++first)
 		if(*first == "(" || *first == "[" || *first == "{")
 		{
-			tms.push(AsTermNode());
+			tms.push(AsTermNode(a));
 			tms.top().Value = *first;
 		}
 		else if(!(*first == ")" || *first == "]" || *first == "}"))
