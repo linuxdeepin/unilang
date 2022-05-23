@@ -278,14 +278,5 @@ PrepareTCOEvaluation(Context& ctx, TermNode& term, EnvironmentGuard&& gd)
 	return act;
 }
 
-
-ReductionStatus
-MoveGuard(EnvironmentGuard& gd, Context& ctx) noexcept
-{
-	const auto egd(std::move(gd));
-
-	return ctx.LastStatus;
-}
-
 } // namespace Unilang;
 
