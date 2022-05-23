@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Exception.h" // for std::string, YSLib::to_std_string, ystdex::sfmt,
 //	make_shared;
@@ -8,6 +8,35 @@
 
 namespace Unilang
 {
+
+UnilangException::~UnilangException() = default;
+
+
+TypeError::~TypeError() = default;
+
+
+ValueCategoryMismatch::~ValueCategoryMismatch() = default;
+
+
+ListTypeError::~ListTypeError() = default;
+
+
+ListReductionFailure::~ListReductionFailure() = default;
+
+
+InvalidSyntax::~InvalidSyntax() = default;
+
+
+ParameterMismatch::~ParameterMismatch() = default;
+
+
+ArityMismatch::~ArityMismatch() = default;
+
+
+BadIdentifier::~BadIdentifier() = default;
+
+
+InvalidReference::~InvalidReference() = default;
 
 namespace
 {
