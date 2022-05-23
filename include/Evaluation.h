@@ -359,6 +359,31 @@ void
 BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
 	TermNode&);
 
+
+template<class _tGuard>
+inline ReductionStatus
+KeepGuard(_tGuard&, Context& ctx) ynothrow
+{
+	return ctx.LastStatus;
+}
+
+template<class _tGuard>
+using GKeptGuardAction = decltype(std::bind(KeepGuard<_tGuard>,
+	std::declval<_tGuard&>(), std::placeholders::_1));
+
+template<class _tGuard>
+YB_ATTR_nodiscard inline GKeptGuardAction<_tGuard>
+MoveKeptGuard(_tGuard& gd)
+{
+	return std::bind(KeepGuard<_tGuard>, std::move(gd), std::placeholders::_1);
+}
+template<class _tGuard>
+YB_ATTR_nodiscard inline GKeptGuardAction<_tGuard>
+MoveKeptGuard(_tGuard&& gd)
+{
+	return Unilang::MoveKeptGuard(gd);
+}
+
 } // namespace Unilang;
 
 #endif
