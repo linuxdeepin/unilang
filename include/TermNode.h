@@ -35,6 +35,13 @@ enum class TermTags
 
 DefBitmaskEnum(TermTags)
 
+YB_ATTR_nodiscard YB_STATELESS constexpr bool
+IsMovable(TermTags tags) noexcept
+{
+	return (tags & (TermTags::Unique | TermTags::Nonmodifying))
+		== TermTags::Unique;
+}
+
 YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
 GetLValueTagsOf(const TermTags& tags) noexcept
 {
