@@ -4,7 +4,7 @@
 #define INC_Unilang_TermAccess_h_ 1
 
 #include "TermNode.h" // for string, TermNode, type_info, YSLib::TryAccessValue,
-//	Unilang::Deref;
+//	Unilang::IsMovable, Unilang::Deref, PropagateTo;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
 
@@ -219,8 +219,7 @@ public:
 	YB_ATTR_nodiscard YB_PURE bool
 	IsMovable() const noexcept
 	{
-		return (tags & (TermTags::Unique | TermTags::Nonmodifying))
-			== TermTags::Unique;
+		return Unilang::IsMovable(tags);
 	}
 	YB_ATTR_nodiscard YB_PURE bool
 	IsReferencedLValue() const noexcept
@@ -249,6 +248,18 @@ public:
 	AddTags(TermTags t) noexcept
 	{
 		tags |= t;
+	}
+
+	void
+	PropagateFrom(TermTags t) noexcept
+	{
+		tags = PropagateTo(tags, t);
+	}
+
+	void
+	RemoveTags(TermTags t) noexcept
+	{
+		tags &= ~t;
 	}
 
 #if Unilang_CheckTermReferenceIndirection
