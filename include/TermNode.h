@@ -85,7 +85,7 @@ public:
 		: container(a)
 	{}
 	TermNode(const Container& con)
-		: container(con)
+		: container(con, con.get_allocator())
 	{}
 	TermNode(Container&& con)
 		: container(std::move(con))
@@ -99,7 +99,7 @@ public:
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
 	TermNode(const Container& con, _tParams&&... args)
-		: container(con), Value(yforward(args)...)
+		: container(con, con.get_allocator()), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
@@ -127,7 +127,9 @@ public:
 		_tParams&&... args)
 		: container(std::move(con), a), Value(yforward(args)...)
 	{}
-	TermNode(const TermNode&) = default;
+	TermNode(const TermNode& nd)
+		: TermNode(nd, nd.get_allocator())
+	{}
 	TermNode(const TermNode& nd, allocator_type a)
 		: container(nd.container, a), Value(nd.Value), Tags(nd.Tags)
 	{}
