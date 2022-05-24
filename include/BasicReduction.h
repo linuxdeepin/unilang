@@ -33,8 +33,11 @@ ReductionStatus
 RegularizeTerm(TermNode&, ReductionStatus) noexcept;
 
 
-void
-LiftOther(TermNode&, TermNode&);
+inline void
+LiftOther(TermNode& term, TermNode& tm)
+{
+	term.MoveContent(std::move(tm));
+}
 
 inline void
 LiftTerm(TermNode& term, TermNode& tm)
