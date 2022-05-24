@@ -864,6 +864,9 @@ CheckListReference(TermNode& term)
 }
 
 
+#if YB_IMPL_GNUCPP >= 120000
+YB_ATTR(optimize("no-tree-pta"))
+#endif
 ReductionStatus
 MakeEncapsulationType(TermNode& term)
 {
