@@ -11,6 +11,7 @@
 //	ystdex::enable_if_t, std::is_assignable, std::is_nothrow_assignable,
 //	std::is_convertible, ystdex::decay_t, ystdex::false_, ystdex::not_;
 #include <cassert> // for assert;
+#include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <ystdex/type_op.hpp> // for ystdex::cond_or_t;
 
 namespace Unilang
@@ -269,6 +270,13 @@ public:
 	CopyValue(const TermNode& nd)
 	{
 		Value = ValueObject(nd.Value);
+	}
+
+	void
+	MoveContent(TermNode&& nd)
+	{
+		assert(!ystdex::ref_eq<>()(*this, nd) && "Invalid self move found.");
+		SetContent(TermNode(std::move(nd)));
 	}
 
 	YB_ATTR_nodiscard YB_PURE iterator
