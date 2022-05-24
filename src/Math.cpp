@@ -376,7 +376,7 @@ struct GUOp : GUAssertMismatch<_tRet>, _tBase
 
 	using GUAssertMismatch<_tRet>::operator();
 	template<typename _tParam>
-	YB_ATTR_nodiscard yconstfn
+	YB_ATTR_nodiscard constexpr
 		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam, _tRet>
 	operator()(_tParam&& x) const
 		noexcept(noexcept(std::declval<GUOp>()._tBase::operator()(yforward(x))))
@@ -394,7 +394,7 @@ struct GBOp : GBAssertMismatch<_tRet>, _tBase
 	using GBAssertMismatch<_tRet>::operator();
 	template<typename _tParam1, typename _tParam2,
 		yimpl(typename = ystdex::exclude_self_t<ValueObject, _tParam1>)>
-	YB_ATTR_nodiscard yconstfn
+	YB_ATTR_nodiscard constexpr
 		yimpl(ystdex::exclude_self_t)<ValueObject, _tParam2, _tRet>
 	operator()(_tParam1&& x, _tParam2&& y) const
 		noexcept(noexcept(
@@ -408,7 +408,7 @@ struct GBOp : GBAssertMismatch<_tRet>, _tBase
 struct EqZero
 {
 	template<typename _type>
-	YB_ATTR_nodiscard YB_PURE yconstfn bool
+	YB_ATTR_nodiscard YB_PURE constexpr bool
 	operator()(const _type& x) const noexcept
 	{
 #if YB_IMPL_GNUCPP || YB_IMPL_CLANGPP
@@ -426,7 +426,7 @@ struct EqZero
 struct Positive
 {
 	template<typename _type>
-	YB_ATTR_nodiscard YB_PURE yconstfn bool
+	YB_ATTR_nodiscard YB_PURE constexpr bool
 	operator()(const _type& x) const noexcept
 	{
 		return x > _type(0);
@@ -437,7 +437,7 @@ struct Positive
 struct Negative
 {
 	template<typename _type>
-	YB_ATTR_nodiscard YB_PURE yconstfn bool
+	YB_ATTR_nodiscard YB_PURE constexpr bool
 	operator()(const _type& x) const noexcept
 	{
 		return x < _type(0);
@@ -1062,7 +1062,7 @@ ThrowForInvalidLiteralSuffix(const char* sfx, const char* id)
 }
 
 template<typename _type>
-YB_ATTR_nodiscard YB_STATELESS yconstfn _type
+YB_ATTR_nodiscard YB_STATELESS constexpr _type
 DecimalCarryAddDigit(_type x, char c)
 {
 	return x * 10 + _type(c - '0');
@@ -1088,13 +1088,13 @@ using ReadIntType = int;
 using ReadExtIntType = long long;
 using ReadCommonType = ystdex::common_type_t<ReadExtIntType, std::uint64_t>;
 
-YB_ATTR_nodiscard YB_STATELESS yconstfn bool
+YB_ATTR_nodiscard YB_STATELESS constexpr bool
 IsDecimalPoint(char c) noexcept
 {
 	return c == '.';
 }
 
-YB_ATTR_nodiscard YB_STATELESS yconstfn
+YB_ATTR_nodiscard YB_STATELESS constexpr
 bool IsExponent(char c) noexcept
 {
 	return c == 'e' || c == 'E';
