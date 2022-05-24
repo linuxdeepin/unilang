@@ -192,7 +192,10 @@ public:
 	void
 	SetContent(TermNode&& nd)
 	{
-		SetContent(std::move(nd.container), std::move(nd.Value));
+		assert(get_allocator() == nd.get_allocator()
+			&& "Invalid allocator found.");
+		container.swap(nd.container),
+		Value = std::move(nd.Value),
 		Tags = nd.Tags;
 	}
 
