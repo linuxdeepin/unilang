@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "BasicReduction.h"
 #include "TermAccess.h" // for Unilang::TryAccessLeaf, TermReference;
@@ -15,17 +15,6 @@ RegularizeTerm(TermNode& term, ReductionStatus status) noexcept
 	return status;
 }
 
-
-void
-LiftOther(TermNode& term, TermNode& tm)
-{
-	assert(&term != &tm);
-
-	const auto t(std::move(term.GetContainerRef()));
-
-	term.GetContainerRef() = std::move(tm.GetContainerRef());
-	term.Value = std::move(tm.Value);
-}
 
 void
 LiftOtherOrCopy(TermNode& term, TermNode& tm, bool move)
