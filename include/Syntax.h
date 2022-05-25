@@ -3,10 +3,11 @@
 #ifndef INC_Unilang_Syntax_h_
 #define INC_Unilang_Syntax_h_ 1
 
+#include "Parser.h" // for ToLexeme, ThrowMismatchBoundaryToken;
 #include "TermNode.h" // for TermNode, stack;
 #include "Exception.h" // for UnilangException;
 #include <cassert> // for assert;
-#include "Lexical.h" // for ThrowMismatchBoundaryToken;
+#include <ystdex/type_traits.hpp> // for ystdex::remove_reference_t;
 
 namespace Unilang
 {
@@ -23,8 +24,8 @@ struct LexemeTokenizer final
 	YB_ATTR_nodiscard YB_PURE inline TermNode
 	operator()(const _type& val) const
 	{
-		return
-			Unilang::AsTermNode(Allocator, std::allocator_arg, Allocator, val);
+		return Unilang::AsTermNode(Allocator, std::allocator_arg, Allocator,
+			ToLexeme(val));
 	}
 };
 
@@ -56,15 +57,19 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 
 	tms.push(std::move(term));
 	for(; first != last; ++first)
-		if(*first == "(" || *first == "[" || *first == "{")
+	{
+		const auto& val(*first);
+		const auto& lexeme(ToLexeme(val));
+
+		if(lexeme == "(" || lexeme == "[" || lexeme == "{")
 		{
 			tms.push(AsTermNode(a));
-			tms.top().Value = *first;
+			tms.top().Value = lexeme;
 		}
-		else if(!(*first == ")" || *first == "]" || *first == "}"))
+		else if(!(lexeme == ")" || lexeme == "]" || lexeme == "}"))
 		{
 			assert(!tms.empty());
-			tms.top().Add(tokenize(*first));
+			tms.top().Add(tokenize(val));
 		}
 		else if(tms.size() != 1)
 		{
@@ -72,14 +77,14 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 
 			tms.pop();
 
-			const auto rtok(*first);
-			const auto& ltok(tm.Value.GetObject<decltype(rtok)>());
+			const auto& ltok(tm.Value.GetObject<
+				ystdex::remove_reference_t<decltype(lexeme)>>());
 
-			if(rtok == ")" && ltok != "(")
+			if(lexeme == ")" && ltok != "(")
 				ThrowMismatchBoundaryToken('(', ')');
-			if(rtok == "]" && ltok != "[")
+			if(lexeme == "]" && ltok != "[")
 				ThrowMismatchBoundaryToken('[', ']');
-			if(rtok == "}" && ltok != "{")
+			if(lexeme == "}" && ltok != "{")
 				ThrowMismatchBoundaryToken('{', '}');
 			tm.Value.Clear();
 			assert(!tms.empty());
@@ -87,6 +92,7 @@ ReduceSyntax(TermNode& term, _tIn first, _tIn last, _fTokenize tokenize)
 		}
 		else
 			return first;
+	}
 	if(tms.size() == 1)
 		return first;
 	throw UnilangException("Redundant '(', '[' or '{' found.");
