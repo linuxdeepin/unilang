@@ -3,8 +3,8 @@
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
 
-#include "Unilang.h" // for size_t, string, string_view, shared_ptr,
-//	std::string, Unilang::Deref;
+#include "Lexical.h" // for size_t, string, string_view, shared_ptr,
+//	SourceInformation, Unilang::Deref;
 #include <exception> // for std::runtime_error;
 
 namespace Unilang
@@ -111,6 +111,8 @@ private:
 	shared_ptr<string> p_identifier;
 
 public:
+	SourceInformation Source{};
+
 	YB_NONNULL(2)
 	BadIdentifier(const char*, size_t = 0);
 	BadIdentifier(string_view, size_t = 0);
