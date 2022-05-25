@@ -3,12 +3,12 @@
 #ifndef INC_Unilang_Interpreter_h_
 #define INC_Unilang_Interpreter_h_ 1
 
-#include "Context.h" // for stack, lref, vector, pmr, string, shared_ptr,
-//	Environment, Context, TermNode, Unilang::Deref, YSLib::unique_ptr;
+#include "Context.h" // for pair, lref, stack, vector, pmr, string, shared_ptr,
+//	Environment, Context, TermNode, function, YSLib::unique_ptr;
+#include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
 #include <istream> // for std::istream;
-#include "Parser.h" // for ByteParser;
 #include <ostream> // for std::ostream;
 
 namespace Unilang
@@ -35,6 +35,17 @@ public:
 	void
 	Transform(TermNode&, bool, TermStack&) const;
 };
+
+
+template<typename _fParse>
+using GParsedValue = typename ParseResultOf<_fParse>::value_type;
+
+template<typename _fParse>
+using GTokenizer = function<TermNode(const GParsedValue<_fParse>&)>;
+
+using Tokenizer = GTokenizer<ByteParser>;
+
+using SourcedTokenizer = GTokenizer<SourcedByteParser>;
 
 
 class Interpreter final
