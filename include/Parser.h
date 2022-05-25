@@ -5,9 +5,27 @@
 
 #include "Lexical.h" // for lref, LexicalAnalyzer, pmr::polymorphic_allocator,
 //	string, pmr, std::swap, vector;
+#include <ystdex/type_traits.hpp> // for ystdex::remove_reference_t;
+#include <ystdex/ref.hpp> // for ystdex::unwrap_ref_decay_t;
+#include <ystdex/meta.hpp> // for ystdex::detected_or_t;
 
 namespace Unilang
 {
+
+template<class _tParser>
+using MemberParseResult = typename _tParser::ParseResult;
+
+template<typename _fParse>
+using ParserClassOf
+	= ystdex::remove_reference_t<ystdex::unwrap_ref_decay_t<_fParse>>;
+
+template<typename _fParse>
+using ParseResultOf = ystdex::detected_or_t<vector<string>, MemberParseResult,
+	ParserClassOf<_fParse>>;
+
+template<typename _fParse>
+using GParserResult = const ParseResultOf<_fParse>&;
+
 
 class BufferedByteParserBase
 {
