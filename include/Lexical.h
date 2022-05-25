@@ -1,14 +1,44 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Lexical_h_
 #define INC_Unilang_Lexical_h_ 1
 
-#include "Unilang.h" // for string_view;
+#include "Unilang.h" // for shared_ptr, pair, string_view;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isspace;
 
 namespace Unilang
 {
+
+using SourceName = shared_ptr<string>;
+
+
+struct SourceLocation final
+{
+	size_t Line = 0;
+	size_t Column = 0;
+
+	SourceLocation() = default;
+	SourceLocation(size_t line, size_t col)
+		: Line(line), Column(col)
+	{}
+
+	void
+	Newline() noexcept
+	{
+		yunseq(++Line, Column = 0);
+	}
+
+	void
+	Step() noexcept
+	{
+		++Column;
+	}
+};
+
+
+using SourceInformation = pair<SourceName, SourceLocation>;
+
 
 class UnescapeContext final
 {
