@@ -132,6 +132,25 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 	return ReductionStatus::Retrying;
 }
 
+YB_ATTR_nodiscard YB_PURE bool
+ParseSymbol(TermNode& term, string_view id)
+{
+	assert(id.data());
+	assert(!id.empty() && "Invalid lexeme found.");
+	if(CheckReducible(DefaultEvaluateLeaf(term, id)))
+	{
+		const char f(id.front());
+
+		if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
+			&& id.find_first_not_of("+-") != string_view::npos))
+			throw InvalidSyntax(ystdex::sfmt(f != '#'
+				? "Unsupported literal prefix found in literal '%s'."
+				: "Invalid literal '%s' found.", id.data()));
+		return true;
+	}
+	return {};
+}
+
 void
 ParseLeaf(TermNode& term, string_view id)
 {
@@ -144,17 +163,8 @@ ParseLeaf(TermNode& term, string_view id)
 		term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
 		break;
 	case LexemeCategory::Symbol:
-		if(CheckReducible(DefaultEvaluateLeaf(term, id)))
-		{
-			const char f(id.front());
-
-			if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
-				&& id.find_first_not_of("+-") != string_view::npos))
-				throw InvalidSyntax(ystdex::sfmt(f != '#'
-					? "Unsupported literal prefix found in literal '%s'."
-					: "Invalid literal '%s' found.", id.data()));
+		if(ParseSymbol(term, id))
 			term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
-		}
 		break;
 	case LexemeCategory::Data:
 		term.SetValue(in_place_type<string>, Deliteralize(id),
@@ -586,8 +596,9 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 	const auto& parse_result(parse.GetResult());
 
 	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
-		[&](string_view id){
+		[&](const GParsedValue<ByteParser>& str){
 		auto term(Unilang::AsTermNode(Allocator));
+		const auto id(YSLib::make_string_view(str));
 
 		if(!id.empty())
 			ParseLeaf(term, id);
