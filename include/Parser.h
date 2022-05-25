@@ -7,7 +7,8 @@
 //	string, pmr, std::swap, vector;
 #include <ystdex/type_traits.hpp> // for ystdex::remove_reference_t;
 #include <ystdex/ref.hpp> // for ystdex::unwrap_ref_decay_t;
-#include <ystdex/meta.hpp> // for ystdex::detected_or_t;
+#include <ystdex/meta.hpp> // for ystdex::detected_or_t,
+//	ystdex::enable_if_convertible_t;
 
 namespace Unilang
 {
@@ -236,6 +237,20 @@ public:
 		std::swap(x.source_location, y.source_location);
 	}
 };
+
+
+template<class _type, yimpl(
+	typename = ystdex::enable_if_convertible_t<const _type&, const string&>)>
+YB_ATTR_nodiscard YB_STATELESS const _type&
+ToLexeme(const _type& val) noexcept
+{
+	return val;
+}
+YB_ATTR_nodiscard YB_PURE inline const string&
+ToLexeme(const SourcedByteParser::ParseResult::value_type& val) noexcept
+{
+	return val.second;
+}
 
 } // namespace Unilang;
 
