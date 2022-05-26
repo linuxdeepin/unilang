@@ -148,6 +148,13 @@ TraceException(std::exception& e, YSLib::Logger& trace)
 		catch(BadIdentifier& ex)
 		{
 			print(Err, "BadIdentifier", str);
+			const auto& si(ex.Source);
+
+			if(ex.Source.first)
+				trace.TraceFormat(Err, "%*sIdentifier '%s' is at line %zu,"
+					" column %zu in %s.", int(level + 1), "",
+					ex.GetIdentifier().c_str(), si.second.Line + 1,
+					si.second.Column + 1, si.first->c_str());
 		}
 		catch(bad_any_cast& ex)
 		{
@@ -423,10 +430,21 @@ TermNode
 Interpreter::Read(string_view unit)
 {
 	LexicalAnalyzer lexer;
-	ByteParser parse(lexer, Allocator);
 
-	std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
-	return ReadParserResult(parse);
+	if(UseSourceLocation)
+	{
+		SourcedByteParser parse(lexer, Allocator);
+
+		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
+		return ReadParserResult(parse);
+	}
+	else
+	{
+		ByteParser parse(lexer, Allocator);
+
+		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
+		return ReadParserResult(parse);
+	}
 }
 
 TermNode
