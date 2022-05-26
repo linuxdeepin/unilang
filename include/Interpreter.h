@@ -4,7 +4,8 @@
 #define INC_Unilang_Interpreter_h_ 1
 
 #include "Context.h" // for pair, lref, stack, vector, pmr, string, shared_ptr,
-//	Environment, Context, TermNode, function, YSLib::Logger, YSLib::unique_ptr;
+//	Environment, Context, TermNode, function, YSLib::allocate_shared,
+//	YSLib::Logger, YSLib::unique_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
@@ -98,6 +99,14 @@ private:
 public:
 	ReductionStatus
 	Exit();
+
+	template<typename... _tParams>
+	void
+	ShareCurrentSource(_tParams&&... args)
+	{
+		CurrentSource
+			= YSLib::allocate_shared<string>(Allocator, yforward(args)...);
+	}
 
 	void
 	HandleREPLException(std::exception_ptr, YSLib::Logger&);

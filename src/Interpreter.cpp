@@ -10,7 +10,7 @@
 #include "Exception.h" // for UnilangException;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib, YSLib::Notice;
 #include YFM_YSLib_Core_YException // for YSLib::ExtractException,
 //	YSLib::stringstream;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
@@ -500,9 +500,12 @@ void
 Interpreter::RunLine(string_view unit)
 {
 	if(!unit.empty() && unit != "exit")
+	{
+		ShareCurrentSource("*STDIN*");
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
 			return ExecuteString(unit, ctx);
 		}));
+	}
 }
 
 void
@@ -510,6 +513,7 @@ Interpreter::RunScript(string filename)
 {
 	if(filename == "-")
 	{
+		ShareCurrentSource("*STDIN*");
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(std::cin);
@@ -518,6 +522,7 @@ Interpreter::RunScript(string filename)
 	}
 	else if(!filename.empty())
 	{
+		ShareCurrentSource(filename);
 		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(*OpenUnique(std::move(filename)));
@@ -531,6 +536,7 @@ Interpreter::RunLoop(Context& ctx)
 {
 	if(WaitForLine())
 	{
+		ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		return !line.empty() ? (line != "exit" ? ExecuteString(line, ctx)
