@@ -1040,7 +1040,16 @@ ReductionStatus
 ReduceLeaf(TermNode& term, Context& ctx)
 {
 	const auto res(ystdex::call_value_or([&](string_view id){
-		return EvaluateLeafToken(term, ctx, id);
+		try
+		{
+			return EvaluateLeafToken(term, ctx, id);
+		}
+		catch(BadIdentifier& e)
+		{
+			if(const auto p_si = QuerySourceInformation(term.Value))
+				e.Source = *p_si;
+			throw;
+		}
 	}, TermToNamePtr(term), ReductionStatus::Retained));
 
 	return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
