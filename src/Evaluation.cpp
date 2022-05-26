@@ -891,6 +891,31 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 
 } // unnamed namespace;
 
+
+ReductionStatus
+ReduceOnce(TermNode& term, Context& ctx)
+{
+	ctx.SetNextTermRef(term);
+	return RelayDirect(ctx, ctx.ReduceOnce, term);
+}
+
+// NOTE: See Context.h for the declaration.
+ReductionStatus
+Context::DefaultReduceOnce(TermNode& term, Context& ctx)
+{
+	return term.Value ? ReduceLeaf(term, ctx) : ReduceBranch(term, ctx);
+}
+
+ReductionStatus
+ReduceOrdered(TermNode& term, Context& ctx)
+{
+	if(IsBranch(term))
+		return ReduceSequenceOrderedAsync(term, ctx, term.begin());
+	term.Value = ValueToken::Unspecified;
+	return ReductionStatus::Retained;
+}
+
+
 void
 ParseLeaf(TermNode& term, string_view id)
 {
@@ -940,70 +965,6 @@ ParseLeafWithSourceInformation(TermNode& term, string_view id,
 	default:
 		break;
 	}
-}
-
-
-ReductionStatus
-ReduceLeaf(TermNode& term, Context& ctx)
-{
-	const auto res(ystdex::call_value_or([&](string_view id){
-		return EvaluateLeafToken(term, ctx, id);
-	}, TermToNamePtr(term), ReductionStatus::Retained));
-
-	return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
-}
-
-ReductionStatus
-ReduceCombinedBranch(TermNode& term, Context& ctx)
-{
-	assert(IsBranchedList(term));
-
-	auto& fm(AccessFirstSubterm(term));
-	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
-
-	if(p_ref_fm)
-	{
-		term.Tags &= ~TermTags::Temporary;
-		if(const auto p_handler
-			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
-			return CombinerReturnThunk(*p_handler, term, ctx);
-	}
-	else
-		term.Tags |= TermTags::Temporary;
-	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
-		return
-			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
-	assert(IsBranch(term));
-	return ResolveTerm([&](const TermNode& nd, bool has_ref)
-		YB_ATTR_LAMBDA(noreturn) -> ReductionStatus{
-		throw ListReductionFailure(ystdex::sfmt("No matching combiner '%s'"
-			" for operand with %zu argument(s) found.",
-			TermToStringWithReferenceMark(nd, has_ref).c_str(),
-			term.size() - 1));
-	}, fm);
-}
-
-ReductionStatus
-ReduceOnce(TermNode& term, Context& ctx)
-{
-	ctx.SetNextTermRef(term);
-	return RelayDirect(ctx, ctx.ReduceOnce, term);
-}
-
-// NOTE: See Context.h for the declaration.
-ReductionStatus
-Context::DefaultReduceOnce(TermNode& term, Context& ctx)
-{
-	return term.Value ? ReduceLeaf(term, ctx) : ReduceBranch(term, ctx);
-}
-
-ReductionStatus
-ReduceOrdered(TermNode& term, Context& ctx)
-{
-	if(IsBranch(term))
-		return ReduceSequenceOrderedAsync(term, ctx, term.begin());
-	term.Value = ValueToken::Unspecified;
-	return ReductionStatus::Retained;
 }
 
 
@@ -1072,6 +1033,47 @@ ReduceForCombinerRef(TermNode& term, const TermReference& ref,
 }
 
 } // inline namespace Internals;
+
+
+ReductionStatus
+ReduceLeaf(TermNode& term, Context& ctx)
+{
+	const auto res(ystdex::call_value_or([&](string_view id){
+		return EvaluateLeafToken(term, ctx, id);
+	}, TermToNamePtr(term), ReductionStatus::Retained));
+
+	return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
+}
+
+ReductionStatus
+ReduceCombinedBranch(TermNode& term, Context& ctx)
+{
+	assert(IsBranchedList(term));
+
+	auto& fm(AccessFirstSubterm(term));
+	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
+
+	if(p_ref_fm)
+	{
+		term.Tags &= ~TermTags::Temporary;
+		if(const auto p_handler
+			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
+			return CombinerReturnThunk(*p_handler, term, ctx);
+	}
+	else
+		term.Tags |= TermTags::Temporary;
+	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
+		return
+			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
+	assert(IsBranch(term));
+	return ResolveTerm([&](const TermNode& nd, bool has_ref)
+		YB_ATTR_LAMBDA(noreturn) -> ReductionStatus{
+		throw ListReductionFailure(ystdex::sfmt("No matching combiner '%s'"
+			" for operand with %zu argument(s) found.",
+			TermToStringWithReferenceMark(nd, has_ref).c_str(),
+			term.size() - 1));
+	}, fm);
+}
 
 
 void
