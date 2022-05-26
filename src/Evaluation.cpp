@@ -61,7 +61,7 @@ EnsureLValueReference(TermReference&& ref)
 }
 
 ReductionStatus
-ReduceLeaf(TermNode& term, Context& ctx)
+EvauateLeaf(TermNode& term, Context& ctx)
 {
 	if(const auto p = TermToNamePtr(term))
 	{
@@ -714,6 +714,12 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 }
 
 } // unnamed namespace;
+
+ReductionStatus
+ReduceLeaf(TermNode& term, Context& ctx)
+{
+	return EvauateLeaf(term, ctx);
+}
 
 ReductionStatus
 ReduceCombinedBranch(TermNode& term, Context& ctx)
