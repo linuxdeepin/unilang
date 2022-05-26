@@ -80,6 +80,7 @@ public:
 	Tokenizer ConvertLeaf;
 	SourcedTokenizer ConvertLeafSourced;
 	shared_ptr<string> CurrentSource{};
+	bool UseSourceLocation = !std::getenv("UNILANG_NO_SRCINFO");
 	TermNode Term{Allocator};
 	Context::ReducerSequence Backtrace{Allocator};
 
