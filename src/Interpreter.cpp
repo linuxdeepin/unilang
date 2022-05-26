@@ -3,14 +3,12 @@
 #include "Interpreter.h" // for std::bind, HasValue, TokenValue, std::declval,
 //	string_view, ystdex::sfmt, Context::DefaultHandleException, ByteParser,
 //	std::getline;
+#include "Math.h" // for FPToString;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <cassert> // for assert;
-#include "Math.h" // for ReadDecimal, FPToString;
-#include <ystdex/cctype.h> // for ystdex::isdigit;
-#include "Exception.h" // for InvalidSyntax, UnilangException;
-#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
-//	DeliteralizeUnchecked;
+#include "Evaluation.h" // for ParseLeaf;
+#include "Exception.h" // for UnilangException;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
@@ -31,149 +29,6 @@ namespace Unilang
 
 namespace
 {
-
-ReductionStatus
-DefaultEvaluateLeaf(TermNode& term, string_view id)
-{
-	assert(bool(id.data()));
-	assert(!id.empty() && "Invalid leaf token found.");
-	switch(id.front())
-	{
-	case '#':
-		id.remove_prefix(1);
-		if(!id.empty())
-			switch(id.front())
-			{
-			case 't':
-				if(id.size() == 1 || id.substr(1) == "rue")
-				{
-					term.Value = true;
-					return ReductionStatus::Clean;
-				}
-				break;
-			case 'f':
-				if(id.size() == 1 || id.substr(1) == "alse")
-				{
-					term.Value = false;
-					return ReductionStatus::Clean;
-				}
-				break;
-			case 'i':
-				if(id.substr(1) == "nert")
-				{
-					term.Value = ValueToken::Unspecified;
-					return ReductionStatus::Clean;
-				}
-				else if(id.substr(1) == "gnore")
-				{
-					term.Value = ValueToken::Ignore;
-					return ReductionStatus::Clean;
-				}
-				break;
-			}
-	default:
-		break;
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		ReadDecimal(term.Value, id, id.begin());
-		return ReductionStatus::Clean;
-	case '-':
-		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
-			break;
-		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
-		{
-			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
-			{
-				term.Value = -std::numeric_limits<double>::infinity();
-				return ReductionStatus::Clean;
-			}
-			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
-			{
-				term.Value = -std::numeric_limits<double>::quiet_NaN();
-				return ReductionStatus::Clean;
-			}
-		}
-		if(id.size() > 1)
-			ReadDecimal(term.Value, id, std::next(id.begin()));
-		else
-			term.Value = 0;
-		return ReductionStatus::Clean;
-	case '+':
-		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
-			break;
-		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
-		{
-			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
-			{
-				term.Value = std::numeric_limits<double>::infinity();
-				return ReductionStatus::Clean;
-			}
-			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
-			{
-				term.Value = std::numeric_limits<double>::quiet_NaN();
-				return ReductionStatus::Clean;
-			}
-		}
-		YB_ATTR_fallthrough;
-	case '0':
-		if(id.size() > 1)
-			ReadDecimal(term.Value, id, std::next(id.begin()));
-		else
-			term.Value = 0;
-		return ReductionStatus::Clean;
-	}
-	return ReductionStatus::Retrying;
-}
-
-YB_ATTR_nodiscard YB_PURE bool
-ParseSymbol(TermNode& term, string_view id)
-{
-	assert(id.data());
-	assert(!id.empty() && "Invalid lexeme found.");
-	if(CheckReducible(DefaultEvaluateLeaf(term, id)))
-	{
-		const char f(id.front());
-
-		if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
-			&& id.find_first_not_of("+-") != string_view::npos))
-			throw InvalidSyntax(ystdex::sfmt(f != '#'
-				? "Unsupported literal prefix found in literal '%s'."
-				: "Invalid literal '%s' found.", id.data()));
-		return true;
-	}
-	return {};
-}
-
-void
-ParseLeaf(TermNode& term, string_view id)
-{
-	assert(id.data());
-	assert(!id.empty() && "Invalid leaf token found.");
-	switch(CategorizeBasicLexeme(id))
-	{
-	case LexemeCategory::Code:
-		id = DeliteralizeUnchecked(id);
-		term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
-		break;
-	case LexemeCategory::Symbol:
-		if(ParseSymbol(term, id))
-			term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
-		break;
-	case LexemeCategory::Data:
-		term.SetValue(in_place_type<string>, Deliteralize(id),
-			term.get_allocator());
-		YB_ATTR_fallthrough;
-	default:
-		break;
-	}
-}
 
 template<typename _func>
 void

@@ -3,7 +3,7 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "Context.h" // for ReductionStatus, TermNode, Context,
+#include "Context.h" // for TermNode, string_view, ReductionStatus, Context,
 //	YSLib::AreEqualHeld, YSLib::GHEvent, ContextHandler, std::allocator_arg_t,
 //	HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
@@ -20,6 +20,10 @@
 
 namespace Unilang
 {
+
+void
+ParseLeaf(TermNode&, string_view);
+
 
 ReductionStatus
 ReduceCombinedBranch(TermNode&, Context&);

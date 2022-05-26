@@ -1,20 +1,23 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Evaluation.h" // for AnchorPtr, TermTags, ReductionStatus, TermNode,
-//	Context, TermToNamePtr, Unilang::TryAccessLeaf TermReference,
-//	ContextHandler, yunseq, GetLValueTagsOf, EnvironmentReference,
-//	in_place_type, ThrowTypeErrorForInvalidType, IsTyped,
+#include "Evaluation.h" // for ystdex::equality_comparable, AnchorPtr, lref,
+//	ContextHandler, string_view, ValueToken, TermReference, TermTags,
+//	Unilang::TryAccessLeaf, yunseq, GetLValueTagsOf, EnvironmentReference,
+//	in_place_type, ThrowTypeErrorForInvalidType, TermToNamePtr, IsTyped,
 //	ThrowInsufficientTermsError, Unilang::allocate_shared,
 //	Unilang::TryAccessTerm;
-#include <iterator> // for std::prev;
+#include "Math.h" // for ReadDecimal;
+#include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
+#include <iterator> // for std::prev;
 #include <cassert> // for assert;
 #include <ystdex/cctype.h> // for ystdex::isdigit;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
 //	InvalidSyntax, std::throw_with_nested, ParameterMismatch,
 //	ListReductionFailure;
-#include "Lexical.h" // for IsUnilangSymbol;
+#include "Lexical.h" // for IsUnilangSymbol, CategorizeBasicLexeme,
+//	LexemeCategory, DeliteralizeUnchecked;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include "TCO.h" // for Action, RelayDirect;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
@@ -54,6 +57,125 @@ public:
 };
 
 
+ReductionStatus
+DefaultEvaluateLeaf(TermNode& term, string_view id)
+{
+	assert(bool(id.data()));
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(id.front())
+	{
+	case '#':
+		id.remove_prefix(1);
+		if(!id.empty())
+			switch(id.front())
+			{
+			case 't':
+				if(id.size() == 1 || id.substr(1) == "rue")
+				{
+					term.Value = true;
+					return ReductionStatus::Clean;
+				}
+				break;
+			case 'f':
+				if(id.size() == 1 || id.substr(1) == "alse")
+				{
+					term.Value = false;
+					return ReductionStatus::Clean;
+				}
+				break;
+			case 'i':
+				if(id.substr(1) == "nert")
+				{
+					term.Value = ValueToken::Unspecified;
+					return ReductionStatus::Clean;
+				}
+				else if(id.substr(1) == "gnore")
+				{
+					term.Value = ValueToken::Ignore;
+					return ReductionStatus::Clean;
+				}
+				break;
+			}
+	default:
+		break;
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		ReadDecimal(term.Value, id, id.begin());
+		return ReductionStatus::Clean;
+	case '-':
+		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
+			break;
+		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				term.Value = -std::numeric_limits<double>::infinity();
+				return ReductionStatus::Clean;
+			}
+			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				term.Value = -std::numeric_limits<double>::quiet_NaN();
+				return ReductionStatus::Clean;
+			}
+		}
+		if(id.size() > 1)
+			ReadDecimal(term.Value, id, std::next(id.begin()));
+		else
+			term.Value = 0;
+		return ReductionStatus::Clean;
+	case '+':
+		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
+			break;
+		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				term.Value = std::numeric_limits<double>::infinity();
+				return ReductionStatus::Clean;
+			}
+			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				term.Value = std::numeric_limits<double>::quiet_NaN();
+				return ReductionStatus::Clean;
+			}
+		}
+		YB_ATTR_fallthrough;
+	case '0':
+		if(id.size() > 1)
+			ReadDecimal(term.Value, id, std::next(id.begin()));
+		else
+			term.Value = 0;
+		return ReductionStatus::Clean;
+	}
+	return ReductionStatus::Retrying;
+}
+
+YB_ATTR_nodiscard YB_PURE bool
+ParseSymbol(TermNode& term, string_view id)
+{
+	assert(id.data());
+	assert(!id.empty() && "Invalid lexeme found.");
+	if(CheckReducible(DefaultEvaluateLeaf(term, id)))
+	{
+		const char f(id.front());
+
+		if((id.size() > 1 && (f == '#'|| f == '+' || f == '-')
+			&& id.find_first_not_of("+-") != string_view::npos))
+			throw InvalidSyntax(ystdex::sfmt(f != '#'
+				? "Unsupported literal prefix found in literal '%s'."
+				: "Invalid literal '%s' found.", id.data()));
+		return true;
+	}
+	return {};
+}
+
 YB_ATTR_nodiscard YB_PURE inline TermReference
 EnsureLValueReference(TermReference&& ref)
 {
@@ -61,42 +183,34 @@ EnsureLValueReference(TermReference&& ref)
 }
 
 ReductionStatus
-EvauateLeaf(TermNode& term, Context& ctx)
+EvaluateLeafToken(TermNode& term, Context& ctx, string_view id)
 {
-	if(const auto p = TermToNamePtr(term))
+	assert(id.data());
+
+	auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
+
+	if(pr.first)
 	{
-		auto res(ReductionStatus::Retained);
-		const auto id(*p);
+		auto& bound(*pr.first);
 
-		assert(id.data());
-
-		auto pr(ctx.Resolve(ctx.GetRecordPtr(), id));
-
-		if(pr.first)
+		if(const auto p_bound
+			= Unilang::TryAccessLeaf<const TermReference>(bound))
 		{
-			auto& bound(*pr.first);
-
-			if(const auto p_bound
-				= Unilang::TryAccessLeaf<const TermReference>(bound))
-			{
-				term.GetContainerRef() = bound.GetContainer();
-				term.Value = EnsureLValueReference(TermReference(*p_bound));
-			}
-			else
-			{
-				auto p_env(Unilang::Nonnull(pr.second));
-
-				term.Value = TermReference(p_env->MakeTermTags(bound)
-					& ~TermTags::Unique, bound, std::move(p_env));
-			}
-			res = ReductionStatus::Neutral;
+			term.GetContainerRef() = bound.GetContainer();
+			term.Value = EnsureLValueReference(TermReference(*p_bound));
 		}
 		else
-			throw BadIdentifier(id);
-		return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
+		{
+			auto p_env(Unilang::Nonnull(pr.second));
+
+			term.Value = TermReference(p_env->MakeTermTags(bound)
+				& ~TermTags::Unique, bound, std::move(p_env));
+		}
+		return ReductionStatus::Neutral;
 	}
-	return ReductionStatus::Retained;
+	throw BadIdentifier(id);
 }
+
 
 template<typename... _tParams>
 ReductionStatus
@@ -715,10 +829,39 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 
 } // unnamed namespace;
 
+void
+ParseLeaf(TermNode& term, string_view id)
+{
+	assert(id.data());
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(CategorizeBasicLexeme(id))
+	{
+	case LexemeCategory::Code:
+		id = DeliteralizeUnchecked(id);
+		term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
+		break;
+	case LexemeCategory::Symbol:
+		if(ParseSymbol(term, id))
+			term.SetValue(in_place_type<TokenValue>, id, term.get_allocator());
+		break;
+	case LexemeCategory::Data:
+		term.SetValue(in_place_type<string>, Deliteralize(id),
+			term.get_allocator());
+		YB_ATTR_fallthrough;
+	default:
+		break;
+	}
+}
+
+
 ReductionStatus
 ReduceLeaf(TermNode& term, Context& ctx)
 {
-	return EvauateLeaf(term, ctx);
+	const auto res(ystdex::call_value_or([&](string_view id){
+		return EvaluateLeafToken(term, ctx, id);
+	}, TermToNamePtr(term), ReductionStatus::Retained));
+
+	return CheckReducible(res) ? ReduceOnce(term, ctx) : res;
 }
 
 ReductionStatus
