@@ -21,31 +21,27 @@
 namespace Unilang
 {
 
-void
-ParseLeaf(TermNode&, string_view);
-
-void
-ParseLeafWithSourceInformation(TermNode&, string_view,
-	const shared_ptr<string>&, const SourceLocation&);
-
-
-ReductionStatus
-ReduceCombinedBranch(TermNode&, Context&);
-
-ReductionStatus
-ReduceLeaf(TermNode&, Context&);
-
-// NOTE: This is the main entry of the evaluation algorithm.
-ReductionStatus
-ReduceOnce(TermNode&, Context&);
-
-
 // NOTE: The collection of values of unit types.
 enum class ValueToken
 {
 	Unspecified,
 	Ignore
 };
+
+
+// NOTE: This is the main entry of the evaluation algorithm.
+ReductionStatus
+ReduceOnce(TermNode&, Context&);
+
+inline ReductionStatus
+ReduceOnceLifted(TermNode& term, Context& ctx, TermNode& tm)
+{
+	LiftOther(term, tm);
+	return ReduceOnce(term, ctx);
+}
+
+ReductionStatus
+ReduceOrdered(TermNode&, Context&);
 
 
 struct SeparatorTransformer
@@ -99,6 +95,14 @@ struct SeparatorTransformer
 		}, yforward(term), pfx, filter);
 	}
 };
+
+
+void
+ParseLeaf(TermNode&, string_view);
+
+void
+ParseLeafWithSourceInformation(TermNode&, string_view,
+	const shared_ptr<string>&, const SourceLocation&);
 
 
 template<typename _func>
@@ -336,15 +340,11 @@ RetainN(const TermNode& term, size_t m = 1)
 using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
 
 
-inline ReductionStatus
-ReduceOnceLifted(TermNode& term, Context& ctx, TermNode& tm)
-{
-	LiftOther(term, tm);
-	return ReduceOnce(term, ctx);
-}
+ReductionStatus
+ReduceCombinedBranch(TermNode&, Context&);
 
 ReductionStatus
-ReduceOrdered(TermNode&, Context&);
+ReduceLeaf(TermNode&, Context&);
 
 inline ReductionStatus
 ReduceReturnUnspecified(TermNode& term) noexcept
