@@ -920,6 +920,9 @@ const std::array<const char*, 3> DeEnvs[]{
 	{{"ECHO", "", "If set, echo the result after evaluating each string."}},
 	{{"UNILANG_NO_JIT", "", "If set, disable any optimization based on the JIT"
 		" (just-in-time) execution."}},
+	{{"UNILANG_NO_SRCINFO", "", "If set, disable the source information from"
+		" the source code for diagnostics. The source names are used"
+		" regardless of this variable."}},
 	{{"UNILANG_PATH", "", "Unilang loader path template string."}}
 };
 
@@ -983,7 +986,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.16"
+#define APP_VER "0.11.50"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
