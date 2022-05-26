@@ -1,20 +1,18 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for std::bind, HasValue, TokenValue, std::declval,
-//	string_view, ystdex::sfmt, Context::DefaultHandleException, ByteParser,
-//	std::getline;
+#include "Interpreter.h" // for TokenValue, ystdex::sfmt, HasValue,
+//	string_view, Context::DefaultHandleException, std::bind, std::getline;
 #include "Math.h" // for FPToString;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <cassert> // for assert;
-#include "Evaluation.h" // for ParseLeaf;
+#include "Evaluation.h" // for ParseLeaf, ParseLeafWithSourceInformation;
 #include "Exception.h" // for UnilangException;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
 #include YFM_YSLib_Core_YException // for YSLib::ExtractException,
 //	YSLib::stringstream;
-#include "Context.h" // for Context::DefaultHandleException;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
@@ -457,6 +455,25 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 
 		if(!id.empty())
 			ParseLeaf(term, id);
+		return term;
+	}) != parse_result.cend())
+		throw UnilangException("Redundant ')', ']' or '}' found.");
+	Preprocess(res);
+	return res;
+}
+TermNode
+Interpreter::ReadParserResult(const SourcedByteParser& parse) const
+{
+	TermNode res{Allocator};
+	const auto& parse_result(parse.GetResult());
+
+	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
+		[&](const GParsedValue<SourcedByteParser>& val){
+		auto term(Unilang::AsTermNode(Allocator));
+		const auto id(YSLib::make_string_view(val.second));
+
+		if(!id.empty())
+			ParseLeafWithSourceInformation(term, id, CurrentSource, val.first);
 		return term;
 	}) != parse_result.cend())
 		throw UnilangException("Redundant ')', ']' or '}' found.");
