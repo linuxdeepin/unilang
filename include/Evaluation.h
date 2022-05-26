@@ -3,7 +3,7 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "TermNode.h" // for TermNode, string_view, shared_ptr;
+#include "TermNode.h" // for TermNode, ValueObject, string_view, shared_ptr;
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, ContextHandler, std::allocator_arg_t, HasValue;
@@ -369,6 +369,10 @@ BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
 void
 BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
 	TermNode&);
+
+
+YB_ATTR_nodiscard YB_PURE const SourceInformation*
+QuerySourceInformation(const ValueObject&);
 
 
 template<class _tGuard>
