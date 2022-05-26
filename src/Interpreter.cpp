@@ -10,7 +10,7 @@
 #include "Exception.h" // for UnilangException;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::Logger, YSLib;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib;
 #include YFM_YSLib_Core_YException // for YSLib::ExtractException,
 //	YSLib::stringstream;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
@@ -359,6 +359,23 @@ Interpreter::Exit()
 	return ReductionStatus::Neutral;
 }
 
+void
+Interpreter::HandleREPLException(std::exception_ptr p, YSLib::Logger& trace)
+{
+	try
+	{
+		Context::DefaultHandleException(std::move(p));
+	}
+	catch(std::exception& e)
+	{
+		const auto gd(ystdex::make_guard([&]() noexcept{
+			Backtrace.clear();
+		}));
+
+		TraceException(e, trace);
+	}
+}
+
 YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(string filename)
 {
@@ -377,19 +394,10 @@ Interpreter::PrepareExecution(Context& ctx)
 		const Context::ReducerSequence::const_iterator& i){
 		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
-		try
-		{
-			Context::DefaultHandleException(std::move(p));
-		}
-		catch(std::exception& e)
-		{
-			const auto gd(ystdex::make_guard([&]() noexcept{
-				Backtrace.clear();
-			}));
-			static YSLib::Logger trace;
 
-			TraceException(e, trace);
-		}
+		static YSLib::Logger trace;
+
+		HandleREPLException(std::move(p), trace);
 	}, ctx.GetCurrent().cbegin());
 }
 
