@@ -24,6 +24,9 @@ namespace Unilang
 ReductionStatus
 ReduceCombinedBranch(TermNode&, Context&);
 
+ReductionStatus
+ReduceLeaf(TermNode&, Context&);
+
 // NOTE: This is the main entry of the evaluation algorithm.
 ReductionStatus
 ReduceOnce(TermNode&, Context&);
