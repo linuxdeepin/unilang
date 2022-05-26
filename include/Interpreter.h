@@ -51,16 +51,34 @@ using SourcedTokenizer = GTokenizer<SourcedByteParser>;
 class Interpreter final
 {
 private:
+	struct LeafConverter final
+	{
+		const Interpreter& Host;
+
+		YB_ATTR_nodiscard TermNode
+		operator()(const GParsedValue<ByteParser>& val) const
+		{
+			return Host.ConvertLeaf(val);
+		}
+		YB_ATTR_nodiscard TermNode
+		operator()(const GParsedValue<SourcedByteParser>& val) const
+		{
+			return Host.ConvertLeafSourced(val);
+		}
+	};
+
 	pmr::pool_resource resource{pmr::new_delete_resource()};
 	string line{};
 	shared_ptr<Environment> p_ground{};
 
 public:
-	shared_ptr<string> CurrentSource{};
 	bool Echo = std::getenv("ECHO");
 	TermNode::allocator_type Allocator{&resource};
 	Context Root{resource};
 	SeparatorPass Preprocess{Allocator};
+	Tokenizer ConvertLeaf;
+	SourcedTokenizer ConvertLeafSourced;
+	shared_ptr<string> CurrentSource{};
 	TermNode Term{Allocator};
 	Context::ReducerSequence Backtrace{Allocator};
 
@@ -105,6 +123,8 @@ public:
 
 	YB_ATTR_nodiscard TermNode
 	ReadParserResult(const ByteParser&) const;
+	YB_ATTR_nodiscard TermNode
+	ReadParserResult(const SourcedByteParser&) const;
 
 	void
 	Run();
