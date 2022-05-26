@@ -3,9 +3,10 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "Context.h" // for TermNode, string_view, ReductionStatus, Context,
-//	YSLib::AreEqualHeld, YSLib::GHEvent, ContextHandler, std::allocator_arg_t,
-//	HasValue;
+#include "TermNode.h" // for TermNode, string_view, shared_ptr;
+#include "Parser.h" // for SourceLocation;
+#include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
+//	YSLib::GHEvent, ContextHandler, std::allocator_arg_t, HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
@@ -16,13 +17,16 @@
 //	ystdex::make_parameter_list_t;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include "TermAccess.h" // for TokenValue;
 
 namespace Unilang
 {
 
 void
 ParseLeaf(TermNode&, string_view);
+
+void
+ParseLeafWithSourceInformation(TermNode&, string_view,
+	const shared_ptr<string>&, const SourceLocation&);
 
 
 ReductionStatus
