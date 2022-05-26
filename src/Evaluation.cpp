@@ -2,10 +2,14 @@
 
 #include "Evaluation.h" // for ystdex::equality_comparable, AnchorPtr, lref,
 //	ContextHandler, string_view, ValueToken, TermReference, TermTags,
-//	Unilang::TryAccessLeaf, yunseq, GetLValueTagsOf, EnvironmentReference,
-//	in_place_type, ThrowTypeErrorForInvalidType, TermToNamePtr, IsTyped,
+//	Unilang::TryAccessLeaf, byte, YSLib::AllocatorHolder,
+//	YSLib::IValueHolder::Creation, YSLib::AllocatedHolderOperations,
+//	YSLib::forward_as_tuple, SourceInformation, pmr::polymorphic_allocator,
+//	yunseq, GetLValueTagsOf, EnvironmentReference, in_place_type,
+//	ThrowTypeErrorForInvalidType, TermToNamePtr, IsTyped,
 //	ThrowInsufficientTermsError, Unilang::allocate_shared,
 //	Unilang::TryAccessTerm;
+#include "TermAccess.h" // for TokenValue;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
@@ -210,6 +214,64 @@ EvaluateLeafToken(TermNode& term, Context& ctx, string_view id)
 	}
 	throw BadIdentifier(id);
 }
+
+
+using SourcedByteAllocator = pmr::polymorphic_allocator<yimpl(byte)>;
+
+using SourceInfoMetadata = lref<const SourceInformation>;
+
+
+template<typename _type, class _tByteAlloc = SourcedByteAllocator>
+class SourcedHolder : public YSLib::AllocatorHolder<_type, _tByteAlloc>
+{
+public:
+	using Creation = YSLib::IValueHolder::Creation;
+	using value_type = _type;
+
+private:
+	using base = YSLib::AllocatorHolder<_type, _tByteAlloc>;
+
+	SourceInformation source_information;
+
+public:
+	using base::value;
+
+	template<typename... _tParams>
+	inline
+	SourcedHolder(const SourceName& name, const SourceLocation& src_loc,
+		_tParams&&... args)
+		: base(yforward(args)...), source_information(name, src_loc)
+	{}
+	template<typename... _tParams>
+	inline
+	SourcedHolder(const SourceInformation& src_info, _tParams&&... args)
+		: base(yforward(args)...), source_information(src_info)
+	{}
+	SourcedHolder(const SourcedHolder&) = default;
+	SourcedHolder(SourcedHolder&&) = default;
+
+	SourcedHolder&
+	operator=(const SourcedHolder&) = default;
+	SourcedHolder&
+	operator=(SourcedHolder&&) = default;
+
+	YB_ATTR_nodiscard any
+	Create(Creation c, const any& x) const ImplI(IValueHolder)
+	{
+		return YSLib::AllocatedHolderOperations<SourcedHolder,
+			_tByteAlloc>::CreateHolder(c, x, value, YSLib::forward_as_tuple(
+			source_information, ystdex::as_const(value)),
+			YSLib::forward_as_tuple(source_information, std::move(value)));
+	}
+
+	YB_ATTR_nodiscard YB_PURE any
+	Query(uintmax_t) const noexcept override
+	{
+		return ystdex::ref(source_information);
+	}
+
+	using base::get_allocator;
+};
 
 
 template<typename... _tParams>
@@ -847,6 +909,33 @@ ParseLeaf(TermNode& term, string_view id)
 	case LexemeCategory::Data:
 		term.SetValue(in_place_type<string>, Deliteralize(id),
 			term.get_allocator());
+		YB_ATTR_fallthrough;
+	default:
+		break;
+	}
+}
+
+void
+ParseLeafWithSourceInformation(TermNode& term, string_view id,
+	const shared_ptr<string>& name, const SourceLocation& src_loc)
+{
+	assert(id.data());
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(CategorizeBasicLexeme(id))
+	{
+	case LexemeCategory::Code:
+		id = DeliteralizeUnchecked(id);
+		term.SetValue(any_ops::use_holder, in_place_type<SourcedHolder<
+			TokenValue>>, name, src_loc, id, term.get_allocator());
+		break;
+	case LexemeCategory::Symbol:
+		if(ParseSymbol(term, id))
+			term.SetValue(any_ops::use_holder, in_place_type<SourcedHolder<
+				TokenValue>>, name, src_loc, id, term.get_allocator());
+		break;
+	case LexemeCategory::Data:
+		term.SetValue(any_ops::use_holder, in_place_type<SourcedHolder<string>>,
+			name, src_loc, Deliteralize(id), term.get_allocator());
 		YB_ATTR_fallthrough;
 	default:
 		break;
