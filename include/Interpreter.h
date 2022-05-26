@@ -4,7 +4,7 @@
 #define INC_Unilang_Interpreter_h_ 1
 
 #include "Context.h" // for pair, lref, stack, vector, pmr, string, shared_ptr,
-//	Environment, Context, TermNode, function, YSLib::unique_ptr;
+//	Environment, Context, TermNode, function, YSLib::Logger, YSLib::unique_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
@@ -98,6 +98,9 @@ private:
 public:
 	ReductionStatus
 	Exit();
+
+	void
+	HandleREPLException(std::exception_ptr, YSLib::Logger&);
 
 	YSLib::unique_ptr<std::istream>
 	OpenUnique(string);
