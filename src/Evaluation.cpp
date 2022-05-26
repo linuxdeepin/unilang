@@ -25,6 +25,7 @@
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include "TCO.h" // for Action, RelayDirect;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
+#include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
 
 namespace Unilang
 {
@@ -1094,6 +1095,17 @@ BindParameterWellFormed(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)
 {
 	BindParameterImpl<NoParameterCheck>(p_env, t, o);
+}
+
+
+const SourceInformation*
+QuerySourceInformation(const ValueObject& vo)
+{
+	const auto val(vo.Query());
+
+	return ystdex::call_value_or([](const SourceInfoMetadata& r) noexcept{
+		return &r.get();
+	}, val.try_get_object_ptr<SourceInfoMetadata>());
 }
 
 } // namespace Unilang;
