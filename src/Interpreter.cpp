@@ -373,6 +373,8 @@ Interpreter::HandleREPLException(std::exception_ptr p, YSLib::Logger& trace)
 		}));
 
 		TraceException(e, trace);
+		trace.TraceFormat(YSLib::Notice, "Location: %s.", CurrentSource
+			? CurrentSource->c_str() : "<unknown>");
 	}
 }
 
