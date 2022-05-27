@@ -6,7 +6,8 @@
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <cassert> // for assert;
-#include "Evaluation.h" // for ParseLeaf, ParseLeafWithSourceInformation;
+#include "Evaluation.h" // for ParseLeaf, ParseLeafWithSourceInformation,
+//	TraceBacktrace;
 #include "Exception.h" // for UnilangException;
 #include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
@@ -382,6 +383,7 @@ Interpreter::HandleREPLException(std::exception_ptr p, YSLib::Logger& trace)
 		TraceException(e, trace);
 		trace.TraceFormat(YSLib::Notice, "Location: %s.", CurrentSource
 			? CurrentSource->c_str() : "<unknown>");
+		TraceBacktrace(Backtrace, trace);
 	}
 }
 
