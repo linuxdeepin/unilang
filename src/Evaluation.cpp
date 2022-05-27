@@ -30,6 +30,8 @@
 #include <ystdex/utility.hpp> // for ystdex::parameterize_static_object,
 //	std::piecewise_construct;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
+#include YFM_YSLib_Core_YException // for YSLib::FilterExceptions,
+//	YSLib::Notice;
 
 namespace Unilang
 {
@@ -1187,6 +1189,36 @@ QueryTypeName(const type_info& ti)
 		return i->second;
 	return {};
 }
+
+void
+TraceBacktrace(const Context::ReducerSequence& backtrace, YSLib::Logger& trace)
+	noexcept
+{
+	if(!backtrace.empty())
+	{
+		YSLib::FilterExceptions([&]{
+			using YSLib::Notice;
+
+			trace.TraceFormat(Notice, "Backtrace:");
+			for(const auto& act : backtrace)
+			{
+				const auto name(QueryContinuationName(act));
+				const auto p(name.data() ? name.data() :
+#if NDEBUG
+					"?"
+#else
+					ystdex::call_value_or([](const Continuation& cont)
+						-> const type_info&{
+						return cont.Handler.target_type();
+					}, act.target<Continuation>(), act.target_type()).name()
+#endif
+				);
+				trace.TraceFormat(Notice, "#[continuation (%s)]", p);
+			}
+		}, "guard unwinding for backtrace");
+	}
+}
+
 
 } // namespace Unilang;
 
