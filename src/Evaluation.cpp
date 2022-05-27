@@ -7,8 +7,9 @@
 //	YSLib::forward_as_tuple, SourceInformation, pmr::polymorphic_allocator,
 //	yunseq, GetLValueTagsOf, EnvironmentReference, in_place_type,
 //	ThrowTypeErrorForInvalidType, TermToNamePtr, IsTyped,
-//	ThrowInsufficientTermsError, Unilang::allocate_shared,
-//	Unilang::TryAccessTerm;
+//	ThrowInsufficientTermsError, Unilang::allocate_shared, YSLib::lock_guard,
+//	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
+//	YSLib::forward_as_tuple, Unilang::TryAccessTerm;
 #include "TermAccess.h" // for TokenValue;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
@@ -25,6 +26,9 @@
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include "TCO.h" // for Action, RelayDirect;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
+#include <ystdex/functor.hpp> // for std::hash, ystdex::equal_to;
+#include <ystdex/utility.hpp> // for ystdex::parameterize_static_object,
+//	std::piecewise_construct;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
 
 namespace Unilang
@@ -890,6 +894,26 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 	})(t, o, TermTags::Temporary, p_env);
 }
 
+
+struct UTag final
+{};
+
+
+using YSLib::lock_guard;
+using YSLib::mutex;
+mutex NameTableMutex;
+
+using NameTable = YSLib::unordered_map<type_index, string_view,
+	std::hash<type_index>, ystdex::equal_to<type_index>,
+	std::allocator<std::pair<const type_index, string_view>>>;
+
+template<class _tKey>
+YB_ATTR_nodiscard inline NameTable&
+FetchNameTableRef()
+{
+	return ystdex::parameterize_static_object<NameTable, _tKey>();
+}
+
 } // unnamed namespace;
 
 
@@ -1106,6 +1130,17 @@ BindParameterWellFormed(const shared_ptr<Environment>& p_env, const TermNode& t,
 	BindParameterImpl<NoParameterCheck>(p_env, t, o);
 }
 
+
+bool
+AddTypeNameTableEntry(const type_info& ti, string_view sv)
+{
+	assert(sv.data());
+
+	const lock_guard<mutex> gd(NameTableMutex);
+
+	return FetchNameTableRef<UTag>().emplace(std::piecewise_construct,
+		YSLib::forward_as_tuple(ti), YSLib::forward_as_tuple(sv)).second;
+}
 
 const SourceInformation*
 QuerySourceInformation(const ValueObject& vo)
