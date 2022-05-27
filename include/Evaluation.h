@@ -15,10 +15,13 @@
 #include <algorithm> // for std::find_if;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/function.hpp> // for ystdex::make_function_type_t,
-//	ystdex::make_parameter_list_t;
+//	ystdex::make_parameter_list_t, function;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <cassert> // for assert;
+#include <type_traits> // for std::is_constructibe;
+#include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
+#include <ystdex/functional.hpp> // for ystdex::expanded_caller;
 
 namespace Unilang
 {
@@ -392,6 +395,46 @@ InitializeTypeNameTableEntry(string_view desc)
 			assert(res && "Duplicated name found.");
 		}
 	} init(desc);
+}
+
+template<class _tTarget, typename _func, typename _fCallable>
+YB_ATTR_nodiscard YB_PURE inline _fCallable
+NameExpandedHandler(_fCallable&& x, string_view desc)
+{
+	static_assert(std::is_constructible<_tTarget, _fCallable>(),
+		"Invalid callable type found.");
+	using expanded_t
+		= ystdex::expanded_caller<_func, ystdex::remove_cvref_t<_fCallable>>;
+
+	Unilang::InitializeTypeNameTableEntry<ystdex::cond_t<ystdex::and_<
+		ystdex::not_<std::is_constructible<function<_func>, _fCallable>>,
+		std::is_constructible<expanded_t, _fCallable>>,
+		expanded_t, ystdex::remove_cvref_t<_fCallable>>>(desc);
+	return yforward(x);
+}
+
+template<typename _fCallable>
+YB_ATTR_nodiscard YB_PURE inline _fCallable
+NameTypedContextHandler(_fCallable&& x, string_view desc)
+{
+	return Unilang::NameExpandedHandler<ContextHandler,
+		ContextHandler::FuncType>(yforward(x), desc);
+}
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline _type
+NameTypedObject(_type&& x, string_view desc)
+{
+	InitializeTypeNameTableEntry<ystdex::remove_cvref_t<_type>>(desc);
+	return yforward(x);
+}
+
+template<typename _fCallable>
+YB_ATTR_nodiscard YB_PURE inline _fCallable
+NameTypedReducerHandler(_fCallable&& x, string_view desc)
+{
+	return Unilang::NameExpandedHandler<Reducer, ReducerFunctionType>(
+		yforward(x), desc);
 }
 
 YB_ATTR_nodiscard YB_PURE const SourceInformation*
