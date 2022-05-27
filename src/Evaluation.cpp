@@ -359,16 +359,28 @@ ReduceChildrenOrderedAsync(TNIter first, TNIter last, Context& ctx)
 		: ReductionStatus::Neutral;
 }
 
+struct EvalSequence final
+{
+	lref<TermNode> TermRef;
+	TNIter Iter;
+
+	ReductionStatus
+	operator()(Context&) const;
+};
+
 ReductionStatus
 ReduceSequenceOrderedAsync(TermNode& term, Context& ctx, TNIter i)
 {
-	assert(i != term.end());
-	if(std::next(i) == term.end())
-		return ReduceOnceLifted(term, ctx, *i);
-	ctx.SetupFront([&, i]{
-		return ReduceSequenceOrderedAsync(term, ctx, term.erase(i));
-	});
-	return ReduceOnce(*i, ctx);
+	assert(i != term.end() && "Invalid iterator found for sequence reduction.");
+	return std::next(i) == term.end() ? ReduceOnceLifted(term, ctx, *i)
+		: ReduceSubsequent(*i, ctx,
+		NameTypedReducerHandler(EvalSequence{term, i}, "eval-sequence"));
+}
+
+ReductionStatus
+EvalSequence::operator()(Context& ctx) const
+{
+	return ReduceSequenceOrderedAsync(TermRef, ctx, TermRef.get().erase(Iter));
 }
 
 
@@ -1149,6 +1161,8 @@ QueryContinuationName(const Reducer& act)
 		return QueryTypeName(p_cont->Handler.target_type());
 	if(act.target_type() == type_id<TCOAction>())
 		return "eval-tail";
+	if(act.target_type() == type_id<EvalSequence>())
+		return "eval-sequence";
 	return QueryTypeName(act.target_type());
 }
 
