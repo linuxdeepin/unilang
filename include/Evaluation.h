@@ -437,8 +437,14 @@ NameTypedReducerHandler(_fCallable&& x, string_view desc)
 		yforward(x), desc);
 }
 
+YB_ATTR_nodiscard YB_PURE string_view
+QueryContinuationName(const Reducer&);
+
 YB_ATTR_nodiscard YB_PURE const SourceInformation*
 QuerySourceInformation(const ValueObject&);
+
+YB_ATTR_nodiscard YB_PURE string_view
+QueryTypeName(const type_info&);
 
 
 template<class _tGuard>
