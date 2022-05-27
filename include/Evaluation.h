@@ -4,7 +4,7 @@
 #define INC_Unilang_Evaluation_h_ 1
 
 #include "TermNode.h" // for TermNode, ValueObject, string_view, shared_ptr,
-//	type_id;
+//	type_id, YSLib::Logger;
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, ContextHandler, std::allocator_arg_t, HasValue;
@@ -445,6 +445,9 @@ QuerySourceInformation(const ValueObject&);
 
 YB_ATTR_nodiscard YB_PURE string_view
 QueryTypeName(const type_info&);
+
+void
+TraceBacktrace(const Context::ReducerSequence&, YSLib::Logger&) noexcept;
 
 
 template<class _tGuard>
