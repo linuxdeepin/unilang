@@ -3,7 +3,8 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "TermNode.h" // for TermNode, ValueObject, string_view, shared_ptr;
+#include "TermNode.h" // for TermNode, ValueObject, string_view, shared_ptr,
+//	type_id;
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, ContextHandler, std::allocator_arg_t, HasValue;
@@ -17,6 +18,7 @@
 //	ystdex::make_parameter_list_t;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
+#include <cassert> // for assert;
 
 namespace Unilang
 {
@@ -370,6 +372,27 @@ void
 BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
 	TermNode&);
 
+
+YB_ATTR_nodiscard bool
+AddTypeNameTableEntry(const type_info&, string_view);
+
+template<typename _type>
+inline void
+InitializeTypeNameTableEntry(string_view desc)
+{
+	assert(desc.data());
+
+	static struct Init final
+	{
+		Init(string_view sv)
+		{
+			const auto res(AddTypeNameTableEntry(type_id<_type>(), sv));
+
+			yunused(res);
+			assert(res && "Duplicated name found.");
+		}
+	} init(desc);
+}
 
 YB_ATTR_nodiscard YB_PURE const SourceInformation*
 QuerySourceInformation(const ValueObject&);
