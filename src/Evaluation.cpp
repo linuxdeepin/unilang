@@ -1,15 +1,15 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for ystdex::equality_comparable, AnchorPtr, lref,
-//	ContextHandler, string_view, ValueToken, TermReference, TermTags,
-//	Unilang::TryAccessLeaf, byte, YSLib::AllocatorHolder,
-//	YSLib::IValueHolder::Creation, YSLib::AllocatedHolderOperations,
-//	YSLib::forward_as_tuple, SourceInformation, pmr::polymorphic_allocator,
-//	yunseq, GetLValueTagsOf, EnvironmentReference, in_place_type,
-//	ThrowTypeErrorForInvalidType, TermToNamePtr, IsTyped,
-//	ThrowInsufficientTermsError, Unilang::allocate_shared, YSLib::lock_guard,
-//	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
-//	YSLib::forward_as_tuple, Unilang::TryAccessTerm;
+//	ContextHandler, EnvironmentReference, string_view, ValueToken,
+//	TermReference, TermTags, Unilang::TryAccessLeaf, byte,
+//	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
+//	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple,
+//	SourceInformation, pmr::polymorphic_allocator, yunseq, Continuation,
+//	GetLValueTagsOf, in_place_type, ThrowTypeErrorForInvalidType, TermToNamePtr,
+//	IsTyped, ThrowInsufficientTermsError, Unilang::allocate_shared,
+//	YSLib::lock_guard, YSLib::mutex, YSLib::unordered_map, type_index,
+//	std::allocator, std::pair, YSLib::forward_as_tuple, Unilang::TryAccessTerm;
 #include "TermAccess.h" // for TokenValue;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
@@ -24,7 +24,7 @@
 #include "Lexical.h" // for IsUnilangSymbol, CategorizeBasicLexeme,
 //	LexemeCategory, DeliteralizeUnchecked;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
-#include "TCO.h" // for Action, RelayDirect;
+#include "TCO.h" // for EnsureTCOAction, Action, RelayDirect, TCOAction;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
 #include <ystdex/functor.hpp> // for std::hash, ystdex::equal_to;
 #include <ystdex/utility.hpp> // for ystdex::parameterize_static_object,
@@ -1142,6 +1142,16 @@ AddTypeNameTableEntry(const type_info& ti, string_view sv)
 		YSLib::forward_as_tuple(ti), YSLib::forward_as_tuple(sv)).second;
 }
 
+string_view
+QueryContinuationName(const Reducer& act)
+{
+	if(const auto p_cont = act.target<Continuation>())
+		return QueryTypeName(p_cont->Handler.target_type());
+	if(act.target_type() == type_id<TCOAction>())
+		return "eval-tail";
+	return QueryTypeName(act.target_type());
+}
+
 const SourceInformation*
 QuerySourceInformation(const ValueObject& vo)
 {
@@ -1150,6 +1160,18 @@ QuerySourceInformation(const ValueObject& vo)
 	return ystdex::call_value_or([](const SourceInfoMetadata& r) noexcept{
 		return &r.get();
 	}, val.try_get_object_ptr<SourceInfoMetadata>());
+}
+
+string_view
+QueryTypeName(const type_info& ti)
+{
+	const lock_guard<mutex> gd(NameTableMutex);
+	const auto& tbl(FetchNameTableRef<UTag>());
+	const auto i(tbl.find(ti));
+
+	if(i != tbl.cend())
+		return i->second;
+	return {};
 }
 
 } // namespace Unilang;
