@@ -446,6 +446,9 @@ QuerySourceInformation(const ValueObject&);
 YB_ATTR_nodiscard YB_PURE string_view
 QueryTypeName(const type_info&);
 
+bool
+SetupTailOperatorName(TermNode&, const Context&);
+
 void
 TraceBacktrace(const Context::ReducerSequence&, YSLib::Logger&) noexcept;
 

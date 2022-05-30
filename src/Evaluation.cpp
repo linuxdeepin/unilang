@@ -27,7 +27,8 @@
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include "TCO.h" // for EnsureTCOAction, Action, RelayDirect, TCOAction;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
-#include <ystdex/functor.hpp> // for std::hash, ystdex::equal_to;
+#include <ystdex/functor.hpp> // for std::hash, ystdex::equal_to,
+//	ystdex::ref_eq;
 #include <ystdex/utility.hpp> // for ystdex::parameterize_static_object,
 //	std::piecewise_construct;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
@@ -1190,6 +1191,21 @@ QueryTypeName(const type_info& ti)
 
 	if(i != tbl.cend())
 		return i->second;
+	return {};
+}
+
+bool
+SetupTailOperatorName(TermNode& term, const Context& ctx)
+{
+	if(const auto p_combining = ctx.GetCombiningTermPtr())
+	{
+		if(!p_combining->empty()
+			&& ystdex::ref_eq<>()(AccessFirstSubterm(*p_combining), term))
+		{
+			p_combining->Value = std::move(term.Value);
+			return true;
+		}
+	}
 	return {};
 }
 
