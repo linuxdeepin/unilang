@@ -10,7 +10,7 @@
 //	IsTyped, ThrowInsufficientTermsError, Unilang::allocate_shared,
 //	YSLib::lock_guard, YSLib::mutex, YSLib::unordered_map, type_index,
 //	std::allocator, std::pair, YSLib::forward_as_tuple, Unilang::TryAccessTerm;
-#include "TermAccess.h" // for TokenValue;
+#include "TermAccess.h" // for TokenValue, IsCombiningTerm;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
@@ -1096,7 +1096,7 @@ ReduceLeaf(TermNode& term, Context& ctx)
 ReductionStatus
 ReduceCombinedBranch(TermNode& term, Context& ctx)
 {
-	assert(IsBranchedList(term));
+	assert(IsCombiningTerm(term) && "Invalid term found for combined term.");
 
 	auto& fm(AccessFirstSubterm(term));
 	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
