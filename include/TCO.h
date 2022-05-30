@@ -6,7 +6,7 @@
 #include "Evaluation.h" // for shared_ptr, Context, YSLib::allocate_shared,
 //	Unilang::Deref, UnilangException, map, lref, Environment, size_t, set,
 //	weak_ptr, IsTyped, ContextHandler, list, TermNode, EnvironmentGuard,
-//	ReductionStatus;
+//	ReductionStatus, NameTypedContextHandler;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
 #include <tuple> // for std::tuple;
@@ -318,9 +318,9 @@ struct NonTailCall final
 		EnvironmentGuard&& gd, _fCurrent&& cur)
 	{
 		auto act(MoveKeptGuard(gd));
-		Continuation cont([&]{
+		Continuation cont(NameTypedContextHandler([&]{
 			return ReduceForLiftedResult(term);
-		}, ctx);
+		}, "eval-lift-result"), ctx);
 
 		RelaySwitched(ctx, std::move(act));
 		return Unilang::RelayCurrentNext(ctx, term, yforward(cur),
@@ -336,9 +336,9 @@ struct NonTailCall final
 
 		if(lift)
 		{
-			Continuation cont([&]{
+			Continuation cont(NameTypedContextHandler([&]{
 				return ReduceForLiftedResult(term);
-			}, ctx);
+			}, "eval-lift-result"), ctx);
 
 			RelaySwitched(ctx, std::move(act));
 			return Unilang::RelayCurrentNext(ctx, term, yforward(cur),
