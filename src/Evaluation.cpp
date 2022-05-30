@@ -206,6 +206,7 @@ EvaluateLeafToken(TermNode& term, Context& ctx, string_view id)
 	{
 		auto& bound(*pr.first);
 
+		SetupTailOperatorName(term, ctx);
 		if(const auto p_bound
 			= Unilang::TryAccessLeaf<const TermReference>(bound))
 		{
@@ -1182,6 +1183,15 @@ QuerySourceInformation(const ValueObject& vo)
 	}, val.try_get_object_ptr<SourceInfoMetadata>());
 }
 
+const ValueObject*
+QueryTailOperatorName(const Reducer& act)
+{
+	if(const auto p_act = act.target<TCOAction>())
+		if(p_act->OperatorName.type() == type_id<TokenValue>())
+			return &p_act->OperatorName;
+	return {};
+}
+
 string_view
 QueryTypeName(const type_info& ti)
 {
@@ -1232,7 +1242,26 @@ TraceBacktrace(const Context::ReducerSequence& backtrace, YSLib::Logger& trace)
 					}, act.target<Continuation>(), act.target_type()).name()
 #endif
 				);
-				trace.TraceFormat(Notice, "#[continuation (%s)]", p);
+				const auto p_opn_vo(QueryTailOperatorName(act));
+				const auto p_opn_t(p_opn_vo ? p_opn_vo->AccessPtr<TokenValue>()
+					: nullptr);
+
+				if(const auto p_o = p_opn_t ? p_opn_t->data() : nullptr)
+				{
+					// XXX: Assume the source information is used.
+#if true
+					if(const auto p_si = QuerySourceInformation(*p_opn_vo))
+						trace.TraceFormat(Notice, "#[continuation: %s (%s) @"
+							" %s (line %zu, column %zu)]", p_o, p,
+							p_si->first ? p_si->first->c_str() : "<unknown>",
+							p_si->second.Line + 1, p_si->second.Column + 1);
+					else
+#endif
+						trace.TraceFormat(Notice, "#[continuation: %s (%s)]",
+							p_o, p);
+				}
+				else
+					trace.TraceFormat(Notice, "#[continuation (%s)]", p);
 			}
 		}, "guard unwinding for backtrace");
 	}
