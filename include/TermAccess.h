@@ -367,6 +367,12 @@ ClearCombiningTags(TermNode& term) noexcept
 	AssertValueTags(term);
 }
 
+YB_ATTR_nodiscard YB_PURE inline bool
+IsCombiningTerm(const TermNode& term) noexcept
+{
+	return IsBranch(term) && (IsList(term) || IsTyped<TokenValue>(term));
+}
+
 template<typename _func, class _tTerm>
 auto
 ResolveTerm(_func do_resolve, _tTerm&& term)
