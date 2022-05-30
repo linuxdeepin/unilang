@@ -345,17 +345,10 @@ ReduceBranch(TermNode& term, Context& ctx)
 			RemoveHead(term);
 		assert(IsBranchedList(term));
 		ctx.SetCombiningTermRef(term);
-
-		auto& sub(AccessFirstSubterm(term));
-
-		ctx.SetupFront([&](Context& c){
-			c.SetNextTermRef(term);
-			return ReduceCombinedBranch(term, ctx);
-		});
-		ctx.SetupFront([&]{
-			return ReduceOnce(sub, ctx);
-		});
-		return ReductionStatus::Partial;
+		return ReduceSubsequent(AccessFirstSubterm(term), ctx,
+			Unilang::NameTypedReducerHandler(std::bind(ReduceCombinedBranch,
+			std::ref(term), std::placeholders::_1),
+			"eval-combine-operands"));
 	}
 	return ReductionStatus::Retained;
 }
@@ -1039,10 +1032,10 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 		assert(!t.empty() && "Invalid term found.");
 		ReduceChildrenOrderedAsyncUnchecked(std::next(t.begin()), t.end(), c);
 		return ReductionStatus::Partial;
-	}, [&, n](Context& c){
+	}, NameTypedReducerHandler([&, n](Context& c){
 		c.SetNextTermRef(term);
 		return CallN(n - 1, term, c);
-	});
+	}, "eval-combine-operator"));
 }
 
 bool
