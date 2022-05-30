@@ -9,7 +9,8 @@
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
-//	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict;
+//	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict,
+//	Unilang::NameTypedContextHandler;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
@@ -905,7 +906,7 @@ Call1CC(TermNode& term, Context& ctx)
 	const auto i_captured(current.begin());
 
 	term.GetContainerRef().push_back(Unilang::AsTermNode(term.get_allocator(),
-		Continuation(
+		Continuation(Unilang::NameTypedContextHandler(
 		ystdex::bind1([&, i_captured](TermNode& t, OneShotChecker& osc){
 		Retain(t);
 		osc.Check();
@@ -936,7 +937,7 @@ Call1CC(TermNode& term, Context& ctx)
 		return ReductionStatus::Retained;
 	},
 		RefTCOAction(ctx).MakeOneShotChecker()
-	), ctx)));
+	), "captured-one-shot-continuation"), ctx)));
 	return ReduceCombinedBranch(term, ctx);
 }
 
