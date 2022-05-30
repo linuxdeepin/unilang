@@ -10,7 +10,7 @@
 //	ListTypeError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict,
-//	Unilang::NameTypedContextHandler;
+//	Unilang::NameTypedContextHandler, NameTypedContextHandler;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
@@ -348,7 +348,7 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 	auto i(term.begin());
 	auto& tm(Unilang::Deref(++i));
 
-	return ReduceSubsequent(tm, ctx, [&, i, no_lift]{
+	return ReduceSubsequent(tm, ctx, NameTypedReducerHandler([&, i, no_lift]{
 		return ReduceCreateFunction(term, [&]{
 			return
 				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
@@ -365,7 +365,7 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 				}());
 			}, tm);
 		}, Form);
-	});
+	}, "eval-vau-parent"));
 }
 
 
@@ -704,14 +704,14 @@ If(TermNode& term, Context& ctx)
 	{
 		auto i(std::next(term.begin()));
 
-		return ReduceSubsequent(*i, ctx, [&, i]() -> ReductionStatus{
+		return ReduceSubsequent(*i, ctx, NameTypedReducerHandler([&, i]{
 			auto j(i);
 
 			if(!ExtractBool(*j))
 				++j;
 			return ++j != term.end() ? ReduceOnceLifted(term, ctx, *j)
 				: ReduceReturnUnspecified(term);
-		});
+		}, "select-clause"));
 	}
 	else
 		throw InvalidSyntax("Syntax error in conditional form.");
@@ -781,12 +781,13 @@ Define(TermNode& term, Context& ctx)
 			//	is known that in the supported platform configurations, the ABI
 			//	makes it not in-place storable in
 			//	'ystdex::any_ops::any_storage', so there is no need to change.
-			std::bind([&](Context&, const TermNode& saved,
-			const shared_ptr<Environment>& p_e){
+			Unilang::NameTypedReducerHandler(std::bind([&](Context&,
+			const TermNode& saved, const shared_ptr<Environment>& p_e){
 			CheckBindParameter(p_e, saved, term);
 			term.Value = ValueToken::Unspecified;
 			return ReductionStatus::Clean;
-		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()));
+		}, std::placeholders::_1, std::move(formals), ctx.GetRecordPtr()),
+			"match-ptree"));
 	}
 	throw InvalidSyntax("Invalid syntax found in definition.");
 }
