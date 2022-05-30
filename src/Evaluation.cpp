@@ -6,11 +6,11 @@
 //	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
 //	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple,
 //	SourceInformation, pmr::polymorphic_allocator, yunseq, Continuation,
-//	GetLValueTagsOf, AccessFirstSubterm, ThrowTypeErrorForInvalidType,
-//	in_place_type, TermToNamePtr, IsTyped, ThrowInsufficientTermsError,
-//	Unilang::allocate_shared, YSLib::lock_guard, YSLib::mutex,
-//	YSLib::unordered_map, type_index, std::allocator, std::pair,
-//	YSLib::forward_as_tuple, Unilang::TryAccessTerm;
+//	TermToStringWithReferenceMark GetLValueTagsOf, AccessFirstSubterm,
+//	ThrowTypeErrorForInvalidType, in_place_type, TermToNamePtr, IsTyped,
+//	ThrowInsufficientTermsError, Unilang::allocate_shared, YSLib::lock_guard,
+//	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
+//	Unilang::TryAccessTerm;
 #include "TermAccess.h" // for TokenValue, IsCombiningTerm;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
@@ -301,6 +301,23 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 		(lf = &act.AttachFunction(std::forward<_tParams>(args)).get(), 0)...);
 	ctx.SetNextTermRef(term);
 	return RelaySwitched(ctx, Continuation(std::ref(lf ? *lf : h), ctx));
+}
+
+YB_NORETURN ReductionStatus
+ThrowCombiningFailure(TermNode& term, const TermNode& fm, bool has_ref)
+{
+	string name(term.get_allocator());
+
+	if(const auto p = Unilang::TryAccessLeaf<TokenValue>(term))
+	{
+		name = std::move(*p);
+		name += ": ";
+	}
+	name += TermToStringWithReferenceMark(fm, has_ref).c_str();
+	term.Value.Clear();
+	throw ListReductionFailure(ystdex::sfmt("No matching combiner '%s'"
+		" for operand with %zu argument(s) found.", name.c_str(),
+		FetchArgumentN(term)));
 }
 
 ReductionStatus
@@ -1119,13 +1136,8 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 		return
 			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
 	assert(IsBranch(term));
-	return ResolveTerm([&](const TermNode& nd, bool has_ref)
-		YB_ATTR_LAMBDA(noreturn) -> ReductionStatus{
-		throw ListReductionFailure(ystdex::sfmt("No matching combiner '%s'"
-			" for operand with %zu argument(s) found.",
-			TermToStringWithReferenceMark(nd, has_ref).c_str(),
-			term.size() - 1));
-	}, fm);
+	return ResolveTerm(std::bind(ThrowCombiningFailure, std::ref(term),
+		std::placeholders::_1, std::placeholders::_2), fm);
 }
 
 
