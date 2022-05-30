@@ -323,10 +323,11 @@ private:
 	lref<pmr::memory_resource> memory_rsrc;
 	shared_ptr<Environment> p_record{Unilang::allocate_shared<Environment>(
 		Environment::allocator_type(&memory_rsrc.get()))};
-	TermNode* next_term_ptr = {};
 	ReducerSequence
 		current{ReducerSequence::allocator_type(&memory_rsrc.get())};
 	ReducerSequence stacked{current.get_allocator()};
+	TermNode* next_term_ptr = {};
+	TermNode* combining_term_ptr = {};
 
 public:
 	Reducer TailAction{};
@@ -348,6 +349,11 @@ public:
 	GetBindingsRef() const noexcept
 	{
 		return p_record->Bindings;
+	}
+	TermNode*
+	GetCombiningTermPtr() const noexcept
+	{
+		return combining_term_ptr;
 	}
 	const ReducerSequence&
 	GetCurrent() const noexcept
@@ -373,6 +379,11 @@ public:
 	}
 
 	void
+	SetCombiningTermRef(TermNode& term) noexcept
+	{
+		combining_term_ptr = &term;
+	}
+	void
 	SetNextTermRef(TermNode& term) noexcept
 	{
 		next_term_ptr = &term;
@@ -387,6 +398,12 @@ public:
 
 	ReductionStatus
 	ApplyTail();
+
+	void
+	ClearCombiningTerm() noexcept
+	{
+		combining_term_ptr = {};
+	}
 
 	YB_NORETURN static void
 	DefaultHandleException(std::exception_ptr);
