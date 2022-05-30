@@ -6,10 +6,11 @@
 //	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
 //	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple,
 //	SourceInformation, pmr::polymorphic_allocator, yunseq, Continuation,
-//	GetLValueTagsOf, in_place_type, ThrowTypeErrorForInvalidType, TermToNamePtr,
-//	IsTyped, ThrowInsufficientTermsError, Unilang::allocate_shared,
-//	YSLib::lock_guard, YSLib::mutex, YSLib::unordered_map, type_index,
-//	std::allocator, std::pair, YSLib::forward_as_tuple, Unilang::TryAccessTerm;
+//	GetLValueTagsOf, AccessFirstSubterm, ThrowTypeErrorForInvalidType,
+//	in_place_type, TermToNamePtr, IsTyped, ThrowInsufficientTermsError,
+//	Unilang::allocate_shared, YSLib::lock_guard, YSLib::mutex,
+//	YSLib::unordered_map, type_index, std::allocator, std::pair,
+//	YSLib::forward_as_tuple, Unilang::TryAccessTerm;
 #include "TermAccess.h" // for TokenValue, IsCombiningTerm;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
@@ -291,6 +292,7 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 	auto& act(EnsureTCOAction(ctx, term));
 	auto& lf(act.LastFunction);
 
+	ctx.ClearCombiningTerm();
 	term.Value.Clear();
 	lf = {};
 	yunseq(0,
@@ -318,11 +320,12 @@ ReduceBranch(TermNode& term, Context& ctx)
 			while(term_ref.get().size() == 1);
 			return ReduceOnceLifted(term, ctx, term_ref);
 		}
+		AssertNextTerm(ctx, term);
+		ctx.LastStatus = ReductionStatus::Neutral;
 		if(IsEmpty(AccessFirstSubterm(term)))
 			RemoveHead(term);
 		assert(IsBranchedList(term));
-		ctx.SetNextTermRef(term);
-		ctx.LastStatus = ReductionStatus::Neutral;
+		ctx.SetCombiningTermRef(term);
 
 		auto& sub(AccessFirstSubterm(term));
 
