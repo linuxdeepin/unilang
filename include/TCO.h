@@ -148,6 +148,7 @@ public:
 	mutable const ContextHandler* LastFunction{};
 	mutable EnvironmentGuard EnvGuard;
 	mutable FrameRecordList RecordList;
+	mutable ValueObject OperatorName;
 
 private:
 	mutable ystdex::optional<ystdex::guard<OneShotChecker>> one_shot_guard{};

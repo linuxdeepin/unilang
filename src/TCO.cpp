@@ -119,10 +119,12 @@ RecordCompressor::CountStrong(const shared_ptr<Environment>& p) noexcept
 TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 	: term_guard(ystdex::unique_guard(GuardFunction{term})),
 	req_lift_result(lift ? 1 : 0), xgds(ctx.get_allocator()), EnvGuard(ctx),
-	RecordList(ctx.get_allocator())
-{
-	assert(IsTyped<TokenValue>(term) || !term.Value);
-}
+	RecordList(ctx.get_allocator()), OperatorName([&]() noexcept{
+		assert((IsTyped<TokenValue>(term) || !term.Value)
+			&& "Invalid value for combining term found.");
+		return std::move(term.Value);
+	}())
+{}
 TCOAction::TCOAction(const TCOAction& a)
 	: term_guard(std::move(a.term_guard)),
 	req_lift_result(a.req_lift_result), xgds(std::move(a.xgds)),
