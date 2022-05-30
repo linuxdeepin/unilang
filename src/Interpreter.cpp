@@ -454,10 +454,22 @@ Interpreter::ReadFrom(std::streambuf& buf) const
 {
 	using s_it_t = std::istreambuf_iterator<char>;
 	LexicalAnalyzer lexer;
-	ByteParser parse(lexer, Allocator);
 
-	std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
-	return ReadParserResult(parse);
+	if(UseSourceLocation)
+	{
+		SourcedByteParser parse(lexer, Allocator);
+
+		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
+		return ReadParserResult(parse);
+	}
+	else
+	{
+		ByteParser parse(lexer, Allocator);
+
+		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
+		return ReadParserResult(parse);
+	}
+
 }
 TermNode
 Interpreter::ReadFrom(std::istream& is) const
