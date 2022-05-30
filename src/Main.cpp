@@ -9,7 +9,8 @@
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <functional> // for std::bind, std::placeholders;
 #include "BasicReduction.h" // for ReductionStatus, LiftOther;
-#include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict;
+#include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict,
+//	NameTypedContextHandler;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, IsTypedRegular, ComposeReferencedTermOp,
@@ -433,11 +434,11 @@ LoadModule_std_io(Interpreter& intp)
 	});
 	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
 		RetainN(term);
-		c.SetupFront([&]{
+		return RelaySwitched(c, NameTypedContextHandler([&]{
 			term = intp.ReadFrom(*intp.OpenUnique(std::move(
 				Unilang::ResolveRegular<string>(*std::next(term.begin())))));
 			return ReduceOnce(term, c);
-		});
+		}, "load-external"));
 	});
 	RegisterUnary(ctx, "write", [&](TermNode& term){
 		WriteTermValue(std::cout, term);
@@ -986,7 +987,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.50"
+#define APP_VER "0.11.72"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
