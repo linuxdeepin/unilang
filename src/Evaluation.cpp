@@ -367,13 +367,14 @@ ReduceChildrenOrderedAsync(TNIter, TNIter, Context&);
 ReductionStatus
 ReduceChildrenOrderedAsyncUnchecked(TNIter first, TNIter last, Context& ctx)
 {
-	assert(first != last);
+	assert(first != last && "Invalid range found.");
 
 	auto& term(*first++);
 
-	return ReduceSubsequent(term, ctx, [=](Context& c){
+	return ReduceSubsequent(term, ctx, Continuation(NameTypedContextHandler(
+		[first, last](TermNode&, Context& c){
 		return ReduceChildrenOrderedAsync(first, last, c);
-	});
+	}, "eval-argument-list"), ctx));
 }
 
 inline ReductionStatus
