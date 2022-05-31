@@ -242,6 +242,8 @@ echo 'display "Hello world."; () newline' | ./unilang
 ./unilang demo/qt.txt
 ```
 
+　　等价的 Python 实现参考 `demo/qt.py` 。
+
 ### Quicksort demo
 
 ```
