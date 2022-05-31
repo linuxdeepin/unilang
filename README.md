@@ -68,6 +68,14 @@ sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
 sudo apt install bash coreutils git g++ libffi-dev llvm-dev
 ```
 
+### Qt 环境要求和假设
+
+* 使用 [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) 。
+* 不支持 `QT_NAMESPACE` 。
+* 直接依赖头文件和库文件在文件系统中的布局，不使用其它文件。
+* 使用编译器选项 `-I$PREFIX/include/QtWidgets` ，其中 `$PREFIX` 是头文件目录的系统前缀。
+* 使用链接器选项 `-lQt5Widgets -lQt5Core` 。
+
 ## 构建环境更新
 
 　　构建之前，在版本库根目录运行以下命令确保外部依赖项：
@@ -227,6 +235,20 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 
 ```
 echo 'display "Hello world."; () newline' | ./unilang
+```
+
+### Qt Demo
+
+```
+./unilang demo/qt.txt
+```
+
+　　等价的 Python 实现参考 `demo/qt.py` 。
+
+### Quicksort demo
+
+```
+./unilang demo/quicksort.txt
 ```
 
 ## 运行测试脚本

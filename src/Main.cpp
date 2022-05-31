@@ -43,6 +43,7 @@
 #include YFM_YSLib_Core_YException // for YSLib::LoggedEvent,
 //	YSLib::FilterExceptions, YSLib::CommandArguments, YSLib::Alert;
 #include YFM_YSLib_Core_YCoreUtilities // for YSLib::LockCommandArguments;
+#include "UnilangQt.h"
 
 namespace Unilang
 {
@@ -548,7 +549,7 @@ PreloadExternal(Interpreter& intp, const char* filename)
 }
 
 void
-LoadFunctions(Interpreter& intp, bool jit)
+LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 {
 	using namespace Forms;
 	using namespace std::placeholders;
@@ -884,6 +885,8 @@ $defv! $import! (&e .&symbols) d
 	load_std_module("modules", LoadModule_std_modules);
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
+	// NOTE: Qt support.
+	InitializeQt(intp, argc, argv);
 	// NOTE: Prevent the ground environment from modification.
 	env.Frozen = true;
 	intp.SaveGround();
@@ -987,7 +990,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.72"
+#define APP_VER "0.11.77"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -1055,7 +1058,7 @@ main(int argc, char* argv[])
 
 				Interpreter intp{};
 
-				LoadFunctions(intp, Unilang_UseJIT);
+				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
 				llvm_main();
 				for(const auto& str : eval_strs)
 					intp.RunLine(str);
@@ -1065,7 +1068,7 @@ main(int argc, char* argv[])
 			{
 				Interpreter intp{};
 
-				LoadFunctions(intp, Unilang_UseJIT);
+				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
 				for(const auto& str : eval_strs)
 					intp.RunLine(str);
 			}
@@ -1081,7 +1084,7 @@ main(int argc, char* argv[])
 			cout << title << endl << "Initializing the interpreter "
 				<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]")
 				<< " ..." << endl;
-			LoadFunctions(intp, Unilang_UseJIT);
+			LoadFunctions(intp, Unilang_UseJIT, argc, argv);
 			llvm_main();
 			cout << "Initialization finished." << endl;
 			cout << "Type \"exit\" to exit." << endl << endl;
