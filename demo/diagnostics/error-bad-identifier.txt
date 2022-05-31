@@ -1,0 +1,4 @@
+﻿"Error: bad identifier.";
+
+foo;
+
