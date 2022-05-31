@@ -1,0 +1,6 @@
+﻿"Error: inner calls.";
+
+$defl! foo (x) id (x x);
+
+foo 42;
+
