@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
@@ -296,7 +296,6 @@ void
 InitializeQt(Interpreter& intp, int& argc, char* argv[])
 {
 	intp.Perform(R"Unilang(
-		$defv! $remote-eval (&o &e) d eval o (eval e d);
 		$def! std.classes $let ()
 		(
 			$def! impl__ $provide!
