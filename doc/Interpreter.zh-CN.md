@@ -1019,4 +1019,37 @@ using string = basic_string<char>;
 	* 对路径指定的递归扫描，以其中的每个子目录中的非目录文件的相对路径作为参数，调用一次构建操作。构建参数的操作分别是这里的第二参数和非目录文件的（相对此处第三参数的）文件路径。
 		* 若路径指定的文件名没有指定一个可访问的目录，则引起错误。
 		* **注意** 假定调用过程中目录的内容不存在外部的并发修改，且目录内部没有循环的符号链接。否则，递归扫描可能无法终止。
-	
+
+# QtDemo
+
+　　QtDemo 当前用于内部评估。
+
+　　参照 [Qt 官方的 PySide2 第一个例子](https://doc.qt.io/qtforpython/quickstart.html)。Demo 实现的源代码详见 `qt.txt` 。
+
+## 解释器支持特性
+
+　　包含以下非公开支持特性：
+
+* 标准库：
+	* `random.choice`
+	* `sys.exit`
+* 面向对象原型/可调用绑定 API 的面向对象支持（类）：
+	* 类创建。
+		* 初始化（构造函数）。
+		* 单一基类。
+	* 对象创建。
+	* 成员访问。
+
+　　包含以下在 Demo 中需要使用的非公开特性：
+
+* `QtCore` 绑定 API ：
+	* `QtWidgets`
+		* `QWidget`
+		* `QPushButton`
+		* `QLabel`
+		* `QVBoxLayout`
+		* `QApplication`
+	* `Qt.Alignment`
+	* 信号连接（可直接调用）。
+
+

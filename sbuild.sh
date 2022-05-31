@@ -11,6 +11,9 @@ Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 
 . "$Unilang_BaseDir/detect-llvm.sh"
 
+CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
+LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
+
 case $(uname) in
 *MINGW64*)
 # XXX: Workaround for MinGW64 G++ + ld with ASLR enabled by default. Clang++
@@ -24,15 +27,17 @@ case $(uname) in
 esac
 case $(uname) in
 *MSYS* | *MINGW*)
+	LIBS_EXTRA="$LIBS_Qt $LIBS_EXTRA"
 	;;
 *)
-	LIBS_EXTRA="$LIBS_EXTRA -ldl"
+	LIBS_EXTRA="$LIBS_Qt $LIBS_EXTRA -ldl"
 esac
 mkdir -p "$Unilang_BaseDir/build"
 (cd "$Unilang_BaseDir/build" && SHBuild_NoAdjustSubsystem=true \
 	SHBuild_CXXFLAGS="$CXXFLAGS_EXTRA" SHBuild_LDFLAGS="$LDFLAGS_LOWBASE_" \
 	SHBuild_LIBS="$LIBS_EXTRA" SHBuild-BuildPkg.sh "$@" \
-	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include"\")
+	-xn,unilang "$Unilang_BaseDir/src" -I\""$Unilang_BaseDir/include"\" \
+	"$CXXFLAGS_Qt")
 
 echo "Done."
 
