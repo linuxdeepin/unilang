@@ -295,43 +295,6 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 void
 InitializeQt(Interpreter& intp, int& argc, char* argv[])
 {
-	intp.Perform(R"Unilang(
-		$def! std.classes $let ()
-		(
-			$def! impl__ $provide!
-			(
-				make-class
-				class?
-				make-object
-				object?
-				$access
-			)
-			(
-				$def! (encapsulate-class% class? decapsulate-class)
-					() make-encapsulation-type;
-				$defl! make-class (base ctor)
-					encapsulate-class% (list base ctor);
-				$defl! ctor-of (c) first (rest (decapsulate-class c));
-				$defl! base-of (c) first (decapsulate-class c);
-				$defl! apply-ctor (c self args)
-					apply (ctor-of c) (list* self args);
-				$def! (encapsulate-object% object? decapsulate-object)
-					() make-encapsulation-type;
-				$defl! make-object (c .args)
-				(
-					$def! self () make-environment;
-					$def! base base-of c;
-					$if (null? base) () (apply-ctor base self ());
-					apply-ctor c self args;
-					encapsulate-object% (move! self)
-				);
-				$defv%! $access (&o &id) d
-					eval% id (decapsulate-object (eval% o d));
-			);
-			() lock-current-environment
-		);
-	)Unilang");
-
 	auto& ctx(intp.Root);
 
 	ctx.GetRecordRef().Bindings["UnilangQt.native__"].Value = GetModuleFor(ctx,
