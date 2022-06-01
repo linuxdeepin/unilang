@@ -883,6 +883,8 @@ $defv! $import! (&e .&symbols) d
 	load_std_module("io", LoadModule_std_io);
 	load_std_module("system", LoadModule_std_system);
 	load_std_module("modules", LoadModule_std_modules);
+	// NOTE: Additional standard library initialization.
+	PreloadExternal(intp, "std.txt");
 	// NOTE: FFI and external libraries support.
 	InitializeFFI(intp);
 	// NOTE: Qt support.
@@ -990,7 +992,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.77"
+#define APP_VER "0.11.78"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
