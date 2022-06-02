@@ -2296,6 +2296,14 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　若参数指定的需求字符串没有注册，则注册需求字符串并加载同调用 `find-requirement-filename` 等价的方式搜索得到的结果；否则没有作用。
 
+## 类操作
+
+　　类操作提供被称为*类(classe)* 的一类封装类型。
+
+**注释** 类类型在其它一些语言被原生支持。
+
+　　类操作加载为基础环境下的 `std.classes` 环境。
+
 ## 辅助功能
 
 　　包含当前设计中未归类的以标准库提供的辅助运行时功能。
