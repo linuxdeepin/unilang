@@ -2678,7 +2678,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `$check <expression>...`
 
-　　在当前环境中求值参数整体构成的表达式，求值结果是 `#t` 则测试通过，否则调用 `fail-on-check` 。
+　　在当前环境中求值参数整体构成的表达式，求值结果不是 `#f` 则测试通过，否则调用 `fail-on-check` 。
 
 `$expect <expression> <expression>...`
 
