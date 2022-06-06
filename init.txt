@@ -229,8 +229,8 @@ $defl! fail-on-expect (&expr &res &expected) $sequence
 	(report-failure "Test case failed.");
 
 $defv! $check (.&expr) d
-	$let ((res eval expr d))
-		$if (res) (pass res) (fail-on-check expr res);
+	$let ((&res eval expr d))
+		$if res (pass (forward! res)) (fail-on-check expr (forward! res));
 
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
