@@ -234,7 +234,7 @@ $defv! $check (.&expr) d
 
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
-		$if (equal? res expected) (pass res)
+		$if (equal? res expected) (pass (forward! res))
 			(fail-on-expect expr (forward! res) (forward! expected));
 
 $defv! $expect-moved (.&expr) d
