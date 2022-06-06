@@ -232,6 +232,10 @@ $defv! $check (.&expr) d
 	$let ((&res eval expr d))
 		$if res (pass (forward! res)) (fail-on-check expr (forward! res));
 
+$defv! $check-not (.&expr) d
+	$let ((&res eval expr d))
+		$if res (fail-on-check expr (forward! res)) (pass (forward! res));
+
 $defv! $expect (&expected-expr .&expr) d
 	$let ((&res eval expr d) (&expected eval expected-expr d))
 		$if (equal? res expected) (pass (forward! res))
