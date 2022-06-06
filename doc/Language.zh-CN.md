@@ -2680,6 +2680,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　在当前环境中求值参数整体构成的表达式，求值结果不是 `#f` 则测试通过，否则调用 `fail-on-check` 。
 
+`$check-not <expression>...`
+
+　　在当前环境中求值参数整体构成的表达式，求值结果是 `#f` 则测试通过，否则调用 `fail-on-check` 。
+
 `$expect <expression> <expression>...`
 
 　　在当前环境求值第一参数和其余参数整体构成的表达式，其求值结果分别为预期结果和测试结果；以 `equal?` 比较，若结果是 `#t` 则测试通过，否则调用 `fail-on-expect` 报告错误。
