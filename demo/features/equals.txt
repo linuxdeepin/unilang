@@ -3,6 +3,6 @@
 $def! x "FOO";
 $def! y "FOO";
 
-$expect #f eq? x y;
-$expect #t eqv? x y;
+$check-not eq? x y;
+$check eqv? x y;
 
