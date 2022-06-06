@@ -74,25 +74,25 @@ info "reference, reference collapsing and reference assignment";
 $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 (
 	subinfo "expecting different results for 'first&' and 'first@'";
-	$expect #f eq? (first& li) (first@ li);
+	$check-not eq? (first& li) (first@ li);
 	subinfo "collapsing test";
 	$let ((lic list% (as-const a) 2))
 	(
 		$check reference? (first@ li);
 		$check uncollapsed? (first@ li);
 		$check reference? (idv (first@ li));
-		$expect #f uncollapsed? (idv (first@ li));
-		$expect #f unique? (collapse (expire (first@ li)));
+		$check-not uncollapsed? (idv (first@ li));
+		$check-not unique? (collapse (expire (first@ li)));
 		$check unique? (collapse (expire (first@ lie)));
-		$expect #f unique? (collapse (first@ li));
+		$check-not unique? (collapse (first@ li));
 		$check unique? (collapse (expire (first@ lie)));
 		$check modifiable? (collapse (first@ li));
-		$expect #f modifiable? (collapse (first@ lic));
-		$expect #f modifiable? (collapse (as-const (first@ lic)));
+		$check-not modifiable? (collapse (first@ lic));
+		$check-not modifiable? (collapse (as-const (first@ lic)));
 		subinfo "collapsed nonmodifying values;" " fixed since V0.11.16";
-		$expect #f modifiable? (collapse (as-const (first@ li)));
+		$check-not modifiable? (collapse (as-const (first@ li)));
 		subinfo "collapsed value category";
-		$expect #f unique? (collapse (first@ lie))
+		$check-not unique? (collapse (first@ lie))
 	);
 	subinfo "expecting prvalue for reference to reference";
 	$expect 1 idv (idv (first@ li));
@@ -103,7 +103,7 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	$def! b 2;
 	$def! li list% a 2;
 	assign@! b (first@ li);
-	$expect #f eqv? (id b) 1;
+	$check-not eqv? (id b) 1;
 	$def! b 2;
 	$def! li list% a 2;
 	assign@! b (first@ li);
@@ -125,7 +125,7 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	$def! b 2;
 	$def! li list% a 2;
 	assign@! b (first@ li);
-	$expect #f reference? (idv (move! b));
+	$check-not reference? (idv (move! b));
 	subinfo "move! tests";
 	$def! b 2;
 	$def! li list% a 2;
@@ -138,7 +138,7 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	$def! b 2;
 	$def! li list% a 2;
 	assign@! b (first@ li);
-	$expect #f uncollapsed? (move! b);
+	$check-not uncollapsed? (move! b);
 	subinfo "preventing non-first-class temporary objects";
 	$let ()
 	(
@@ -183,8 +183,8 @@ $let ()
 	$check eqv? ($let ((f #f)) not? f) (not? #f);
 	subinfo "non-strict logical operations";
 	$check () $and;
-	$expect #f () $or;
-	$expect #f $and #f #f;
+	$check-not () $or;
+	$check-not $and #f #f;
 	$check $or #f #t;
 	$expect 2 $and 1 2;
 	$expect 1 $or 1 #f;
@@ -282,11 +282,11 @@ $let ()
 	p? 1;
 	$def! enc e 1;
 	$check p? enc;
-	$expect #f p? "str";
+	$check-not p? "str";
 	$expect 1 d enc;
 	$expect 2 d (e 2);
 	$check eqv? (e (list 1 2)) (e (list 1 2));
-	$expect #f eqv? (e (list 1 2)) (e (list 3 4))
+	$check-not eqv? (e (list 1 2)) (e (list 3 4))
 );
 subinfo "encapsulation temporary values";
 $let ((u unit) (&lt unit) (&t (idv unit)))
@@ -309,7 +309,7 @@ $let ()
 	$def! x e 1;
 	$def! y e 2;
 	$def! z e 2;
-	$expect #f eqv? x y;
+	$check-not eqv? x y;
 	$check eqv? y z
 );
 
@@ -383,7 +383,7 @@ $let ()
 (
 	$import! std.strings string-empty? ++;
 	$check string-empty? "";
-	$expect #f string-empty? "x";
+	$check-not string-empty? "x";
 	$expect "abc123" ++ "a" "bc" "123"
 );
 
@@ -452,8 +452,8 @@ $let ()
 	$def! depset1 make-dependency-set dep-comp1 dep-comp2;
 
 	$check has-dependency? depset1 "comp1";
-	$expect #f has-dependency? depset1 "comp1" (string->version "0.0.1");
+	$check-not has-dependency? depset1 "comp1" (string->version "0.0.1");
 	$check has-dependency? depset1 "comp1" (string->version "0.0.2");
-	$expect #f has-dependency? depset1 "comp3"
+	$check-not has-dependency? depset1 "comp3"
 );
 
