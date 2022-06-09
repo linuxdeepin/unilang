@@ -8,10 +8,10 @@ $def! std.classes $let ()
 (
 	$def! impl__ $provide!
 	(
-		make-class
 		class?
-		make-object
+		make-class
 		object?
+		make-object
 		$access
 	)
 	(
