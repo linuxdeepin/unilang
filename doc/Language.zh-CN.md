@@ -2304,6 +2304,46 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　类操作加载为基础环境下的 `std.classes` 环境。
 
+　　类操作可支持以下求值得到的操作数：
+
+* `<class>` 类：通过类操作创建的标识类类型的对象。
+	* 一个类可能具有可选的一个基类。
+	* 一个类可以关联应用子作为其*构造器(constructor)* 。
+		* **注释** 构造器的实现可同时支持不同的参数。不支持*重载(overload)* 多个构造器。
+	* 类可具有若干个*成员(member)* 。
+		* 每个类中，不同的成员具有不同的名称。
+		* 成员通过类和名称访问。
+		* **注释** 访问类的成员和环境中的变量绑定类似。
+* `<class-object>` 类的对象：通过 `<class>` 的示例创建的对象。
+* `<class>` 和 `<class-object>` 都是封装类型。
+* 两个 `<class>` 或 `<class-object>` 对象，当且仅当其内容满足 `equal?` 时，`eqv?` 结果为 `#t` 。
+
+`class? <object>`
+
+　　`<class>` 的类型谓词。
+
+`make-class <object> <applicative>`
+
+　　以参数为基类和构造器创建类。
+
+`object? <object>`
+
+　　`<class-object>` 的类型谓词。
+
+**注释** 这不是 `<object>` 的类型谓词。
+
+`make-object <class> <object>...`
+
+　　创建以第一个参数指定的类的对象。
+
+　　创建对象时，以之后的可选参数作为构造器的操作调用其构造器。
+
+`$access <object> <expression>`
+
+　　访问第一个参数指定的类的对象中以第二个参数指定的表达式求值确定的成员。
+
+**注释** 典型地，第二个参数一般是同成员名称的未求值的符号。
+
 ## 辅助功能
 
 　　包含当前设计中未归类的以标准库提供的辅助运行时功能。
