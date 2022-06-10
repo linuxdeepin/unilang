@@ -1,7 +1,8 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "BasicReduction.h"
-#include "TermAccess.h" // for Unilang::TryAccessLeaf, TermReference;
+#include "TermAccess.h" // for ClearCombiningTags, Unilang::TryAccessLeaf,
+//	TermReference;
 #include "Exception.h" // for ListTypeError;
 
 namespace Unilang
@@ -10,6 +11,7 @@ namespace Unilang
 ReductionStatus
 RegularizeTerm(TermNode& term, ReductionStatus status) noexcept
 {
+	ClearCombiningTags(term);
 	if(status == ReductionStatus::Clean)
 		term.ClearContainer();
 	return status;
