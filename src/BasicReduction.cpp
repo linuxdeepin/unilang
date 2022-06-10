@@ -1,8 +1,9 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "BasicReduction.h"
-#include "TermAccess.h" // for ClearCombiningTags, Unilang::TryAccessLeaf,
-//	TermReference;
+#include "TermAccess.h" // for ClearCombiningTags, EnsureValueTags,
+//	Unilang::TryAccessLeaf, TermReference;
+#include "TermNode.h" // for AssertValueTags;
 #include "Exception.h" // for ListTypeError;
 
 namespace Unilang
@@ -36,6 +37,7 @@ LiftMovedOther(TermNode& term, const TermReference& ref, bool move)
 {
 	LiftOtherOrCopy(term, ref.get(), move);
 	EnsureValueTags(term.Tags);
+	AssertValueTags(term);
 }
 
 } // unnamed namespace;
@@ -45,6 +47,7 @@ LiftToReturn(TermNode& term)
 {
 	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
 		LiftMovedOther(term, *p, p->IsMovable());
+	AssertValueTags(term);
 }
 
 ReductionStatus
