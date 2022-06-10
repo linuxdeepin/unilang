@@ -1,10 +1,10 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for Unilang::TryAccessReferencedTerm
+#include "Forms.h" // for Unilang::TryAccessReferencedTerm,
 //	ThrowTypeErrorForInvalidType, ResolveTerm, TermToNamePtr,
 //	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ClearCombiningTags,
-//	ystdex::ref_eq, FormContextHandler, ReferenceTerm, ThrowValueCategoryError,
-//	Unilang::EmplaceCallResultOrReturn;
+//	AssertValueTags, FormContextHandler, ystdex::ref_eq, ReferenceTerm,
+//	ThrowValueCategoryError, Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -180,8 +180,9 @@ public:
 	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
 		ValueObject&& vo, TermNode& term, bool nl)
 		: eformal(std::move(ename)), p_formals((CheckParameterTree(Deref(p_fm)),
-		std::move(p_fm))), parent(std::move(vo)), p_eval_struct(ShareMoveTerm(
-		ystdex::exchange(term, Unilang::AsTermNode(term.get_allocator())))),
+		std::move(p_fm))), parent(std::move(vo)),
+		p_eval_struct((AssertValueTags(term), ShareMoveTerm(
+		ystdex::exchange(term, Unilang::AsTermNode(term.get_allocator()))))),
 		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
 	{}
 

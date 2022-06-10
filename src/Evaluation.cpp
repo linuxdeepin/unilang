@@ -2,16 +2,17 @@
 
 #include "Evaluation.h" // for ystdex::equality_comparable, AnchorPtr, lref,
 //	ContextHandler, EnvironmentReference, string_view, ValueToken,
-//	TermReference, TermTags, Unilang::TryAccessLeaf, byte,
-//	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
-//	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple,
-//	SourceInformation, pmr::polymorphic_allocator, yunseq, Continuation,
-//	TermToStringWithReferenceMark GetLValueTagsOf, AccessFirstSubterm,
-//	ThrowTypeErrorForInvalidType, in_place_type, TermToNamePtr, IsTyped,
-//	ThrowInsufficientTermsError, Unilang::allocate_shared, YSLib::lock_guard,
-//	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
-//	Unilang::TryAccessTerm;
-#include "TermAccess.h" // for TokenValue, IsCombiningTerm, ClearCombiningTags;
+//	TermReference, TermTags, byte, YSLib::AllocatorHolder,
+//	YSLib::IValueHolder::Creation, YSLib::AllocatedHolderOperations,
+//	YSLib::forward_as_tuple, SourceInformation, pmr::polymorphic_allocator,
+//	yunseq, Continuation, TermToStringWithReferenceMark GetLValueTagsOf,
+//	AccessFirstSubterm, ThrowTypeErrorForInvalidType, in_place_type,
+//	TermToNamePtr, IsTyped, ThrowInsufficientTermsError,
+//	Unilang::allocate_shared, YSLib::lock_guard, YSLib::mutex,
+//	YSLib::unordered_map, type_index, std::allocator, std::pair,
+//	AssertValueTags;
+#include "TermAccess.h" // for Unilang::TryAccessLeaf, TokenValue,
+//	IsCombiningTerm, ClearCombiningTags, Unilang::TryAccessTerm;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
@@ -950,6 +951,7 @@ FetchNameTableRef()
 ReductionStatus
 ReduceOnce(TermNode& term, Context& ctx)
 {
+	AssertValueTags(term);
 	ctx.SetNextTermRef(term);
 	return RelayDirect(ctx, ctx.ReduceOnce, term);
 }
@@ -958,6 +960,7 @@ ReduceOnce(TermNode& term, Context& ctx)
 ReductionStatus
 Context::DefaultReduceOnce(TermNode& term, Context& ctx)
 {
+	AssertValueTags(term);
 	return term.Value ? ReduceLeaf(term, ctx) : ReduceBranch(term, ctx);
 }
 
