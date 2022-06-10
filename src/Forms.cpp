@@ -2,8 +2,8 @@
 
 #include "Forms.h" // for Unilang::TryAccessReferencedTerm
 //	ThrowTypeErrorForInvalidType, ResolveTerm, TermToNamePtr,
-//	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ystdex::ref_eq,
-//	FormContextHandler, ReferenceTerm, ThrowValueCategoryError,
+//	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ClearCombiningTags,
+//	ystdex::ref_eq, FormContextHandler, ReferenceTerm, ThrowValueCategoryError,
 //	Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
@@ -126,6 +126,7 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
 	}, Unilang::Deref(i));
+	ClearCombiningTags(term);
 	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
 		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
 		std::ref(ctx.ReduceOnce));
@@ -317,6 +318,7 @@ MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 	auto eformal(CheckEnvironmentFormal(Unilang::Deref(++i)));
 
 	term.erase(term.begin(), ++i);
+	ClearCombiningTags(term);
 	return VauHandler(std::move(eformal), std::move(formals), std::move(vo),
 		term, no_lift);
 }
@@ -769,6 +771,7 @@ Define(TermNode& term, Context& ctx)
 	if(term.size() > 2)
 	{
 		RemoveHead(term);
+		ClearCombiningTags(term);
 
 		auto formals(MoveFirstSubterm(term));
 
