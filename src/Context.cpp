@@ -2,6 +2,7 @@
 
 #include "Context.h" // for Unilang::allocate_shared, lref, type_id;
 #include <cassert> // for assert;
+#include "TermNode.h" // for AssertValueTags;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
 #include <exception> // for std::throw_with_nested;
@@ -262,6 +263,7 @@ Context::RewriteGuarded(TermNode&, Reducer reduce)
 ReductionStatus
 Context::RewriteTerm(TermNode& term)
 {
+	AssertValueTags(term);
 	next_term_ptr = &term;
 	return Rewrite(Unilang::ToReducer(get_allocator(), std::ref(ReduceOnce)));
 }
@@ -269,6 +271,7 @@ Context::RewriteTerm(TermNode& term)
 ReductionStatus
 Context::RewriteTermGuarded(TermNode& term)
 {
+	AssertValueTags(term);
 	next_term_ptr = &term;
 	return RewriteGuarded(term,
 		Unilang::ToReducer(get_allocator(), std::ref(ReduceOnce)));
