@@ -11,7 +11,7 @@
 //	ThrowInsufficientTermsError, Unilang::allocate_shared, YSLib::lock_guard,
 //	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
 //	Unilang::TryAccessTerm;
-#include "TermAccess.h" // for TokenValue, IsCombiningTerm;
+#include "TermAccess.h" // for TokenValue, IsCombiningTerm, ClearCombiningTags;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
@@ -1119,7 +1119,7 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 
 	if(p_ref_fm)
 	{
-		term.Tags &= ~TermTags::Temporary;
+		ClearCombiningTags(term);
 		if(const auto p_handler
 			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
 			return CombinerReturnThunk(*p_handler, term, ctx);
