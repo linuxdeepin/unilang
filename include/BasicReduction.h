@@ -40,6 +40,13 @@ LiftOther(TermNode& term, TermNode& tm)
 }
 
 inline void
+LiftOtherValue(TermNode& term, TermNode& tm)
+{
+	AssertValueTags(tm);
+	LiftOther(term, tm);
+}
+
+inline void
 LiftTerm(TermNode& term, TermNode& tm)
 {
 	if(!ystdex::ref_eq<>()(term, tm))
