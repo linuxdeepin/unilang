@@ -495,6 +495,37 @@ Continuation::operator()(Context& ctx) const
 }
 
 
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const TermNode::allocator_type& a,
+	const TermNode::Container& con,
+	const char* msg = "Allocators mismatch to the term container.") noexcept
+{
+	// XXX: The message is current ignored.
+	yunused(a), yunused(con), yunused(msg);
+	assert(a == con.get_allocator());
+}
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const TermNode::allocator_type& a, const TermNode& nd,
+	const char* msg = "Allocators mismatch to the term node.") noexcept
+{
+	AssertMatchedAllocators(a, nd.GetContainer(), msg);
+}
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const Context& ctx, const TermNode::Container& con,
+	const char* msg
+	= "Allocators mismatch between the term container and the context.")
+	noexcept
+{
+	Unilang::AssertMatchedAllocators(ctx.get_allocator(), con, msg);
+}
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const Context& ctx, const TermNode& nd,
+	const char* msg
+	= "Allocators mismatch between the term node and the context.") noexcept
+{
+	Unilang::AssertMatchedAllocators(ctx.get_allocator(), nd, msg);
+}
+
 template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(const Environment::allocator_type& a, _tParams&&... args)
@@ -515,7 +546,7 @@ AllocateEnvironment(TermNode& term, Context& ctx, _tParams&&... args)
 	const auto a(ctx.GetBindingsRef().get_allocator());
 
 	static_cast<void>(term);
-	assert(a == term.get_allocator());
+	Unilang::AssertMatchedAllocators(a, term);
 	return Unilang::AllocateEnvironment(a, yforward(args)...);
 }
 
