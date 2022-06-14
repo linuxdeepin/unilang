@@ -1,0 +1,40 @@
+﻿"This is an functionality equivalent version of demo/qt.txt.";
+
+import std.classes make-class make-object $access;
+import UnilangQt QWidget
+	make-QPushButton make-QLabel make-QPushButton make-QLabel Qt.AlignCenter
+	make-QVBoxLayout QLayout-addWidget QObject-connect QLabel-setText
+	make-QApplication QApplication-exec;
+
+() newline;
+
+defn log (x) (display x; () newline);
+defn logd (x) (log "DEBUG:"; log x);
+
+logd "Loading script ...";
+
+def global () get-current-environment;
+def MyWidget make-class QWidget ($lambda (self)
+{
+	logd "[ctor] MyWidget";
+	$set! self hello list "Hallo Welt" "Hei maailma" "Hola Mundo" "Привет мир";
+	$set! self button make-QPushButton "Click me!";
+	$set! self text make-QLabel "Hello World!" Qt.AlignCenter;
+	$set! self layout () make-QVBoxLayout;
+	import self text button layout;
+	QLayout-addWidget layout text;
+	QLayout-addWidget layout button;
+	($remote-eval setLayout self) layout;
+	QObject-connect button "clicked(bool)" ($remote-eval _dynamic self)
+		($lambda/e (make-environment self global) () {
+		logd "[slot] Callback called.";
+		QLabel-setText text (random.choice hello)
+	})
+});
+
+def app () make-QApplication;
+def wgt make-object MyWidget;
+($access wgt resize) 800 600;
+() ($access wgt show);
+sys.exit (() QApplication-exec);
+
