@@ -12,7 +12,6 @@ $def! &< $remote-eval% <? std.math;
 $def! &> $remote-eval% >? std.math;
 $def! &<= $remote-eval% <=? std.math;
 $def! &>= $remote-eval% >=? std.math;
-$def! &let $let;
 $def! &import $import!;
 $def! &not not?;
 $def! &unless $unless;
