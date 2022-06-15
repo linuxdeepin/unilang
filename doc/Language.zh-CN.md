@@ -2307,14 +2307,16 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　类操作可支持以下求值得到的操作数：
 
 * `<class>` 类：通过类操作创建的标识类类型的对象。
-	* 一个类可能具有可选的一个基类。
+	* 一个类可能具有可选的一个*基类(base class)* 。
 	* 一个类可以关联应用子作为其*构造器(constructor)* 。
 		* **注释** 构造器的实现可同时支持不同的参数。不支持*重载(overload)* 多个构造器。
 	* 类可具有若干个*成员(member)* 。
 		* 每个类中，不同的成员具有不同的名称。
 		* 成员通过类和名称访问。
 		* **注释** 访问类的成员和环境中的变量绑定类似。
-* `<class-object>` 类的对象：通过 `<class>` 的示例创建的对象。
+* `<class-object>` 类的对象：通过 `<class>` 的实例创建的对象。
+	* 特定类的对象或值是这个类的*实例(instance)* 。
+	* 初始化类的实例时，其引用被被作为构造器的第一个参数。
 * `<class>` 和 `<class-object>` 都是封装类型。
 * 两个 `<class>` 或 `<class-object>` 对象，当且仅当其内容满足 `equal?` 时，`eqv?` 结果为 `#t` 。
 
@@ -2326,6 +2328,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　以参数为基类和构造器创建类。
 
+　　参数应为 `()` 或者 `<class>` 的值。若为前者，则视为不存在基类。
+
 `object? <object>`
 
 　　`<class-object>` 的类型谓词。
@@ -2336,9 +2340,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　创建以第一个参数指定的类的对象。
 
-　　创建对象时，以之后的可选参数作为构造器的操作调用其构造器。
+　　创建对象时，以被构造的类实例中的成员共享的环境引用和之后的可选参数作为构造器的操作调用其构造器。
 
-`$access <object> <expression>`
+`$access <class-object> <expression>`
 
 　　访问第一个参数指定的类的对象中以第二个参数指定的表达式求值确定的成员。
 
