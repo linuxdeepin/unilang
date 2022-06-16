@@ -605,6 +605,91 @@ load "external.txt"
 puts "FOO";
 ```
 
+## 类操作
+
+　　Unilang 标准库提供*类(class)* ，以支持基于类的面向对象特性。
+
+**注释** 其它一些语言中，类类型可能以内建的特性提供。
+
+　　这表示不同的类和类以及类和其它非类的类型之间不同。
+
+　　某个类类型的值或对象是这个类的实例。
+
+　　在 Unilang 中，类可在程序运行时被创建，作为一等对象使用。这种表示类的数据结构的值或对象具有 `<class>` 类型。`<class>` 对象负责保存它表示的类类型关联的所有元数据。
+
+**注释** `<class>` 自身并不是类。`<class>` 对象也不是类的实例。
+
+　　函数 `class?` 是 `<class>` 的类型谓词，判断一个值是否为 `<class>` 类型。
+
+　　使用 `<class>` 类型的值，可创建作为这个 `<class>` 值表示的类的实例的对象。这种类的实例对象称为类的对象，以 `<class-object>` 表示。每个具体类的实例都是 `<class-object>` 的子类型。
+
+　　函数 `object?` 是 `<class>` 的类型谓词，判断一个值是否为 `<class-object>` 类型。
+
+**注释** `<class-object>` 不是一般的对象类型 `<object>` 。因为任意的值都是对象类型，不需要类型谓词。
+
+　　一个类在创建时，可关联一个不同的*基类(base class)* 。类是类的基类的子类型，即类的实例总是基类的实例。
+
+**注释** 在强调至多只能有一个时，基类又称为*父类(parent class)* 。
+
+　　一个类在创建时，关联固定的*构造器(constructor)* 用于创建这个类的实例。
+
+**注释** 类的构造器只有一个，不支持重载。在指定构造器时，一般在其中的实现完整地支持不同的参数列表。
+
+　　函数 `make-class <object> <applicative>` 以参数为基类和构造器创建类。第一个参数可能是 `()` 或 `<class>` 类型的值。若为前者，表示创建的类不存在基类。
+
+　　`make-object <class> <object>...` 创建以第一个参数指定的类的对象。其中可选的实际参数被传递给类的构造器。
+
+　　一个类可具有若干个*成员(member)* 。成员之间名称互不相同。访问成员和访问环境中的变量绑定的机制类似。通过 `std.classes` 提供的函数可访问类的实例中的成员。
+
+　　函数 `$access <class-object> <expression>` 访问通过第二个参数的表达式求值确定的成员第一个类的成员。
+
+　　因为访问是动态的，对表达式的名称自动具有类的*包含多态性(inclusion polymorphism)* 。
+
+　　以下一个创建和使用类及其实例的例子：
+
+```
+$def! Shape make-class () id;
+
+$def! Rectangle make-class Shape ($lambda (self x y)
+(
+	$def! mods make-environment self std.math;
+	$set! self X x;
+	$set! self Y y;
+	$set! self Area $lambda/e mods () (* X Y);
+));
+
+$def! Circle make-class Shape ($lambda (self r)
+(
+	$def! mods make-environment self std.math;
+	$set! self R r;
+	$set! self Area $lambda/e mods () (* (* R R) 3.14159);
+));
+
+$def! rect make-object Rectangle 4 2;
+
+display "rect.X = ";
+display ($access rect X);
+() newline;
+
+display "rect.Y = ";
+display ($access rect Y);
+() newline;
+
+display "rect.Area() = ";
+display ($access rect (() Area));
+() newline;
+
+$def! circle make-object Circle 3;
+
+display "circle.R = ";
+display ($access circle R);
+() newline;
+
+display "circle.Area() = ";
+display ($access circle (() Area));
+() newline;
+```
+
 # 上层语言
 
 　　基于核心语言和标准库，上层语言提供更加接近其它常见编程语言的语法和一些扩展的语义特性：
