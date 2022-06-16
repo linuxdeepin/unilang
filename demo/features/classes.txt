@@ -1,0 +1,45 @@
+"Classes demos.";
+
+$import! std.classes class? make-class object? make-object $access;
+
+$def! Shape make-class () id;
+
+$def! Rectangle make-class Shape ($lambda (self x y)
+(
+	$def! mods make-environment self std.math;
+	$set! self X x;
+	$set! self Y y;
+	$set! self Area $lambda/e mods () (* X Y);
+));
+
+$def! Circle make-class Shape ($lambda (self r)
+(
+	$def! mods make-environment self std.math;
+	$set! self R r;
+	$set! self Area $lambda/e mods () (* (* R R) 3.14159);
+));
+
+$def! rect make-object Rectangle 4 2;
+
+display "rect.X = ";
+display ($access rect X);
+() newline;
+
+display "rect.Y = ";
+display ($access rect Y);
+() newline;
+
+display "rect.Area() = ";
+display ($access rect (() Area));
+() newline;
+
+$def! circle make-object Circle 3;
+
+display "circle.R = ";
+display ($access circle R);
+() newline;
+
+display "circle.Area() = ";
+display ($access circle (() Area));
+() newline;
+
