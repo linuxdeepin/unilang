@@ -50,7 +50,7 @@ GetModuleFor(Context& ctx, _fCallable&& f)
 	return ctx.ShareRecord();
 }
 
-QWidget&
+YB_PURE QWidget&
 ResolveQWidget(TermNode& term)
 {
 	const auto& p_wgt(Unilang::ResolveRegular<shared_ptr<QWidget>>(term));
