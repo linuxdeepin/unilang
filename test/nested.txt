@@ -1,10 +1,19 @@
 info "The following case test the hosted nested call safety.";
+"NOTE", "Debug versions of interpreter may be extremely slow.";
+
+$defl! make-list (l n)
+	$unless (eqv? n 0) (list% (make-list (move! l) (- n 1)));
 
 subinfo "term destroy";
 $let ()
 (
-	$defl! make-list (l n)
-		$unless (eqv? n 0) (list% (make-list (move! l) (- n 1)));
 	make-list () 50000;
+);
+
+subinfo "term copy;" " fixed since V0.11.92";
+$let ()
+(
+	$def! x make-list () 120000;
+	$def! y x
 );
 

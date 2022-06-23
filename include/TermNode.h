@@ -125,7 +125,7 @@ public:
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, const Container& con,
 		_tParams&&... args)
-		: container(con, a), Value(yforward(args)...)
+		: container(ConSub(con, a)), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
 		typename = enable_value_constructible_t<_tParams...>>
@@ -138,7 +138,7 @@ public:
 		: TermNode(nd, nd.get_allocator())
 	{}
 	TermNode(const TermNode& nd, allocator_type a)
-		: container(nd.container, a), Value(nd.Value), Tags(nd.Tags)
+		: container(ConSub(nd.container, a)), Value(nd.Value), Tags(nd.Tags)
 	{}
 	TermNode(TermNode&&) = default;
 	TermNode(TermNode&& nd, allocator_type a)
@@ -266,6 +266,11 @@ public:
 	void
 	ClearContainer() noexcept;
 
+private:
+	YB_ATTR_nodiscard YB_PURE static Container
+	ConSub(const Container&, allocator_type);
+
+public:
 	void
 	CopyContainer(const TermNode& nd)
 	{
