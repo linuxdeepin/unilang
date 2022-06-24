@@ -4,7 +4,7 @@ info "The following case test the hosted nested call safety.";
 $defl! make-list (l n)
 	$unless (eqv? n 0) (list% (make-list (move! l) (- n 1)));
 
-subinfo "term destroy";
+subinfo "term destroy;" " fixed since V0.6.109";
 $let ()
 (
 	make-list () 50000;
