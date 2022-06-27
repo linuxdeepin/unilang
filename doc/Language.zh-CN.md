@@ -380,6 +380,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　空列表和非空列表统称列表，其中包含的子对象是列表的元素。未求值的非空列表中，子表达式是列表的元素。
 
+　　*子列表(sublist)* 是一个列表的元素的集合构成的子对象。
+
 　　Unilang 的列表是*真列表(proper list)* ：列表的元素有限，同一个列表的不同元素之间不具有相互的所有权，生存期不相交。
 
 **注释** 符号和列表同时作为未求值和求值的表达式的值，被求值算法依赖，是 Unilang 的最基本的类型。
@@ -410,6 +412,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 ## 引用值
 
 　　特定的值是*引用值(reference value)* ，具有引用类型。引用值关联到*被引用对象(referent)* 。
+
+　　*子列表引用(sublist reference)* 是[子列表](#表达式的值和类型)作为被引用对象的引用。
 
 ### 多重引用
 
@@ -779,6 +783,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 　　临时对象非一等对象。
 
 　　为灵活控制对象所有权，避免[循环引用](#引用值和初始化)且允许检查误用，一等环境可能对上述共享的资源实体具有所有权。大部分情况一等环境是共享环境状态的*弱引用(weak reference)* ，不具有所有权；其它情形一等环境对环境状态具有共享的所有权。
+
+**注释** 综上，特定的对象非一等对象，如非一等的环境对象、临时对象和[子列表引用](#引用值)的被引用对象（子列表）。
 
 ## 实体表示
 
@@ -1611,11 +1617,15 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　取列表第一个元素以外的元素值经过转发的值构成的列表。
 
+　　结果构成子列表，可能引入[子列表引用](#引用值)。
+
 `rest& <list>`
 
 　　取列表第一个元素以外的元素值的引用值构成的列表的子对象引用。
 
 　　首先调用 `check-list-reference` 检查参数是列表引用，对右值抛出异常。
+
+　　结果构成子列表，引入子列表引用。
 
 `set-first%! <list> <object>`
 
