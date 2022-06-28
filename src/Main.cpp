@@ -134,6 +134,7 @@ DoResolve(TermNode(&f)(const Context&, string_view), TermNode& term,
 {
 	Forms::CallRegularUnaryAs<const TokenValue>([&](string_view id){
 		term = f(c, id);
+		EnsureValueTags(term.Tags);
 	}, term);
 	return ReductionStatus::Retained;
 }
@@ -992,7 +993,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.78"
+#define APP_VER "0.11.93"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
