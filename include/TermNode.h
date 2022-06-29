@@ -7,6 +7,7 @@
 //	std::allocator_arg_t, YSLib::IsTyped;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
+#include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/type_traits.hpp> // for std::is_constructible,
 //	ystdex::enable_if_t, std::is_assignable, std::is_nothrow_assignable,
 //	std::is_convertible, ystdex::decay_t, ystdex::false_, ystdex::not_;
@@ -64,7 +65,7 @@ EnsureValueTags(TermTags& tags) noexcept
 constexpr const struct NoContainerTag{} NoContainer{};
 
 
-class TermNode final
+class TermNode final : private ystdex::equality_comparable<TermNode>
 {
 private:
 	template<typename... _tParams>
@@ -206,6 +207,14 @@ public:
 	operator=(const TermNode&) = default;
 	TermNode&
 	operator=(TermNode&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE
+	friend bool
+	operator==(const TermNode& x, const TermNode& y) noexcept
+	{
+		return x.Tags == y.Tags && x.GetContainer() == y.GetContainer()
+			&& x.Value == y.Value;
+	}
 
 	YB_ATTR_nodiscard YB_PURE bool
 	operator!() const noexcept
