@@ -204,6 +204,12 @@ public:
 	MoveFunction();
 
 	void
+	ReleaseOneShotGuard()
+	{
+		return one_shot_guard.reset();
+	}
+
+	void
 	SetupLift() const;
 	void
 	SetupLift(bool lift) const

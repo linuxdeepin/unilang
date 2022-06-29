@@ -933,7 +933,7 @@ Call1CC(TermNode& term, Context& ctx)
 #endif
 		while(cur.begin() != i_top)
 			cur.pop_front();
-		cur.pop_front();
+		RefTCOAction(ctx).ReleaseOneShotGuard();
 		yunseq(term.GetContainerRef() = std::move(con),
 			term.Value = std::move(vo));
 		ctx.SetNextTermRef(term);
