@@ -91,48 +91,100 @@ public:
 	TermNode(allocator_type a)
 		: container(a)
 	{}
+	explicit
+	TermNode(TermTags tags)
+		: Tags(tags)
+	{}
+	TermNode(TermTags tags, allocator_type a)
+		: container(a), Tags(tags)
+	{}
 	TermNode(const Container& con)
-		: container(con, con.get_allocator())
+		: TermNode(TermTags::Unqualified, con)
+	{}
+	TermNode(TermTags tags, const Container& con)
+		: TermNode(std::allocator_arg, con.get_allocator(), tags, con)
 	{}
 	TermNode(Container&& con)
 		: container(std::move(con))
 	{}
+	TermNode(TermTags tags, Container&& con)
+		: container(std::move(con)), Tags(tags)
+	{}
 	template<typename... _tParams,
-		typename = enable_value_constructible_t<_tParams...>>
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
 	inline
 	TermNode(NoContainerTag, _tParams&&... args)
 		: Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
-		typename = enable_value_constructible_t<_tParams...>>
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
 	TermNode(const Container& con, _tParams&&... args)
-		: container(con, con.get_allocator()), Value(yforward(args)...)
+		: TermNode(std::allocator_arg, con.get_allocator(), con,
+		yforward(args)...)
 	{}
 	template<typename... _tParams,
-		typename = enable_value_constructible_t<_tParams...>>
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
 	TermNode(Container&& con, _tParams&&... args)
 		: container(std::move(con)), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
-		typename = enable_value_constructible_t<_tParams...>>
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
+	inline
+	TermNode(TermTags tags, NoContainerTag, _tParams&&... args)
+		: Value(yforward(args)...), Tags(tags)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
+	TermNode(TermTags tags, const Container& con, _tParams&&... args)
+		: TermNode(std::allocator_arg, con.get_allocator(), tags, con,
+		yforward(args)...)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
+	TermNode(TermTags tags, Container&& con, _tParams&&... args)
+		: container(std::move(con)), Value(yforward(args)...), Tags(tags)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, NoContainerTag,
 		_tParams&&... args)
 		: container(a), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
-		typename = enable_value_constructible_t<_tParams...>>
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, const Container& con,
 		_tParams&&... args)
 		: container(ConSub(con, a)), Value(yforward(args)...)
 	{}
 	template<typename... _tParams,
-		typename = enable_value_constructible_t<_tParams...>>
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
 	inline
 	TermNode(std::allocator_arg_t, allocator_type a, Container&& con,
 		_tParams&&... args)
 		: container(std::move(con), a), Value(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
+	inline
+	TermNode(std::allocator_arg_t, allocator_type a, TermTags tags,
+		NoContainerTag, _tParams&&... args)
+		: container(a), Value(yforward(args)...), Tags(tags)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
+	inline
+	TermNode(std::allocator_arg_t, allocator_type a, TermTags tags,
+		const Container& con, _tParams&&... args)
+		: container(ConSub(con, a)), Value(yforward(args)...), Tags(tags)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = enable_value_constructible_t<_tParams...>)>
+	inline
+	TermNode(std::allocator_arg_t, allocator_type a, TermTags tags,
+		Container&& con, _tParams&&... args)
+		: container(std::move(con), a), Value(yforward(args)...), Tags(tags)
 	{}
 	TermNode(const TermNode& nd)
 		: TermNode(nd, nd.get_allocator())
