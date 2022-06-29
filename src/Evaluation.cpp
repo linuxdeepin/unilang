@@ -11,23 +11,23 @@
 //	Unilang::allocate_shared, YSLib::lock_guard, YSLib::mutex,
 //	YSLib::unordered_map, type_index, std::allocator, std::pair,
 //	AssertValueTags;
-#include "TermAccess.h" // for Unilang::TryAccessLeaf, TokenValue,
-//	IsCombiningTerm, ClearCombiningTags, Unilang::TryAccessTerm;
+#include <cassert> // for assert;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
-#include <iterator> // for std::prev;
-#include <cassert> // for assert;
-#include <ystdex/cctype.h> // for ystdex::isdigit;
+#include "TermAccess.h" // for Unilang::TryAccessLeaf, TokenValue,
+//	IsCombiningTerm, ClearCombiningTags, Unilang::TryAccessTerm;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
 //	InvalidSyntax, std::throw_with_nested, ParameterMismatch,
 //	ListReductionFailure;
+#include "TCO.h" // for EnsureTCOAction, Action, RelayDirect, TCOAction;
+#include <ystdex/functional.hpp> // for ystdex::retry_on_cond,
+//	ystdex::update_thunk;
+#include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
+#include <iterator> // for std::prev;
 #include "Lexical.h" // for IsUnilangSymbol, CategorizeBasicLexeme,
 //	LexemeCategory, DeliteralizeUnchecked;
-#include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
-#include "TCO.h" // for EnsureTCOAction, Action, RelayDirect, TCOAction;
-#include <ystdex/functional.hpp> // for ystdex::update_thunk;
 #include <ystdex/functor.hpp> // for std::hash, ystdex::equal_to,
 //	ystdex::ref_eq;
 #include <ystdex/utility.hpp> // for ystdex::parameterize_static_object,
@@ -333,11 +333,13 @@ ReduceBranch(TermNode& term, Context& ctx)
 			//	handling recursive subterms.
 			auto term_ref(ystdex::ref(term));
 
-			do
-			{
+			ystdex::retry_on_cond([&]{
+				auto& tm(term_ref.get());
+
+				return IsList(tm) && tm.size() == 1;
+			}, [&]{
 				term_ref = AccessFirstSubterm(term_ref);
-			}
-			while(term_ref.get().size() == 1);
+			});
 			return ReduceOnceLifted(term, ctx, term_ref);
 		}
 		AssertNextTerm(ctx, term);
