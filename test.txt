@@ -175,6 +175,9 @@ $let ()
 	$check eqv? (unwrap idv) (unwrap (idv idv));
 	$check eqv? (wrap (unwrap idv)) idv;
 );
+subinfo "self-evaluation on nested one-element list of irregular"
+	" representations;" " fixed since V0.11.97";
+$expect (unwrap id) eval% (list% (unwrap id)) (() get-current-environment);
 
 info "logical operations";
 $let ()
