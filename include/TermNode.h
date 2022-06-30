@@ -586,6 +586,24 @@ AsTermNode(TermNode::allocator_type a, _tParams&&... args)
 	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
 }
 
+template<typename... _tParam, typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline
+ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
+	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
+	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
+AsTermNodeTagged(TermTags tags, _tParams&&... args)
+{
+	return TermNode(tags, NoContainer, yforward(args)...);
+}
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline TermNode
+AsTermNodeTagged(TermNode::allocator_type a, TermTags tags, _tParams&&... args)
+{
+	return
+		TermNode(std::allocator_arg, a, tags, NoContainer, yforward(args)...);
+}
+
+
 } // namespace Unilang;
 
 #endif
