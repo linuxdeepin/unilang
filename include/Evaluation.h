@@ -444,13 +444,13 @@ YB_ATTR_nodiscard YB_PURE const SourceInformation*
 QuerySourceInformation(const ValueObject&);
 
 YB_ATTR_nodiscard const ValueObject*
-QueryTailOperatorName(const Reducer&);
+QueryTailOperatorName(const Reducer&) noexcept;
 
 YB_ATTR_nodiscard YB_PURE string_view
 QueryTypeName(const type_info&);
 
 bool
-SetupTailOperatorName(TermNode&, const Context&);
+SetupTailOperatorName(TermNode&, const Context&) noexcept;
 
 void
 TraceBacktrace(const Context::ReducerSequence&, YSLib::Logger&) noexcept;
@@ -458,7 +458,7 @@ TraceBacktrace(const Context::ReducerSequence&, YSLib::Logger&) noexcept;
 
 template<class _tGuard>
 inline ReductionStatus
-KeepGuard(_tGuard&, Context& ctx) ynothrow
+KeepGuard(_tGuard&, Context& ctx) noexcept
 {
 	return ctx.LastStatus;
 }
