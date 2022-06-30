@@ -291,17 +291,13 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 	_tParams&&... args)
 {
 	static_assert(sizeof...(args) < 2, "Unsupported owner arguments found.");
-
 	auto& act(EnsureTCOAction(ctx, term));
-	auto& lf(act.LastFunction);
 
 	ctx.ClearCombiningTerm();
 	term.Value.Clear();
-	lf = {};
-	yunseq(0,
-		(lf = &act.AttachFunction(std::forward<_tParams>(args)).get(), 0)...);
 	ctx.SetNextTermRef(term);
-	return RelaySwitched(ctx, Continuation(std::ref(lf ? *lf : h), ctx));
+	return
+		RelaySwitched(ctx, Continuation(act.Attach(h, yforward(args)...), ctx));
 }
 
 YB_NORETURN ReductionStatus
