@@ -1191,7 +1191,7 @@ QuerySourceInformation(const ValueObject& vo)
 }
 
 const ValueObject*
-QueryTailOperatorName(const Reducer& act)
+QueryTailOperatorName(const Reducer& act) noexcept
 {
 	if(const auto p_act = act.target<TCOAction>())
 		if(p_act->OperatorName.type() == type_id<TokenValue>())
@@ -1212,7 +1212,7 @@ QueryTypeName(const type_info& ti)
 }
 
 bool
-SetupTailOperatorName(TermNode& term, const Context& ctx)
+SetupTailOperatorName(TermNode& term, const Context& ctx) noexcept
 {
 	if(const auto p_combining = ctx.GetCombiningTermPtr())
 	{
