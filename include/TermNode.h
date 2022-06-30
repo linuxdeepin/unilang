@@ -20,7 +20,6 @@ namespace Unilang
 
 enum TermTagIndices : size_t
 {
-	UnqualifiedIndex = 0,
 	UniqueIndex,
 	NonmodifyingIndex,
 	TemporaryIndex
@@ -28,7 +27,7 @@ enum TermTagIndices : size_t
 
 enum class TermTags
 {
-	Unqualified = 1 << UnqualifiedIndex,
+	Unqualified = 0,
 	Unique = 1 << UniqueIndex,
 	Nonmodifying = 1 << NonmodifyingIndex,
 	Temporary = 1 << TemporaryIndex
