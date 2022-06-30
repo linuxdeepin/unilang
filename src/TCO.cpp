@@ -1,9 +1,9 @@
 ﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "TCO.h" // for Unilang::Nonnull, Unilang::Deref, IsTyped;
+#include "TCO.h" // for Unilang::Nonnull, std::get, Unilang::Deref, IsTyped;
 #include <cassert> // for assert;
+#include <ystdex/scope_guard.hpp> // for ystdex::dismiss;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
-#include <tuple> // for std::get;
 #include "Exception.h" // for UnilangException;
 
 namespace Unilang
@@ -117,18 +117,17 @@ RecordCompressor::CountStrong(const shared_ptr<Environment>& p) noexcept
 
 
 TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
-	: term_guard(ystdex::unique_guard(GuardFunction{term})),
-	req_lift_result(lift ? 1 : 0), xgds(ctx.get_allocator()), EnvGuard(ctx),
-	RecordList(ctx.get_allocator()), OperatorName([&]() noexcept{
+	: req_lift_result(lift ? 1 : 0), record_list(ctx.get_allocator()),
+	env_guard(ctx), term_guard(ystdex::unique_guard(GuardFunction{term})),
+	OperatorName([&]() noexcept{
 		assert((IsTyped<TokenValue>(term) || !term.Value)
 			&& "Invalid value for combining term found.");
 		return std::move(term.Value);
 	}())
 {}
 TCOAction::TCOAction(const TCOAction& a)
-	: term_guard(std::move(a.term_guard)),
-	req_lift_result(a.req_lift_result), xgds(std::move(a.xgds)),
-	EnvGuard(std::move(a.EnvGuard))
+	: req_lift_result(a.req_lift_result), env_guard(std::move(a.env_guard)),
+	term_guard(std::move(a.term_guard))
 {
 	if(a.one_shot_guard.has_value())
 		one_shot_guard.emplace((*a.one_shot_guard).func);
@@ -137,7 +136,8 @@ TCOAction::TCOAction(const TCOAction& a)
 ReductionStatus
 TCOAction::operator()(Context& ctx) const
 {
-	assert(ystdex::ref_eq<>()(EnvGuard.func.ContextRef.get(), ctx));
+	assert(ystdex::ref_eq<>()(env_guard.func.ContextRef.get(), ctx)
+		&& "Invalid context found.");
 
 	const auto res([&]() -> ReductionStatus{
 		if(req_lift_result != 0)
@@ -152,92 +152,59 @@ TCOAction::operator()(Context& ctx) const
 	}());
 
 	ystdex::dismiss(term_guard);
-	{
-		const auto egd(std::move(EnvGuard));
-	}
-	while(!xgds.empty())
-		xgds.pop_back();
-	while(!RecordList.empty())
-	{
-		auto& front(RecordList.front());
-
-		std::get<ActiveCombiner>(front) = {};
-		RecordList.pop_front();
-	}
 	return res;
-}
-
-YB_ATTR_nodiscard lref<const ContextHandler>
-TCOAction::AttachFunction(ContextHandler&& h)
-{
-	ystdex::erase_all(xgds, h);
-	xgds.emplace_back();
-	swap(xgds.back(), h);
-	return ystdex::as_const(xgds.back());
 }
 
 void
 TCOAction::CompressFrameList()
 {
-	auto i(RecordList.cbegin());
-
 	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
-		const auto orig_size(RecordList.size());
+		bool removed = {};
 
-		i = RecordList.cbegin();
-		while(i != RecordList.cend())
-		{
-			auto& p_frame_env_ref(std::get<ActiveEnvironmentPtr>(
-				*ystdex::cast_mutable(RecordList, i)));
+		record_list.remove_if([&](const FrameRecord& r) noexcept -> bool{
+			const auto& p_frame_env_ref(std::get<ActiveEnvironmentPtr>(r));
 
 			if(p_frame_env_ref.use_count() != 1
 				|| Unilang::Deref(p_frame_env_ref).IsOrphan())
-				i = RecordList.erase(i);
-			else
-				++i;
-		}
-		return RecordList.size() != orig_size;
+			{
+				removed = true;
+				return true;
+			}
+			return {};
+		});
+		return removed;
 	});
 }
 
 void
 TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 {
-	if(EnvGuard.func.SavedPtr)
+	if(env_guard.func.SavedPtr)
 	{
 		if(auto& p_saved = gd.func.SavedPtr)
 		{
 			CompressForContext(ctx);
-			AddRecord(std::move(p_saved));
+			if(!record_list.empty() && !record_list.front().second)
+				record_list.front().second = std::move(p_saved);
+			else
+				record_list.emplace_front(ContextHandler(),
+					std::move(p_saved));
 			return;
 		}
 	}
 	else
-		EnvGuard = std::move(gd);
-	AddRecord({});
+		env_guard = std::move(gd);
 }
 
 YB_ATTR_nodiscard ContextHandler
-TCOAction::MoveFunction()
+TCOAction::MoveFunction() const
 {
-	ContextHandler res(std::allocator_arg, xgds.get_allocator());
+	assert(!record_list.empty() && !record_list.front().second
+		&& "Invalid state found.");
+	auto r(std::move(record_list.front().first));
 
-	if(LastFunction)
-	{
-		const auto i(std::find_if(xgds.rbegin(), xgds.rend(),
-			[this](const ContextHandler& h) noexcept{
-			return &h == LastFunction;
-		}));
-
-		if(i != xgds.rend())
-		{
-			res = ContextHandler(std::allocator_arg, xgds.get_allocator(),
-				std::move(*i));
-			xgds.erase(std::next(i).base());
-		}
-		LastFunction = {};
-	}
-	return res;
+	record_list.pop_front();
+	return r;
 }
 
 void

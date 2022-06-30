@@ -5,11 +5,10 @@
 
 #include "Evaluation.h" // for shared_ptr, Context, YSLib::allocate_shared,
 //	Unilang::Deref, UnilangException, map, lref, Environment, size_t, set,
-//	weak_ptr, IsTyped, ContextHandler, list, TermNode, EnvironmentGuard,
+//	weak_ptr, IsTyped, pair, ContextHandler, list, TermNode, EnvironmentGuard,
 //	ReductionStatus, NameTypedContextHandler;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
 #include <set> // for std::set;
-#include <tuple> // for std::tuple;
 #include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
 #include <ystdex/optional.h> // for ystdex::optional;
 #include <functional> // for std::bind, std::placeholder, std::ref;
@@ -29,7 +28,7 @@ public:
 	{}
 
 	void
-	operator()() const ynothrow
+	operator()() const noexcept
 	{
 		if(p_shot)
 			Unilang::Deref(p_shot) = true;
@@ -121,9 +120,43 @@ enum RecordFrameIndex : size_t
 	ActiveEnvironmentPtr
 };
 
-using FrameRecord = std::tuple<ContextHandler, shared_ptr<Environment>>;
+using FrameRecord = pair<ContextHandler, shared_ptr<Environment>>;
 
-using FrameRecordList = list<FrameRecord>;
+
+class FrameRecordList : public yimpl(YSLib::forward_list)<FrameRecord>
+{
+private:
+	using Base = yimpl(YSLib::forward_list)<FrameRecord>;
+
+public:
+	FrameRecordList() noexcept(noexcept(Base()))
+		: Base()
+	{}
+	using Base::Base;
+	FrameRecordList(const FrameRecordList& l)
+		: Base(l, l.get_allocator())
+	{}
+	FrameRecordList(FrameRecordList&&) = default;
+	~FrameRecordList()
+	{
+		clear();
+	}
+
+	FrameRecordList&
+	operator=(const FrameRecordList&) = default;
+	FrameRecordList&
+	operator=(FrameRecordList&&) = default;
+
+	void
+	clear() noexcept
+	{
+		auto i(before_begin());
+
+		while(!empty())
+			pop_front();
+	}
+};
+
 
 class TCOAction final
 {
@@ -139,15 +172,13 @@ private:
 		}
 	};
 
+	mutable size_t req_lift_result = 0;
+	mutable FrameRecordList record_list;
+	mutable EnvironmentGuard env_guard;
 	mutable decltype(ystdex::unique_guard(std::declval<GuardFunction>()))
 		term_guard;
-	mutable size_t req_lift_result = 0;
-	mutable list<ContextHandler> xgds;
 
 public:
-	mutable const ContextHandler* LastFunction{};
-	mutable EnvironmentGuard EnvGuard;
-	mutable FrameRecordList RecordList;
 	mutable ValueObject OperatorName;
 
 private:
@@ -170,14 +201,17 @@ public:
 		return term_guard.func.func.TermRef;
 	}
 
-	void
-	AddRecord(shared_ptr<Environment>&& p_env)
-	{
-		RecordList.emplace_front(MoveFunction(), std::move(p_env));
-	}
-
 	YB_ATTR_nodiscard lref<const ContextHandler>
-	AttachFunction(ContextHandler&&);
+	Attach(const ContextHandler& h) const
+	{
+		return h;
+	}
+	YB_ATTR_nodiscard lref<const ContextHandler>
+	Attach(const ContextHandler&, ContextHandler&& h)
+	{
+		record_list.emplace_front(std::move(h), nullptr);
+		return record_list.front().first;
+	}
 
 	void
 	CompressFrameList();
@@ -195,17 +229,18 @@ public:
 	YB_ATTR_nodiscard OneShotChecker
 	MakeOneShotChecker()
 	{
-		if(!one_shot_guard.has_value())
-			one_shot_guard.emplace(EnvGuard.func.ContextRef.get());
-		return (*one_shot_guard).func;
+		if(!one_shot_guard)
+			one_shot_guard.emplace(env_guard.func.ContextRef.get());
+		return one_shot_guard->func;
 	}
 
 	YB_ATTR_nodiscard ContextHandler
-	MoveFunction();
+	MoveFunction() const;
 
 	void
 	ReleaseOneShotGuard()
 	{
+		assert(one_shot_guard && "One-shot guard is not initialized properly.");
 		return one_shot_guard.reset();
 	}
 
