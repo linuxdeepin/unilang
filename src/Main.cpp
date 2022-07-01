@@ -11,15 +11,14 @@
 #include "BasicReduction.h" // for ReductionStatus, LiftOther;
 #include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict,
 //	NameTypedContextHandler;
+#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
+//	form implementations;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, IsTypedRegular, ComposeReferencedTermOp,
 //	IsReferenceTerm, IsBoundLValueTerm, IsUncollapsedTerm, IsUniqueTerm,
 //	EnvironmentReference, TermNode, IsBranchedList, ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
-#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
-//	form implementations;
-#include "Lexical.h" // for IsUnilangSymbol;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
@@ -27,6 +26,7 @@
 #include <YSLib/Core/YModules.h>
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
 //	YSLib::FetchEnvironmentVariable;
+#include "TCO.h" // for RefTCOAction;
 #include "Math.h" // for NumberLeaf, NumberNode and other math functions;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
 #include <iostream> // for std::cout, std::endl;
@@ -423,34 +423,35 @@ void
 LoadModule_std_io(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Root.GetRecordRef());
+	auto& renv(intp.Root.GetRecordRef());
 
-	RegisterStrict(ctx, "newline", [&](TermNode& term){
+	RegisterStrict(renv, "newline", [&](TermNode& term){
 		RetainN(term, 0);
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterUnary<Strict, const string>(ctx, "readable-file?",
+	RegisterUnary<Strict, const string>(renv, "readable-file?",
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
 	});
-	RegisterStrict(ctx, "load", [&](TermNode& term, Context& c){
+	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
-		return RelaySwitched(c, NameTypedContextHandler([&]{
-			term = intp.ReadFrom(*intp.OpenUnique(std::move(
-				Unilang::ResolveRegular<string>(*std::next(term.begin())))));
-			return ReduceOnce(term, c);
-		}, "load-external"));
+		RefTCOAction(ctx).SaveTailSourceName(intp.CurrentSource,
+			std::move(intp.CurrentSource));
+		term = intp.ReadFrom(*intp.OpenUnique(string(
+			Unilang::ResolveRegular<const string>(Unilang::Deref(
+			std::next(term.begin()))), term.get_allocator())));
+		return ctx.ReduceOnce.Handler(term, ctx);
 	});
-	RegisterUnary(ctx, "write", [&](TermNode& term){
+	RegisterUnary(renv, "write", [&](TermNode& term){
 		WriteTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary(ctx, "display", [&](TermNode& term){
+	RegisterUnary(renv, "display", [&](TermNode& term){
 		DisplayTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary<Strict, const string>(ctx, "put", [&](const string& str){
+	RegisterUnary<Strict, const string>(renv, "put", [&](const string& str){
 		YSLib::IO::StreamPut(std::cout, str.c_str());
 		return ValueToken::Unspecified;
 	});
@@ -995,7 +996,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.94"
+#define APP_VER "0.11.103"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

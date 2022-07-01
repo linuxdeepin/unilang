@@ -128,10 +128,7 @@ TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 TCOAction::TCOAction(const TCOAction& a)
 	: req_lift_result(a.req_lift_result), env_guard(std::move(a.env_guard)),
 	term_guard(std::move(a.term_guard))
-{
-	if(a.one_shot_guard.has_value())
-		one_shot_guard.emplace((*a.one_shot_guard).func);
-}
+{}
 
 ReductionStatus
 TCOAction::operator()(Context& ctx) const
@@ -189,7 +186,6 @@ TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 			else
 				record_list.emplace_front(ContextHandler(),
 					std::move(p_saved));
-			return;
 		}
 	}
 	else
