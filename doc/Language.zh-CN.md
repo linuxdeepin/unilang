@@ -2323,6 +2323,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　求值被加载后读取的对象，并以其求值结果作为表达式的求值结果。
 
+`() read-line`
+
+　　从标准输入读取一行输入作为字符串。
+
+　　结果类型是 <string> 。
+
 `write <object>`
 
 　　写对象的外部表示。

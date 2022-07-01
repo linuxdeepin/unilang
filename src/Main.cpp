@@ -15,23 +15,25 @@
 //	form implementations;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
-//	ThrowValueCategoryError, IsTypedRegular, ComposeReferencedTermOp,
-//	IsReferenceTerm, IsBoundLValueTerm, IsUncollapsedTerm, IsUniqueTerm,
-//	EnvironmentReference, TermNode, IsBranchedList, ThrowInsufficientTermsError;
+//	ThrowValueCategoryError, IsTypedRegular, Unilang::ResolveRegular,
+//	ComposeReferencedTermOp, IsReferenceTerm, IsBoundLValueTerm,
+//	IsUncollapsedTerm, IsUniqueTerm, EnvironmentReference, TermNode,
+//	IsBranchedList, ThrowInsufficientTermsError;
 #include <iterator> // for std::next, std::iterator_traits;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
 #include <regex> // for std::regex, std::regex_match, std::regex_replace;
 #include <YSLib/Core/YModules.h>
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
-//	YSLib::FetchEnvironmentVariable;
-#include "TCO.h" // for RefTCOAction;
 #include "Math.h" // for NumberLeaf, NumberNode and other math functions;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
-#include <iostream> // for std::cout, std::endl;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
+//	YSLib::FetchEnvironmentVariable;
 #include YFM_YSLib_Core_YShellDefinition // for std::to_string,
 //	YSLib::make_string_view, YSLib::to_std::string;
+#include <iostream> // for std::cout, std::endl, std::cin;
+#include <string> // for std::getline;
+#include "TCO.h" // for RefTCOAction;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
@@ -442,6 +444,14 @@ LoadModule_std_io(Interpreter& intp)
 			Unilang::ResolveRegular<const string>(Unilang::Deref(
 			std::next(term.begin()))), term.get_allocator())));
 		return ctx.ReduceOnce.Handler(term, ctx);
+	});
+	RegisterStrict(renv, "read-line", [](TermNode& term){
+		RetainN(term, 0);
+
+		string line(term.get_allocator());
+
+		std::getline(std::cin, line);
+		term.SetValue(line);
 	});
 	RegisterUnary(renv, "write", [&](TermNode& term){
 		WriteTermValue(std::cout, term);
@@ -996,7 +1006,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.11.103"
+#define APP_VER "0.11.104"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
