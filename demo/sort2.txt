@@ -1,7 +1,5 @@
 ﻿"QuickSort variant, leftmost pivot, in-place.";
 
-import std.math <=? >? <? =?;
-
 defn list-length (&l)
 	if (null? l) 0 else {1 + (list-length (rest& l))};
 
@@ -28,7 +26,7 @@ defn partition! (&lst i j pivot)
 (
 	unless (i = j)
 	{
-		while (and (not? (i = j)) (<? (list-at& lst i) pivot))
+		while ($and (not? (i = j)) ((list-at& lst i) < pivot))
 			(assign! i (+ i 1));
 		unless (i = j)
 		{
@@ -53,14 +51,14 @@ defn sort-range! (&lst lo hi)
 	$if (hi - lo > 1)
 	(
 		let ([m partition! lst (lo + 1) hi (list-at& lst lo)])
-		(
+		{
 			swap! (list-at& lst lo) (list-at& lst (m - 1));
 			log "partitioned: " lst;
 			sort-range! lst lo (m - 1);
 			log "left sorted: " lst;
 			sort-range! lst m hi;
 			log "right sorted: " lst;
-		)
+		}
 	);
 	#inert
 );

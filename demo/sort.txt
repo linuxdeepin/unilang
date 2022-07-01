@@ -10,7 +10,7 @@ defn log (&title &r)
 
 defn sort (&lst)
 (
-	if (or (null? lst) (null? (rest lst)))
+	if ($or (null? lst) (null? (rest& lst)))
 	{
 		forward! lst
 	}
@@ -19,7 +19,7 @@ defn sort (&lst)
 		log "partial result: "
 		(
 			let ([(pivot .rlst) expire lst])
-			(
+			{
 				log "selected pivot: " pivot;
 				append
 					(log "sorted left: "
@@ -29,7 +29,7 @@ defn sort (&lst)
 					(log "sorted right: "
 						(sort (log "filtered not less than pivot: "
 							(filter (lambda (x) {x > pivot}) rlst))))
-			)
+			}
 		)
 	}
 );
