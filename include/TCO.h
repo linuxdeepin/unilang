@@ -3,19 +3,48 @@
 #ifndef INC_Unilang_TCO_h_
 #define INC_Unilang_TCO_h_ 1
 
+#include "Lexical.h" // for SourceName;
 #include "Evaluation.h" // for shared_ptr, Context, YSLib::allocate_shared,
 //	Unilang::Deref, UnilangException, map, lref, Environment, size_t, set,
 //	weak_ptr, IsTyped, pair, ContextHandler, list, TermNode, EnvironmentGuard,
 //	ReductionStatus, NameTypedContextHandler;
-#include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1;
-#include <set> // for std::set;
-#include <ystdex/scope_guard.hpp> // for ystdex::unique_guard;
+#include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1,
+//	std::ref, std::placeholder;
+#include <tuple> // for std::tuple, std::get;
+#include <ystdex/scope_guard.hpp> // for ystdex::guard, ystdex::unique_guard;
 #include <ystdex/optional.h> // for ystdex::optional;
-#include <functional> // for std::bind, std::placeholder, std::ref;
 #include <cassert> // for assert;
 
 namespace Unilang
 {
+
+class SourceNameRecoverer final
+{
+private:
+	SourceName* p_current{};
+	SourceName Saved{};
+
+public:
+	SourceNameRecoverer() = default;
+	SourceNameRecoverer(SourceName& cur, SourceName name)
+		: p_current(&cur), Saved(name)
+	{}
+	SourceNameRecoverer(const SourceNameRecoverer&) = default;
+	SourceNameRecoverer(SourceNameRecoverer&&) = default;
+
+	SourceNameRecoverer&
+	operator=(const SourceNameRecoverer&) = default;
+	SourceNameRecoverer&
+	operator=(SourceNameRecoverer&&) = default;
+
+	void
+	operator()() const noexcept
+	{
+		if(p_current)
+			*p_current = std::move(Saved);
+	}
+};
+
 
 class OneShotChecker final
 {
@@ -171,6 +200,14 @@ private:
 			TermRef.get().Clear();
 		}
 	};
+	enum ExtraInfoIndex : size_t
+	{
+		RecoverSourceName,
+		CheckOneShot
+	};
+
+	using ExtraInfo = std::tuple<ystdex::guard<SourceNameRecoverer>,
+		ystdex::optional<ystdex::guard<OneShotChecker>>>;
 
 	mutable size_t req_lift_result = 0;
 	mutable FrameRecordList record_list;
@@ -182,7 +219,7 @@ public:
 	mutable ValueObject OperatorName;
 
 private:
-	mutable ystdex::optional<ystdex::guard<OneShotChecker>> one_shot_guard{};
+	mutable ystdex::optional<ExtraInfo> opt_extra_info{};
 
 public:
 	TCOAction(Context&, TermNode&, bool);
@@ -195,6 +232,16 @@ public:
 	ReductionStatus
 	operator()(Context&) const;
 
+private:
+	YB_ATTR_nodiscard ExtraInfo&
+	GetExtraInfoRef()
+	{
+		if(!opt_extra_info)
+			opt_extra_info.emplace();
+		return *opt_extra_info;
+	}
+
+public:
 	TermNode&
 	GetTermRef() const noexcept
 	{
@@ -229,6 +276,8 @@ public:
 	YB_ATTR_nodiscard OneShotChecker
 	MakeOneShotChecker()
 	{
+		auto& one_shot_guard(std::get<CheckOneShot>(GetExtraInfoRef()));
+
 		if(!one_shot_guard)
 			one_shot_guard.emplace(env_guard.func.ContextRef.get());
 		return one_shot_guard->func;
@@ -240,8 +289,17 @@ public:
 	void
 	ReleaseOneShotGuard()
 	{
+		auto& one_shot_guard(std::get<CheckOneShot>(GetExtraInfoRef()));
+
 		assert(one_shot_guard && "One-shot guard is not initialized properly.");
 		return one_shot_guard.reset();
+	}
+
+	void
+	SaveTailSourceName(SourceName& cur, SourceName name)
+	{
+		std::get<RecoverSourceName>(GetExtraInfoRef())
+			= SourceNameRecoverer(cur, std::move(name));
 	}
 
 	void
