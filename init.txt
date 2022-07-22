@@ -58,7 +58,7 @@ $def! while $while;
 	" transformation.";
 () $defl! != (&x &y) not? (= x y);
 
-$defl! putss (.&xs) puts (apply ++ xs);
+$defl! putss (.&xs) puts (apply ++ (forward! xs));
 
 $defl! stoi-exact (&x)
 	$let ((&r stoi x))
