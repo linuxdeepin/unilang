@@ -118,7 +118,7 @@ sudo pacman -S --needed bash coreutils git gcc binutils libffi
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (strech/buster)/Ubuntu (bionic-updates/focal)
 sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
-# UOS
+# Deepin
 sudo apt install bash coreutils git g++ libffi-dev llvm-dev
 ```
 
@@ -191,7 +191,7 @@ sudo pacman -S freetype2 --needed
 ```
 
 ```
-# Debian/Ubuntu/UOS
+# Debian/Ubuntu/Deepin
 sudo apt install libfreetype6-dev
 ```
 
