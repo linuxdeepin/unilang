@@ -61,13 +61,26 @@ $let ()
 );
 
 info "basic object operations";
+subinfo "equal?";
+$let ((a 2))
+(
+	$check equal? () ();
+	$check equal? 1 1;
+	$check equal? (list 2) (list 2);
+	$check equal? (list% a) (list a);
+	$check-not equal? 1 2;
+	$check-not equal? (list 1 2) 3;
+	$check-not equal? (list 1 2) (list 3 4);
+	$check equal? #t (equal? (list 1 2) (list 1 2))
+);
+subinfo "fwd?";
 $let ()
 (
 	$def! fwd? $vau% (&x) d
 		($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d);
 	$expect (list% #f #f #t #t #f)
 		list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
-			(fwd? (idv fwd?));
+			(fwd? (idv fwd?))
 );
 
 info "reference, reference collapsing and reference assignment";
