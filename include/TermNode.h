@@ -51,6 +51,12 @@ IsReferentTags(TermTags tags) noexcept
 		| TermTags::Temporary)) == tags;
 }
 
+YB_ATTR_nodiscard YB_STATELESS constexpr bool
+IsSticky(TermTags tags) noexcept
+{
+	return bool(tags & TermTags::Sticky);
+}
+
 YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
 GetLValueTagsOf(const TermTags& tags) noexcept
 {
@@ -483,6 +489,18 @@ YB_ATTR_nodiscard YB_PURE inline bool
 IsRegular(const TermNode& nd) noexcept
 {
 	return IsLeaf(nd) || IsList(nd);
+}
+
+YB_ATTR_nodiscard YB_PURE inline bool
+IsAtom(const TermNode& nd) noexcept
+{
+	return IsLeaf(nd) || IsSticky(nd.begin()->Tags);
+}
+
+YB_ATTR_nodiscard YB_PURE inline bool
+IsPair(const TermNode& nd) noexcept
+{
+	return !IsAtom(nd);
 }
 
 using YSLib::IsTyped;
