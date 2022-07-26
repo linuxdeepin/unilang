@@ -91,7 +91,7 @@ YB_ATTR_nodiscard ReductionStatus
 Qualify(TermNode& term, TermTags tag_add)
 {
 	return Forms::CallRawUnary([&](TermNode& tm){
-		if(const auto p = Unilang::TryAccessLeaf<TermReference>(tm))
+		if(const auto p = TryAccessLeaf<TermReference>(tm))
 			p->AddTags(tag_add);
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
@@ -247,11 +247,11 @@ LoadModule_std_strings(Interpreter& intp)
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
-				auto& str_x(Unilang::AccessRegular<string>(nd_x, p_ref_x));
+				auto& str_x(AccessRegular<string>(nd_x, p_ref_x));
 
 				ResolveTerm(
 					[&](TermNode& nd_y, ResolvedTermReferencePtr p_ref_y){
-					auto& str_y(Unilang::AccessRegular<string>(nd_y, p_ref_y));
+					auto& str_y(AccessRegular<string>(nd_y, p_ref_y));
 
 					if(Unilang::IsMovable(p_ref_y))
 						str_x = std::move(str_y);
@@ -310,7 +310,7 @@ LoadModule_std_strings(Interpreter& intp)
 	});
 	RegisterUnary(ctx, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-			auto& s(Unilang::AccessRegular<string>(nd, p_ref));
+			auto& s(AccessRegular<string>(nd, p_ref));
 
 			return Unilang::IsMovable(p_ref) ? StringToSymbol(std::move(s))
 				: StringToSymbol(s);
@@ -1006,7 +1006,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.0"
+#define APP_VER "0.12.2"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
