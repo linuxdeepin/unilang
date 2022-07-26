@@ -605,8 +605,8 @@ ShareMoveTerm(TermNode&& nd)
 inline void
 RemoveHead(TermNode& nd) noexcept
 {
-	assert(!nd.empty());
-	nd.erase(nd.begin());
+	assert(!IsSticky(AccessFirstSubterm(nd).Tags) && "No valid subterm found.");
+	nd.GetContainerRef().pop_front();
 }
 
 template<typename... _tParam, typename... _tParams>
