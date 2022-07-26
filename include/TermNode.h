@@ -4,7 +4,7 @@
 #define INC_Unilang_TermNode_h_ 1
 
 #include "Unilang.h" // for ValueObject, list, Unilang::Deref, yforward,
-//	std::allocator_arg_t, YSLib::IsTyped;
+//	std::allocator_arg_t, YSLib::IsTyped, yunused;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -42,6 +42,13 @@ IsMovable(TermTags tags) noexcept
 {
 	return (tags & (TermTags::Unique | TermTags::Nonmodifying))
 		== TermTags::Unique;
+}
+
+YB_ATTR_nodiscard YB_STATELESS constexpr bool
+IsReferentTags(TermTags tags) noexcept
+{
+	return (tags & (TermTags::Unique | TermTags::Nonmodifying
+		| TermTags::Temporary)) == tags;
 }
 
 YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
@@ -525,6 +532,18 @@ AssertBranchedList(const TermNode& nd) noexcept
 {
 	yunused(nd);
 	assert(IsBranchedList(nd) && "Invalid term found.");
+}
+
+inline void
+AssertReferentTags(TermTags tags) noexcept
+{
+	yunused(tags);
+	assert(IsReferentTags(tags) && "Invalid term of referent found.");
+}
+inline void
+AssertReferentTags(const TermNode& nd) noexcept
+{
+	AssertReferentTags(nd.Tags);
 }
 
 inline void
