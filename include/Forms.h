@@ -5,7 +5,7 @@
 
 #include "Evaluation.h" // for ReductionStatus, TermNode, ReferenceTerm,
 //	YSLib::EmplaceCallResult, yforward, Unilang::Deref,
-//	Unilang::EmplaceCallResultOrReturn, Unilang::AccessTypedValue, Strict,
+//	Unilang::EmplaceCallResultOrReturn, AccessTypedValue, Strict,
 //	Unilang::RegisterHandler, Context;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <cassert> // for assert;
@@ -199,7 +199,7 @@ template<typename _type, typename _func, typename... _tParams>
 inline auto
 CallRegularUnaryAs(_func&& f, TermNode& term, _tParams&&... args)
 	-> yimpl(decltype(ystdex::expand_proxy<void(_type&, const
-	ResolvedTermReferencePtr&, _tParams&&...)>::call(f, Unilang::Access<_type>(
+	ResolvedTermReferencePtr&, _tParams&&...)>::call(f, Access<_type>(
 	term), ResolvedTermReferencePtr(), std::forward<_tParams>(args)...)))
 {
 	using handler_t
@@ -209,7 +209,7 @@ CallRegularUnaryAs(_func&& f, TermNode& term, _tParams&&... args)
 		[&](TermNode& nd, ResolvedTermReferencePtr p_ref)
 		-> decltype(ystdex::expand_proxy<handler_t>::call(f,
 		std::declval<_type&>(), p_ref)){
-		return ystdex::expand_proxy<handler_t>::call(f, Unilang::AccessRegular<
+		return ystdex::expand_proxy<handler_t>::call(f, AccessRegular<
 			_type>(nd, p_ref), p_ref, std::forward<_tParams>(args)...);
 	}, term);
 }
@@ -230,9 +230,9 @@ ReductionStatus
 CallUnaryAs(_func&& f, TermNode& term, _tParams&&... args)
 {
 	return Forms::CallUnary([&](TermNode& tm){
-		return ystdex::make_expanded<void(decltype(Unilang::AccessTypedValue<
-			_type>(tm)), _tParams&&...)>(std::ref(f))(Unilang::AccessTypedValue<
-			_type>(tm), std::forward<_tParams>(args)...);
+		return ystdex::make_expanded<void(decltype(AccessTypedValue<_type>(tm)),
+			_tParams&&...)>(std::ref(f))(AccessTypedValue<_type>(tm),
+			yforward(args)...);
 	}, term);
 }
 
@@ -257,12 +257,12 @@ CallBinaryAs(_func&& f, TermNode& term, _tParams&&... args)
 	RetainN(term, 2);
 
 	auto i(term.begin());
-	auto&& x(Unilang::AccessTypedValue<_type>(Unilang::Deref(++i)));
+	auto&& x(AccessTypedValue<_type>(Unilang::Deref(++i)));
 
 	return Unilang::EmplaceCallResultOrReturn(term, ystdex::invoke_nonvoid(
 		ystdex::make_expanded<void(decltype(x), decltype(
-		Unilang::AccessTypedValue<_type2>(*i)), _tParams&&...)>(std::ref(f)),
-		yforward(x), Unilang::AccessTypedValue<_type2>(Unilang::Deref(++i)),
+		AccessTypedValue<_type2>(*i)), _tParams&&...)>(std::ref(f)),
+		yforward(x), AccessTypedValue<_type2>(Unilang::Deref(++i)),
 		yforward(args)...));
 }
 
@@ -273,7 +273,7 @@ CallBinaryFold(_func f, _type val, TermNode& term, _tParams&&... args)
 	const auto n(term.size() - 1);
 	auto i(term.begin());
 	const auto j(ystdex::make_transform(++i, [](TNIter it){
-		return Unilang::AccessTypedValue<_type>(Unilang::Deref(it));
+		return AccessTypedValue<_type>(Unilang::Deref(it));
 	}));
 
 	return Unilang::EmplaceCallResultOrReturn(term, std::accumulate(j, std::next(

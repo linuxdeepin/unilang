@@ -16,8 +16,8 @@
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
-#include "TermAccess.h" // for Unilang::TryAccessLeaf, TokenValue,
-//	IsCombiningTerm, ClearCombiningTags, Unilang::TryAccessTerm;
+#include "TermAccess.h" // for TryAccessLeaf, TokenValue, IsCombiningTerm,
+//	 ClearCombiningTags, TryAccessTerm;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
 //	InvalidSyntax, std::throw_with_nested, ParameterMismatch,
 //	ListReductionFailure;
@@ -208,8 +208,7 @@ EvaluateLeafToken(TermNode& term, Context& ctx, string_view id)
 		auto& bound(*pr.first);
 
 		SetupTailOperatorName(term, ctx);
-		if(const auto p_bound
-			= Unilang::TryAccessLeaf<const TermReference>(bound))
+		if(const auto p_bound = TryAccessLeaf<const TermReference>(bound))
 		{
 			term.GetContainerRef() = bound.GetContainer();
 			term.Value = EnsureLValueReference(TermReference(*p_bound));
@@ -305,7 +304,7 @@ ThrowCombiningFailure(TermNode& term, const TermNode& fm, bool has_ref)
 {
 	string name(term.get_allocator());
 
-	if(const auto p = Unilang::TryAccessLeaf<TokenValue>(term))
+	if(const auto p = TryAccessLeaf<TokenValue>(term))
 	{
 		name = std::move(*p);
 		name += ": ";
@@ -485,7 +484,7 @@ private:
 			if(IsBranch(t))
 				MatchSubterms(t.begin(), t.end());
 		}
-		else if(const auto p_t = Unilang::TryAccessLeaf<const TermReference>(t))
+		else if(const auto p_t = TryAccessLeaf<const TermReference>(t))
 		{
 			auto& nd(p_t->get());
 
@@ -544,7 +543,7 @@ struct BindParameterObject
 			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
 			const auto a(o.get_allocator());
 
-			if(const auto p = Unilang::TryAccessLeaf<TermReference>(o))
+			if(const auto p = TryAccessLeaf<TermReference>(o))
 			{
 				if(sigil != char())
 				{
@@ -733,7 +732,7 @@ private:
 					if(IsLeaf(back))
 					{
 						if(const auto p
-							= Unilang::TryAccessLeaf<TokenValue>(back))
+							= TryAccessLeaf<TokenValue>(back))
 						{
 							if(!p->empty() && p->front() == '.')
 								--last;
@@ -784,7 +783,7 @@ private:
 							has_ref).c_str()));
 				}, o);
 		}
-		else if(const auto p_t = Unilang::TryAccessLeaf<const TermReference>(t))
+		else if(const auto p_t = TryAccessLeaf<const TermReference>(t))
 		{
 			auto& nd(p_t->get());
 
@@ -1116,18 +1115,18 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	assert(IsCombiningTerm(term) && "Invalid term found for combined term.");
 
 	auto& fm(AccessFirstSubterm(term));
-	const auto p_ref_fm(Unilang::TryAccessLeaf<const TermReference>(fm));
+	const auto p_ref_fm(TryAccessLeaf<const TermReference>(fm));
 
 	if(p_ref_fm)
 	{
 		ClearCombiningTags(term);
 		if(const auto p_handler
-			= Unilang::TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
+			= TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
 			return CombinerReturnThunk(*p_handler, term, ctx);
 	}
 	else
 		term.Tags |= TermTags::Temporary;
-	if(const auto p_handler = Unilang::TryAccessTerm<ContextHandler>(fm))
+	if(const auto p_handler = TryAccessTerm<ContextHandler>(fm))
 		return
 			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
 	assert(IsBranch(term));
