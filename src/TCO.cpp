@@ -120,9 +120,7 @@ TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 	: req_lift_result(lift ? 1 : 0), record_list(ctx.get_allocator()),
 	env_guard(ctx), term_guard(ystdex::unique_guard(GuardFunction{term})),
 	OperatorName([&]() noexcept{
-		assert((IsTyped<TokenValue>(term) || !term.Value)
-			&& "Invalid value for combining term found.");
-		return std::move(term.Value);
+		return std::move(ctx.OperatorName);
 	}())
 {}
 TCOAction::TCOAction(const TCOAction& a)

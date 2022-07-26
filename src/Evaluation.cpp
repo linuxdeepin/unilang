@@ -207,7 +207,8 @@ EvaluateLeafToken(TermNode& term, Context& ctx, string_view id)
 	{
 		auto& bound(*pr.first);
 
-		SetupTailOperatorName(term, ctx);
+		if(!ctx.TrySetTailOperatorName(term))
+			ctx.OperatorName.Clear();
 		if(const auto p_bound = TryAccessLeaf<const TermReference>(bound))
 		{
 			term.GetContainerRef() = bound.GetContainer();
@@ -300,11 +301,12 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 }
 
 YB_NORETURN ReductionStatus
-ThrowCombiningFailure(TermNode& term, const TermNode& fm, bool has_ref)
+ThrowCombiningFailure(TermNode& term, const Context& ctx, const TermNode& fm,
+	bool has_ref)
 {
 	string name(term.get_allocator());
 
-	if(const auto p = TryAccessLeaf<TokenValue>(term))
+	if(const auto p = ctx.TryGetTailOperatorName(term))
 	{
 		name = std::move(*p);
 		name += ": ";
@@ -1131,7 +1133,7 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
 	assert(IsBranch(term));
 	return ResolveTerm(std::bind(ThrowCombiningFailure, std::ref(term),
-		std::placeholders::_1, std::placeholders::_2), fm);
+		std::ref(ctx), std::placeholders::_1, std::placeholders::_2), fm);
 }
 
 
@@ -1207,21 +1209,6 @@ QueryTypeName(const type_info& ti)
 
 	if(i != tbl.cend())
 		return i->second;
-	return {};
-}
-
-bool
-SetupTailOperatorName(TermNode& term, const Context& ctx) noexcept
-{
-	if(const auto p_combining = ctx.GetCombiningTermPtr())
-	{
-		if(!p_combining->empty()
-			&& ystdex::ref_eq<>()(AccessFirstSubterm(*p_combining), term))
-		{
-			p_combining->Value = std::move(term.Value);
-			return true;
-		}
-	}
 	return {};
 }
 
