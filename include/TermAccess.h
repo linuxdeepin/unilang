@@ -92,6 +92,19 @@ TryAccessLeaf(const TermNode& term)
 
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
+TryAccessLeafAtom(TermNode& term)
+{
+	return IsAtom(term) ? TryAccessLeaf<_type>(term) : nullptr;
+}
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const _type>
+TryAccessLeafAtom(const TermNode& term)
+{
+	return IsAtom(term) ? TryAccessLeaf<_type>(term) : nullptr;
+}
+
+template<typename _type>
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
 TryAccessTerm(TermNode& term)
 {
 	return IsLeaf(term) ? TryAccessLeaf<_type>(term) : nullptr;
@@ -282,14 +295,14 @@ PrepareCollapse(TermNode&, const shared_ptr<Environment>&);
 YB_ATTR_nodiscard YB_PURE inline TermNode&
 ReferenceTerm(TermNode& term)
 {
-	if(const auto p = TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeafAtom<const TermReference>(term))
 		return p->get();
 	return term;
 }
 YB_ATTR_nodiscard YB_PURE inline const TermNode&
 ReferenceTerm(const TermNode& term)
 {
-	if(const auto p = TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeafAtom<const TermReference>(term))
 		return p->get();
 	return term;
 }
@@ -322,13 +335,13 @@ template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
 TryAccessReferencedLeaf(TermNode& term)
 {
-	return TryAccessLeaf<_type>(ReferenceTerm(term));
+	return TryAccessLeafAtom<_type>(ReferenceTerm(term));
 }
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline observer_ptr<const _type>
 TryAccessReferencedLeaf(const TermNode& term)
 {
-	return TryAccessLeaf<_type>(ReferenceTerm(term));
+	return TryAccessLeafAtom<_type>(ReferenceTerm(term));
 }
 
 template<typename _type>
@@ -381,7 +394,7 @@ ResolveTerm(_func do_resolve, _tTerm&& term)
 {
 	using handler_t = void(_tTerm&&, ResolvedTermReferencePtr);
 
-	if(const auto p = TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeafAtom<const TermReference>(term))
 		return ystdex::expand_proxy<handler_t>::call(do_resolve, p->get(),
 			Unilang::ResolveToTermReferencePtr(p));
 	return ystdex::expand_proxy<handler_t>::call(do_resolve,

@@ -2,7 +2,7 @@
 
 #include "BasicReduction.h"
 #include "TermAccess.h" // for ClearCombiningTags, EnsureValueTags,
-//	TryAccessLeaf, TermReference;
+//	TryAccessLeafAtom, TermReference;
 #include "TermNode.h" // for AssertValueTags;
 #include "Exception.h" // for ListTypeError;
 
@@ -45,7 +45,7 @@ LiftMovedOther(TermNode& term, const TermReference& ref, bool move)
 void
 LiftToReturn(TermNode& term)
 {
-	if(const auto p = TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeafAtom<const TermReference>(term))
 		LiftMovedOther(term, *p, p->IsMovable());
 	AssertValueTags(term);
 }

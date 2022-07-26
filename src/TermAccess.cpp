@@ -1,6 +1,6 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, ystdex::sfmt, TryAccessLeaf, IsTyped,
+#include "TermAccess.h" // for sfmt, ystdex::sfmt, TryAccessLeafAtom, IsTyped,
 //	Unilang::Nonnull;
 #include "Exception.h" // for ListTypeError, TypeError, ValueCategoryMismatch;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
@@ -34,7 +34,7 @@ TermToTags(TermNode& term)
 	AssertReferentTags(term);
 	return ystdex::call_value_or(ystdex::compose(GetLValueTagsOf,
 		std::mem_fn(&TermReference::GetTags)),
-		TryAccessLeaf<const TermReference>(term), term.Tags);
+		TryAccessLeafAtom<const TermReference>(term), term.Tags);
 }
 
 void
@@ -112,21 +112,21 @@ PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 bool
 IsReferenceTerm(const TermNode& term)
 {
-	return bool(TryAccessLeaf<const TermReference>(term));
+	return bool(TryAccessLeafAtom<const TermReference>(term));
 }
 
 bool
 IsUniqueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsUnique,
-		TryAccessLeaf<const TermReference>(term), true);
+		TryAccessLeafAtom<const TermReference>(term), true);
 }
 
 bool
 IsModifiableTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsModifiable,
-		TryAccessLeaf<const TermReference>(term),
+		TryAccessLeafAtom<const TermReference>(term),
 		!bool(term.Tags & TermTags::Nonmodifying));
 }
 
@@ -134,7 +134,7 @@ bool
 IsBoundLValueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
-		TryAccessLeaf<const TermReference>(term));
+		TryAccessLeafAtom<const TermReference>(term));
 }
 
 bool
@@ -142,7 +142,7 @@ IsUncollapsedTerm(const TermNode& term)
 {
 	return ystdex::call_value_or(ystdex::compose(IsReferenceTerm,
 		std::mem_fn(&TermReference::get)),
-		TryAccessLeaf<const TermReference>(term));
+		TryAccessLeafAtom<const TermReference>(term));
 }
 
 } // namespace Unilang;
