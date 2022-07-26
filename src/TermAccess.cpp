@@ -31,6 +31,7 @@ TermToStringWithReferenceMark(const TermNode& term, bool has_ref)
 TermTags
 TermToTags(TermNode& term)
 {
+	AssertReferentTags(term);
 	return ystdex::call_value_or(ystdex::compose(GetLValueTagsOf,
 		std::mem_fn(&TermReference::GetTags)),
 		TryAccessLeaf<const TermReference>(term), term.Tags);

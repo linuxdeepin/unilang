@@ -4,7 +4,7 @@
 #define INC_Unilang_TermAccess_h_ 1
 
 #include "TermNode.h" // for string, TermNode, type_info, YSLib::TryAccessValue,
-//	Unilang::IsMovable, Unilang::Deref, PropagateTo;
+//	AssertReferentTags, Unilang::IsMovable, Unilang::Deref, PropagateTo;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
 
@@ -185,14 +185,16 @@ public:
 	inline
 	TermReference(TermTags t, TermNode& term, _tParam&& arg, _tParams&&... args)
 		noexcept
-		: term_ref(term), tags(t),
+		: term_ref(term), tags((AssertReferentTags(t), t)),
 		r_env(yforward(arg), yforward(args)...)
 	{}
 	TermReference(TermTags t, const TermReference& ref) noexcept
-		: term_ref(ref.term_ref), tags(t), r_env(ref.r_env)
+		: term_ref(ref.term_ref), tags((AssertReferentTags(t), t)),
+		r_env(ref.r_env)
 	{}
 	TermReference(TermTags t, TermReference&& ref) noexcept
-		: term_ref(ref.term_ref), tags(t), r_env(std::move(ref.r_env))
+		: term_ref(ref.term_ref), tags((AssertReferentTags(t), t)),
+		r_env(std::move(ref.r_env))
 	{}
 	TermReference(const TermReference&) = default;
 
