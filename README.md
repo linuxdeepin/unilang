@@ -283,7 +283,7 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 * `ECHO`：启用 REPL 回显。
 * `UNILANG_NO_JIT`：停用基于 JIT 编译的代码执行优化，使用纯解释器。
 * `UNILANG_NO_SRCINFO`：停用用于诊断消息输出的从源文件取得的源代码信息。源文件名仍被使用。
-* `UNILANG_PATH`：库加载路径。详见[语言规范](doc/Language.zh-CN.md)对标准库函数 `load` 的说明以及[解释器实现](Interpreter.zh-CN.md)对标准库模块操作的说明。
+* `UNILANG_PATH`：库加载路径。详见[语言规范](doc/Language.zh-CN.md)对标准库函数 `load` 的说明以及[解释器实现](doc/Interpreter.zh-CN.md)对标准库模块操作的说明。
 
 　　除使用选项 `-e` ，配合 `echo` 命令，也可支持非交互式输入，如：
 
