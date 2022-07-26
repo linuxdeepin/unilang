@@ -833,6 +833,7 @@ MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
 		std::move(bind_trailing_seq), std::move(bind_value));
 }
 
+
 char
 ExtractSigil(string_view& id)
 {
@@ -848,6 +849,14 @@ ExtractSigil(string_view& id)
 	}
 	return char();
 }
+
+
+YB_ATTR_nodiscard inline TermNode
+MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
+{
+	return Unilang::AsTermNodeTagged(a, TermTags::Sticky, std::move(p_sub));
+}
+
 
 template<class _tTraits>
 void
@@ -897,9 +906,13 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 							std::move(con)));
 						auto& sub(Unilang::Deref(p_sub));
 
-						env.Bind(id, TermNode(std::allocator_arg, a,
-							{Unilang::AsTermNode(a, std::move(p_sub))},
-							std::allocator_arg, a, TermReference(sub, r_env)));
+						env.Bind(id, TermNode(std::allocator_arg, a, [&]{
+							TermNode::Container tcon(a);
+
+							tcon.push_back(
+								MakeSubobjectReferent(a, std::move(p_sub)));
+							return tcon;
+						}(), std::allocator_arg, a, TermReference(sub, r_env)));
 					}
 					else
 						MarkTemporaryTerm(env.Bind(id,
@@ -1066,13 +1079,14 @@ ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
 	assert(bool(p_sub)
 		&& "Invalid subterm to form a subobject reference found.");
 
-	const auto a(term.get_allocator());
-	auto& sub(Unilang::Deref(p_sub));
+	auto& con(term.GetContainerRef());
+	auto i(con.begin());
 
-	TermNode tm(std::allocator_arg, a, {Unilang::AsTermNode(a,
-		std::move(p_sub))}, std::allocator_arg, a, TermReference(sub, r_env));
-
-	term.SetContent(std::move(tm));
+	term.SetValue(TermReference(Unilang::Deref(p_sub), r_env)),
+	term.Tags = TermTags::Unqualified;
+	con.insert(i,
+		Unilang::MakeSubobjectReferent(con.get_allocator(), std::move(p_sub)));		
+	con.erase(i, con.end());
 	return ReductionStatus::Retained;
 }
 
@@ -1083,8 +1097,8 @@ ReduceForCombinerRef(TermNode& term, const TermReference& ref,
 	const auto& r_env(ref.GetEnvironmentReference());
 	const auto a(term.get_allocator());
 
-	return ReduceAsSubobjectReference(term, YSLib::allocate_shared<TermNode>(a,
-		Unilang::AsTermNode(a, ContextHandler(std::allocator_arg, a,
+	return ReduceAsSubobjectReference(term, Unilang::allocate_shared<TermNode>(
+		a, Unilang::AsTermNode(a, ContextHandler(std::allocator_arg, a,
 		FormContextHandler(RefContextHandler(h, r_env), n)))),
 		ref.GetEnvironmentReference());
 }
