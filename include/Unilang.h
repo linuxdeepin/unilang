@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Unilang_h_
 #define INC_Unilang_Unilang_h_ 1
@@ -58,6 +58,8 @@ using YSLib::sfmt;
 using YSLib::type_id;
 using YSLib::type_index;
 using YSLib::type_info;
+
+using YSLib::observer_ptr;
 
 namespace any_ops = YSLib::any_ops;
 using YSLib::any;
