@@ -5,7 +5,7 @@
 
 #include "TermAccess.h" // for ValueObject, vector, string, TermNode,
 //	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref, type_info,
-//	Unilang::allocate_shared, EnvironmentReference;
+//	Unilang::allocate_shared, observer_ptr, EnvironmentReference;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
@@ -330,6 +330,7 @@ private:
 	TermNode* combining_term_ptr = {};
 
 public:
+	mutable ValueObject OperatorName{};
 	Reducer TailAction{};
 	ExceptionHandler HandleException{DefaultHandleException};
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
@@ -467,6 +468,16 @@ public:
 
 	shared_ptr<Environment>
 	SwitchEnvironmentUnchecked(const shared_ptr<Environment>&) noexcept;
+
+	YB_ATTR_nodiscard observer_ptr<TokenValue>
+	TryGetTailOperatorName(TermNode& term) const noexcept
+	{
+		return combining_term_ptr == &term
+			? TryAccessValue<TokenValue>(OperatorName) : nullptr;
+	}
+
+	bool
+	TrySetTailOperatorName(TermNode&) const noexcept;
 
 	void
 	UnwindCurrent() noexcept;

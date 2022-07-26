@@ -299,6 +299,22 @@ Context::SwitchEnvironmentUnchecked(const shared_ptr<Environment>& p_env)
 	return ystdex::exchange(p_record, p_env);
 }
 
+bool
+Context::TrySetTailOperatorName(TermNode& term) const noexcept
+{
+	if(combining_term_ptr)
+	{
+		auto& comb(*combining_term_ptr);
+
+		if(IsBranch(comb) && ystdex::ref_eq<>()(AccessFirstSubterm(comb), term))
+		{
+			OperatorName = std::move(term.Value);
+			return true;
+		}
+	}
+	return {};
+}
+
 void
 Context::UnwindCurrent() noexcept
 {
