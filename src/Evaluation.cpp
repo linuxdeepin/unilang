@@ -16,7 +16,7 @@
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
-#include "TermAccess.h" // for TryAccessLeaf, TokenValue, IsCombiningTerm,
+#include "TermAccess.h" // for TryAccessLeafAtom, TokenValue, IsCombiningTerm,
 //	 ClearCombiningTags, TryAccessTerm;
 #include "Exception.h" // for BadIdentifier, InvalidReference,
 //	InvalidSyntax, std::throw_with_nested, ParameterMismatch,
@@ -209,7 +209,7 @@ EvaluateLeafToken(TermNode& term, Context& ctx, string_view id)
 
 		if(!ctx.TrySetTailOperatorName(term))
 			ctx.OperatorName.Clear();
-		if(const auto p_bound = TryAccessLeaf<const TermReference>(bound))
+		if(const auto p_bound = TryAccessLeafAtom<const TermReference>(bound))
 		{
 			term.GetContainerRef() = bound.GetContainer();
 			term.Value = EnsureLValueReference(TermReference(*p_bound));
@@ -486,7 +486,7 @@ private:
 			if(IsBranch(t))
 				MatchSubterms(t.begin(), t.end());
 		}
-		else if(const auto p_t = TryAccessLeaf<const TermReference>(t))
+		else if(const auto p_t = TryAccessLeafAtom<const TermReference>(t))
 		{
 			auto& nd(p_t->get());
 
@@ -545,7 +545,7 @@ struct BindParameterObject
 			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
 			const auto a(o.get_allocator());
 
-			if(const auto p = TryAccessLeaf<TermReference>(o))
+			if(const auto p = TryAccessLeafAtom<TermReference>(o))
 			{
 				if(sigil != char())
 				{
@@ -734,7 +734,7 @@ private:
 					if(IsLeaf(back))
 					{
 						if(const auto p
-							= TryAccessLeaf<TokenValue>(back))
+							= TryAccessLeafAtom<TokenValue>(back))
 						{
 							if(!p->empty() && p->front() == '.')
 								--last;
@@ -785,7 +785,7 @@ private:
 							has_ref).c_str()));
 				}, o);
 		}
-		else if(const auto p_t = TryAccessLeaf<const TermReference>(t))
+		else if(const auto p_t = TryAccessLeafAtom<const TermReference>(t))
 		{
 			auto& nd(p_t->get());
 
@@ -1131,13 +1131,13 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	assert(IsCombiningTerm(term) && "Invalid term found for combined term.");
 
 	auto& fm(AccessFirstSubterm(term));
-	const auto p_ref_fm(TryAccessLeaf<const TermReference>(fm));
+	const auto p_ref_fm(TryAccessLeafAtom<const TermReference>(fm));
 
 	if(p_ref_fm)
 	{
 		ClearCombiningTags(term);
 		if(const auto p_handler
-			= TryAccessLeaf<const ContextHandler>(p_ref_fm->get()))
+			= TryAccessLeafAtom<const ContextHandler>(p_ref_fm->get()))
 			return CombinerReturnThunk(*p_handler, term, ctx);
 	}
 	else

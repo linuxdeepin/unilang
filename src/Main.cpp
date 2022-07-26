@@ -91,7 +91,7 @@ YB_ATTR_nodiscard ReductionStatus
 Qualify(TermNode& term, TermTags tag_add)
 {
 	return Forms::CallRawUnary([&](TermNode& tm){
-		if(const auto p = TryAccessLeaf<TermReference>(tm))
+		if(const auto p = TryAccessLeafAtom<TermReference>(tm))
 			p->AddTags(tag_add);
 		LiftTerm(term, tm);
 		return ReductionStatus::Retained;
@@ -1006,7 +1006,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.2"
+#define APP_VER "0.12.10"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
