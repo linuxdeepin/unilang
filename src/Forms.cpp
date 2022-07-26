@@ -139,7 +139,7 @@ MakeEnvironmentParent(TNIter first, TNIter last,
 {
 	const auto tr([&](TNIter iter){
 		return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
-			if(const auto p = TryAccessLeaf<const TermReference>(*i))
+			if(const auto p = TryAccessLeafAtom<const TermReference>(*i))
 			{
 				if(nonmodifying || !p->IsMovable())
 					return p->get().Value;
@@ -656,7 +656,7 @@ Decapsulate::operator()(TermNode& term, Context& ctx) const
 			auto& tm(enc.TermRef);
 
 			return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
-				if(const auto p = TryAccessLeaf<const TermReference>(tm))
+				if(const auto p = TryAccessLeafAtom<const TermReference>(tm))
 				{
 					term.GetContainerRef() = tm.GetContainer();
 					term.Value = *p;
