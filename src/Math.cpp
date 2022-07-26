@@ -1,7 +1,7 @@
 ﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Math.h" // for size_t, type_info, Unilang::TryAccessValue,
-//	Unilang::Nonnull, Unilang::Deref, ptrdiff_t, string_view, sfmt;
+#include "Math.h" // for size_t, type_info, TryAccessValue, Unilang::Nonnull,
+//	 Unilang::Deref, ptrdiff_t, string_view, sfmt;
 #include <ystdex/exception.h> // for ystdex::unsupported;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::_t, ystdex::exclude_self_t,
@@ -166,31 +166,31 @@ template<typename _type, typename _func, class _tValue>
 YB_ATTR_nodiscard _type
 DoNumLeaf(_tValue& x, _func f)
 {
-	if(const auto p_i = Unilang::TryAccessValue<int>(x))
+	if(const auto p_i = TryAccessValue<int>(x))
 		return f(*p_i);
-	if(const auto p_u = Unilang::TryAccessValue<unsigned>(x))
+	if(const auto p_u = TryAccessValue<unsigned>(x))
 		return f(*p_u);
-	if(const auto p_ll = Unilang::TryAccessValue<long long>(x))
+	if(const auto p_ll = TryAccessValue<long long>(x))
 		return f(*p_ll);
-	if(const auto p_ull = Unilang::TryAccessValue<unsigned long long>(x))
+	if(const auto p_ull = TryAccessValue<unsigned long long>(x))
 		return f(*p_ull);
-	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+	if(const auto p_d = TryAccessValue<double>(x))
 		return f(*p_d);
-	if(const auto p_l = Unilang::TryAccessValue<long>(x))
+	if(const auto p_l = TryAccessValue<long>(x))
 		return f(*p_l);
-	if(const auto p_ul = Unilang::TryAccessValue<unsigned long>(x))
+	if(const auto p_ul = TryAccessValue<unsigned long>(x))
 		return f(*p_ul);
-	if(const auto p_s = Unilang::TryAccessValue<short>(x))
+	if(const auto p_s = TryAccessValue<short>(x))
 		return f(*p_s);
-	if(const auto p_us = Unilang::TryAccessValue<unsigned short>(x))
+	if(const auto p_us = TryAccessValue<unsigned short>(x))
 		return f(*p_us);
-	if(const auto p_sc = Unilang::TryAccessValue<signed char>(x))
+	if(const auto p_sc = TryAccessValue<signed char>(x))
 		return f(*p_sc);
-	if(const auto p_uc = Unilang::TryAccessValue<unsigned char>(x))
+	if(const auto p_uc = TryAccessValue<unsigned char>(x))
 		return f(*p_uc);
-	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+	if(const auto p_f = TryAccessValue<float>(x))
 		return f(*p_f);
-	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+	if(const auto p_ld = TryAccessValue<long double>(x))
 		return f(*p_ld);
 	return f(x);
 }
@@ -1265,11 +1265,11 @@ IsInexactValue(const ValueObject& vo) noexcept
 bool
 IsRationalValue(const ValueObject& vo) noexcept
 {
-	if(const auto p_d = Unilang::TryAccessValue<double>(vo))
+	if(const auto p_d = TryAccessValue<double>(vo))
 		return std::isfinite(*p_d);
-	if(const auto p_f = Unilang::TryAccessValue<float>(vo))
+	if(const auto p_f = TryAccessValue<float>(vo))
 		return std::isfinite(*p_f);
-	if(const auto p_ld = Unilang::TryAccessValue<long double>(vo))
+	if(const auto p_ld = TryAccessValue<long double>(vo))
 		return std::isfinite(*p_ld);
 	return IsExactValue(vo);
 }
@@ -1277,11 +1277,11 @@ IsRationalValue(const ValueObject& vo) noexcept
 bool
 IsIntegerValue(const ValueObject& vo) noexcept
 {
-	if(const auto p_d = Unilang::TryAccessValue<double>(vo))
+	if(const auto p_d = TryAccessValue<double>(vo))
 		return FloatIsInteger(*p_d);
-	if(const auto p_f = Unilang::TryAccessValue<float>(vo))
+	if(const auto p_f = TryAccessValue<float>(vo))
 		return FloatIsInteger(*p_f);
-	if(const auto p_ld = Unilang::TryAccessValue<long double>(vo))
+	if(const auto p_ld = TryAccessValue<long double>(vo))
 		return FloatIsInteger(*p_ld);
 	return IsExactValue(vo);
 }
@@ -1290,11 +1290,11 @@ IsIntegerValue(const ValueObject& vo) noexcept
 bool
 IsFinite(const ValueObject& x) noexcept
 {
-	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+	if(const auto p_d = TryAccessValue<double>(x))
 		return std::isfinite(*p_d);
-	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+	if(const auto p_f = TryAccessValue<float>(x))
 		return std::isfinite(*p_f);
-	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+	if(const auto p_ld = TryAccessValue<long double>(x))
 		return std::isfinite(*p_ld);
 	return true;
 }
@@ -1302,11 +1302,11 @@ IsFinite(const ValueObject& x) noexcept
 bool
 IsInfinite(const ValueObject& x) noexcept
 {
-	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+	if(const auto p_d = TryAccessValue<double>(x))
 		return std::isinf(*p_d);
-	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+	if(const auto p_f = TryAccessValue<float>(x))
 		return std::isinf(*p_f);
-	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+	if(const auto p_ld = TryAccessValue<long double>(x))
 		return std::isinf(*p_ld);
 	return {};
 }
@@ -1314,11 +1314,11 @@ IsInfinite(const ValueObject& x) noexcept
 bool
 IsNaN(const ValueObject& x) noexcept
 {
-	if(const auto p_d = Unilang::TryAccessValue<double>(x))
+	if(const auto p_d = TryAccessValue<double>(x))
 		return std::isnan(*p_d);
-	if(const auto p_f = Unilang::TryAccessValue<float>(x))
+	if(const auto p_f = TryAccessValue<float>(x))
 		return std::isnan(*p_f);
-	if(const auto p_ld = Unilang::TryAccessValue<long double>(x))
+	if(const auto p_ld = TryAccessValue<long double>(x))
 		return std::isnan(*p_ld);
 	return {};
 }

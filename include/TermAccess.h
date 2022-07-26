@@ -96,19 +96,19 @@ template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessTerm(TermNode& term)
 {
-	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
+	return IsLeaf(term) ? TryAccessLeaf<_type>(term) : nullptr;
 }
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessTerm(const TermNode& term)
 {
-	return IsLeaf(term) ? Unilang::TryAccessLeaf<_type>(term) : nullptr;
+	return IsLeaf(term) ? TryAccessLeaf<_type>(term) : nullptr;
 }
 
 YB_ATTR_nodiscard YB_PURE inline const TokenValue*
 TermToNamePtr(const TermNode& term)
 {
-	return Unilang::TryAccessTerm<TokenValue>(term);
+	return TryAccessTerm<TokenValue>(term);
 }
 
 
@@ -282,14 +282,14 @@ PrepareCollapse(TermNode&, const shared_ptr<Environment>&);
 YB_ATTR_nodiscard YB_PURE inline TermNode&
 ReferenceTerm(TermNode& term)
 {
-	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeaf<const TermReference>(term))
 		return p->get();
 	return term;
 }
 YB_ATTR_nodiscard YB_PURE inline const TermNode&
 ReferenceTerm(const TermNode& term)
 {
-	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeaf<const TermReference>(term))
 		return p->get();
 	return term;
 }
@@ -322,13 +322,13 @@ template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessReferencedLeaf(TermNode& term)
 {
-	return Unilang::TryAccessLeaf<_type>(ReferenceTerm(term));
+	return TryAccessLeaf<_type>(ReferenceTerm(term));
 }
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessReferencedLeaf(const TermNode& term)
 {
-	return Unilang::TryAccessLeaf<_type>(ReferenceTerm(term));
+	return TryAccessLeaf<_type>(ReferenceTerm(term));
 }
 
 
@@ -336,13 +336,13 @@ template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline _type*
 TryAccessReferencedTerm(TermNode& term)
 {
-	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
+	return TryAccessTerm<_type>(ReferenceTerm(term));
 }
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline const _type*
 TryAccessReferencedTerm(const TermNode& term)
 {
-	return Unilang::TryAccessTerm<_type>(ReferenceTerm(term));
+	return TryAccessTerm<_type>(ReferenceTerm(term));
 }
 
 YB_ATTR_nodiscard YB_PURE bool
@@ -382,7 +382,7 @@ ResolveTerm(_func do_resolve, _tTerm&& term)
 {
 	using handler_t = void(_tTerm&&, ResolvedTermReferencePtr);
 
-	if(const auto p = Unilang::TryAccessLeaf<const TermReference>(term))
+	if(const auto p = TryAccessLeaf<const TermReference>(term))
 		return ystdex::expand_proxy<handler_t>::call(do_resolve, p->get(),
 			Unilang::ResolveToTermReferencePtr(p));
 	return ystdex::expand_proxy<handler_t>::call(do_resolve,
@@ -400,19 +400,19 @@ CheckRegular(_tTerm& term, bool has_ref)
 template<typename _type, class _tTerm>
 YB_ATTR_nodiscard YB_PURE inline auto
 AccessRegular(_tTerm& term, bool has_ref)
-	-> decltype(Unilang::Access<_type>(term))
+	-> decltype(Access<_type>(term))
 {
 	Unilang::CheckRegular<_type>(term, has_ref);
-	return Unilang::Access<_type>(term);
+	return Access<_type>(term);
 }
 
 template<typename _type, class _tTerm>
 YB_ATTR_nodiscard YB_PURE inline auto
-ResolveRegular(_tTerm& term) -> decltype(Unilang::Access<_type>(term))
+ResolveRegular(_tTerm& term) -> decltype(Access<_type>(term))
 {
 	return Unilang::ResolveTerm([&](_tTerm& nd, bool has_ref)
-		-> decltype(Unilang::Access<_type>(term)){
-		return Unilang::AccessRegular<_type>(nd, has_ref);
+		-> decltype(Access<_type>(term)){
+		return AccessRegular<_type>(nd, has_ref);
 	}, term);
 }
 
@@ -423,7 +423,7 @@ struct TypedValueAccessor
 	template<class _tTerm>
 	YB_ATTR_nodiscard YB_PURE inline auto
 	operator()(_tTerm& term) const
-		-> yimpl(decltype(Unilang::Access<_type>(term)))
+		-> yimpl(decltype(Access<_type>(term)))
 	{
 		return Unilang::ResolveRegular<_type>(term);
 	}
@@ -482,7 +482,7 @@ struct TypedValueAccessor<ResolvedArg<_type>>
 	{
 		return Unilang::ResolveTerm([](_tTerm& nd, ResolvedTermReferencePtr p_ref){
 			return ResolvedArg<_type>(
-				Unilang::AccessRegular<_type>(nd, p_ref), p_ref);
+				AccessRegular<_type>(nd, p_ref), p_ref);
 		}, term);
 	}
 };

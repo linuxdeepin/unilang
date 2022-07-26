@@ -1,10 +1,10 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for Unilang::TryAccessReferencedTerm,
-//	ThrowTypeErrorForInvalidType, ResolveTerm, TermToNamePtr,
-//	ResolvedTermReferencePtr, ystdex::sfmt, Unilang::Deref, ClearCombiningTags,
-//	AssertValueTags, FormContextHandler, ystdex::ref_eq, ReferenceTerm,
-//	ThrowValueCategoryError, Unilang::EmplaceCallResultOrReturn;
+#include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
+//	 ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, ystdex::sfmt,
+//	 Unilang::Deref, ClearCombiningTags, AssertValueTags, FormContextHandler,
+//	 ystdex::ref_eq, ReferenceTerm, ThrowValueCategoryError,
+//	 Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -29,7 +29,7 @@ namespace
 YB_ATTR_nodiscard YB_PURE bool
 ExtractBool(const TermNode& term)
 {
-	if(const auto p = Unilang::TryAccessReferencedTerm<bool>(term))
+	if(const auto p = TryAccessReferencedTerm<bool>(term))
 		return *p;
 	return true;
 }
@@ -139,7 +139,7 @@ MakeEnvironmentParent(TNIter first, TNIter last,
 {
 	const auto tr([&](TNIter iter){
 		return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
-			if(const auto p = Unilang::TryAccessLeaf<const TermReference>(*i))
+			if(const auto p = TryAccessLeaf<const TermReference>(*i))
 			{
 				if(nonmodifying || !p->IsMovable())
 					return p->get().Value;
@@ -624,8 +624,7 @@ Encapsulate::operator()(TermNode& term) const
 
 	return Unilang::EmplaceCallResultOrReturn(term,
 		Encapsulation(GetType(), ystdex::invoke_value_or(&TermReference::get,
-		Unilang::TryAccessReferencedLeaf<const TermReference>(tm),
-		std::move(tm))));
+		TryAccessReferencedLeaf<const TermReference>(tm), std::move(tm))));
 }
 
 
@@ -639,7 +638,7 @@ Encapsulated::operator()(TermNode& term) const
 	return Unilang::EmplaceCallResultOrReturn(term,
 		ystdex::call_value_or([this](const Encapsulation& enc) noexcept{
 		return Get() == enc.Get();
-	}, Unilang::TryAccessReferencedTerm<Encapsulation>(tm)));
+	}, TryAccessReferencedTerm<Encapsulation>(tm)));
 }
 
 
@@ -650,16 +649,14 @@ Decapsulate::operator()(TermNode& term, Context& ctx) const
 
 	return Unilang::ResolveTerm(
 		[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		const auto&
-			enc(Unilang::AccessRegular<const Encapsulation>(nd, p_ref));
+		const auto& enc(AccessRegular<const Encapsulation>(nd, p_ref));
 
 		if(enc.Get() == Get())
 		{
 			auto& tm(enc.TermRef);
 
 			return MakeValueOrMove(p_ref, [&]() -> ReductionStatus{
-				if(const auto p
-					= Unilang::TryAccessLeaf<const TermReference>(tm))
+				if(const auto p = TryAccessLeaf<const TermReference>(tm))
 				{
 					term.GetContainerRef() = tm.GetContainer();
 					term.Value = *p;

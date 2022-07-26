@@ -1,7 +1,7 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, ystdex::sfmt, Unilang::TryAccessLeaf,
-//	IsTyped, Unilang::Nonnull;
+#include "TermAccess.h" // for sfmt, ystdex::sfmt, TryAccessLeaf, IsTyped,
+//	Unilang::Nonnull;
 #include "Exception.h" // for ListTypeError, TypeError, ValueCategoryMismatch;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
@@ -33,7 +33,7 @@ TermToTags(TermNode& term)
 {
 	return ystdex::call_value_or(ystdex::compose(GetLValueTagsOf,
 		std::mem_fn(&TermReference::GetTags)),
-		Unilang::TryAccessLeaf<const TermReference>(term), term.Tags);
+		TryAccessLeaf<const TermReference>(term), term.Tags);
 }
 
 void
@@ -111,21 +111,21 @@ PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 bool
 IsReferenceTerm(const TermNode& term)
 {
-	return bool(Unilang::TryAccessLeaf<const TermReference>(term));
+	return bool(TryAccessLeaf<const TermReference>(term));
 }
 
 bool
 IsUniqueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsUnique,
-		Unilang::TryAccessLeaf<const TermReference>(term), true);
+		TryAccessLeaf<const TermReference>(term), true);
 }
 
 bool
 IsModifiableTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsModifiable,
-		Unilang::TryAccessLeaf<const TermReference>(term),
+		TryAccessLeaf<const TermReference>(term),
 		!bool(term.Tags & TermTags::Nonmodifying));
 }
 
@@ -133,7 +133,7 @@ bool
 IsBoundLValueTerm(const TermNode& term)
 {
 	return ystdex::invoke_value_or(&TermReference::IsReferencedLValue,
-		Unilang::TryAccessLeaf<const TermReference>(term));
+		TryAccessLeaf<const TermReference>(term));
 }
 
 bool
@@ -141,7 +141,7 @@ IsUncollapsedTerm(const TermNode& term)
 {
 	return ystdex::call_value_or(ystdex::compose(IsReferenceTerm,
 		std::mem_fn(&TermReference::get)),
-		Unilang::TryAccessLeaf<const TermReference>(term));
+		TryAccessLeaf<const TermReference>(term));
 }
 
 } // namespace Unilang;
