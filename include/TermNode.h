@@ -13,6 +13,7 @@
 //	std::is_convertible, ystdex::decay_t, ystdex::false_, ystdex::not_;
 #include <cassert> // for assert;
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
+#include <algorithm> // for std::find_if;
 #include <ystdex/type_op.hpp> // for ystdex::cond_or_t;
 
 namespace Unilang
@@ -523,6 +524,51 @@ YB_ATTR_nodiscard YB_PURE inline bool
 HasValue(const TermNode& nd, const _type& x)
 {
 	return nd.Value == x;
+}
+
+YB_ATTR_nodiscard YB_PURE inline size_t
+CountPrefix(const TermNode::Container& con) noexcept
+{
+	size_t i(0);
+
+	for(const auto& t : con)
+	{
+		if(IsSticky(t.Tags))
+			break;
+		++i;
+	}
+	return i;
+}
+YB_ATTR_nodiscard YB_PURE inline size_t
+CountPrefix(const TermNode& tm) noexcept
+{
+	return CountPrefix(tm.GetContainer());
+}
+
+template<typename _tIn>
+YB_ATTR_nodiscard YB_PURE _tIn
+FindSticky(_tIn first, _tIn last) noexcept
+{
+	return std::find_if(first, last, [&](const TermNode& tm){
+		return IsSticky(tm.Tags);
+	});
+}
+
+YB_ATTR_nodiscard YB_PURE inline TNCIter
+FindStickySubterm(const TermNode::Container& con) noexcept
+{
+	return Unilang::FindSticky(con.begin(), con.end());
+}
+YB_ATTR_nodiscard YB_PURE inline TNCIter
+FindStickySubterm(const TermNode& nd) noexcept
+{
+	return Unilang::FindStickySubterm(nd.GetContainer());
+}
+
+YB_ATTR_nodiscard YB_PURE inline bool
+HasStickySubterm(const TermNode& nd) noexcept
+{
+	return FindStickySubterm(nd) != nd.end();
 }
 
 template<typename _type>
