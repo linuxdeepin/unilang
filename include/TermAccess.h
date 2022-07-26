@@ -50,7 +50,7 @@ TermToString(const TermNode&);
 YB_ATTR_nodiscard YB_PURE string
 TermToStringWithReferenceMark(const TermNode&, bool);
 
-YB_ATTR_nodiscard YB_PURE inline const TokenValue*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const TokenValue>
 TermToNamePtr(const TermNode&);
 
 YB_ATTR_nodiscard YB_PURE TermTags
@@ -78,34 +78,32 @@ ThrowValueCategoryError(const TermNode&);
 using YSLib::TryAccessValue;
 
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
 TryAccessLeaf(TermNode& term)
 {
-	return IsTyped<_type>(term) ? std::addressof(term.Value.GetObject<_type>())
-		: nullptr;
+	return TryAccessValue<_type>(term.Value);
 }
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline const _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const _type>
 TryAccessLeaf(const TermNode& term)
 {
-	return IsTyped<_type>(term) ? std::addressof(term.Value.GetObject<_type>())
-		: nullptr;
+	return TryAccessValue<_type>(term.Value);
 }
 
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
 TryAccessTerm(TermNode& term)
 {
 	return IsLeaf(term) ? TryAccessLeaf<_type>(term) : nullptr;
 }
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline const _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const _type>
 TryAccessTerm(const TermNode& term)
 {
 	return IsLeaf(term) ? TryAccessLeaf<_type>(term) : nullptr;
 }
 
-YB_ATTR_nodiscard YB_PURE inline const TokenValue*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const TokenValue>
 TermToNamePtr(const TermNode& term)
 {
 	return TryAccessTerm<TokenValue>(term);
@@ -300,9 +298,9 @@ ReferenceTerm(const TermNode& term)
 using ResolvedTermReferencePtr = const TermReference*;
 
 YB_ATTR_nodiscard YB_PURE constexpr ResolvedTermReferencePtr
-ResolveToTermReferencePtr(const TermReference* p) noexcept
+ResolveToTermReferencePtr(observer_ptr<const TermReference> p) noexcept
 {
-	return p;
+	return p.get();
 }
 
 
@@ -321,27 +319,26 @@ IsMovable(_tPointer p) noexcept
 
 
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
 TryAccessReferencedLeaf(TermNode& term)
 {
 	return TryAccessLeaf<_type>(ReferenceTerm(term));
 }
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline const _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const _type>
 TryAccessReferencedLeaf(const TermNode& term)
 {
 	return TryAccessLeaf<_type>(ReferenceTerm(term));
 }
 
-
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<_type>
 TryAccessReferencedTerm(TermNode& term)
 {
 	return TryAccessTerm<_type>(ReferenceTerm(term));
 }
 template<typename _type>
-YB_ATTR_nodiscard YB_PURE inline const _type*
+YB_ATTR_nodiscard YB_PURE inline observer_ptr<const _type>
 TryAccessReferencedTerm(const TermNode& term)
 {
 	return TryAccessTerm<_type>(ReferenceTerm(term));
