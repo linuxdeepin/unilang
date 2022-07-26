@@ -22,7 +22,8 @@ enum TermTagIndices : size_t
 {
 	UniqueIndex,
 	NonmodifyingIndex,
-	TemporaryIndex
+	TemporaryIndex,
+	StickyIndex = yimpl(NonmodifyingIndex)
 };
 
 enum class TermTags
@@ -30,7 +31,8 @@ enum class TermTags
 	Unqualified = 0,
 	Unique = 1 << UniqueIndex,
 	Nonmodifying = 1 << NonmodifyingIndex,
-	Temporary = 1 << TemporaryIndex
+	Temporary = 1 << TemporaryIndex,
+	Sticky = 1 << StickyIndex
 };
 
 DefBitmaskEnum(TermTags)
