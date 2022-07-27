@@ -6,6 +6,7 @@
 #include "Lexical.h" // for size_t, string, string_view, shared_ptr,
 //	SourceInformation, Unilang::Deref;
 #include <exception> // for std::runtime_error;
+#include "TermNode.h" // for TermNode;
 
 namespace Unilang
 {
@@ -135,6 +136,26 @@ public:
 	InvalidReference(const InvalidReference&) = default;
 	~InvalidReference() override;
 };
+
+
+YB_NORETURN void
+ThrowInsufficientTermsError(const TermNode&, bool);
+
+YB_NORETURN YB_NONNULL(1) void
+ThrowListTypeErrorForInvalidType(const char*, const TermNode&, bool);
+YB_NORETURN void
+ThrowListTypeErrorForInvalidType(const type_info&, const TermNode&, bool);
+
+YB_NORETURN void
+ThrowListTypeErrorForNonlist(const TermNode&, bool);
+
+YB_NORETURN YB_NONNULL(1) void
+ThrowTypeErrorForInvalidType(const char*, const TermNode&, bool);
+YB_NORETURN void
+ThrowTypeErrorForInvalidType(const type_info&, const TermNode&, bool);
+
+YB_NORETURN void
+ThrowValueCategoryError(const TermNode&);
 
 
 YB_NORETURN void
