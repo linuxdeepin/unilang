@@ -385,6 +385,15 @@ IsCombiningTerm(const TermNode& term) noexcept
 	return IsPair(term);
 }
 
+inline void
+AssertCombiningTerm(const TermNode& term) noexcept
+{
+	yunused(term);
+	assert(IsCombiningTerm(term) && "Invalid term found for combined term.");
+	assert(!(IsList(term) && HasStickySubterm(term))
+		&& "Invalid representation found.");
+}
+
 template<typename _func, class _tTerm>
 auto
 ResolveTerm(_func do_resolve, _tTerm&& term)
