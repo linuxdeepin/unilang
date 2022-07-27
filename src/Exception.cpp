@@ -69,7 +69,7 @@ BadIdentifier::BadIdentifier(string_view id, size_t n)
 
 
 void
-ThrowInsufficientTermsError(const TermNode& term, bool has_ref)
+ThrowInsufficientTermsError(const TermNode& term, bool has_ref, size_t n_skip)
 {
 	throw ParameterMismatch(ystdex::sfmt(
 		"Insufficient subterms found in '%s' for the list parameter.",
@@ -78,20 +78,20 @@ ThrowInsufficientTermsError(const TermNode& term, bool has_ref)
 
 void
 ThrowListTypeErrorForInvalidType(const char* name, const TermNode& term,
-	bool has_ref)
+	bool has_ref, size_t n_skip)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got a list"
 		" '%s'.", name, TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 void
 ThrowListTypeErrorForInvalidType(const type_info& ti,
-	const TermNode& term, bool has_ref)
+	const TermNode& term, bool has_ref, size_t n_skip)
 {
 	ThrowListTypeErrorForInvalidType(ti.name(), term, has_ref);
 }
 
 void
-ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
+ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref, size_t n_skip)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
@@ -99,14 +99,14 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref)
 
 void
 ThrowTypeErrorForInvalidType(const char* name, const TermNode& term,
-	bool has_ref)
+	bool has_ref, size_t n_skip)
 {
 	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
 		name, TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 void
 ThrowTypeErrorForInvalidType(const type_info& ti, const TermNode& term,
-	bool has_ref)
+	bool has_ref, size_t n_skip)
 {
 	ThrowTypeErrorForInvalidType(ti.name(), term, has_ref);
 }
