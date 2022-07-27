@@ -4,7 +4,7 @@
 #define INC_Unilang_TermAccess_h_ 1
 
 #include "TermNode.h" // for string, TermNode, type_info, YSLib::TryAccessValue,
-//	AssertReferentTags, Unilang::IsMovable, Unilang::Deref, PropagateTo;
+//	AssertReferentTags, Unilang::IsMovable, PropagateTo, Unilang::Deref, IsPair;
 #include "Exception.h" // for ListTypeError;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
 
@@ -382,7 +382,7 @@ ClearCombiningTags(TermNode& term) noexcept
 YB_ATTR_nodiscard YB_PURE inline bool
 IsCombiningTerm(const TermNode& term) noexcept
 {
-	return IsBranch(term) && (IsList(term) || IsTyped<TokenValue>(term));
+	return IsPair(term);
 }
 
 template<typename _func, class _tTerm>
