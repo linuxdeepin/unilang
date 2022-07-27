@@ -139,20 +139,23 @@ public:
 
 
 YB_NORETURN void
-ThrowInsufficientTermsError(const TermNode&, bool);
+ThrowInsufficientTermsError(const TermNode&, bool, size_t = 0);
 
 YB_NORETURN YB_NONNULL(1) void
-ThrowListTypeErrorForInvalidType(const char*, const TermNode&, bool);
+ThrowListTypeErrorForInvalidType(const char*, const TermNode&, bool,
+	size_t = 0);
 YB_NORETURN void
-ThrowListTypeErrorForInvalidType(const type_info&, const TermNode&, bool);
+ThrowListTypeErrorForInvalidType(const type_info&, const TermNode&, bool,
+	size_t = 0);
 
 YB_NORETURN void
-ThrowListTypeErrorForNonlist(const TermNode&, bool);
+ThrowListTypeErrorForNonlist(const TermNode&, bool, size_t = 0);
 
 YB_NORETURN YB_NONNULL(1) void
-ThrowTypeErrorForInvalidType(const char*, const TermNode&, bool);
+ThrowTypeErrorForInvalidType(const char*, const TermNode&, bool, size_t = 0);
 YB_NORETURN void
-ThrowTypeErrorForInvalidType(const type_info&, const TermNode&, bool);
+ThrowTypeErrorForInvalidType(const type_info&, const TermNode&, bool,
+	size_t = 0);
 
 YB_NORETURN void
 ThrowValueCategoryError(const TermNode&);
