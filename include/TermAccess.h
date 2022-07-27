@@ -45,10 +45,10 @@ public:
 };
 
 YB_ATTR_nodiscard YB_PURE string
-TermToString(const TermNode&);
+TermToString(const TermNode&, size_t = 0);
 
 YB_ATTR_nodiscard YB_PURE string
-TermToStringWithReferenceMark(const TermNode&, bool);
+TermToStringWithReferenceMark(const TermNode&, bool, size_t = 0);
 
 YB_ATTR_nodiscard YB_PURE inline observer_ptr<const TokenValue>
 TermToNamePtr(const TermNode&);

@@ -1,7 +1,8 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "TermAccess.h" // for sfmt, ystdex::sfmt, TryAccessLeafAtom, IsTyped,
+#include "TermAccess.h" // for TermToNamePtr, sfmt, ystdex::sfmt, TryAccessLeafAtom, IsTyped,
 //	Unilang::Nonnull;
+#include <cassert> // for assert;
 #include "Exception.h" // for ListTypeError, TypeError, ValueCategoryMismatch;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::compose, std::mem_fn,
@@ -12,18 +13,28 @@ namespace Unilang
 {
 
 string
-TermToString(const TermNode& term)
+TermToString(const TermNode& term, size_t n_skip)
 {
 	if(const auto p = TermToNamePtr(term))
 		return *p;
-	return sfmt<string>("#<unknown{%zu}:%s>", term.size(),
-		term.Value.type().name());
+
+	const bool non_list(!IsList(term));
+
+	assert(n_skip <= CountPrefix(term) && "Invalid skip number found.");
+
+	const bool s_is_pair(n_skip < term.size()
+		&& IsSticky(std::next(term.begin(), ptrdiff_t(n_skip))->Tags));
+
+	return !non_list && n_skip == term.size() ? string("()") : sfmt<string>(
+		"#<%s{%zu}%s%s>", s_is_pair ? (non_list ? "improper-list" : "list")
+		: "unknown", term.size() - n_skip, s_is_pair ? " . "
+		: (non_list ? ":" : ""), non_list ? term.Value.type().name() : "");
 }
 
 string
-TermToStringWithReferenceMark(const TermNode& term, bool has_ref)
+TermToStringWithReferenceMark(const TermNode& term, bool has_ref, size_t n_skip)
 {
-	auto term_str(TermToString(term));
+	auto term_str(TermToString(term, n_skip));
 
 	return has_ref ? "[*] " + std::move(term_str) : std::move(term_str);
 }
