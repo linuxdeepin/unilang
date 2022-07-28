@@ -57,6 +57,23 @@ void
 LiftOtherOrCopy(TermNode&, TermNode&, bool);
 
 
+inline void
+LiftTermRef(TermNode& term, const TermNode& tm)
+{
+	Unilang::SetContentWith(term, tm, &ValueObject::MakeIndirect);
+}
+inline void
+LiftTermRef(ValueObject& term_v, const ValueObject& vo)
+{
+	term_v = vo.MakeIndirect();
+}
+inline void
+LiftTermRef(TermNode& term, const ValueObject& vo)
+{
+	LiftTermRef(term.Value, vo);
+}
+
+
 void
 LiftToReturn(TermNode&);
 
