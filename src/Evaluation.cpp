@@ -1,14 +1,14 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
-#include "Evaluation.h" // for ystdex::equality_comparable, AnchorPtr, lref,
-//	ContextHandler, EnvironmentReference, string_view, ValueToken,
-//	TermReference, TermTags, byte, YSLib::AllocatorHolder,
-//	YSLib::IValueHolder::Creation, YSLib::AllocatedHolderOperations,
-//	YSLib::forward_as_tuple, SourceInformation, pmr::polymorphic_allocator,
-//	yunseq, Continuation, TermToStringWithReferenceMark GetLValueTagsOf,
-//	AccessFirstSubterm, ThrowTypeErrorForInvalidType, in_place_type,
-//	TermToNamePtr, IsTyped, ThrowInsufficientTermsError,
-//	Unilang::allocate_shared, YSLib::lock_guard, YSLib::mutex,
+#include "Evaluation.h" // for Unilang::allocate_shared,
+//	Unilang::AsTermNodeTagged, TermTags, ystdex::equality_comparable, AnchorPtr,
+//	lref, ContextHandler, EnvironmentReference, string_view, ValueToken,
+//	TermReference, byte, YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
+//	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple,
+//	SourceInformation, pmr::polymorphic_allocator, yunseq, Continuation,
+//	TermToStringWithReferenceMark GetLValueTagsOf, AccessFirstSubterm,
+//	ThrowTypeErrorForInvalidType, in_place_type, TermToNamePtr, IsTyped,
+//	ThrowInsufficientTermsError, YSLib::lock_guard, YSLib::mutex,
 //	YSLib::unordered_map, type_index, std::allocator, std::pair,
 //	AssertValueTags;
 #include <cassert> // for assert;
@@ -41,6 +41,20 @@ namespace Unilang
 
 namespace
 {
+
+template<class _tAlloc, typename... _tParams>
+YB_ATTR_nodiscard inline shared_ptr<TermNode>
+AllocateSharedTerm(const _tAlloc& a, _tParams&&... args)
+{
+	return Unilang::allocate_shared<TermNode>(a, yforward(args)...);
+}
+
+YB_ATTR_nodiscard inline TermNode
+MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
+{
+	return Unilang::AsTermNodeTagged(a, TermTags::Sticky, std::move(p_sub));
+}
+
 
 class RefContextHandler final
 	: private ystdex::equality_comparable<RefContextHandler>
@@ -525,8 +539,9 @@ MarkTemporaryTerm(TermNode& term, char sigil) noexcept
 		term.Tags |= TermTags::Temporary;
 }
 
-struct BindParameterObject
+class BindParameterObject
 {
+public:
 	lref<const EnvironmentReference> Referenced;
 
 	BindParameterObject(const EnvironmentReference& r_env)
@@ -576,8 +591,7 @@ struct BindParameterObject
 				MarkTemporaryTerm(mv(std::move(o.GetContainerRef()),
 					std::move(o.Value)), sigil);
 			else if(sigil == '&')
-				mv(TermNode::Container(o.get_allocator()),
-					ValueObject(std::allocator_arg, o.get_allocator(),
+				mv(TermNode::Container(a), ValueObject(std::allocator_arg, a,
 					in_place_type<TermReference>,
 					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
 			else
@@ -848,13 +862,6 @@ ExtractSigil(string_view& id)
 		return sigil;
 	}
 	return char();
-}
-
-
-YB_ATTR_nodiscard inline TermNode
-MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
-{
-	return Unilang::AsTermNodeTagged(a, TermTags::Sticky, std::move(p_sub));
 }
 
 
