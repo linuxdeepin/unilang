@@ -15,6 +15,7 @@
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <algorithm> // for std::find_if;
 #include <ystdex/type_op.hpp> // for ystdex::cond_or_t;
+#include <ystdex/invoke.hpp> // for ystdex::invoke;
 
 namespace Unilang
 {
@@ -365,6 +366,47 @@ public:
 		Value = ValueObject(nd.Value);
 	}
 
+	template<class _tCon, typename _fCallable,
+		yimpl(typename = ystdex::enable_if_t<
+		std::is_same<Container&, ystdex::remove_cvref_t<_tCon>&>::value>)>
+	static Container
+	CreateRecursively(_tCon&& con, _fCallable f)
+	{
+		Container res(con.get_allocator());
+
+		for(auto&& nd : con)
+			res.emplace_back(CreateRecursively(
+				ystdex::forward_like<_tCon>(nd.container), f),
+				ystdex::invoke(f, ystdex::forward_like<_tCon>(nd.Value)));
+		return res;
+	}
+	//@}
+
+	template<typename _fCallable>
+	Container
+	CreateWith(_fCallable f) &
+	{
+		return CreateRecursively(container, f);
+	}
+	template<typename _fCallable>
+	Container
+	CreateWith(_fCallable f) const&
+	{
+		return CreateRecursively(container, f);
+	}
+	template<typename _fCallable>
+	Container
+	CreateWith(_fCallable f) &&
+	{
+		return CreateRecursively(std::move(container), f);
+	}
+	template<typename _fCallable>
+	Container
+	CreateWith(_fCallable f) const&&
+	{
+		return CreateRecursively(std::move(container), f);
+	}
+
 	void
 	MoveContent(TermNode&& nd)
 	{
@@ -626,6 +668,39 @@ AssertValueTags(const TermNode& nd) noexcept
 		&& "Invalid term of first-class value found.");
 }
 
+template<typename... _tParam, typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline
+ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
+	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
+	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
+AsTermNode(_tParams&&... args)
+{
+	return TermNode(NoContainer, yforward(args)...);
+}
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline TermNode
+AsTermNode(TermNode::allocator_type a, _tParams&&... args)
+{
+	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
+}
+
+template<typename... _tParam, typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline
+ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
+	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
+	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
+AsTermNodeTagged(TermTags tags, _tParams&&... args)
+{
+	return TermNode(tags, NoContainer, yforward(args)...);
+}
+template<typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline TermNode
+AsTermNodeTagged(TermNode::allocator_type a, TermTags tags, _tParams&&... args)
+{
+	return
+		TermNode(std::allocator_arg, a, tags, NoContainer, yforward(args)...);
+}
+
 YB_ATTR_nodiscard YB_PURE inline TermNode&
 AccessFirstSubterm(TermNode& nd) noexcept
 {
@@ -663,39 +738,15 @@ RemoveHead(TermNode& nd) noexcept
 	nd.GetContainerRef().pop_front();
 }
 
-template<typename... _tParam, typename... _tParams>
-YB_ATTR_nodiscard YB_PURE inline
-ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
-	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
-	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
-AsTermNode(_tParams&&... args)
+template<typename _fCallable, class _tNode>
+void
+SetContentWith(TermNode& dst, _tNode&& nd, _fCallable f)
 {
-	return TermNode(NoContainer, yforward(args)...);
-}
-template<typename... _tParams>
-YB_ATTR_nodiscard YB_PURE inline TermNode
-AsTermNode(TermNode::allocator_type a, _tParams&&... args)
-{
-	return TermNode(std::allocator_arg, a, NoContainer, yforward(args)...);
-}
+	auto con(yforward(nd).CreateWith(f));
+	auto vo(ystdex::invoke(f, yforward(nd).Value));
 
-template<typename... _tParam, typename... _tParams>
-YB_ATTR_nodiscard YB_PURE inline
-ystdex::enable_if_t<ystdex::not_<ystdex::cond_or_t<ystdex::bool_<
-	(sizeof...(_tParams) >= 1)>, ystdex::false_, std::is_convertible,
-	ystdex::decay_t<_tParams>..., TermNode::allocator_type>>::value, TermNode>
-AsTermNodeTagged(TermTags tags, _tParams&&... args)
-{
-	return TermNode(tags, NoContainer, yforward(args)...);
+	dst.SetContent(std::move(con), std::move(vo));
 }
-template<typename... _tParams>
-YB_ATTR_nodiscard YB_PURE inline TermNode
-AsTermNodeTagged(TermNode::allocator_type a, TermTags tags, _tParams&&... args)
-{
-	return
-		TermNode(std::allocator_arg, a, tags, NoContainer, yforward(args)...);
-}
-
 
 } // namespace Unilang;
 
