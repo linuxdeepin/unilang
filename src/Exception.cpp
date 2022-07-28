@@ -98,17 +98,23 @@ ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref, size_t n_skip)
 }
 
 void
+ThrowTypeErrorForInvalidType(const char* name, const char* rep)
+{
+	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
+		name, rep));
+}
+void
 ThrowTypeErrorForInvalidType(const char* name, const TermNode& term,
 	bool has_ref, size_t n_skip)
 {
-	throw TypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
-		name, TermToStringWithReferenceMark(term, has_ref).c_str()));
+	ThrowTypeErrorForInvalidType(name,
+		TermToStringWithReferenceMark(term, has_ref, n_skip).c_str());
 }
 void
 ThrowTypeErrorForInvalidType(const type_info& ti, const TermNode& term,
 	bool has_ref, size_t n_skip)
 {
-	ThrowTypeErrorForInvalidType(ti.name(), term, has_ref);
+	ThrowTypeErrorForInvalidType(ti.name(), term, has_ref, n_skip);
 }
 
 void
