@@ -151,6 +151,8 @@ ThrowListTypeErrorForInvalidType(const type_info&, const TermNode&, bool,
 YB_NORETURN void
 ThrowListTypeErrorForNonlist(const TermNode&, bool, size_t = 0);
 
+YB_NORETURN YF_API YB_NONNULL(1,2) void
+ThrowTypeErrorForInvalidType(const char*, const char*);
 YB_NORETURN YB_NONNULL(1) void
 ThrowTypeErrorForInvalidType(const char*, const TermNode&, bool, size_t = 0);
 YB_NORETURN void
