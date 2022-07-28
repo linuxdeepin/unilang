@@ -383,6 +383,14 @@ public:
 		return container.begin();
 	}
 
+	template<typename... _tParams>
+	iterator
+	emplace(_tParams&&... args)
+	{
+		container.emplace_back(yforward(args)...);
+		return std::prev(container.end());
+	}
+
 	YB_ATTR_nodiscard YB_PURE bool
 	empty() const noexcept
 	{
