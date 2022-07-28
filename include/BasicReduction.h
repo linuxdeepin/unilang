@@ -60,6 +60,14 @@ LiftOtherOrCopy(TermNode&, TermNode&, bool);
 void
 LiftToReturn(TermNode&);
 
+TNIter
+LiftPrefixToReturn(TermNode&, TNCIter);
+inline TNIter
+LiftPrefixToReturn(TermNode& term)
+{
+	return LiftPrefixToReturn(term, term.begin());
+}
+
 inline void
 LiftSubtermsToReturn(TermNode& term)
 {
