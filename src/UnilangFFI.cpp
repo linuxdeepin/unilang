@@ -18,11 +18,11 @@
 //	::dlclose, ::dlsym;
 #	include YFM_YCLib_NativeAPI // for YCL_CallGlobal;
 #endif
-#include "Exception.h" // for UnilangException, TypeError, ListTypeError,
-//	InvalidSyntax;
+#include "Exception.h" // for UnilangException, TypeError,
+//	ThrowListTypeErrorForNonList, ListTypeError, InvalidSyntax;
+#include <ffi.h> // for ::ffi_type;
 #include "Forms.h" // for ContextHandler, RetainN, RegisterUnary,
 //	RegisterStrict;
-#include <ffi.h> // for ::ffi_type;
 
 namespace Unilang
 {
@@ -207,7 +207,7 @@ FFI_Encode_pointer(const TermNode& term, void* buf)
 					" pointer found.", nd.Value.type().name()));
 		}
 		else
-			ThrowListTypeErrorForNonlist(nd, has_ref);
+			ThrowListTypeErrorForNonList(nd, has_ref);
 	}, term);
 }
 
@@ -341,7 +341,7 @@ EnsureValidCIF(const shared_ptr<CallInterface>& p_cif)
 {
 	if(p_cif)
 		return *p_cif;
-	// NOTE: This should normall not happen.
+	// NOTE: This should normally not happen.
 	throw std::invalid_argument("Invalid call interface record pointer found.");
 }
 
