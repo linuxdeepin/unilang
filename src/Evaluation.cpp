@@ -441,11 +441,11 @@ ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
 }
 
-YB_NORETURN void
-ThrowNestedParameterTreeCheckError()
+void
+ThrowNestedParameterTreeMismatch()
 {
-	std::throw_with_nested(InvalidSyntax("Failed checking for parameter in a"
-		" parameter tree (expected a symbol or '#ignore')."));
+	std::throw_with_nested(ParameterMismatch("Failed initializing the operand"
+		" in a parameter tree (expected a list, a symbol or '#ignore')."));
 }
 
 template<typename _func>
@@ -487,8 +487,14 @@ public:
 				a();
 			}
 		}
-		CatchExpr(ParameterMismatch&, throw)
-		CatchExpr(..., ThrowNestedParameterTreeCheckError())
+		catch(ParameterMismatch&)
+		{
+			throw;
+		}
+		catch(...)
+		{
+			ThrowNestedParameterTreeMismatch();
+		}
 	}
 
 private:
@@ -781,7 +787,7 @@ struct ParameterCheck final
 		}
 		catch(...)
 		{
-			ThrowNestedParameterTreeCheckError();
+			ThrowNestedParameterTreeMismatch();
 		}
 	}
 };
