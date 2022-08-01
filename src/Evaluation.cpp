@@ -18,9 +18,9 @@
 //	ystdex::begins_with;
 #include "TermAccess.h" // for TryAccessLeafAtom, TokenValue, IsCombiningTerm,
 //	 ClearCombiningTags, TryAccessTerm;
-#include "Exception.h" // for BadIdentifier, InvalidReference,
-//	InvalidSyntax, std::throw_with_nested, ParameterMismatch,
-//	ListReductionFailure;
+#include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
+//	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
+//	ThrowListTypeErrorForNonList;
 #include "TCO.h" // for EnsureTCOAction, Action, RelayDirect, TCOAction;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond,
 //	ystdex::update_thunk;
@@ -933,7 +933,7 @@ private:
 							ThrowInsufficientTermsError(nd, p_ref);
 					}
 					else
-						ThrowListTypeErrorForNonlist(nd, p_ref);
+						ThrowListTypeErrorForNonList(nd, p_ref);
 				}, o);
 			}
 			else

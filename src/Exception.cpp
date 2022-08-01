@@ -91,7 +91,7 @@ ThrowListTypeErrorForInvalidType(const type_info& ti,
 }
 
 void
-ThrowListTypeErrorForNonlist(const TermNode& term, bool has_ref, size_t n_skip)
+ThrowListTypeErrorForNonList(const TermNode& term, bool has_ref, size_t n_skip)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
 		TermToStringWithReferenceMark(term, has_ref).c_str()));
