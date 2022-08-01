@@ -142,6 +142,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　对象操作可能进行*检查(check)* 。检查失败引起错误。
 
+　　特定的错误在程序运行中以*抛出(throw)* 特定的*异常(exception)* 的形式实现。抛出的异常中断当前的程序，直至被*处理(handle)* 或程序终止。实现可提供处理异常的默认行为以避免程序终止。
+
 ## 最小符合性要求
 
 　　Unilang 具体实现应满足以下最小符合性要求：
