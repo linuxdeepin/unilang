@@ -80,7 +80,7 @@ void
 ThrowListTypeErrorForInvalidType(const char* name, const TermNode& term,
 	bool has_ref, size_t n_skip)
 {
-	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got a list"
+	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got"
 		" '%s'.", name, TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 void
