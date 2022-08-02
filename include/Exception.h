@@ -141,6 +141,9 @@ public:
 YB_NORETURN void
 ThrowInsufficientTermsError(const TermNode&, bool, size_t = 0);
 
+YB_NORETURN void
+ThrowListTypeErrorForAtom(const TermNode&, bool, size_t = 0);
+
 YB_NORETURN YB_NONNULL(1) void
 ThrowListTypeErrorForInvalidType(const char*, const TermNode&, bool,
 	size_t = 0);

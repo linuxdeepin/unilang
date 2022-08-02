@@ -77,6 +77,13 @@ ThrowInsufficientTermsError(const TermNode& term, bool has_ref, size_t n_skip)
 }
 
 void
+ThrowListTypeErrorForAtom(const TermNode& term, bool has_ref, size_t n_skip)
+{
+	throw ListTypeError(ystdex::sfmt("Expected a pair, got '%s'.",
+		TermToStringWithReferenceMark(term, has_ref, n_skip).c_str()));
+}
+
+void
 ThrowListTypeErrorForInvalidType(const char* name, const TermNode& term,
 	bool has_ref, size_t n_skip)
 {
