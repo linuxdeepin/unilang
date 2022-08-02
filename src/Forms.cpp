@@ -1,10 +1,10 @@
 ﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
-//	 ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, ystdex::sfmt,
-//	 Unilang::Deref, ClearCombiningTags, AssertValueTags, FormContextHandler,
-//	 ystdex::ref_eq, ReferenceTerm, ThrowValueCategoryError,
-//	 Unilang::EmplaceCallResultOrReturn;
+//	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, Unilang::IsMovable,
+//	ystdex::sfmt, Unilang::Deref, ClearCombiningTags, AssertValueTags,
+//	FormContextHandler, ystdex::ref_eq, ReferenceTerm, ThrowValueCategoryError,
+//	Unilang::EmplaceCallResultOrReturn, Unilang::Deref;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -352,6 +352,10 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 	auto i(term.begin());
 	auto& tm(Unilang::Deref(++i));
 
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		LiftTermOrCopy(tm, nd, Unilang::IsMovable(p_ref));
+	}, tm);
+	EnsureValueTags(tm.Tags);
 	return ReduceSubsequent(tm, ctx, NameTypedReducerHandler([&, i, no_lift]{
 		return ReduceCreateFunction(term, [&]{
 			return

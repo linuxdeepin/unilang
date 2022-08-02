@@ -935,7 +935,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 * `<symbol>` ：符号。
 * `<symbols>` ：元素为 `<symbol>` 的列表，形式为 `(<symbol>...)` 。
-* `<eformal>` ：表示可选提供的环境名称的 `<symbol>` 或 `#ignore` 。
+* `<eformal>` ：表示可选提供的环境名称的 `<symbol>` 或 `#ignore`，或这些值的引用值。
 	* 使用和 `<symbol>` 相同的表示。
 	* **注释** 通常为动态环境。
 * `<expression>` ：待求值的表达式。
@@ -975,7 +975,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* 字符串是包括数据字面量作为表示的值的类型。
 	* 字符串的内部表示在具体实现中保持一致。除非另行指定，使用 ISO/IEC 10646 定义的 UCS 的 UTF-8 编码，其值不包含空字符（编码数值为 0 的 UCS 代码点）。
 	* **注释** 为互操作的兼容性，一般建议实现使用兼容 [ISO C++] 中定义的 NTBS(null-terminated byte string) 的方式表达。
-* `<parent>` ：指定环境的父环境的值，包括 `<environment>` 或元素为 `<environment>` 的 `<list>` 。
+* `<parent>` ：指定环境的父环境的值，包括：
+	* 环境引用：`<environment>` 或以 `<environment>` 值作为被引用对象的 `<reference>` 。
+	* 元素为环境引用的 `<list>`
+	* 以元素为环境引用的 `<list>` 作为被引用对象的 `<reference>` 。
 
 　　操作数在操作的描述中作为约束。
 
