@@ -25,13 +25,14 @@
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond,
 //	ystdex::update_thunk;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
+#include <tuple> // for std::tuple, std::get;
 #include <iterator> // for std::prev;
-#include "Lexical.h" // for IsUnilangSymbol, CategorizeBasicLexeme,
-//	LexemeCategory, DeliteralizeUnchecked;
 #include <ystdex/functor.hpp> // for std::hash, ystdex::equal_to,
 //	ystdex::ref_eq;
 #include <ystdex/utility.hpp> // for ystdex::parameterize_static_object,
 //	std::piecewise_construct;
+#include "Lexical.h" // for CategorizeBasicLexeme, LexemeCategory,
+//	DeliteralizeUnchecked;
 #include <ystdex/deref_op.hpp> // for ystdex::call_value_or;
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions,
 //	YSLib::Notice;
@@ -450,12 +451,12 @@ ThrowNestedParameterTreeMismatch()
 
 template<typename _func>
 inline void
-HandleOrIgnore(_func f, const TermNode& t, bool t_has_ref)
+HandleOrIgnore(_func f, const TermNode& t, bool has_ref)
 {
 	if(const auto p = TermToNamePtr(t))
 		f(*p);
 	else if(!IsIgnore(t))
-		ThrowFormalParameterTypeError(t, t_has_ref);
+		ThrowFormalParameterTypeError(t, has_ref);
 }
 
 
@@ -499,7 +500,7 @@ public:
 
 private:
 	YB_FLATTEN void
-	Match(const TermNode& t, bool t_has_ref) const
+	Match(const TermNode& t, bool has_ref) const
 	{
 		if(IsList(t))
 		{
@@ -515,7 +516,7 @@ private:
 			});
 		}
 		else
-			HandleOrIgnore(std::ref(BindValue), t, t_has_ref);
+			HandleOrIgnore(std::ref(BindValue), t, has_ref);
 	}
 
 	void
@@ -760,17 +761,17 @@ struct ParameterCheck final
 	using HasReferenceArg = ystdex::true_;
 
 	static void
-	CheckBack(const TermNode& t, bool t_has_ref)
+	CheckBack(const TermNode& t, bool has_ref, bool indirect)
 	{
 		if(!IsList(t))
-			ThrowFormalParameterTypeError(t, t_has_ref);
+			ThrowFormalParameterTypeError(t, has_ref || indirect);
 	}
 
 	template<typename _func>
 	static void
-	HandleLeaf(_func f, const TermNode& t, bool t_has_ref)
+	HandleLeaf(_func f, const TermNode& t, bool has_ref)
 	{
-		HandleOrIgnore(std::ref(f), t, t_has_ref);
+		HandleOrIgnore(std::ref(f), t, has_ref);
 	}
 
 	template<typename _func>
@@ -798,7 +799,7 @@ struct NoParameterCheck final
 	using HasReferenceArg = ystdex::false_;
 
 	static void
-	CheckBack(const TermNode& t)
+	CheckBack(const TermNode& t, bool)
 	{
 		yunused(t);
 		assert(IsList(t));
@@ -827,20 +828,63 @@ struct NoParameterCheck final
 };
 
 
-template<class _tTraits, typename _fBindTrailing, typename _fBindValue>
-class GParameterMatcher
+template<typename _fBindTrailing, typename _fBindValue>
+struct GBinder final
 {
-public:
 	_fBindTrailing BindTrailing;
 	_fBindValue BindValue;
 
+	template<class _type, class _type2>
+	inline
+	GBinder(_type&& arg, _type2&& arg2)
+		: BindTrailing(yforward(arg)), BindValue(yforward(arg2))
+	{}
+
+	YB_ATTR_always_inline void
+	operator()(TermNode& o, TNIter first, const TokenValue& n,
+		TermTags o_tags, const EnvironmentReference& r_env) const
+	{
+		BindTrailing(o, first, n, o_tags, r_env);
+	}
+	YB_ATTR_always_inline void
+	operator()(const TokenValue& n, TermNode& o, TermTags o_tags,
+		const EnvironmentReference& r_env) const
+	{
+		BindValue(n, o, o_tags, r_env);
+	}
+};
+
+
+enum : size_t
+{
+	PTreeFirst,
+	PTreeMid,
+	OperandRef,
+	OperandFirst,
+	OperandTags,
+	EnvironmentRef,
+	Ellipsis
+};
+
+using MatchEntry = std::tuple<TNCIter, TNCIter, lref<TermNode>, TNIter, TermTags,
+	lref<const EnvironmentReference>, bool
+>;
+
+
+template<class _tTraits, typename _fBind>
+class GParameterMatcher final
+{
+public:
+	_fBind Bind;
+
 private:
-	mutable Action act{};
+	mutable YSLib::stack<MatchEntry, vector<MatchEntry>> remained;
 
 public:
-	template<class _type, class _type2>
-	GParameterMatcher(_type&& arg, _type2&& arg2)
-		: BindTrailing(yforward(arg)), BindValue(yforward(arg2))
+	template<typename... _tParams>
+	inline
+	GParameterMatcher(TermNode::allocator_type a, _tParams&&... args)
+		: Bind(yforward(args)...), remained(a)
 	{}
 
 	void
@@ -848,149 +892,186 @@ public:
 		const EnvironmentReference& r_env) const
 	{
 		_tTraits::WrapCall([&]{
-			DispatchMatch(typename _tTraits::HasReferenceArg(), t, o, o_tags,
-				r_env, ystdex::false_());
-			while(act)
+			Dispatch(ystdex::true_(), typename _tTraits::HasReferenceArg(),
+				ystdex::false_(), t, o, o_tags, r_env);
+			while(!remained.empty())
 			{
-				const auto a(std::move(act));
+				auto& e(remained.top());
+				auto& i(std::get<PTreeFirst>(e));
 
-				a();
+				if(i == std::get<PTreeMid>(e))
+				{
+					if(std::get<Ellipsis>(e))
+						MatchTrailing(e);
+					remained.pop();
+				}
+				else
+				{
+					auto& j(std::get<OperandFirst>(e));
+
+					assert(j != std::get<OperandRef>(e).get().end()
+						&& "Invalid state of operand found.");
+					Dispatch(ystdex::true_(),
+						typename _tTraits::HasReferenceArg(), ystdex::false_(),
+						Unilang::Deref(i++), Unilang::Deref(j++),
+						std::get<OperandTags>(e), std::get<EnvironmentRef>(e));
+				}
+
 			}
 		});
 	}
 
 private:
-	template<class _tArg>
-	void
-	DispatchMatch(ystdex::true_, const TermNode& t, TermNode& o,
-		TermTags o_tags, const EnvironmentReference& r_env, _tArg) const
+	template<class _tEnableIndirect, class _tArg, typename... _tParams>
+	inline void
+	Dispatch(_tEnableIndirect, ystdex::true_, _tArg, _tParams&&... args) const
 	{
-		Match(t, o, o_tags, r_env, _tArg::value);
+		Match(_tEnableIndirect(), yforward(args)..., _tArg::value);
 	}
-	template<class _tArg>
-	void
-	DispatchMatch(ystdex::false_, const TermNode& t, TermNode& o,
-		TermTags o_tags, const EnvironmentReference& r_env, _tArg) const
+	template<class _tEnableIndirect, class _tArg, typename... _tParams>
+	inline void
+	Dispatch(_tEnableIndirect, ystdex::false_, _tArg, _tParams&&... args) const
 	{
-		Match(t, o, o_tags, r_env);
+		Match(_tEnableIndirect(), yforward(args)...);
 	}
 
 	template<typename... _tParams>
-	void
-	Match(const TermNode& t, TermNode& o, TermTags o_tags,
-		const EnvironmentReference& r_env, _tParams&&... args) const
+	inline void
+	Match(ystdex::true_, const TermNode& t, _tParams&&... args) const
 	{
 		if(IsList(t))
+			MatchList(t, yforward(args)...);
+		else if(const auto p_t = TryAccessLeafAtom<const TermReference>(t))
+			MatchIndirect(p_t->get(), yforward(args)...);
+		else
+			MatchNonList(t, yforward(args)...);
+	}
+	template<typename... _tParams>
+	inline void
+	Match(ystdex::false_, const TermNode& t, _tParams&&... args) const
+	{
+		if(IsList(t))
+			MatchList(t, yforward(args)...);
+		else
+			MatchNonList(t, yforward(args)...);
+	}
+
+	template<typename... _tParams>
+	inline void
+	MatchIndirect(const TermNode& t, TermNode& o, TermTags o_tags,
+		const EnvironmentReference& r_env, _tParams&&...) const
+	{
+		Dispatch(ystdex::false_(), typename _tTraits::HasReferenceArg(),
+			ystdex::true_(), t, o, o_tags, r_env);
+	}
+
+	template<typename... _tParams>
+	inline void
+	MatchList(const TermNode& t, TermNode& o, TermTags o_tags,
+		const EnvironmentReference& r_env, _tParams&&... args) const
+	{
+		assert(IsList(t) && "Invalid term found.");
+		if(IsBranch(t))
 		{
-			if(IsBranch(t))
-			{
-				const auto n_p(t.size());
-				auto last(t.end());
+			const auto n_p(t.size());
+			auto mid(t.end());
 
-				if(n_p > 0)
-				{
-					const auto& back(*std::prev(last));
-
-					if(IsLeaf(back))
+			if(n_p > 0)
+				ResolveTerm(
+					[&](const TermNode& nd, ResolvedTermReferencePtr p_ref){
+					if(IsAtom(nd))
 					{
-						if(const auto p
-							= TryAccessLeafAtom<TokenValue>(back))
+						if(const auto p = TryAccessLeaf<TokenValue>(nd))
 						{
 							if(!p->empty() && p->front() == '.')
-								--last;
+								--mid;
 						}
-						else
-							_tTraits::CheckBack(back, yforward(args)...);
+						else if(!IsIgnore(nd))
+							_tTraits::CheckBack(nd, p_ref, yforward(args)...);
 					}
-				}
-				ResolveTerm([&, n_p, o_tags](TermNode& nd,
-					ResolvedTermReferencePtr p_ref){
-					if(IsList(nd))
+				}, Unilang::Deref(std::prev(mid)));
+			ResolveTerm(
+				[&, o_tags](TermNode& nd, ResolvedTermReferencePtr p_ref){
+				if(IsList(nd))
+				{
+					const bool ellipsis(mid != t.end());
+					const auto n_o(nd.size());
+
+					if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
 					{
-						const bool ellipsis(last != t.end());
-						const auto n_o(nd.size());
+						auto tags(o_tags);
 
-						if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
+						if(p_ref)
 						{
-							auto tags(o_tags);
+							const auto ref_tags(p_ref->GetTags());
 
-							if(p_ref)
-							{
-								const auto ref_tags(p_ref->GetTags());
-
-								tags = (tags
-									& ~(TermTags::Unique | TermTags::Temporary))
-									| (ref_tags & TermTags::Unique);
-								tags = PropagateTo(tags, ref_tags);
-							}
-							MatchSubterms(t.begin(), last, nd, nd.begin(), tags,
-								p_ref ? p_ref->GetEnvironmentReference()
-								: r_env, ellipsis);
+							tags = (tags
+								& ~(TermTags::Unique | TermTags::Temporary))
+								| (ref_tags & TermTags::Unique);
+							tags = PropagateTo(tags, ref_tags);
 						}
-						else if(!ellipsis)
-							throw ArityMismatch(n_p, n_o);
-						else
-							ThrowInsufficientTermsError(nd, p_ref);
+						remained.emplace(t.begin(), mid, nd, nd.begin(),
+							tags, p_ref ? p_ref->GetEnvironmentReference()
+							: r_env, ellipsis);
 					}
+					else if(!ellipsis)
+						throw ArityMismatch(n_p, n_o);
 					else
-						ThrowListTypeErrorForNonList(nd, p_ref);
-				}, o);
-			}
-			else
-				ResolveTerm([&](const TermNode& nd, bool has_ref){
-					if(nd)
-						throw ParameterMismatch(ystdex::sfmt("Invalid nonempty"
-							" operand value '%s' found for empty list"
-							" parameter.", TermToStringWithReferenceMark(nd,
-							has_ref).c_str()));
-				}, o);
-		}
-		else if(const auto p_t = TryAccessLeafAtom<const TermReference>(t))
-		{
-			auto& nd(p_t->get());
-
-			ystdex::update_thunk(act, [&, o_tags]{
-				DispatchMatch(typename _tTraits::HasReferenceArg(), nd, o,
-					o_tags, r_env, ystdex::true_());
-			});
+						ThrowInsufficientTermsError(nd, p_ref);
+				}
+				else
+					ThrowListTypeErrorForNonList(nd, p_ref);
+			}, o);
 		}
 		else
-			_tTraits::HandleLeaf([&](const TokenValue& n){
-				BindValue(n, o, o_tags, r_env);
-			}, t, yforward(args)...);
+			ResolveTerm([&](const TermNode& nd, bool has_ref){
+				if(nd)
+					throw ParameterMismatch(ystdex::sfmt("Invalid nonempty"
+						" operand value '%s' found for empty list"
+						" parameter.", TermToStringWithReferenceMark(nd,
+						has_ref).c_str()));
+			}, o);
+	}
+
+	template<typename... _tParams>
+	inline void
+	MatchNonList(const TermNode& t, TermNode& o, TermTags o_tags,
+		const EnvironmentReference& r_env, _tParams&&... args) const
+	{
+		assert(!IsList(t) && "Invalid term found.");
+		_tTraits::HandleLeaf([&](const TokenValue& n){
+			Bind(n, o, o_tags, r_env);
+		}, t, yforward(args)...);
 	}
 
 	void
-	MatchSubterms(TNCIter i, TNCIter last, TermNode& o_tm, TNIter j,
-		TermTags tags, const EnvironmentReference& r_env, bool ellipsis) const
+	MatchTrailing(MatchEntry& e) const
 	{
-		if(i != last)
-		{
-			ystdex::update_thunk(act,
-				[this, i, j, last, tags, ellipsis, &o_tm, &r_env]{
-				return MatchSubterms(std::next(i), last, o_tm, std::next(j),
-					tags, r_env, ellipsis);
-			});
-			assert(j != o_tm.end());
-			DispatchMatch(typename _tTraits::HasReferenceArg(), Unilang::Deref(i),
-				Unilang::Deref(j), tags, r_env, ystdex::false_());
-		}
-		else if(ellipsis)
-		{
-			const auto& lastv(last->Value);
+		const auto& mid(std::get<PTreeMid>(e));
+		const auto& trailing(Unilang::Deref(mid));
 
-			assert(IsTyped<TokenValue>(lastv.type()));
-			BindTrailing(o_tm, j, lastv.GetObject<TokenValue>(), tags, r_env);
-		}
+		assert(IsTyped<TokenValue>(ReferenceTerm(trailing))
+			&& "Invalid ellipsis sequence token found.");
+		Bind(std::get<OperandRef>(e), std::get<OperandFirst>(e),
+			trailing.Value.template GetObject<TokenValue>(),
+			std::get<OperandTags>(e), std::get<EnvironmentRef>(e));
 	}
 };
 
-template<class _tTraits, typename _fBindTrailing, typename _fBindValue>
-YB_ATTR_nodiscard inline GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>
-MakeParameterMatcher(_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
+template<class _tTraits, typename _fBind>
+YB_ATTR_nodiscard inline GParameterMatcher<_tTraits, _fBind>
+MakeParameterMatcher(TermNode::allocator_type a, _fBind bind)
 {
-	return GParameterMatcher<_tTraits, _fBindTrailing, _fBindValue>(
-		std::move(bind_trailing_seq), std::move(bind_value));
+	return GParameterMatcher<_tTraits, _fBind>(a, std::move(bind));
+}
+template<class _tTraits, typename _fBindTrailing, typename _fBindValue>
+YB_ATTR_nodiscard inline
+	GParameterMatcher<_tTraits, GBinder<_fBindTrailing, _fBindValue>>
+MakeParameterMatcher(TermNode::allocator_type a,
+	_fBindTrailing bind_trailing_seq, _fBindValue bind_value)
+{
+	return GParameterMatcher<_tTraits, GBinder<_fBindTrailing, _fBindValue>>(
+		a, std::move(bind_trailing_seq), std::move(bind_value));
 }
 
 
@@ -1011,16 +1092,33 @@ ExtractSigil(string_view& id)
 }
 
 
-template<class _tTraits>
 void
-BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
-	TermNode& o)
+BindRawSymbol(const EnvironmentReference& r_env, string_view id,
+	TermNode& o, TermTags o_tags, Environment& env, char sigil)
 {
-	auto& env(Unilang::Deref(p_env));
+	BindParameterObject{r_env}(sigil, sigil == '&', o_tags, o,
+		[&](const TermNode& tm){
+		CopyTermTags(env.Bind(id, tm), tm);
+	}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
+		return env.Bind(id, TermNode(std::move(c), std::move(vo)));
+	});
+}
 
-	MakeParameterMatcher<_tTraits>([&](TermNode& o_tm, TNIter first,
-		string_view id, TermTags o_tags, const EnvironmentReference& r_env){
-		assert(ystdex::begins_with(id, "."));
+
+struct DefaultBinder final
+{
+	lref<Environment> EnvRef;
+
+	inline
+	DefaultBinder(Environment& env)
+		: EnvRef(env)
+	{}
+
+	void
+	operator()(TermNode& o_nd, TNIter first, string_view id,
+		TermTags o_tags, const EnvironmentReference& r_env) const
+	{
+		assert(ystdex::begins_with(id, ".") && "Invalid symbol found.");
 		id.remove_prefix(1);
 		if(!id.empty())
 		{
@@ -1028,18 +1126,17 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 
 			if(!id.empty())
 			{
-				const auto a(o_tm.get_allocator());
-				const auto last(o_tm.end());
+				const auto a(o_nd.get_allocator());
+				const auto last(o_nd.end());
 				TermNode::Container con(a);
 
-				if((o_tags & (TermTags::Unique | TermTags::Nonmodifying))
-					== TermTags::Unique || bool(o_tags & TermTags::Temporary))
+				if(IsMovable(o_tags) || bool(o_tags & TermTags::Temporary))
 				{
 					if(sigil == char())
-						LiftSubtermsToReturn(o_tm);
-					con.splice(con.end(), o_tm.GetContainerRef(), first, last);
-					MarkTemporaryTerm(env.Bind(id, TermNode(std::move(con))),
-						sigil);
+						LiftSubtermsToReturn(o_nd);
+					con.splice(con.end(), o_nd.GetContainerRef(), first, last);
+					MarkTemporaryTerm(EnvRef.get().Bind(id,
+						TermNode(std::move(con))), sigil);
 				}
 				else
 				{
@@ -1059,7 +1156,8 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 							std::move(con)));
 						auto& sub(Unilang::Deref(p_sub));
 
-						env.Bind(id, TermNode(std::allocator_arg, a, [&]{
+						EnvRef.get().Bind(id,
+							TermNode(std::allocator_arg, a, [&]{
 							TermNode::Container tcon(a);
 
 							tcon.push_back(
@@ -1068,26 +1166,32 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 						}(), std::allocator_arg, a, TermReference(sub, r_env)));
 					}
 					else
-						MarkTemporaryTerm(env.Bind(id,
+						MarkTemporaryTerm(EnvRef.get().Bind(id,
 							TermNode(std::move(con))), sigil);
 				}
 			}
 		}
-	}, [&](const TokenValue& n, TermNode& b, TermTags o_tags,
-		const EnvironmentReference& r_env){
-
-		assert(IsUnilangSymbol(n));
-
-		string_view id(n);
+	}
+	void
+	operator()(string_view id, TermNode& o, TermTags o_tags,
+		const EnvironmentReference& r_env) const
+	{
 		const char sigil(ExtractSigil(id));
 
-		BindParameterObject{r_env}(sigil, sigil == '&', o_tags, b,
-			[&](const TermNode& tm){
-			CopyTermTags(env.Bind(id, tm), tm);
-		}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-			return env.Bind(id, TermNode(std::move(c), std::move(vo)));
-		});
-	})(t, o, TermTags::Temporary, p_env);
+		BindRawSymbol(r_env, id, o, o_tags, EnvRef, sigil);
+	}
+};
+
+
+template<class _tTraits>
+void
+BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
+	TermNode& o)
+{
+	auto& env(Unilang::Deref(p_env));
+
+	MakeParameterMatcher<_tTraits>(t.get_allocator(), DefaultBinder(env))(t, o,
+		TermTags::Temporary, p_env);
 }
 
 
