@@ -1380,6 +1380,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　判断操作数是否具有枝节点表示。非空列表和其它由派生实现定义的数据的内部表示具有枝节点表示。
 
+`pair? <object>`
+
+　　`<pair>` 的[类型谓词](#操作类型约定)。
+
 `list? <object>`
 
 　　`<list>` 的类型谓词。
@@ -2168,7 +2172,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `string? <object>`
 
-　　`<string>` 的类型谓词。
+　　`<string>` 的[类型谓词](#操作类型约定)。
 
 `++ <string>...`
 
@@ -2325,7 +2329,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `number? <object>`
 
-　　`<number>` 的类型谓词。
+　　`<number>` 的[类型谓词](#操作类型约定)。
 
 `real? <object>`
 
@@ -2623,7 +2627,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `class? <object>`
 
-　　`<class>` 的类型谓词。
+　　`<class>` 的[类型谓词](#操作类型约定)。
 
 `make-class <object> <applicative>`
 
@@ -2680,7 +2684,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `ffi-library? <object>`
 
-　　判断参数是否为 `<ffi-library>` 对象的类型谓词。
+　　判断参数是否为 `<ffi-library>` 对象的[类型谓词](#操作类型约定)。
 
 `ffi-load-library <string>`
 
@@ -2908,7 +2912,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `type? <object>`
 
-　　`<type>` 的类型谓词。
+　　`<type>` 的[类型谓词](#操作类型约定)。
 
 `type->string <type>`
 

@@ -576,6 +576,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	RegisterForm(ctx, "$if", If);
 	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterUnary(ctx, "pair?", ComposeReferencedTermOp(IsPair));
 	RegisterUnary(ctx, "list?", ComposeReferencedTermOp(IsList));
 	RegisterUnary(ctx, "reference?", IsReferenceTerm);
 	RegisterUnary(ctx, "unique?", IsUniqueTerm);
@@ -1006,7 +1007,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.10"
+#define APP_VER "0.12.34"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
