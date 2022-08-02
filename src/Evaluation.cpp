@@ -328,9 +328,9 @@ ThrowCombiningFailure(TermNode& term, const Context& ctx, const TermNode& fm,
 	}
 	name += TermToStringWithReferenceMark(fm, has_ref).c_str();
 	term.Value.Clear();
-	throw ListReductionFailure(ystdex::sfmt("No matching combiner '%s'"
-		" for operand with %zu argument(s) found.", name.c_str(),
-		FetchArgumentN(term)));
+	throw ListReductionFailure(ystdex::sfmt(
+		"No matching combiner '%s' for operand '%s'.", name.c_str(),
+		TermToStringWithReferenceMark(term, {}, 1).c_str()));
 }
 
 ReductionStatus
