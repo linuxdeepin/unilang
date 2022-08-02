@@ -349,6 +349,13 @@ Retain(const TermNode& term) noexcept
 	return ReductionStatus::Regular;
 }
 
+inline ReductionStatus
+RetainList(const TermNode& term)
+{
+	CheckArgumentList(term);
+	return ReductionStatus::Regular;
+}
+
 inline size_t
 RetainN(const TermNode& term, size_t m = 1)
 {
