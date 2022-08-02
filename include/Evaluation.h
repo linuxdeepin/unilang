@@ -239,6 +239,7 @@ public:
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
+		CheckArguments(Wrapping, term);
 		return CallN(Wrapping, term, ctx);
 	}
 
@@ -246,6 +247,11 @@ private:
 	ReductionStatus
 	CallN(size_t, TermNode&, Context&) const;
 
+public:
+	static void
+	CheckArguments(size_t, const TermNode&);
+
+private:
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const FormContextHandler&) const;
 };
@@ -309,6 +315,14 @@ RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 	Unilang::RegisterHandler<>(target, name, yforward(args)...);
 }
 
+
+inline void
+CheckArgumentList(const TermNode& term)
+{
+	AssertCombiningTerm(term);
+	if(!IsList(term))
+		ThrowListTypeErrorForNonList(term, {}, 1);
+}
 
 YB_ATTR_nodiscard YB_PURE inline size_t
 FetchArgumentN(const TermNode& term) noexcept
