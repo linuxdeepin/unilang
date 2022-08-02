@@ -9,8 +9,9 @@
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
-//	Unilang::MakeForm, CheckVariadicArity, Form, ReduceForCombinerRef, Strict,
-//	Unilang::NameTypedContextHandler, NameTypedContextHandler;
+//	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
+//	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler,
+//	NameTypedContextHandler;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
@@ -696,7 +697,7 @@ EqValue(TermNode& term)
 ReductionStatus
 If(TermNode& term, Context& ctx)
 {
-	Retain(term);
+	RetainList(term);
 
 	const auto size(term.size());
 
@@ -749,7 +750,7 @@ EvalRef(TermNode& term, Context& ctx)
 void
 MakeEnvironment(TermNode& term)
 {
-	Retain(term);
+	RetainList(term);
 	RemoveHead(term);
 	term.SetValue(CreateEnvironment(term));
 }
@@ -890,7 +891,7 @@ MakeEncapsulationType(TermNode& term)
 ReductionStatus
 Sequence(TermNode& term, Context& ctx)
 {
-	Retain(term);
+	RetainList(term);
 	RemoveHead(term);
 	return ReduceOrdered(term, ctx);
 }
