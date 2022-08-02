@@ -56,6 +56,9 @@ LiftTerm(TermNode& term, TermNode& tm)
 void
 LiftOtherOrCopy(TermNode&, TermNode&, bool);
 
+void
+LiftTermOrCopy(TermNode&, TermNode&, bool);
+
 
 inline void
 LiftTermRef(TermNode& term, const TermNode& tm)

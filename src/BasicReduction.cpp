@@ -31,6 +31,15 @@ LiftOtherOrCopy(TermNode& term, TermNode& tm, bool move)
 		term.CopyContent(tm);
 }
 
+void
+LiftTermOrCopy(TermNode& term, TermNode& tm, bool move)
+{
+	if(move)
+		LiftTerm(term, tm);
+	else
+		term.CopyContent(tm);
+}
+
 
 namespace
 {
