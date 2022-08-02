@@ -324,18 +324,22 @@ CheckArgumentList(const TermNode& term)
 		ThrowListTypeErrorForNonList(term, {}, 1);
 }
 
-YB_ATTR_nodiscard YB_PURE inline size_t
-FetchArgumentN(const TermNode& term) noexcept
-{
-	AssertBranchedList(term);
-	return term.size() - 1;
-}
-
 inline void
 CheckVariadicArity(TermNode& term, size_t n)
 {
-	return FetchArgumentN(term) > n ? void()
-		: (RemoveHead(term), ThrowInsufficientTermsError(term, {}));
+	AssertCombiningTerm(term);
+	if(CountPrefix(term) - 1 <= n)
+	{
+		RemoveHead(term);
+		ThrowInsufficientTermsError(term, {});
+	}
+}
+
+YB_ATTR_nodiscard YB_PURE inline size_t
+FetchArgumentN(const TermNode& term) noexcept
+{
+	CheckArgumentList(term);
+	return term.size() - 1;
 }
 
 inline ReductionStatus
