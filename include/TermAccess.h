@@ -376,19 +376,39 @@ AssertCombiningTerm(const TermNode& term) noexcept
 }
 
 template<typename _func, class _tTerm>
-auto
-ResolveTerm(_func do_resolve, _tTerm&& term)
-	-> decltype(ystdex::expand_proxy<void(_tTerm&&,
+inline auto
+ResolveBy(_func do_resolve, _tTerm&& term, observer_ptr<const TermReference> p)
+	-> yimpl(decltype(ystdex::expand_proxy<yimpl(void)(_tTerm&&,
 	ResolvedTermReferencePtr)>::call(do_resolve, yforward(term),
-	ResolvedTermReferencePtr()))
+	ResolvedTermReferencePtr())))
 {
-	using handler_t = void(_tTerm&&, ResolvedTermReferencePtr);
+	using handler_t = yimpl(void)(_tTerm&&, ResolvedTermReferencePtr);
 
-	if(const auto p = TryAccessLeafAtom<const TermReference>(term))
+	if(p)
 		return ystdex::expand_proxy<handler_t>::call(do_resolve, p->get(),
 			Unilang::ResolveToTermReferencePtr(p));
 	return ystdex::expand_proxy<handler_t>::call(do_resolve,
 		yforward(term), ResolvedTermReferencePtr());
+}
+
+template<typename _func, class _tTerm>
+inline auto
+ResolveSuffix(_func do_resolve, _tTerm&& term)
+	-> yimpl(decltype(Unilang::ResolveBy(std::move(do_resolve), yforward(term),
+	TryAccessLeaf<const TermReference>(term))))
+{
+	return Unilang::ResolveBy(std::move(do_resolve), yforward(term),
+		TryAccessLeaf<const TermReference>(term));
+}
+
+template<typename _func, class _tTerm>
+inline auto
+ResolveTerm(_func do_resolve, _tTerm&& term)
+	-> yimpl(decltype(Unilang::ResolveBy(std::move(do_resolve), yforward(term),
+	TryAccessLeafAtom<const TermReference>(term))))
+{
+	return Unilang::ResolveBy(std::move(do_resolve), yforward(term),
+		TryAccessLeafAtom<const TermReference>(term));
 }
 
 template<typename _type, class _tTerm>
