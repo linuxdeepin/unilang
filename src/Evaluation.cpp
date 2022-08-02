@@ -16,8 +16,8 @@
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
-#include "TermAccess.h" // for TryAccessLeafAtom, TokenValue, IsCombiningTerm,
-//	 ClearCombiningTags, TryAccessTerm;
+#include "TermAccess.h" // for TryAccessLeafAtom, TokenValue,
+//	AssertCombiningTerm, IsCombiningTerm, ClearCombiningTags, TryAccessTerm;
 #include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
@@ -1308,6 +1308,15 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 		c.SetNextTermRef(term);
 		return CallN(n - 1, term, c);
 	}, "eval-combine-operator"));
+}
+
+void
+FormContextHandler::CheckArguments(size_t n, const TermNode& term)
+{
+	if(n != 0)
+		CheckArgumentList(term);
+	else
+		AssertCombiningTerm(term);
 }
 
 bool
