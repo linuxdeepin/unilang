@@ -752,17 +752,17 @@ $defv%! $cond &clauses d
 			$if (eval test d) (eval% (forward! body) d)
 				(apply (wrap $cond) (forward! clauses) d)) (forward! clauses));
 $defv%! $when (&test .&exprseq) d
-	$if (eval test d) (eval% (list* () $sequence (move! exprseq)) d);
+	$if (eval test d) (eval% (list* () $sequence (forward! exprseq)) d);
 $defv%! $unless (&test .&exprseq) d
-	$if (eval test d) #inert (eval% (list* () $sequence (move! exprseq)) d);
+	$if (eval test d) #inert (eval% (list* () $sequence (forward! exprseq)) d);
 $defv%! $while (&test .&exprseq) d
 	$when (eval test d)
 		(eval% (list* () $sequence exprseq) d)
-		(eval% (list* () $while (move! test) (move! exprseq)) d);
+		(eval% (list* () $while (move! test) (forward! exprseq)) d);
 $defv%! $until (&test .&exprseq) d
 	$unless (eval test d)
 		(eval% (list* () $sequence exprseq) d)
-		(eval% (list* () $until (move! test) (move! exprseq)) d);
+		(eval% (list* () $until (move! test) (forward! exprseq)) d);
 $defl! not? (x) eqv? x #f;
 $defv%! $and &x d
 	$cond
@@ -1013,7 +1013,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.41"
+#define APP_VER "0.12.42"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
