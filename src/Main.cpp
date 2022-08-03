@@ -694,6 +694,21 @@ $def! apply $lambda% (&appv &arg .&opt)
 				$if (null? eopt) e
 					(raise-invalid-syntax-error
 						"Syntax error in applying form.")) opt));
+$def! apply-list $lambda% (&appv &arg .&opt)
+	eval% (cons% ($if (list? arg) () $if) (cons% (unwrap (forward! appv))
+		(forward! arg)))
+		($if (null? opt) (() make-environment)
+			(($lambda ((&e .&eopt))
+				$if (null? eopt) e
+					(raise-invalid-syntax-error
+						"Syntax error in applying form.")) opt));
+$def! apply $lambda% (&appv &arg .&opt)
+	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
+		($if (null? opt) (() make-environment)
+			(($lambda ((&e .&eopt))
+				$if (null? eopt) e
+					(raise-invalid-syntax-error
+						"Syntax error in applying form.")) opt));
 $def! list* $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
 		(cons (forward! head) (apply list* (forward! tail)));
@@ -1015,7 +1030,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.47"
+#define APP_VER "0.12.48"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

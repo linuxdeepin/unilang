@@ -1737,15 +1737,25 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　在指定环境中应用。
 
-　　同求值 `eval (cons () (cons (unwrap <applicative>) <object>)) <environment>` 。
+　　同求值 `eval% (cons% () (cons% (unwrap <applicative>) <object>)) <environment>` 。
 
 `apply <applicative> <object>`
 
 　　在新环境中应用。
 
-　　同求值 `eval (cons () (cons (unwrap <applicative>) <object>)) (() make-environment)` 。
+　　同求值 `eval% (cons% () (cons (unwrap <applicative>) <object>)) (() make-environment)` 。
 
 　　以上 apply 的函数值保留引用值。
+
+`apply-list <applicative> <list>`
+
+　　在新环境中应用参数列表。
+
+`apply-list <applicative> <list> <environment>`
+
+　　在指定环境中应用参数列表。
+
+　　同 `apply` ，但首先检查第二参数的类型，若失败则引发错误。
 
 `list* <object>+`
 
