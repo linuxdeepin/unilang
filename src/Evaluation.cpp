@@ -309,7 +309,6 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 	auto& act(EnsureTCOAction(ctx, term));
 
 	ctx.ClearCombiningTerm();
-	term.Value.Clear();
 	ctx.SetNextTermRef(term);
 	return
 		RelaySwitched(ctx, Continuation(act.Attach(h, yforward(args)...), ctx));
@@ -327,7 +326,6 @@ ThrowCombiningFailure(TermNode& term, const Context& ctx, const TermNode& fm,
 		name += ": ";
 	}
 	name += TermToStringWithReferenceMark(fm, has_ref).c_str();
-	term.Value.Clear();
 	throw ListReductionFailure(ystdex::sfmt(
 		"No matching combiner '%s' for operand '%s'.", name.c_str(),
 		TermToStringWithReferenceMark(term, {}, 1).c_str()));
