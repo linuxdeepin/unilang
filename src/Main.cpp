@@ -211,15 +211,15 @@ $provide/let! (promise? memoize $lazy $lazy% $lazy/d $lazy/d% force)
 	$defl/e%! &memoize mods (&x)
 		encapsulate% (list (list% (forward! x) ()) #inert),
 	$defv/e%! &$lazy mods (.&body) d
-		encapsulate% (list (list (move! body) d) eval),
+		encapsulate% (list (list (forward! body) d) eval),
 	$defv/e%! &$lazy% mods (.&body) d
-		encapsulate% (list (list (move! body) d) eval%),
+		encapsulate% (list (list (forward! body) d) eval%),
 	$defv/e%! &$lazy/d mods (&e .&body) d
 		encapsulate%
-			(list (list (move! body) (check-environment (eval e d))) eval),
+			(list (list (forward! body) (check-environment (eval e d))) eval),
 	$defv/e%! &$lazy/d% mods (&e .&body) d
 		encapsulate%
-			(list (list (move! body) (check-environment (eval e d))) eval%),
+			(list (list (forward! body) (check-environment (eval e d))) eval%),
 	$defl/e%! &force mods (&x)
 		($lambda% (fwd) $if (promise? x) (do-force x fwd) (fwd x))
 			($if ($lvalue-identifier? x) id move!)
@@ -655,23 +655,29 @@ $def! $remote-eval% $vau% (&o &e) d eval% o (eval e d);
 $def! $set! $vau (&e &formals .&expr) d
 	eval (list $def! formals (unwrap eval) expr d) (eval e d);
 $def! $wvau $vau (&formals &ef .&body) d
-	wrap (eval (cons $vau (cons formals (cons ef (move! body)))) d);
+	wrap (eval (cons $vau (cons% (forward! formals) (cons% ef (forward! body))))
+		d);
 $def! $wvau% $vau (&formals &ef .&body) d
-	wrap (eval (cons $vau% (cons formals (cons ef (move! body)))) d);
+	wrap (eval
+		(cons $vau% (cons% (forward! formals) (cons% ef (forward! body)))) d);
 $def! $wvau/e $vau (&p &formals &ef .&body) d
-	wrap (eval (cons $vau/e (cons p (cons formals (cons ef (move! body))))) d);
+	wrap (eval (cons $vau/e
+		(cons p (cons% (forward! formals) (cons% ef (forward! body))))) d);
 $def! $wvau/e% $vau (&p &formals &ef .&body) d
-	wrap (eval (cons $vau/e% (cons p (cons formals (cons ef (move! body))))) d);
+	wrap (eval (cons $vau/e%
+		(cons p (cons% (forward! formals) (cons% ef (forward! body))))) d);
 $def! $lambda $vau (&formals .&body) d
-	wrap (eval (cons $vau (cons formals (cons #ignore (move! body)))) d);
+	wrap (eval (cons $vau
+		(cons% (forward! formals) (cons% #ignore (forward! body)))) d);
 $def! $lambda% $vau (&formals .&body) d
-	wrap (eval (cons $vau% (cons formals (cons #ignore (move! body)))) d);
+	wrap (eval (cons $vau%
+		(cons% (forward! formals) (cons% #ignore (forward! body)))) d);
 $def! $lambda/e $vau (&p &formals .&body) d
-	wrap (eval
-		(cons $vau/e (cons p (cons formals (cons #ignore (move! body))))) d);
+	wrap (eval (cons $vau/e
+		(cons p (cons% (forward! formals) (cons% #ignore (forward! body))))) d);
 $def! $lambda/e% $vau (&p &formals .&body) d
-	wrap (eval
-		(cons $vau/e% (cons p (cons formals (cons #ignore (move! body))))) d);
+	wrap (eval (cons $vau/e%
+		(cons p (cons% (forward! formals) (cons% #ignore (forward! body))))) d);
 	)Unilang");
 	RegisterForm(ctx, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
@@ -694,29 +700,29 @@ $def! list*% $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
 		(cons% (forward! head) (apply list*% (move! tail)));
 $def! $defv! $vau (&$f &formals &ef .&body) d
-	eval (list $set! d $f $vau formals ef (move! body)) d;
+	eval (list*% $def! $f $vau (forward! formals) ef (forward! body)) d;
 $defv! $defv%! (&$f &formals &ef .&body) d
-	eval (list $set! d $f $vau% formals ef (move! body)) d;
+	eval (list*% $def! $f $vau% (forward! formals) ef (forward! body)) d;
 $defv! $defv/e! (&$f &p &formals &ef .&body) d
-	eval (list* $def! $f $vau/e p formals ef (move! body)) d;
-$defv! $defv/e%! (&$f &e &formals &ef .&body) d
-	eval (list $set! d $f $vau/e% e formals ef (move! body)) d;
+	eval (list*% $def! $f $vau/e p (forward! formals) ef (forward! body)) d;
+$defv! $defv/e%! (&$f &p &formals &ef .&body) d
+	eval (list*% $def! $f $vau/e% p (forward! formals) ef (forward! body)) d;
 $defv! $defw! (&f &formals &ef .&body) d
-	eval (list* $def! f $wvau formals ef (move! body)) d;
+	eval (list*% $def! f $wvau (forward! formals) ef (forward! body)) d;
 $defv! $defw%! (&f &formals &ef .&body) d
-	eval (list* $def! f $wvau% formals ef (move! body)) d;
+	eval (list*% $def! f $wvau% (forward! formals) ef (forward! body)) d;
 $defv! $defw/e! (&f &p &formals &ef .&body) d
-	eval (list* $def! f $wvau/e p formals ef (move! body)) d;
+	eval (list*% $def! f $wvau/e p (forward! formals) ef (forward! body)) d;
 $defv! $defw/e%! (&f &p &formals &ef .&body) d
-	eval (list* $def! f $wvau/e% p formals ef (move! body)) d;
-$defv! $defl! (f formals .body) d
-	eval (list $set! d f $lambda formals (move! body)) d;
+	eval (list*% $def! f $wvau/e% p (forward! formals) ef (forward! body)) d;
+$defv! $defl! (&f &formals .&body) d
+	eval (list*% $def! f $lambda (forward! formals) (forward! body)) d;
 $defv! $defl%! (&f &formals .&body) d
-	eval (list $set! d f $lambda% formals (move! body)) d;
-$defv! $defl/e! (&f &e &formals .&body) d
-	eval (list $set! d f $lambda/e e formals (move! body)) d;
+	eval (list*% $def! f $lambda% (forward! formals) (forward! body)) d;
+$defv! $defl/e! (&f &p &formals .&body) d
+	eval (list*% $def! f $lambda/e p (forward! formals) (forward! body)) d;
 $defv! $defl/e%! (&f &p &formals .&body) d
-	eval (list* $def! f $lambda/e% p formals (move! body)) d;
+	eval (list*% $def! f $lambda/e% p (forward! formals) (forward! body)) d;
 $defw%! forward-first% (&appv (&x .)) d
 	apply (forward! appv) (list% ($move-resolved! x)) d;
 $defl%! first (&l)
@@ -743,7 +749,7 @@ $defl%! check-environment (&e) $sequence (eval% #inert e) (forward! e);
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
 		(apply ($lambda% ((&test .&body) .&clauses)
-			$if (eval test d) (eval% (move! body) d)
+			$if (eval test d) (eval% (forward! body) d)
 				(apply (wrap $cond) (move! clauses) d)) (move! clauses));
 $defv%! $when (&test .&exprseq) d
 	$if (eval test d) (eval% (list* () $sequence (move! exprseq)) d);
@@ -814,30 +820,30 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 			($if (eval (list $lvalue-identifier? x) d) id expire) (eval% x d);
 		$defl%! mk-let ($ctor &bindings &body)
 			list* () (list* $ctor (list-extract-first bindings)
-				(list (move! body))) (list-extract-rest% bindings);
+				(list (forward! body))) (list-extract-rest% bindings);
 		$defl%! mk-let* ($let $let* &bindings &body)
-			$if (null? bindings) (list* $let () (move! body))
+			$if (null? bindings) (list* $let () (forward! body))
 				(list $let (list (first% ($lqual* bindings)))
-				(list* $let* (rest% ($lqual* bindings)) (move! body)));
+				(list* $let* (rest% ($lqual* bindings)) (forward! body)));
 		$defl%! mk-letrec ($let &bindings &body)
 			list $let () $sequence (list $def! (list-extract-first bindings)
-				(list* () list (list-extract-rest% bindings))) (move! body);
+				(list* () list (list-extract-rest% bindings))) (forward! body);
 		() lock-current-environment
 	));
 	$defv/e%! $let mods (&bindings .&body) d
-		eval% (mk-let $lambda ($lqual bindings) (move! body)) d;
+		eval% (mk-let $lambda ($lqual bindings) (forward! body)) d;
 	$defv/e%! $let% mods (&bindings .&body) d
-		eval% (mk-let $lambda% ($lqual bindings) (move! body)) d;
+		eval% (mk-let $lambda% ($lqual bindings) (forward! body)) d;
 	$defv/e%! $let* mods (&bindings .&body) d
-		eval% (mk-let* $let $let* ($lqual* bindings) (move! body)) d;
+		eval% (mk-let* $let $let* ($lqual* bindings) (forward! body)) d;
 	$defv/e%! $let*% mods (&bindings .&body) d
-		eval% (mk-let* $let% $let*% ($lqual* bindings) (move! body)) d;
+		eval% (mk-let* $let% $let*% ($lqual* bindings) (forward! body)) d;
 	$defv/e%! $letrec mods (&bindings .&body) d
-		eval% (mk-letrec $let ($lqual bindings) (move! body)) d;
+		eval% (mk-letrec $let ($lqual bindings) (forward! body)) d;
 	map1 move! (list% $let $let% $let* $let*% $letrec)
 )) (() get-current-environment);
 $defv! $as-environment (.&body) d
-	eval (list $let () (list $sequence (move! body)
+	eval (list $let () (list $sequence (forward! body)
 		(list () lock-current-environment))) d;
 $defw! derive-current-environment (.&envs) d
 	apply make-environment (append envs (list d)) d;
@@ -854,10 +860,10 @@ $defl! symbols->imports (&symbols)
 		(forward! symbols));
 $defv! $provide/let! (&symbols &bindings .&body) d
 	eval% (list% $let (forward! bindings) $sequence
-		(move! body) (list% $set! d (append symbols ((unwrap list%) .))
+		(forward! body) (list% $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (list () lock-current-environment)) d;
 $defv! $provide! (&symbols .&body) d
-	eval (list*% $provide/let! (forward! symbols) () (move! body)) d;
+	eval (list*% $provide/let! (forward! symbols) () (forward! body)) d;
 $defv! $import! (&e .&symbols) d
 	eval% (list $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (eval e d);
@@ -1007,7 +1013,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.34"
+#define APP_VER "0.12.39"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
