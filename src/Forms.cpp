@@ -3,9 +3,9 @@
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
 //	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, Unilang::IsMovable,
 //	ystdex::sfmt, Unilang::Deref, ClearCombiningTags, AssertValueTags,
-//	IsBranchedList, FormContextHandler, ystdex::ref_eq, ReferenceTerm,
-//	Forms::CallResolvedUnary, LiftTerm, ThrowValueCategoryError, IsAtom,
-//	Unilang::EmplaceCallResultOrReturn;
+//	IsBranchedList, IsList, FormContextHandler, ystdex::ref_eq, ReferenceTerm,
+//	Forms::CallResolvedUnary, LiftTerm, ThrowListTypeErrorForNonList,
+//	ThrowValueCategoryError, IsAtom, Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -600,9 +600,8 @@ CheckResolvedListReference(TermNode& nd, bool has_ref)
 {
 	if(has_ref)
 	{
-		if(YB_UNLIKELY(!IsBranchedList(nd)))
-			throw ListTypeError(ystdex::sfmt("Expected a non-empty list, got"
-				" '%s'.", TermToStringWithReferenceMark(nd, true).c_str()));
+		if(YB_UNLIKELY(!IsList(nd)))
+			ThrowListTypeErrorForNonList(nd, true);
 	}
 	else
 		ThrowValueCategoryError(nd);
