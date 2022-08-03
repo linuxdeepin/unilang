@@ -332,38 +332,35 @@ ThrowCombiningFailure(TermNode& term, const Context& ctx, const TermNode& fm,
 }
 
 ReductionStatus
-ReduceBranch(TermNode& term, Context& ctx)
+ReduceCombining(TermNode& term, Context& ctx)
 {
-	if(IsBranch(term))
+	assert(IsCombiningTerm(term) && "Invalid term found.");
+	AssertValueTags(term);
+	if(term.size() != 1 || !IsList(term))
 	{
-		assert(term.size() != 0);
-		if(term.size() == 1)
-		{
-			// NOTE: The following is necessary to prevent unbounded overflow in
-			//	handling recursive subterms.
-			auto term_ref(ystdex::ref(term));
-
-			ystdex::retry_on_cond([&]{
-				auto& tm(term_ref.get());
-
-				return IsList(tm) && tm.size() == 1;
-			}, [&]{
-				term_ref = AccessFirstSubterm(term_ref);
-			});
-			return ReduceOnceLifted(term, ctx, term_ref);
-		}
 		AssertNextTerm(ctx, term);
 		ctx.LastStatus = ReductionStatus::Neutral;
 		if(IsEmpty(AccessFirstSubterm(term)))
 			RemoveHead(term);
-		assert(IsBranchedList(term));
+		assert(IsBranch(term));
 		ctx.SetCombiningTermRef(term);
 		return ReduceSubsequent(AccessFirstSubterm(term), ctx,
 			Unilang::NameTypedReducerHandler(std::bind(ReduceCombinedBranch,
-			std::ref(term), std::placeholders::_1),
-			"eval-combine-operands"));
+			std::ref(term), std::placeholders::_1), "eval-combine-operands"));
 	}
-	return ReductionStatus::Retained;
+
+	// NOTE: The following is necessary to prevent unbounded overflow in
+	//	handling recursive subterms.
+	auto term_ref(ystdex::ref(term));
+
+	ystdex::retry_on_cond([&]{
+		auto& tm(term_ref.get());
+
+		return IsList(tm) && tm.size() == 1;
+	}, [&]{
+		term_ref = AccessFirstSubterm(term_ref);
+	});
+	return ReduceOnceLifted(term, ctx, term_ref);
 }
 
 
@@ -1228,7 +1225,8 @@ ReductionStatus
 Context::DefaultReduceOnce(TermNode& term, Context& ctx)
 {
 	AssertValueTags(term);
-	return term.Value ? ReduceLeaf(term, ctx) : ReduceBranch(term, ctx);
+	return IsCombiningTerm(term) ? ReduceCombining(term, ctx)
+		: ReduceLeaf(term, ctx);
 }
 
 ReductionStatus
