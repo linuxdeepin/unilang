@@ -3,8 +3,9 @@
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
 //	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, Unilang::IsMovable,
 //	ystdex::sfmt, Unilang::Deref, ClearCombiningTags, AssertValueTags,
-//	FormContextHandler, ystdex::ref_eq, ReferenceTerm, ThrowValueCategoryError,
-//	Unilang::EmplaceCallResultOrReturn, Unilang::Deref;
+//	IsBranchedList, FormContextHandler, ystdex::ref_eq, ReferenceTerm,
+//	Forms::CallResolvedUnary, LiftTerm, ThrowValueCategoryError, IsAtom,
+//	Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -584,6 +585,16 @@ CheckBindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 }
 
 
+ReductionStatus
+CheckReference(TermNode& term, void(&f)(TermNode&, bool))
+{
+	return Forms::CallResolvedUnary([&](TermNode& nd, bool has_ref){
+		f(nd, has_ref);
+		LiftTerm(term, Unilang::Deref(std::next(term.begin())));
+		return ReductionStatus::Regular;
+	}, term);
+}
+
 void
 CheckResolvedListReference(TermNode& nd, bool has_ref)
 {
@@ -592,6 +603,18 @@ CheckResolvedListReference(TermNode& nd, bool has_ref)
 		if(YB_UNLIKELY(!IsBranchedList(nd)))
 			throw ListTypeError(ystdex::sfmt("Expected a non-empty list, got"
 				" '%s'.", TermToStringWithReferenceMark(nd, true).c_str()));
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
+void
+CheckResolvedPairReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(IsAtom(nd)))
+			ThrowListTypeErrorForAtom(nd, true);
 	}
 	else
 		ThrowValueCategoryError(nd);
@@ -863,11 +886,13 @@ Unwrap(TermNode& term)
 ReductionStatus
 CheckListReference(TermNode& term)
 {
-	return CallResolvedUnary([&](TermNode& nd, bool has_ref){
-		CheckResolvedListReference(nd, has_ref);
-		LiftTerm(term, Unilang::Deref(std::next(term.begin())));
-		return ReductionStatus::Regular;
-	}, term);
+	return CheckReference(term, CheckResolvedListReference);
+}
+
+ReductionStatus
+CheckPairReference(TermNode& term)
+{
+	return CheckReference(term, CheckResolvedPairReference);
 }
 
 

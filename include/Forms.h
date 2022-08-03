@@ -489,6 +489,9 @@ Unwrap(TermNode&);
 ReductionStatus
 CheckListReference(TermNode&);
 
+ReductionStatus
+CheckPairReference(TermNode&);
+
 
 ReductionStatus
 MakeEncapsulationType(TermNode& term);

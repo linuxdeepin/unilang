@@ -1579,6 +1579,10 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　检查对象是否是列表引用，若检查通过返回参数，否则引起类型检查错误。
 
+`check-pair-reference <object>`
+
+　　检查对象是否是有序对引用，若检查通过返回参数，否则引起类型检查错误。
+
 `() make-encapsulation-type`
 
 　　创建封装类型。
