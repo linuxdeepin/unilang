@@ -730,17 +730,17 @@ $defl%! first (&l)
 	$if ($lvalue-identifier? l) (($lambda% ((@x .)) $if (uncollapsed? x)
 		($if (modifiable? x) (idv x) (as-const (idv x))) x) l)
 		(forward-first% idv (expire l));
-$defl%! first@ (&l) ($lambda% ((@x .)) x) (check-list-reference (forward! l));
+$defl%! first@ (&l) ($lambda% ((@x .)) x) (check-pair-reference (forward! l));
 $defl%! first% (&l)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? l) id expire) l;
 $defl%! first& (&l)
 	($lambda% ((@x .)) $if (uncollapsed? x) (idv x) x)
-		(check-list-reference (forward! l));
+		(check-pair-reference (forward! l));
 $defl! firstv ((&x .)) $move-resolved! x;
 $defl! rest ((#ignore .xs)) xs;
 $defl! rest% ((#ignore .%xs)) move! xs;
 $defl%! rest& (&l)
-	($lambda% ((#ignore .&xs)) xs) (check-list-reference (forward! l));
+	($lambda% ((#ignore .&xs)) xs) (check-pair-reference (forward! l));
 $defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
 $defl! equal? (&x &y)
 	$if ($if (branch? x) (branch? y) #f)
@@ -1014,7 +1014,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.44"
+#define APP_VER "0.12.45"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
