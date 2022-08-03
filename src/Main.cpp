@@ -792,8 +792,8 @@ $defw%! accr (&l &pred? &base &head &tail &sum) d
 			(apply accr (list% (apply tail (list% l) d)
 			pred? (forward! base) head tail sum) d)) d);
 $defw%! foldr1 (&kons &knil &l) d
-	apply accr (list% (($lambda ((.@xs)) xs) l) null? (forward! knil)
-		($if ($lvalue-identifier? l) ($lambda (&l) first% l)
+	apply accr (list% (($lambda ((.@xs)) xs) (check-list-reference l)) null?
+		(forward! knil) ($if ($lvalue-identifier? l) ($lambda (&l) first% l)
 		($lambda (&l) expire (first% l))) rest% kons) d;
 $defw%! map1 (&appv &l) d
 	foldr1 ($lambda (%x &xs) cons%
@@ -808,11 +808,12 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 	(
 		$defl%! rulist (&l)
 			$if ($lvalue-identifier? l)
-				(accr (($lambda ((.@xs)) xs) l) null? ()
+				(accr (($lambda ((.@xs)) xs) (check-list-reference l)) null? ()
 					($lambda% (%l) $sequence ($def! %x idv (first@ l))
 						(($if (uncollapsed? x) idv expire) (expire x))) rest%
-					($lambda (%x &xs) (cons% ($resolve-identifier x) (move! xs))))
-				(idv (forward! l));
+					($lambda (%x &xs) (cons% ($resolve-identifier x)
+					(move! xs))))
+				(idv (forward! (check-list-reference l)));
 		$defl%! list-extract-first (&l) map1 first (forward! l);
 		$defl%! list-extract-rest% (&l) map1 rest% (forward! l);
 		$defv%! $lqual (&ls) d
@@ -1014,7 +1015,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.45"
+#define APP_VER "0.12.47"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
