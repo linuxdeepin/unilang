@@ -695,10 +695,10 @@ $def! apply $lambda% (&appv &arg .&opt)
 						"Syntax error in applying form.")) opt));
 $def! list* $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
-		(cons (forward! head) (apply list* (move! tail)));
+		(cons (forward! head) (apply list* (forward! tail)));
 $def! list*% $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
-		(cons% (forward! head) (apply list*% (move! tail)));
+		(cons% (forward! head) (apply list*% (forward! tail)));
 $def! $defv! $vau (&$f &formals &ef .&body) d
 	eval (list*% $def! $f $vau (forward! formals) ef (forward! body)) d;
 $defv! $defv%! (&$f &formals &ef .&body) d
@@ -1013,7 +1013,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.39"
+#define APP_VER "0.12.40"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
