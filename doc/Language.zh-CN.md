@@ -944,7 +944,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<binding>` 绑定列表，形式为 `<symbol> <expressions>` ，用于指定被求值的表达式和绑定参数的符号。
 * `<bindings>` ：元素为 `<binding>` 的列表，形式为 `(<binding>...)` 。
 * `<body>`： 出现在元素的末尾 `<expressions>?` 形式，用于函数体等替换求值的目标。
-* `<expression-sequence>` ：同 `<body>` 但蕴含顺序求值。
+* `<expression-sequence>` ：同 `<expression>...` 但蕴含顺序求值。
 	* 求值 `<expression-sequence>` 的结果被定义为求值其最后一个子表达式（若存在）的结果，或当不存在子表达式时为 `#inert` 。
 * `<consequent>` ：同 `<expression>` 仅用于 `<test>` 求值为 `#t` 时。
 * `<alternate>` ：同 `<expression>` ，仅用于 `<test>` 求值不为 `#t` 时。
