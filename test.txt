@@ -27,7 +27,7 @@ info "function calls";
 () $let ()
 (
 	subinfo "basic combiner calls";
-	$defl! g fm apply - fm;
+	$defl! g fm apply - (idv fm);
 	$defv! $g fm #ignore eval (list* - fm) (() get-current-environment);
 	$expect (- 0 1) g 2 3;
 	$expect (- 0 1) $g 3 4;
