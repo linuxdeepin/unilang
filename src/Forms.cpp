@@ -198,13 +198,10 @@ public:
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
-		if(IsBranchedList(term))
-		{
-			if(p_eval_struct)
-				return call(*this, term, ctx);
-			throw UnilangException("Invalid handler of call found.");
-		}
-		throw UnilangException("Invalid composition found.");
+		Retain(term);
+		if(p_eval_struct)
+			return call(*this, term, ctx);
+		throw UnilangException("Invalid handler of call found.");
 	}
 
 private:
