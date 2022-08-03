@@ -513,49 +513,48 @@ EqualSubterm(bool& r, Action& act, TermNode::allocator_type a, TNCIter first1,
 }
 
 
+template<typename... _tParams>
 void
-MakeValueListOrMove(TermNode& term, TermNode& nd,
-	ResolvedTermReferencePtr p_ref)
+ConsSplice(TermNode t, TermNode& nd, _tParams&&... args)
 {
-	if(Unilang::IsMovable(p_ref))
-		term.GetContainerRef().splice(term.end(),
-			std::move(nd.GetContainerRef()));
-	else
-		for(const auto& sub : nd)
-			term.Add(sub);
+	auto& tcon(t.GetContainerRef());
+	auto& con(nd.GetContainerRef());
+
+	assert(!ystdex::ref_eq<>()(con, tcon) && "Invalid self move found.");
+	tcon.splice(tcon.begin(), con, con.begin(), yforward(args)...),
+	tcon.swap(con);
+	nd.Value = std::move(t.Value);
 }
 
-
-YB_NORETURN void
-ThrowConsError(TermNode& nd, ResolvedTermReferencePtr p_ref)
+YB_ATTR_nodiscard TermNode
+ConsItem(TermNode& y)
 {
-	throw ListTypeError(ystdex::sfmt(
-		"Expected a list for the 2nd argument, got '%s'.",
-		TermToStringWithReferenceMark(nd, p_ref).c_str()));
-}
-
-void
-ConsItem(TermNode& term, TermNode& y)
-{
-	ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref){
-		if(IsList(nd_y))
-			MakeValueListOrMove(term, nd_y, p_ref);
-		else
-			ThrowConsError(nd_y, p_ref);
+	return ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref_y){
+		return MakeValueOrMove(p_ref_y, [&]{
+			return nd_y;
+		}, [&]{
+			return std::move(nd_y);
+		});
 	}, y);
 }
 
-ReductionStatus
-ConsImpl(TermNode& term)
+YB_ATTR_nodiscard inline TermNode
+ConsItemRef(TermNode& y)
+{
+	return std::move(y);
+}
+
+void
+ConsImpl(TermNode& term, TermNode(&cons_item)(TermNode& y))
 {
 	RetainN(term, 2);
 	RemoveHead(term);
 
-	const auto i(std::next(term.begin()));
+	auto i(term.begin());
 
-	ConsItem(term, Unilang::Deref(i));
-	term.erase(i);
-	return ReductionStatus::Retained;
+	if(cons_item == ConsItem)
+		LiftToReturn(*i);
+	ConsSplice(cons_item(Unilang::Deref(++i)), term);
 }
 
 
@@ -726,15 +725,15 @@ If(TermNode& term, Context& ctx)
 ReductionStatus
 Cons(TermNode& term)
 {
-	ConsImpl(term);
-	LiftSubtermsToReturn(term);
+	ConsImpl(term, ConsItem);
 	return ReductionStatus::Retained;
 }
 
 ReductionStatus
 ConsRef(TermNode& term)
 {
-	return ConsImpl(term);
+	ConsImpl(term, ConsItemRef);
+	return ReductionStatus::Retained;
 }
 
 
