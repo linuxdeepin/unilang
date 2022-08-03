@@ -633,6 +633,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 		throw InvalidSyntax(str.c_str());
 	});
 	RegisterStrict(ctx, "check-list-reference", CheckListReference);
+	RegisterStrict(ctx, "check-pair-reference", CheckPairReference);
 	RegisterStrict(ctx, "make-encapsulation-type", MakeEncapsulationType);
 	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
 	RegisterForm(ctx, "$vau", Vau);
@@ -1013,7 +1014,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.42"
+#define APP_VER "0.12.44"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
