@@ -752,8 +752,8 @@ $defl%! first& (&l)
 	($lambda% ((@x .)) $if (uncollapsed? x) (idv x) x)
 		(check-pair-reference (forward! l));
 $defl! firstv ((&x .)) $move-resolved! x;
-$defl! rest ((#ignore .xs)) xs;
-$defl! rest% ((#ignore .%xs)) move! xs;
+$defl! rest ((#ignore .xs)) $move-resolved! xs;
+$defl%! rest% ((#ignore .%xs)) $move-resolved! xs;
 $defl%! rest& (&l)
 	($lambda% ((#ignore .&xs)) xs) (check-pair-reference (forward! l));
 $defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
@@ -1030,7 +1030,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.49"
+#define APP_VER "0.12.53"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
