@@ -3,13 +3,14 @@
 #include "Evaluation.h" // for Unilang::allocate_shared,
 //	Unilang::AsTermNodeTagged, TermTags, ystdex::equality_comparable, AnchorPtr,
 //	lref, ContextHandler, EnvironmentReference, string_view, ValueToken,
-//	TermReference, byte, YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
-//	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple,
-//	SourceInformation, pmr::polymorphic_allocator, yunseq, Continuation,
-//	TermToStringWithReferenceMark GetLValueTagsOf, AccessFirstSubterm,
-//	ThrowTypeErrorForInvalidType, in_place_type, TermToNamePtr, IsTyped,
-//	ThrowInsufficientTermsError, YSLib::lock_guard, YSLib::mutex,
-//	YSLib::unordered_map, type_index, std::allocator, std::pair,
+//	TermReference, byte, pmr::polymorphic_allocator, lref, SourceInformation,
+//	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
+//	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple, Continuation,
+//	TermToStringWithReferenceMark, IsList, AccessFirstSubterm, GetLValueTagsOf,
+//	ThrowTypeErrorForInvalidType, TermToNamePtr, in_place_type, IsPair,
+//	yunseq, ResolveTerm, IsAtom, ResolveSuffix, IsTyped,
+//	ThrowInsufficientTermsError, ThrowListTypeErrorForAtom, YSLib::lock_guard,
+//	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
 //	AssertValueTags;
 #include <cassert> // for assert;
 #include "Math.h" // for ReadDecimal;
@@ -432,9 +433,10 @@ BindReferenceTags(const TermReference& ref) noexcept
 
 
 YB_NORETURN inline void
-ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
+ThrowFormalParameterTypeError(const TermNode& term, bool has_ref,
+	size_t n_skip = 0)
 {
-	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
+	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref, n_skip);
 }
 
 void
@@ -762,6 +764,13 @@ struct ParameterCheck final
 			ThrowFormalParameterTypeError(t, has_ref || indirect);
 	}
 
+	YB_NORETURN static void
+	CheckSuffix(const TermNode& t, bool has_ref, bool indirect)
+	{
+		ThrowFormalParameterTypeError(t, has_ref || indirect,
+			has_ref ? 0 : CountPrefix(t));
+	}
+
 	template<typename _func>
 	static void
 	HandleLeaf(_func f, const TermNode& t, bool has_ref)
@@ -814,6 +823,13 @@ struct NoParameterCheck final
 		}
 	}
 
+	static void
+	CheckSuffix(const TermNode& t, bool)
+	{
+		yunused(t);
+		assert(false && "Invalid parameter tree found.");
+	}
+
 	template<typename _func>
 	static void
 	WrapCall(_func f)
@@ -836,10 +852,10 @@ struct GBinder final
 	{}
 
 	YB_ATTR_always_inline void
-	operator()(TermNode& o, TNIter first, const TokenValue& n,
-		TermTags o_tags, const EnvironmentReference& r_env) const
+	operator()(TermNode& o, TNIter first, string_view id, TermTags o_tags,
+		const EnvironmentReference& r_env) const
 	{
-		BindTrailing(o, first, n, o_tags, r_env);
+		BindTrailing(o, first, id, o_tags, r_env);
 	}
 	YB_ATTR_always_inline void
 	operator()(const TokenValue& n, TermNode& o, TermTags o_tags,
@@ -896,14 +912,14 @@ public:
 
 				if(i == std::get<PTreeMid>(e))
 				{
-					if(std::get<Ellipsis>(e))
-						MatchTrailing(e);
+					MatchTrailing(e);
 					remained.pop();
 				}
 				else
 				{
 					auto& j(std::get<OperandFirst>(e));
 
+					assert(!IsSticky(i->Tags) && "Invalid term found."),
 					assert(j != std::get<OperandRef>(e).get().end()
 						&& "Invalid state of operand found.");
 					Dispatch(ystdex::true_(),
@@ -934,21 +950,25 @@ private:
 	inline void
 	Match(ystdex::true_, const TermNode& t, _tParams&&... args) const
 	{
-		if(IsList(t))
-			MatchList(t, yforward(args)...);
-		else if(const auto p_t = TryAccessLeafAtom<const TermReference>(t))
+		if(IsPair(t))
+			MatchPair(t, yforward(args)...);
+		else if(IsEmpty(t))
+			ThrowIfNonempty(yforward(args)...);
+		else if(const auto p_t = TryAccessLeaf<const TermReference>(t))
 			MatchIndirect(p_t->get(), yforward(args)...);
 		else
-			MatchNonList(t, yforward(args)...);
+			MatchLeaf(t, yforward(args)...);
 	}
 	template<typename... _tParams>
 	inline void
 	Match(ystdex::false_, const TermNode& t, _tParams&&... args) const
 	{
-		if(IsList(t))
-			MatchList(t, yforward(args)...);
+		if(IsPair(t))
+			MatchPair(t, yforward(args)...);
+		else if(IsEmpty(t))
+			ThrowIfNonempty(yforward(args)...);
 		else
-			MatchNonList(t, yforward(args)...);
+			MatchLeaf(t, yforward(args)...);
 	}
 
 	template<typename... _tParams>
@@ -962,16 +982,31 @@ private:
 
 	template<typename... _tParams>
 	inline void
-	MatchList(const TermNode& t, TermNode& o, TermTags o_tags,
+	MatchLeaf(const TermNode& t, TermNode& o, TermTags o_tags,
 		const EnvironmentReference& r_env, _tParams&&... args) const
 	{
-		assert(IsList(t) && "Invalid term found.");
-		if(IsBranch(t))
-		{
-			const auto n_p(t.size());
-			auto mid(t.end());
+		assert(!IsList(t) && "Invalid term found.");
+		_tTraits::HandleLeaf([&](const TokenValue& n){
+			Bind(n, o, o_tags, r_env);
+		}, t, yforward(args)...);
+	}
 
-			if(n_p > 0)
+	template<typename... _tParams>
+	inline void
+	MatchPair(const TermNode& t, TermNode& o, TermTags o_tags,
+		const EnvironmentReference& r_env, _tParams&&... args) const
+	{
+		assert(IsPair(t) && "Invalid term found.");
+
+		size_t n_p(0);
+		auto mid(t.begin());
+		const auto is_list(IsList(t));
+
+		while(mid != t.end() && !IsSticky(mid->Tags))
+			yunseq(++n_p, ++mid);
+		if(is_list && mid == t.end())
+		{
+			if(n_p != 0)
 				ResolveTerm(
 					[&](const TermNode& nd, ResolvedTermReferencePtr p_ref){
 					if(IsAtom(nd))
@@ -985,71 +1020,91 @@ private:
 							_tTraits::CheckBack(nd, p_ref, yforward(args)...);
 					}
 				}, Unilang::Deref(std::prev(mid)));
-			ResolveTerm(
-				[&, o_tags](TermNode& nd, ResolvedTermReferencePtr p_ref){
-				if(IsList(nd))
-				{
-					const bool ellipsis(mid != t.end());
-					const auto n_o(nd.size());
-
-					if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
-					{
-						auto tags(o_tags);
-
-						if(p_ref)
-						{
-							const auto ref_tags(p_ref->GetTags());
-
-							tags = (tags
-								& ~(TermTags::Unique | TermTags::Temporary))
-								| (ref_tags & TermTags::Unique);
-							tags = PropagateTo(tags, ref_tags);
-						}
-						remained.emplace(t.begin(), mid, nd, nd.begin(),
-							tags, p_ref ? p_ref->GetEnvironmentReference()
-							: r_env, ellipsis);
-					}
-					else if(!ellipsis)
-						throw ArityMismatch(n_p, n_o);
-					else
-						ThrowInsufficientTermsError(nd, p_ref);
-				}
-				else
-					ThrowListTypeErrorForNonList(nd, p_ref);
-			}, o);
 		}
 		else
-			ResolveTerm([&](const TermNode& nd, bool has_ref){
-				if(nd)
-					throw ParameterMismatch(ystdex::sfmt("Invalid nonempty"
-						" operand value '%s' found for empty list"
-						" parameter.", TermToStringWithReferenceMark(nd,
-						has_ref).c_str()));
-			}, o);
-	}
+			ResolveSuffix(
+				[&](const TermNode& nd, ResolvedTermReferencePtr p_ref){
+				if(YB_UNLIKELY(!(IsTyped<TokenValue>(nd) || IsIgnore(nd))))
+					_tTraits::CheckSuffix(nd, p_ref, yforward(args)...);
+			}, t);
+		ResolveTerm([&, o_tags](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			const bool ellipsis(is_list && mid != t.end());
 
-	template<typename... _tParams>
-	inline void
-	MatchNonList(const TermNode& t, TermNode& o, TermTags o_tags,
-		const EnvironmentReference& r_env, _tParams&&... args) const
-	{
-		assert(!IsList(t) && "Invalid term found.");
-		_tTraits::HandleLeaf([&](const TokenValue& n){
-			Bind(n, o, o_tags, r_env);
-		}, t, yforward(args)...);
+			if(IsPair(nd) || (ellipsis && IsEmpty(nd)))
+			{
+				if(is_list && !ellipsis && !IsList(nd))
+					ThrowListTypeErrorForNonList(nd, p_ref);
+
+				const auto n_o(CountPrefix(nd));
+
+				if(n_p == n_o || (ellipsis && n_o >= n_p - 1))
+				{
+					auto tags(o_tags);
+
+					if(p_ref)
+					{
+						const auto ref_tags(p_ref->GetTags());
+						tags = (tags
+							& ~(TermTags::Unique | TermTags::Temporary))
+							| (ref_tags & TermTags::Unique);
+						tags = PropagateTo(tags, ref_tags);
+					}
+					remained.emplace(t.begin(), mid, nd, nd.begin(), tags,
+						p_ref ? p_ref->GetEnvironmentReference() : r_env,
+						ellipsis);
+				}
+				else if(!ellipsis)
+					throw ArityMismatch(n_p, n_o);
+				else
+					ThrowInsufficientTermsError(nd, p_ref);
+			}
+			else
+				ThrowListTypeErrorForAtom(nd, p_ref);
+		}, o);
 	}
 
 	void
 	MatchTrailing(MatchEntry& e) const
 	{
+		auto& o_nd(std::get<OperandRef>(e).get());
 		const auto& mid(std::get<PTreeMid>(e));
-		const auto& trailing(Unilang::Deref(mid));
+		if(std::get<Ellipsis>(e))
+		{
+			const auto& trailing(Unilang::Deref(mid));
 
-		assert(IsTyped<TokenValue>(ReferenceTerm(trailing))
-			&& "Invalid ellipsis sequence token found.");
-		Bind(std::get<OperandRef>(e), std::get<OperandFirst>(e),
-			trailing.Value.template GetObject<TokenValue>(),
-			std::get<OperandTags>(e), std::get<EnvironmentRef>(e));
+			assert(IsAtom(trailing) && "Invalid state found.");
+			assert(IsTyped<TokenValue>(ReferenceTerm(trailing))
+				&& "Invalid ellipsis sequence token found.");
+
+			string_view id(
+				ReferenceTerm(trailing).Value.template GetObject<TokenValue>());
+
+			assert(ystdex::begins_with(id, ".") && "Invalid symbol found.");
+			id.remove_prefix(1);
+			Bind(std::get<OperandRef>(e), std::get<OperandFirst>(e), id,
+				std::get<OperandTags>(e), std::get<EnvironmentRef>(e));
+		}
+		else if(auto p = TryAccessTerm<TokenValue>(o_nd))
+			Bind(o_nd, std::get<OperandFirst>(e), *p, std::get<OperandTags>(e),
+				std::get<EnvironmentRef>(e));
+	}
+
+	template<typename... _tParams>
+	static void
+	ThrowIfNonempty(const TermNode& o, _tParams&&...)
+	{
+		ResolveTerm([&](const TermNode& nd, bool has_ref){
+			if(nd)
+				throw ParameterMismatch(ystdex::sfmt("Invalid nonempty operand"
+					" value '%s' found for empty list parameter.",
+					TermToStringWithReferenceMark(nd, has_ref).c_str()));
+		}, o);
+	}
+	template<typename... _tParams>
+	static void
+	ThrowIfNonempty(const MatchEntry& e, _tParams&&...)
+	{
+		ThrowIfNonempty(Unilang::Deref(std::get<OperandFirst>(e)));
 	}
 };
 
@@ -1076,7 +1131,7 @@ ExtractSigil(string_view& id)
 	if(!id.empty())
 	{
 		char sigil(id.front());
- 
+
 		if(sigil != '&' && sigil != '%' && sigil != '@')
 			sigil = char();
 		else
@@ -1110,60 +1165,23 @@ struct DefaultBinder final
 	{}
 
 	void
-	operator()(TermNode& o_nd, TNIter first, string_view id,
-		TermTags o_tags, const EnvironmentReference& r_env) const
+	operator()(TermNode& o_nd, TNIter first, string_view id, TermTags o_tags,
+		const EnvironmentReference& r_env) const
 	{
-		assert(ystdex::begins_with(id, ".") && "Invalid symbol found.");
-		id.remove_prefix(1);
+		assert((IsPair(o_nd) || IsEmpty(o_nd)) && "Invalid term found.");
 		if(!id.empty())
 		{
 			const char sigil(ExtractSigil(id));
 
 			if(!id.empty())
 			{
-				const auto a(o_nd.get_allocator());
-				const auto last(o_nd.end());
-				TermNode::Container con(a);
+				auto& env(EnvRef.get());
 
-				if(IsMovable(o_tags) || bool(o_tags & TermTags::Temporary))
-				{
-					if(sigil == char())
-						LiftSubtermsToReturn(o_nd);
-					con.splice(con.end(), o_nd.GetContainerRef(), first, last);
-					MarkTemporaryTerm(EnvRef.get().Bind(id,
-						TermNode(std::move(con))), sigil);
-				}
-				else
-				{
-					for(; first != last; ++first)
-						BindParameterObject{r_env}(sigil, {}, o_tags,
-							Unilang::Deref(first), [&](const TermNode& tm){
-							CopyTermTags(con.emplace_back(tm.GetContainer(),
-								tm.Value), tm);
-						}, [&](TermNode::Container&& c, ValueObject&& vo)
-							-> TermNode&{
-							con.emplace_back(std::move(c), std::move(vo));
-							return con.back();
-						});
-					if(sigil == '&')
-					{
-						auto p_sub(Unilang::allocate_shared<TermNode>(a,
-							std::move(con)));
-						auto& sub(Unilang::Deref(p_sub));
-
-						EnvRef.get().Bind(id,
-							TermNode(std::allocator_arg, a, [&]{
-							TermNode::Container tcon(a);
-
-							tcon.push_back(
-								MakeSubobjectReferent(a, std::move(p_sub)));
-							return tcon;
-						}(), std::allocator_arg, a, TermReference(sub, r_env)));
-					}
-					else
-						MarkTemporaryTerm(EnvRef.get().Bind(id,
-							TermNode(std::move(con))), sigil);
-				}
+				BindParameterObject{r_env}(sigil, sigil == '&', o_tags, o_nd,
+					first,
+					[&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
+					return env.Bind(id, TermNode(std::move(c), std::move(vo)));
+				});
 			}
 		}
 	}
