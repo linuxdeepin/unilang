@@ -83,7 +83,7 @@ $let ()
 			(fwd? (idv fwd?))
 );
 
-info "reference, reference collapsing and reference assignment";
+info "reference and assignment operations";
 $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 (
 	subinfo "expecting different results for 'first&' and 'first@'";
@@ -192,104 +192,6 @@ subinfo "self-evaluation on nested one-element list of irregular"
 	" representations;" " fixed since V0.11.97";
 $expect (unwrap id) eval% (list% (unwrap id)) (() get-current-environment);
 
-info "logical operations";
-$let ()
-(
-	subinfo "logical not";
-	$check eqv? ($let ((f #f)) not? f) (not? #f);
-	subinfo "non-strict logical operations";
-	$check () $and;
-	$check-not () $or;
-	$check-not $and #f #f;
-	$check $or #f #t;
-	$expect 2 $and 1 2;
-	$expect 1 $or 1 #f;
-	$expect 2 $or #f 2 #f 3
-);
-
-info "list operations";
-$let ()
-(
-	$expect () list* ();
-	$expect () list*% ();
-	$def! n 1;
-	$let ((a list 2 3))
-	(
-		subinfo "list lvalue elements accesses";
-		$expect 2 first (id a);
-		$expect 2 first a;
-		$check reference? (first a);
-		$check reference? (first% (list% n 2));
-		subinfo "list xvalue elements accesses";
-		$expect 2 first (as-const (expire a));
-		$expect 2 first (expire a);
-		$expect-moved first a
-	);
-	subinfo "first forwarding";
-	$let ()
-	(
-		$defl! test (f)
-		(
-			$def! li list% (expire (as-const n)) 2;
-			$check not? (modifiable? (f li));
-			$check unique? (f li);
-			$expect 1 f li
-		);
-		test first;
-		test first&
-	)
-);
-
-info "local bindings";
-() $let ()
-(
-	$expect () $let ();
-	$expect 5 $let ((&x 2) (&y 3)) + x y;
-	$expect 4 $let* ((&x 2) (&y x)) + x y;
-	$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
-	$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z
-);
-
-info "Documented examples.";
-$let ()
-(
-	display "Hello, world!";
-	display (display "Hello, world!");
-	(display "Hello, world!");
-	() newline;
-	() display "Hello, world!";
-	display "Hello, world!";
-	$sequence display "Hello, world!";
-	display "Hello, "; display "world!";
-	$sequence (display "Hello, ") (display "world!");
-	$def! x "hello";
-	list "hello" "world";
-	cons "x" ();
-	list "x";
-	cons "x" (cons "y" ());
-	list "x" "y";
-	$lambda (x) display x;
-	$lambda (x) x;
-	($lambda (x) display x);
-	($lambda (x) (display x));
-	$lambda (x y) $sequence (display x) (display y);
-	$def! id $lambda (x) x;
-	display (($lambda ((x y)) x) (list "hello" "world"));
-	$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;
-	eval (list display "Hello, world!") (() get-current-environment);
-	$def! (x y) list "hello" "world"; display x; display y;
-	$def! id $lambda (x) x;
-	$defl! id (x) x;
-	$def! x (); display "x is "; display ($if (null? x) "empty" "not empty")
-);
-
-info "Test case on parent environment search.";
-$let ()
-(
-	$def! e make-environment (() get-current-environment);
-	eval ((unwrap ($lambda (x) x)) e) e
-);
-
 info "make-encapsulation-type";
 subinfo "encapsulation values";
 $let ()
@@ -329,7 +231,66 @@ $let ()
 	$check eqv? y z
 );
 
-info "std.promises tests";
+info "logical operations";
+$let ()
+(
+	subinfo "logical not";
+	$check eqv? ($let ((f #f)) not? f) (not? #f);
+	subinfo "non-strict logical operations";
+	$check () $and;
+	$check-not () $or;
+	$check-not $and #f #f;
+	$check $or #f #t;
+	$expect 2 $and 1 2;
+	$expect 1 $or 1 #f;
+	$expect 2 $or #f 2 #f 3
+);
+
+info "list operations";
+subinfo "empty list calls: list* and list%*";
+$expect () list* ();
+$expect () list*% ();
+$let ()
+(
+	$def! n 1;
+	$let ((a list 2 3))
+	(
+		subinfo "list lvalue elements accesses";
+		$expect 2 first (id a);
+		$expect 2 first a;
+		$check reference? (first a);
+		$check reference? (first% (list% n 2));
+		subinfo "list xvalue elements accesses";
+		$expect 2 first (as-const (expire a));
+		$expect 2 first (expire a);
+		$expect-moved first a
+	);
+	subinfo "first forwarding";
+	$let ()
+	(
+		$defl! test (f)
+		(
+			$def! li list% (expire (as-const n)) 2;
+			$check not? (modifiable? (f li));
+			$check unique? (f li);
+			$expect 1 f li
+		);
+		test first;
+		test first&
+	)
+);
+
+info "bindings operations";
+() $let ()
+(
+	$expect () $let ();
+	$expect 5 $let ((&x 2) (&y 3)) + x y;
+	$expect 4 $let* ((&x 2) (&y x)) + x y;
+	$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
+	$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z
+);
+
+info "std.promises";
 $let ()
 (
 	$import! std.promises
@@ -401,6 +362,46 @@ $let ()
 	$check string-empty? "";
 	$check-not string-empty? "x";
 	$expect "abc123" ++ "a" "bc" "123"
+);
+
+info "Documented examples.";
+$let ()
+(
+	display "Hello, world!";
+	display (display "Hello, world!");
+	(display "Hello, world!");
+	() newline;
+	() display "Hello, world!";
+	display "Hello, world!";
+	$sequence display "Hello, world!";
+	display "Hello, "; display "world!";
+	$sequence (display "Hello, ") (display "world!");
+	$def! x "hello";
+	list "hello" "world";
+	cons "x" ();
+	list "x";
+	cons "x" (cons "y" ());
+	list "x" "y";
+	$lambda (x) display x;
+	$lambda (x) x;
+	($lambda (x) display x);
+	($lambda (x) (display x));
+	$lambda (x y) $sequence (display x) (display y);
+	$def! id $lambda (x) x;
+	display (($lambda ((x y)) x) (list "hello" "world"));
+	$def! car $lambda ((x .)) x; $def! cdr $lambda ((#ignore .x)) x;
+	eval (list display "Hello, world!") (() get-current-environment);
+	$def! (x y) list "hello" "world"; display x; display y;
+	$def! id $lambda (x) x;
+	$defl! id (x) x;
+	$def! x (); display "x is "; display ($if (null? x) "empty" "not empty")
+);
+
+info "Test case on parent environment search.";
+$let ()
+(
+	$def! e make-environment (() get-current-environment);
+	eval ((unwrap ($lambda (x) x)) e) e
 );
 
 info "typing library tests";
