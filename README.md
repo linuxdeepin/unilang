@@ -189,20 +189,22 @@
 * libffi
 * LLVM 7
 	* `llvm-config`
+* Qt 5
+* `pkg-config`
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (strech/buster)/Ubuntu (bionic-updates/focal)
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
 # Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-dev pkg-config qtbase5-dev
 ```
 
 ### Qt 环境要求和假设
