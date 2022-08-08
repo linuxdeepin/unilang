@@ -2139,7 +2139,11 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 `equal? <object1> <object2>`
 
-　　判断一般相等关系。对不具有枝节点表示的对象，同 `eqv?` ，否则相等定义为其中所有的子对象相等。
+　　判断一般相等关系。
+
+* 若参数都是非真列表，结果同两者完全分解序列中的元素对应的 `eqv?` 比较结果。
+* 否则，若参数都不是有序对，结果同 `eqv?` 的比较结果。
+* 否则，结果为 `#f` 。
 
 `check-environment <object>`
 
