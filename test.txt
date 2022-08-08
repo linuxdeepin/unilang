@@ -247,6 +247,9 @@ $let ()
 );
 
 info "list operations";
+subinfo "empty list calls: list and list%";
+$expect () () list;
+$expect () () list%;
 subinfo "empty list calls: list* and list%*";
 $expect () list* ();
 $expect () list*% ();
