@@ -173,6 +173,15 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	)
 );
 
+info "environment operations";
+subinfo "eval";
+$expect 42 eval 42 (() get-current-environment);
+$expect 42 eval% 42 (() get-current-environment);
+subinfo "eval lists";
+$expect 1 eval (list 1) (() get-current-environment);
+$expect (cons 1 2) eval (list cons 1 2) (() get-current-environment);
+$expect (list 1 2) eval (list list 1 2) (() get-current-environment);
+
 info "combiner operations";
 subinfo "combiner equality";
 $let ()
