@@ -758,10 +758,18 @@ $defl%! rest% ((#ignore .%xs)) $move-resolved! xs;
 $defl%! rest& (&l)
 	($lambda% ((#ignore .&xs)) xs) (check-pair-reference (forward! l));
 $defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
-$defl! equal? (&x &y)
-	$if ($if (branch? x) (branch? y) #f)
-		($if (equal? (first& x) (first& y))
-		(equal? (rest& x) (rest& y)) #f) (eqv? x y);
+$defl/e! equal? (() ($lambda/e (() get-current-environment) ()
+	(
+		$defl! peq? (&x &y)
+		(
+			$def! (px py) list (pair? x) (pair? y);
+			$if ($if px py #f)
+				($if (equal? (first& x) (first& y)) (peq? (rest& x) (rest& y)) 
+					#f)
+				(eqv? px py)
+		);
+		() lock-current-environment
+	))) (&x &y) $if (eql? x y) (peq? x y) #f;
 $defl%! check-environment (&e) $sequence (eval% #inert e) (forward! e);
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
@@ -828,7 +836,7 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 					($lambda% (%l) $sequence ($def! %x idv (first@ l))
 						(($if (uncollapsed? x) idv expire) (expire x))) rest%
 					($lambda (%x &xs) (cons% ($resolve-identifier x)
-					(move! xs))))
+						(move! xs))))
 				(idv (forward! (check-list-reference l)));
 		$defl%! list-extract-first (&l) map1 first (forward! l);
 		$defl%! list-extract-rest% (&l) map1 rest% (forward! l);
@@ -1031,7 +1039,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.56"
+#define APP_VER "0.12.57"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
