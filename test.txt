@@ -71,7 +71,11 @@ $let ((a 2))
 	$check-not equal? 1 2;
 	$check-not equal? (list 1 2) 3;
 	$check-not equal? (list 1 2) (list 3 4);
-	$check equal? #t (equal? (list 1 2) (list 1 2))
+	$check equal? #t (equal? (list 1 2) (list 1 2));
+	$check equal? (cons 2 2) (cons% 2 2);
+	$check equal? (cons% 2 2) (cons% 2 2);
+	$check-not equal? (cons 2 2) (cons% 2 3);
+	$check-not equal? (cons% 2 2) (cons% 2 3)
 );
 subinfo "fwd?";
 $let ()
