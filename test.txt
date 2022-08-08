@@ -293,6 +293,9 @@ $let ()
 		test first&
 	)
 );
+subinfo "improper list access";
+$expect (cons% 2 3) rest (list*% 1 2 3);
+$let ((a 1)) $check eq? (rest% (cons% 2 a)) a;
 
 info "bindings operations";
 () $let ()
