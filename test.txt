@@ -261,6 +261,9 @@ $expect (cons 1 2)
 $expect (cons 1 2) eval (list*% (unwrap list) 1 2) (() get-current-environment);
 $expect (cons 1 2)
 	eval (list*% (unwrap list%) 1 2) (() get-current-environment);
+subinfo "improper list cons";
+$expect (cons (list 1 2) 4) cons (list 1 2) 4;
+$let* ((a 1) (b 4) (l list% a 2)) $expect (cons (list 1 2) 4) cons l b;
 $let ()
 (
 	$def! n 1;
