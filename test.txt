@@ -253,6 +253,14 @@ $expect () () list%;
 subinfo "empty list calls: list* and list%*";
 $expect () list* ();
 $expect () list*% ();
+subinfo "list underlying opeative evaluations";
+$expect 1 eval (list*% (unwrap list%) 1) (() get-current-environment);
+$expect 1 eval (list*% () (unwrap list%) 1) (() get-current-environment);
+$expect (cons 1 2)
+	eval ((unwrap list%) (cons 1 2)) (() get-current-environment);
+$expect (cons 1 2) eval (list*% (unwrap list) 1 2) (() get-current-environment);
+$expect (cons 1 2)
+	eval (list*% (unwrap list%) 1 2) (() get-current-environment);
 $let ()
 (
 	$def! n 1;
