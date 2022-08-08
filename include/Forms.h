@@ -431,6 +431,9 @@ void
 Eq(TermNode&);
 
 void
+EqLeaf(TermNode&);
+
+void
 EqValue(TermNode&);
 
 
