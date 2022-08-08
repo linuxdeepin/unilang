@@ -305,6 +305,14 @@ $let ()
 subinfo "improper list access";
 $expect (cons% 2 3) rest (list*% 1 2 3);
 $let ((a 1)) $check eq? (rest% (cons% 2 a)) a;
+subinfo "list modification";
+$let* ((a 1) (b 4) (l list% a 2))
+(
+	set-first%! l b;
+	$expect (list b 2) l;
+	set-first%! l 7;
+	$expect (list 7 2) l
+);
 
 info "bindings operations";
 () $let ()
