@@ -3,9 +3,10 @@
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
 //	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, Unilang::IsMovable,
 //	ystdex::sfmt, Unilang::Deref, ClearCombiningTags, AssertValueTags,
-//	IsBranchedList, IsList, FormContextHandler, ystdex::ref_eq, ReferenceTerm,
-//	Forms::CallResolvedUnary, LiftTerm, ThrowListTypeErrorForNonList,
-//	ThrowValueCategoryError, IsAtom, Unilang::EmplaceCallResultOrReturn;
+//	IsBranchedList, IsList, IsLeaf, FormContextHandler, IsAtom, ystdex::ref_eq,
+//	ReferenceTerm, Forms::CallResolvedUnary, LiftTerm,
+//	ThrowListTypeErrorForNonList, ThrowValueCategoryError,
+//	Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
@@ -473,7 +474,7 @@ void
 EqTermReference(TermNode& term, _func f)
 {
 	EqualTerm(term, [f](const TermNode& x, const TermNode& y){
-		return IsLeaf(x) && IsLeaf(y) ? f(x.Value, y.Value)
+		return IsAtom(x) && IsAtom(y) ? f(x.Value, y.Value)
 			: ystdex::ref_eq<>()(x, y);
 	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
 }
