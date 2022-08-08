@@ -458,22 +458,44 @@ WrapOrRef(TermNode& term, _func f)
 
 
 template<typename _fComp, typename _func>
-void
-EqualTerm(TermNode& term, _fComp f, _func g)
+auto
+EqTerm(TermNode& term, _fComp f, _func g) -> decltype(f(
+	std::declval<_func&>()(std::declval<const TermNode&>()),
+	std::declval<_func&>()(std::declval<const TermNode&>())))
 {
 	RetainN(term, 2);
 
 	auto i(term.begin());
 	const auto& x(*++i);
 
-	term.Value = f(g(x), g(ystdex::as_const(*++i)));
+	return f(g(x), g(ystdex::as_const(*++i)));
+}
+
+template<typename _fComp, typename _func>
+void
+EqTermRet(TermNode& term, _fComp f, _func g)
+{
+	using type = decltype(g(term));
+
+	EqTerm(term, [&, f](const type& x, const type& y){
+		term.Value = f(x, y);
+	}, g);
+}
+
+template<typename _func>
+void
+EqTermValue(TermNode& term, _func f)
+{
+	EqTermRet(term, f, [](const TermNode& x) -> const ValueObject&{
+		return ReferenceTerm(x).Value;
+	});
 }
 
 template<typename _func>
 void
 EqTermReference(TermNode& term, _func f)
 {
-	EqualTerm(term, [f](const TermNode& x, const TermNode& y){
+	EqTermRet(term, [f](const TermNode& x, const TermNode& y){
 		return IsAtom(x) && IsAtom(y) ? f(x.Value, y.Value)
 			: ystdex::ref_eq<>()(x, y);
 	}, static_cast<const TermNode&(&)(const TermNode&)>(ReferenceTerm));
@@ -708,6 +730,12 @@ void
 Eq(TermNode& term)
 {
 	EqTermReference(term, YSLib::HoldSame);
+}
+
+void
+EqLeaf(TermNode& term)
+{
+	EqTermValue(term, ystdex::equal_to<>());
 }
 
 void
