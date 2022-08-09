@@ -84,3 +84,58 @@ If new options are put forward without avoiding this situation, it will only fur
 
 <p align="right">—— <a href="https://schemers.org/Documents/Standards/">R<sup>n</sup>RS</a> & <a href="https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf">R<sup>-1</sup>RK</a></p>
 
+## Characteristics
+
+Unilang is the language part of the new solution to comprehensively solve the existing problems. The distinguishing features are:
+
+* As a dynamic language, it provides more extensibility at the language level than other languages.
+	* Features provided by the language core rules in most other languages are expected to be library modules implemented in Unilang, e.g. statically type checking can be provided by user programs.
+		* Customization of the functionality of the language by user-provided components may effectively rule out unexpected dynamic features, and **eventually get advanced development experience as in most static languages without the defects of inconvenience from the core rules of static languages**.
+		* It allows the existing language features to be complemented by adding libraries in the environment where the Unilang program has been deployed, without the need to redeploy the implementation of the toolchain.
+		* A basic language is provided, and the practical feature set is built by extending this language in the form of libraries. Libraries are expected to be provided by this project and users.
+	* Similar to C and C++ but different from [Java](https://docs.oracle.com/javase/specs/jls/se18/html/jls-1.html), it does not explicitly require or assume specific forms of translation and execution. The implementation details such as compilation, interpretation and what image format to load are transparent to the core language rules.
+	* There is no preset *phases of translation* as explicitly specified in C and [C++](http://eel.is/c++draft/lex.phases). There is no need of macros expanded in separated phase -- they can be replaced by functions that support first-class environments.
+	* It supports [homoiconicity](https://en.wikipedia.org/wiki/Homoiconicity) and allows code as data programming.
+	* Functions are [first-class objects](https://en.wikipedia.org/wiki/First-class_citizen).
+	* *Environments* have ownership of variable bindings. *First-class environments* are supported.
+* It supports C++-like object model and (currently unchecked) unsafe ownership semantics.
+	* Unlike C# or rust, it does not provide an ad-hoc `unsafe` keyword to mark "unsafe" code fragments. The most primitive features are "unsafe" by default.
+	* Safety is not uniquely defined by language, and users are allowed to implement customized safety of different types and degrees by ways like extending the type system.
+* Global GC is not required, and a subset of the language allows the same level of "insecurity" as C++, but ensures deterministic resource allocation.
+	* There is no native static check for unsafe operations, but the extensibility of the language allows direct implementation of the type system or automatic proof of stronger memory safety. It may be provided as a library in the future.
+	* The language rules still allow the interoperations introducing GC. In particular, multiple non-global GC instances are allowed.
+* The language supports [PTC](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) in the formal sense. This makes users have no need to work around about undefined behaviors like stack overflow in the programs.
+	* Mainstream languages do not provide such guarantees without aid of GC.
+* Implicit [*latent typing*](https://en.wikipedia.org/wiki/Latent_typing) is used instead of explicit [*manifest typing*](https://en.wikipedia.org/wiki/Manifest_typing).
+	* This naturally avoids the conflict between the user-provided extended type system and the built-in rules while maintaining scalability.
+		* Even without extension, as an implementation detail, the language already allows [*type inference*](https://en.wikipedia.org/wiki/Type_inference) to eliminate some type checks without affecting the semantics of the programs.	
+		* User programs are allowed to extend the type system with the syntax and related checks of *type annotations*.
+	* Expressions are similar to those in C++ with a few different rules of [*(value category)*](http://eel.is/c++draft/basic.lval). However, unlike C++, it is not the property of statically determined expressions, but the dynamic metadata following the objects implied by the expressions.
+	* Similar to the `const` type qualifier in C++, objects referenced by lvalues are allowed to be marked as immutable (read-only), instead of the default convention of *immutable* values as in languages like Rust.
+	* Similar to the *expired value (xvalue)* in C++, the object referenced by the lvalue may be tagged unique, allowing the resources in it to be transferred.	
+** *Rationale** In the representative decisions above, a common method is to compare the technical feasibility between different directions and adopt the option that is easy to extend to other direction. Otherwise, even if it is feasible, there will be a lot of ineffective work that should have been avoided.
+	* Designing a static language, and then adding some rules to disguise it as a dynamic language with sufficient dynamic characteristics, is far more difficult extending rules of a dynamic lanugage to get the feature set a static language would have.
+		* Therefore, the basic language is designed as a dynamic language at first.
+	* Adding proofs to restore some guarantees (without conflicts to others) where they have been already abandoned, is more difficult to just adding the proofs to make fresh guarantees in the plain contexts where such guarantees are never existed before.
+		* For instance, in languages using ad-hoc syntax notations like `unsafe`, ususally the safety guarantees defined by the language rules are dropped altogether, and a part of these guarantees cannot be retained. Even if this problem is ignored, these languages lack mechanisms to allow users to provide stricter guarantees integrating into current ones.
+			* Therefore, the basic language is unsafe by default.
+		* As another instance, although the default immutable data structures can guarantee the "correctness" like [const correctness](https://isocpp.org/wiki/faq/const-correctness) (an instance of [*type safety*] that keeps the defined immutable property from being discarded), it ignores the problem that the definition of "immutable" is not sufficiently preciesly described and it cannot be extended by the user program. In many cases, immutability only needs to be an equivalent relationship, not an unmodifiable one.
+			* This may cause abuse of specific non-modifiablitity, like the case of requirements on key types of associative containers in the C++ standard library. It actually need no `const` as currently mandated by ISO C++, because the immutablity of the key is defined by the equivalent relationship derived from the comparator. But the type system of C++ cannot distinguish these two case of immutablilty, leading to over-specification in the types of API, which blocks some operations on the key.
+				* Using unsafe casts like `const_cast` to cease the type safety guarantee introduced by `const` totally and assuming it not destroyed by other operations is a helpless workaround here (the "more difficult" situation; the type safety cannot be restored, and the effect is worse).
+			* Meanwhile, type system having immutability by default, like that in Rust, more fundamentally block ways of extensibility in the sense of type formation.
+				* This design implies there is only one kind of immutability, unless then modifying the design of the type system by dropping the original definition of "immutability" and reintroduce qualification like C++'s `const` (the "more difficult" situation).
+			* This also limits the extents of *constant propagation* optimization in the existing implementation, because in principle, the "constant" here only cares about whether the substitution of the generated code can maintain the semantic preservation property before and after the transformation, while caring nothing about the equality on concrete values.
+				* If the language allows the user to express that "some values with different representations are considered equivalent", the adaptability of the optimization will naturally grow.
+			* Therefore, objects in the basic languages are mutable by default.
+	* Excluding GC from a language that requires already the global GC, is far more difficult to adding the GC to a language with no mandatory of GC in its rules (especially when the GC is to be customized by users).
+		* Therefore, the language first excludes the dependencies on the global GC in its design.
+	* It is basically impossible to add extensions to a language implementation without PTC guarantee, unless the logic including the core evaluation rules is reimplemented (for example, by adding a fresh execution engine in the implementation).
+		* Therefore, the language first requires PTC to make sure the availablity, instead of encouraging of unreliable indirect implementations to complement the guarantee in future.
+		* Notice most fetures other than PTC can still be relatively easily implemented correctly by indirect implementations (e.g. ECMAScript dialects transpiled by [Babel](https://babeljs.io/)). Threfore, most other features are not (and need not) treated specially as PTC in the core language rules.
+* The implementation has good interoperability with C++.
+	* Currently, the interpreter (runtime) is implemented in C++.
+	* With the object model in the language, Unilang objects can be mapped to C++ objects.
+	* The language binding mostly focus on the availablity of C/C++ API for well-known ABIs.
+
+To keep universality, Unilang does not provide GUI functionailty as built-in features, but provides related APIs through libraries. In the current plan, Unilang will support Qt-based binding libraries to ease the transition of some existing desktop application projects. The language design of Unilang keeps sufficient abstract ability and extensibility, allowing direct implementation of GUI frameworks in the future.
+
