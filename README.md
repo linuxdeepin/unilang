@@ -164,3 +164,167 @@ The contributors of this project shall generally be able to determine the releva
 
 If there is inconsistency between the contents of the document or it does not match other parts of the project, please contact the maintainers to report the defect.
 
+# Building
+
+This project supports several ways to build.
+
+The supported hosted environments are MSYS2 MinGW32 and Linux.
+
+The following instructions using the root directory of the repository as the current working directory.
+
+## Build dependencies
+
+Some external dependencies are used in the source form, provided as the git submodules.
+
+The building environment relies on the following tools:
+
+* `git`
+* `bash`
+* GNU coreutils
+* G++ supporting ISO C++, and compatible GNU binutils
+
+The following dependencies are optional:
+
+* Clang++ can be a replacement of G++.
+
+The binary form of the following dependencies are also used:
+
+* libffi
+* LLVM 7
+	* `llvm-config`
+* Qt 5
+* `pkg-config`
+
+The following commands illustrates how to prepare the build environment by package managers:
+
+```
+# Some dependencies may have been preinstalled.
+# MSYS2
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5
+# Arch Linux
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
+yay -S llvm70 # Or some other AUR frontend command.
+# Debian (strech/buster)/Ubuntu (bionic-updates/focal)
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
+# Deepin
+sudo apt install bash coreutils git g++ libffi-dev llvm-dev pkg-config qtbase5-dev
+```
+
+### Qt environment requirements and assumptions
+
+* [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) is used.
+* `QT_NAMESPACE` is not supported.
+* Only headers and library files in the filesystem are used. There is no dependencies of other Qt files.
+* The compiler option `-I$PREFIX/include/QtWidgets` is used, where `$PREFIX` is the filesystem prefix of the header inclusion directory.
+* The linker option `-lQt5Widgets -lQt5Core` is used.
+
+## Updating the build environment
+
+Before the build, run the following command to ensure the external source dependencies are setup properly:
+
+```
+git submodule update --init
+```
+
+If there exists the submodule update, and the script `install-sbuild.sh` is already executed previously, it is necessary to cleanup the intermediate file to make sure the script work properly again, by the command:
+
+```
+rm -f 3rdparty/.patched
+```
+
+Alternatively, the follwing `git` command can make the cleanup:
+
+```
+git clean -f -X 3rdparty
+```
+
+## Using the direct building script
+
+Run the script `build.sh` to build directly and the output executable file will be put into the current working directory:
+
+```
+./build.sh
+```
+
+This uses `g++` by default. The environment variable `CXX` can override the default, as:
+
+```
+env CXX=clang++ ./build.sh
+```
+
+The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use the environment variable `CXXFLAGS` can override the default value.
+
+The script uses shell command lines to call the compiler driver specified by `$CXX` directly, and no parallel builds are supported. It may be slow.
+
+The advantage of this script is the ease to use without further configurations. It may be suitable for one-time testing and deployment.
+
+## Using the script of external build tools
+
+With the [script of external build tools (zh-CN)](https://frankhb.github.io/YSLib-book/Tools/Scripts.zh-CN.html), more configurations are supported. This method is more suitable for the development in this project.
+
+Currently, only x86_64 architecture is supported on Linux.
+
+The following instructions assume the number of maximum parallel build tasks as `$(nproc)`. This can be overriden by a positive integer in the command lines.
+
+### Environment configuration
+
+The configuration of the environment installs the tools and build dependencies, which requires to be run only once. (But it is recommended to configure again after any git submodules update.)
+
+The installed files are built from the source code in `3rdparty/YSLib`.
+
+For Linux targets, first it is required to keep the external dependencies specific for the installation, even they are not used in this project at all:
+
+```
+# Arch Linux
+sudo pacman -S freetype2 --needed
+```
+
+```
+# Debian/Ubuntu/Deepin
+sudo apt install libfreetype6-dev
+```
+
+Then run the script `./install-sbuild.sh` to install the external tools and libraries. The script updates precompiled binary dependencies, then builds and deploys the tools and the libraries. The binaray dependencies are deployed directly into the source tree. Currently the prebuilt dependencies only supports the `x86_64-linux-gnu` target. Any output files built by this project do not need to deploy these binary dependencies.
+
+**NOTE** The binary dependencies installed by the script may change as per the build environment updates. Nevertheless, currently it is guaranteed no binary-incompatible parts are depended on. Therefore, it is optional to update the binary dependencies. However, after the update of the build environment, usually the script required to run again, to ensure up-to-date tools and libraries are installed. If the binary dependencies are no longer existing, the script will automatically fetch them.
+
+The following environment variables controls the behavior of the script:
+
+* `SHBuild_BuildOpt`: The build options, defaulted to  `-xj,$(nproc)`, where `$(nproc)` is the number of parallel builds.
+* `SHBuild_SysRoot`: The root directory for the installation, defaulted to `"3rdparty/YSLib/sysroot"`.
+* `SHBuild_BuildDir`: The directory for intermediate files during the installation, defaulted to `"3rdparty/YSLib/build"`.
+* `SHBuild_Rebuild_S1`: If not empty, specify the rebuild of [stage 1 SHBuild (zh-CN)](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA) (it might be slow).
+	* **CAUTION** Update of `3rdparty/YSLib/Tools/Scripts` requires the rebuild to prevent imcompatibility.
+	* This is not necessary in other cases. It is recommened to not rebuild to improve performance during the installation.
+
+Using of the installed binary tools and dynamic libraries requires the configurations of paths, as:
+
+```
+# Configure PATH.
+export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
+# Configure LD_LIBRARY_PATH (reqiured for Linux with non-default search path).
+export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
+```
+
+The `export` commands can be put into the initialization scripts of the shell (such as `.bash_profile`) so there are no need to repeat.
+
+### Building commands
+
+After the configuration of the build environment, run the script `sbuild.sh` to build this project.
+
+This method support parallel builds and different configurations compared to the direct building script, as:
+
+```
+./sbuild.sh release-static -xj,$(nproc)
+```
+
+The command above specify the output built files in the directory `build/.release-static`. To avoid the confilicts with intermediate files, the output executable files always having the suffix `.exe`.
+
+Here, `release-static` is the **configuration name**.
+
+Let non-empty configuration name `$CONF`, when `$SHBuild_BuildDir` is not empty, the output directory is `SHBuild_BuildDir/.$CONF`; otherwise, the output directory is `build/.$CONF` 。
+
+When `$CONF` has the prefix by `debug`, the debug versions of the libraries (already built from `3rdparty` source in the previously installation steps for the build environment configuration) are used automatically, otherwise libraries of non-debug version are used. When `$CONF` has the suffix `static`, static libraries are used instead of dynamic libraries. The use of dynamic libraries makes the output executable file relying on the files in `$LD_LIBRARY_PATH` set up previously.
+
+Running the direct building script links against static libraries. This is roughly equivalent to the non-debug static library builds here.
+
