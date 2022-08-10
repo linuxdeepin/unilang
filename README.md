@@ -328,3 +328,86 @@ When `$CONF` has the prefix by `debug`, the debug versions of the libraries (alr
 
 Running the direct building script links against static libraries. This is roughly equivalent to the non-debug static library builds here.
 
+# Running
+
+## Running environment
+
+The interpreter executable file using of the dynamic library configuration relies on the correspoinding dynamic library files at runtime. It is necessary to ensure these libraries files can be found by the system (which should be prepared by the steps of the above build environment configuration), as:
+
+```
+# MinGW32
+export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
+```
+
+```
+# Linux
+export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
+```
+
+If LLVM is installed to non-default location by means other than the system package manager, it may need also to configure for LLVM, as:
+
+```
+# Linux
+export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
+```
+
+The `LD_LIBRARY_PATH` in Linux configurations above can also be configured by other ways instead, such as [`ldconfig`](https://man7.org/linux/man-pages/man8/ldconfig.8.html).
+
+Use of static library instead can avoid the necessity of the configurations above. However, LLVM may be deployed only with dynamic libraries.
+
+**CAUTION** There is no guarantee to ensure the compatibility among external binary dependencies not configurated by the scripts. They may need other reliable ways of deployment, e.g. by the system package manager. Relying on such libraries cuases the final executable of the interpreter not portable among different system enviornments (like different Linux distrobutions).
+
+## Running the interpreter
+
+Running the executable file of the interpreter enters the REPL, and the interpreter run in the interactive mode. Alternatively, specify a script name in the command line, then the interpreter will be run in the scripting mode, and the script will be loaded and executed. The script name `-` is treated as the standard input.
+
+Running the interpreter with the command line option `-e` accepts string arguments to specify the code being evaluated before entering the interactive or scripting mode. The option `-e` can occur multiple times with one string argument for each instance. These strings are treated as Unilang source code and to be evaluated in order.
+
+The command line of interpreter also supports the POSIX convention of `--`, which indicates all command line arguments after are not interpreted as command line options. This allows to specify script names same to options.
+
+The commond line option `-h` or `--help` shows the help message of the interpreter.
+
+Optionally, the environment variables are handled by the interpreter:
+
+* `ECHO`: If not empty, enable REPL echo. This makes sure the interpreter prints the evaluated result after each interaction session.
+* `UNILANG_NO_JIT`: Disable JIT compilation, using pure interpreter instead.
+* `UNILANG_NO_SRCINFO`: Disable source information for diagnostic message output. The source names are still used in the diagnostics.
+* `UNILANG_PATH`: Specify the library load path. See the descriptions of standard library `load` in the [language specifciation (zh-CN)], as well as the descriptions of standard library operations in the [implementation document of the interpreter (zh-CN)](doc/Interpreter.zh-CN.md).
+
+Except the option `-e`, with the external `echo` command, the interpreter can support non-interactive input, such as:
+
+```
+echo 'display "Hello world."; () newline' | ./unilang
+```
+
+### Qt Demo
+
+```
+./unilang demo/qt.txt
+```
+
+See `demo/qt.py` for the Python implementation with the equivalent functionality.
+
+### Quicksort demo
+
+```
+./unilang demo/quicksort.txt
+```
+
+## Running the test script
+
+The file `test.sh` is the test script. This can be directly with a few test cases. The script will call the interpreter internally.
+
+The test cases are specified in the script code, including call the interpreter to run the test program `test.txt`. In REPL, `load "test.txt"` also call to load the test program.
+
+The script supports following environment variables:
+
+* `UNILANG`: Specify the path of the interpreter, defalted to `./unilang`.
+* `PTC`: If not empty, the PTC test case is run. This requires manually termination of the process. During the running, a correct PTC implementation ensures the memory footprint of the intpreter eventually not grow over time.
+
+The built executables built using`sbuild.sh` are not in the current working directory. This can be called by the test script as the following command:
+
+```
+UNILANG=build/.debug/unilang.exe ./test.sh
+```
+
