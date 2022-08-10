@@ -139,3 +139,28 @@ Unilang is the language part of the new solution to comprehensively solve the ex
 
 To keep universality, Unilang does not provide GUI functionailty as built-in features, but provides related APIs through libraries. In the current plan, Unilang will support Qt-based binding libraries to ease the transition of some existing desktop application projects. The language design of Unilang keeps sufficient abstract ability and extensibility, allowing direct implementation of GUI frameworks in the future.
 
+# About the documents
+
+　　The following documents are maintained in this project:
+
+* `README` ：This document. It introduces the overall status, usage and main supported features.
+	* It is suitable for all readers interested in this project.
+* [Release notes (zh-CN)](ReleaseNotes.zh-CN.md): Release notes of different versions.
+	* It is suitable for all readers interested in this project.
+* [Language specification (zh-CN)](doc/Language.zh-CN.md)：This is the normative language specification, including the conforming requirements of the implementation, the supported features in the language and some informative descritpions.
+	* It is mainly used as a reference to the contributors of this project, as well as developers of the language and its implementations.
+	* It is the main source in determining whether the current design of the language and an implementation (both the interpreter and the library code) of the language having defects.
+* [Implementation document of the interpreter (zh-CN)](doc/Interpreter.zh-CN.md): This document describe the design of the intpreter, which is not intended or qualified as the publicly available features in the language. The document also contains some descriptions about the project-specific plan of the evolution and decisions, as well as the related rationale.
+	* It is sutable for the maintainers of this project (the implementors of the interpreter) and users who want to extend the language implementation.
+* [Introduction of the language](doc/Introduction.zh-CN.md)：This document introduces the use of the language and its features.
+	* It is hopefully useful for beginners.
+	* All users of this project (language, interpreter and library) are recommended to read it.
+* [Fetures document](doc/Features.zh-CN.md)：This is a reference to language features as supplement to the introcuction document above. There is a (still non-exhaustive) feature list and related information of how to use them.
+	* It is suitable for the end-users of the language (the developers using Unilang).
+	* Users having interested in the 
+	* Users who need to have an in-depth understanding of the language and need to propose new language features are recommended read it first.
+
+The contributors of this project shall generally be able to determine the relevance of the contents in the above documents and the corresponding implemented modifications (if any).
+
+If there is inconsistency between the contents of the document or it does not match other parts of the project, please contact the maintainers to report the defect.
+
