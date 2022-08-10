@@ -289,7 +289,7 @@ sudo apt install libfreetype6-dev
 * `SHBuild_BuildDir` ：中间文件安装的目录。默认值指定目录 `"3rdparty/YSLib/build"` 。
 * `SHBuild_Rebuild_S1` ：非空值指定重新构建 [stage 1 SHBuild](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA)（较慢）。
 	* **注意** 构建环境更新 `3rdparty/YSLib/Tools/Scripts` 的文件后，需指定此环境变量为非空值，以避免可能和更新后的文件不兼容的问题。
-	* 其它情形不必要，建议忽略，以提升构建性能。
+	* 其它情形不必要。建议忽略，以提升安装时的构建性能。
 
 　　使用安装的二进制工具和动态库需配置路径，如下：
 
@@ -318,9 +318,9 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 　　设非空的配置名称为 `$CONF` 。当 `$SHBuild_BuildDir` 非空时输出文件目录是 `SHBuild_BuildDir/.$CONF` ；否则，输出文件目录是 `build/.$CONF` 。
 
-　　当 `$CONF` 前缀为 `debug` 时，使用调试版本的库，否则使用非调试版本的库。当 `$CONF` 后缀为 `static` 时，使用静态库，否则使用动态库。使用动态库的可执行文件依赖先前设置的 `LD_LIBRARY_PATH` 路径下的动态库文件。
+　　当 `$CONF` 前缀为 `debug` 时，使用调试版本的库（已在先前的构建环境安装步骤中从 `3rdparty` 的源代码构建），否则使用非调试版本的库。当 `$CONF` 后缀为 `static` 时，使用静态库，否则使用动态库。使用动态库的可执行文件依赖先前设置的 `LD_LIBRARY_PATH` 路径下的动态库文件。
 
-　　运行直接构建脚本使用静态链接，相当于此处使用非 debug 静态库构建。
+　　运行直接构建脚本使链接静态库，大致相当于此处使用非 debug 静态库构建。
 
 # 运行
 
