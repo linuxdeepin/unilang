@@ -361,14 +361,14 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 
 　　命令行选项 `-h` 或 `--help` 显示解释器命令行的帮助。
 
-　　可选环境变量：
+　　解释器处理以下可选环境变量：
 
-* `ECHO`：启用 REPL 回显。
-* `UNILANG_NO_JIT`：停用基于 JIT 编译的代码执行优化，使用纯解释器。
-* `UNILANG_NO_SRCINFO`：停用用于诊断消息输出的从源文件取得的源代码信息。源文件名仍被使用。
-* `UNILANG_PATH`：库加载路径。详见[语言规范](doc/Language.zh-CN.md)对标准库函数 `load` 的说明以及[解释器实现](doc/Interpreter.zh-CN.md)对标准库模块操作的说明。
+* `ECHO`：非空值启用 REPL 回显。这确保解释器在每个交互会话后输出求值结果。
+* `UNILANG_NO_JIT`：非空值停用基于 JIT 编译的代码执行优化，使用纯解释器。
+* `UNILANG_NO_SRCINFO`：非空值停用用于诊断消息输出的从源文件取得的源代码信息。源文件名仍被诊断消息使用。
+* `UNILANG_PATH`：指定库加载路径。详见[语言规范](doc/Language.zh-CN.md)对标准库函数 `load` 的说明以及[解释器实现](doc/Interpreter.zh-CN.md)对标准库模块操作的说明。
 
-　　除使用选项 `-e` ，配合 `echo` 命令，也可支持非交互式输入，如：
+　　除使用选项 `-e` ，配合外部的 `echo` 命令，也可支持非交互式输入，如：
 
 ```
 echo 'display "Hello world."; () newline' | ./unilang
@@ -390,9 +390,9 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 ## 运行测试脚本
 
-　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
+　　文件 `test.sh` 是测试脚本。可以直接运行测试用例。脚本在其中调用解释器。
 
-　　测试用例直接在脚本中指定，包括调用解释器运行测试程序 `test.txt`。在 REPL 中 `load "test.txt"` 也可以调用测试程序。
+　　测试用例直接在脚本代码中指定，包括调用解释器运行测试程序 `test.txt`。在 REPL 中 `load "test.txt"` 也可加载测试程序。
 
 　　脚本以下支持环境变量：
 
