@@ -411,3 +411,18 @@ The built executables built using`sbuild.sh` are not in the current working dire
 UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
+# Supported language features
+
+See the examples [introduction of Unilang (zh-CN)](doc/Introduction.zh-CN.md) (not all of them are yet supported) the [feature list document (zh-CN)](doc/Features.zh-CN.md) for features.
+
+See also the [language specification (zh-CN)](doc/Language.zh-CN.md) and the design and the [implementation document of the interpreter (zh-CN)]((Interpreter.zh-CN.md)).
+
+## Known issues
+
+Output of imprecise numbers are compatible to the format of C++ functions in `<cstdio>`, and it is not guaranteed to have expected lexical notations when non-default locales are used:
+
+* The decimal point may be not `.`.
+* The output may have characters other than the decimal point, digits, signs and exponent indicators as the delimiters.
+
+Currently, the output number under non-default locales may not be successfully parsed as the numerical literals. 
+
