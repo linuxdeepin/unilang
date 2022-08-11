@@ -1,4 +1,4 @@
-﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "TermAccess.h" // for TermToNamePtr, sfmt, ystdex::sfmt, TryAccessLeafAtom, IsTyped,
 //	Unilang::Nonnull;

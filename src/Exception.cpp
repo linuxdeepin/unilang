@@ -1,4 +1,4 @@
-﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Exception.h" // for std::string, YSLib::to_std_string, ystdex::sfmt,
 //	make_shared;

@@ -1,4 +1,4 @@
-﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for Unilang::allocate_shared,
 //	Unilang::AsTermNodeTagged, TermTags, ystdex::equality_comparable, AnchorPtr,

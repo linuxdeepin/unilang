@@ -1,4 +1,4 @@
-﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "TCO.h" // for Unilang::Nonnull, std::get, Unilang::Deref, IsTyped;
 #include <cassert> // for assert;

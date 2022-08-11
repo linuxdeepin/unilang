@@ -1,4 +1,4 @@
-﻿"#", "(C) 2022 Uniontech Software Technology Co.,Ltd.",
+﻿"SPDX-FileCopyrightText: 2022 UnionTech Software Technology Co.,Ltd.",
 "Unilang standard library initialization.";
 "This file is a component of Unilang installation.",
 	"To keep the environment well-formed,",
