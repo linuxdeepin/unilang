@@ -1,4 +1,4 @@
-﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "TermNode.h"
 #include "Unilang.h" // for Unilang::Deref;

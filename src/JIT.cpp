@@ -1,4 +1,4 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021 UnionTech Software Technology Co.,Ltd.
 
 #include "JIT.h"
 #if __GNUG__
