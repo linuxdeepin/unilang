@@ -1,4 +1,4 @@
-﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for TokenValue, ystdex::sfmt, HasValue,
 //	string_view, Context::DefaultHandleException, std::bind, std::getline;

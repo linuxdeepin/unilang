@@ -1,4 +1,4 @@
-﻿// © 2021 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_JIT_h_
 #define INC_Unilang_JIT_h_ 1

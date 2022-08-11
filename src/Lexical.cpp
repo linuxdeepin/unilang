@@ -1,4 +1,4 @@
-﻿// © 2020-2021 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2021 UnionTech Software Technology Co.,Ltd.
 
 #include "Lexical.h" // for string, assert, std::string;
 #include <ystdex/string.hpp> // for ystdex::get_mid, ystdex::quote;

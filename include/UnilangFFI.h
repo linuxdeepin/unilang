@@ -1,4 +1,4 @@
-﻿// © 2020 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_UnilangFFI_h_
 #define INC_Unilang_UnilangFFI_h_ 1

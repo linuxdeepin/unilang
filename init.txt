@@ -1,4 +1,4 @@
-﻿"#", "(C) 2021 Uniontech Software Technology Co.,Ltd.",
+﻿"SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.",
 "Unilang initialization script.";
 
 "NOTE", "The following implements the new high-level language syntaxes.";

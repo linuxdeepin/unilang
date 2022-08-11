@@ -1,4 +1,4 @@
-﻿// © 2021-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Math.h" // for size_t, type_info, TryAccessValue, Unilang::Nonnull,
 //	 Unilang::Deref, ptrdiff_t, string_view, sfmt;

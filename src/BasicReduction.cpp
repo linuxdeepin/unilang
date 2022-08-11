@@ -1,4 +1,4 @@
-﻿// © 2020-2022 Uniontech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "BasicReduction.h" // for IsSticky;
 #include "TermAccess.h" // for ClearCombiningTags, EnsureValueTags,
