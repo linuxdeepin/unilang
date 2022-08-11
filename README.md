@@ -1,189 +1,278 @@
-﻿# 概述
+﻿# Unilang
 
-　　本版本库维护开发中的代号为 Unilang 的新语言。
+© 2020-2022 UnionTech Software Technology Co., Ltd.
 
-　　解释器的构建和使用参见以下各节。
+This is the repository of the programming language named **Unilang**, including documents and an interpreter as the reference implementation.
 
-# Unilang 简介
+See the sections below to build and use the interpreter.
 
-　　Unilang 是为适应更有效和灵活开发桌面环境应用的提出的通用目的编程语言项目。
+# About the new language
 
-　　当前桌面应用开发已有许多选项，存在各自的优势和不足：
+Unilang is a general purpose programming language project proposed to adapt to more effective and flexible development of desktop environment applications.
 
-* Qt 代表的 C/C++ 本机应用开发方案是许多 Linux 桌面系统应用的主流方案。
-	* C/C++ 具有成熟的语言标准和实现，以及丰富的开发资源，包括具有较好的厂商中立性的多个语言实现；但同时存在较难学习、项目开发周期往往较长、成本较高的问题。其中大多数全局问题难以短期改善。
-		* C/C++ 是最具有可移植性的工业语言的代表。但是，广泛依赖的特性并非被语言标准化，同时依赖很多底层系统的细节，如热加载。
-		* C/C++ 的库的资源丰富，但包管理、持续集成和二进制分发兼容性等问题长期以来无法有效解决，碎片化严重，不利于快速部署。
-		* C/C++ 作为静态语言，在一些场景下开发效率较低。作为静态类型语言，并不具有非常健壮的类型系统，对开发体验改进有限。
-		* C/C++ 能显式管理资源，允许开发大规模的高性能 GUI 应用。但相对地，容易误用，正确实现对开发者的要求较高。
-	* Qt 自身具有良好的可移植性，能适应众多主流桌面平台。
-		* 但是，因为语言的局限性等技术问题，Qt 还需要依赖专用的语言扩展（而非标准 C++ ），在语言层次上的可移植性和可扩展性相对较差。
-		* 相对其它 C/C++ 程序，Qt 部署需要较多的空间。不过，若成为系统库，这个问题影响相对较小。
-* Electron 代表的非本机和动态语言运行时为基础的开发方案是另一类较主流的方案。
-	* 使用流行的动态语言能克服一些静态语言不够灵活的问题，但有时难以保障质量。
-	* 依赖 GC 不需要显式管理内存，减小了一些开发难度，但大多数开发者难以有效优化运行时机制，而容易造成内存泄漏等问题极大影响 GUI 应用的质量和开发体验。
-	* 往往需要部署巨大的运行时。
-	* 一些运行时的实现可能有冷启动的性能问题。
-* PySide 代表的本机和动态语言混合方案能解决以上两类方案的部分问题。
-	* 但是，这类方案不能自动解决本机语言和动态语言自身带来的问题。
-	* 这同时要求开发者对基础方案均有了解，并不保证更易用。否则，一旦使用不当，则可能集成两者的缺陷，而非优势。
-* Flutter 代表的移动端解决方案也正在向桌面移植。
-	* 桌面端相对不够成熟。
-	* 因为通常也具有动态语言，同时具有部分其它动态语言运行时的方案类似的问题。
-* 没有任何现有方案能兼顾各种不同的问题而成为没有疑义的桌面开发首选方案。
+## The origin
 
-　　以上问题中，有相当一部分（性能、部署难度、可移植性）和语言直接相关。考察其中语言部分的问题，我们发现，现有语言不足以兼顾所有这些主要问题，因为：
+Currently, there are many options for desktop application development, with their respective advantages and disadvantages:
 
-* C、C++、ECMAScript 等最流行的一些标准化语言具有沉重的历史包袱，且不具有足够扩展语言自身的能力以兼顾这些需求。
-* Dart 等专为类似方案设计的语言在一些基本设计上的决策（如依赖全局 GC ）使之无法完全适合一些重要场景。
-* 其它的一些新近的通用目的语言如 Rust 和 Go 的设计存在的优势并不能很好地适应桌面应用开发的需求，语言社区也没有以开发桌面应用为主要重点推进。
+* The C/C++ native application development solution as [Qt](https://www.qt.io/) is the mainstream solution for many Linux desktop applications.
+	* C/C++ have mature language standards and implementations, as well as rich development resources, including multiple language implementations with good vendor neutrality. But at the same time, it is difficult to learn, the project development cycle is often long, and the cost is high. Most of these overall problems are difficult to improve in the short term.
+		* C/C++ are the representatives of the most portable industrial languages. However, many widely adopted features are not standardized by the language, and also depend on many details of the underlying system, such as hot loading.
+		* There are rich resources of C/C++ libraries, but the problems such as package management, continuous integration and compatibility issues among binary distributions cannot be effectively solved for a long time, and the fragmentation is serious, which is not conducive to rapid deployment.
+		* As static languages, C/C++ are problematic in low development efficiency in some scenarios. As statically typed languages, the type systems are not that powerful and they contribute little on the development experience.
+		* C/C++ can explicitly manage resources and allow the development of large-scale high-performance GUI applications. However, they are relatively easy to misuse, and it often requires more experienced developers to correctly implement the programs.
+	* Qt has good portability and can adapt to many mainstream desktop platforms.
+		* However, due to technical problems such as language limitations, Qt also needs to rely on special language extensions (rather than standard C++), and its portability and extensibility at the language level are relatively poor.
+		* Compared with other C/C++ programs, the depolyment of Qt programs require more space. Nevertheless, this has relatively minor impacts if Qt is deployed as the system libraries.
+* The development solution based on the non-native and dynamic language runtime as [Electron](https://www.electronjs.org/) is another mainstream solution.
+	* Using of popular dynamic languages can overcome the problem that some static languages are not flexible, but it is sometimes difficult to ensure the quality.
+	* Relying on [GC](https://en.wikipedia.org/wiki/Garbage_collection_%28computer_science%29) does not require explicit memory management, which reduces some development difficulties. However, most developers find it difficult to effectively optimize the runtime mechanism, and it is easy to cause problems such as memory leaking, which greatly affects the quality and development experience of GUI applications.
+	* Large runtimes often need to be deployed.
+	* Some runtime implementations may have performance issues about cold start.
+* The hybrid solutions of native and dynamic languages as [PySide](https://wiki.qt.io/PySide) can solve some problems of the two options above.
+	* However, this kind of solutions can not automatically solve the problems brought by native language and dynamic languages themselves.
+	* At the same time, it requires developers to understand the basic scheme and does not guarantee that it is easier to use. Otherwise, once used improperly, it is possible to integrate the defects rather than advantages of the two.
+* Mobile apps solutions as by [Flutter](https://flutter.dev/) are also migrating to the desktop.
+	* The versions ported to the desktop platforms are relatively immature.
+	* There are usually problems similar to those in the solutions of other dynamic language runtimes due to the dynamic language being used.
 
-　　Unilang 是为了统筹解决现有不足的新的方案中的语言部分，主要特色有：
+From the perspective of higher-level structure, different types of GUI solutions also have different technical limitations in the sense of architecture, which greatly limits the choices of real general solutions:
 
-* 作为动态语言，提供相对主流语言更强的语言层次上的可扩展性。
-	* 大多数其它语言中需要修改语言核心规则提供的特性，在 Unilang 中预期只需要用户使用 Unilang 语言编写的库解决，例如静态类型检查可以通过用户程序提供。
-	* 允许在已部署 Unilang 程序的环境中通过添加库补全现有语言特性，而不需要重新部署工具链的实现。
-	* 支持[同像性(homoiconicity)](https://en.wikipedia.org/wiki/Homoiconicity) ，允许代码即数据(code as data) 的方式编程。
-	* 支持一等环境(first-class environment) 。
-	* 不预设翻译阶段。不需要单独阶段展开的宏——配合支持一等环境的函数即可取代宏。同时，函数是一等对象。
-* 不要求全局 GC ，同时语言的一个子集允许和 C++ 同等层次的“不安全”但能确保确定性的资源分配。
-	* 没有原生提供针对不安全操作的静态检查，但是语言的可扩展性允许直接实现类型系统或者自动证明更强的内存安全。未来可能作为库一并提供。
-	* 语言规则仍然允许引入依赖 GC 的互操作。
-* 支持 PTC(proper tail call) ，而不需要用户程序内对栈溢出等未定义行为进行变通。
-	* 主流语言中，没有依赖全局 GC 的语言实现都没有提供类似的保证。
-* 和 C++ 具有良好的互操作性。
-	* 当前解释器（运行时）使用 C++ 实现。
+* Compared with the traditional *retained mode* GUI, the *immediate mode* GUI as [Dear ImGUI](https://github.com/ocornut/imgui) lacks the abstraction of entities, not reflecting the traditonal approach of [WIMP metaphor](https://en.wikipedia.org/wiki/WIMP_%28computing%29).
+	* The so-called [immediate mode](https://en.wikipedia.org/wiki/Immediate_mode_%28computer_graphics%29) was originally focused on graphics rendering and lacked attention to UI interaction. Therefore, even if good display output is achieved, a lot of work is still needed to improve interactivity.
+	* Due to the simplification of intermediate states, immediate mode GUI is basically difficult to extend to implement the UI automation interface in nature.
+* It is difficult to overcome the specific functional limitations of the underlying implementation by relying on the "native" solution provided with the system.
+	* For example, the [Win32 window style `WS_EX_LAYERED` is only supported in the top-level windows but not in the child windows before Windows 8](https://docs.microsoft.com/windows/win32/winmsg/extended-window-styles).
+	* Considering the coupling with the system implementation, this actually means that solutions relying on the "native" experience provided by the system (such as [wxWidgets](https://www.wxwidgets.org/)) cannot reliably provide a consistent and portable user experience, even in different versions of the same system.
+	* Such inconvenience is even acknowledged within the system manufacturers.
+		* The GUI frameworks encapsulating Win32 as [MFC](https://docs.microsoft.com/cpp/mfc/mfc-desktop-applications) and [WinForms](https://docs.microsoft.com/dotnet/desktop/winforms) are increasingly obsolete and are generally replaced by the so-called direct UI that reimplements the rendering logic (not depending on Win32 `HWND`), such as [WPF](https://docs.microsoft.com/dotnet/desktop/wpf).
+		* Contrasted with other solutions, [WinUI](https://microsoft.github.io/microsoft-ui-xaml/) directly dropped the support for (less) old versions of the operating system in an early stage (since WinUI 2). The dependence on the old version of the system a reason for that decision.
+* The GUI based on Web graphical clients (browsers) has good portability and flexibility, but there are some other special problems:
+	* The flexibility of Web-based implementations are mainly achieved by the limited combination of client languages, specifically [JavaScript](https://www.ecma-international.org/publications-and-standards/standards/ecma-262/), [CSS](https://www.w3.org/TR/CSS/#css) and [HTML](https://html.spec.whatwg.org/multipage/). Defects in these languages will long persist.
+		* [WebAssembly](https://webassembly.org/) will be a supplement. It cannot replace JavaScript in the foreseeable future, let alone other DSLs other than JavaScript.
+		* These technologies do not ensure good support for the development of native applications.
+			* Historically, HTML was designed to present static documents (called "pages") in the web rather than interactive dynamic programs.
+			* As the role of the client-side patching for converting static pages into dynamic content, JavaScript and CSS were also severely limited in function in the early stage (therefore, [Flash](https://en.wikipedia.org/wiki/Adobe_Flash) and other technologies were once popular).
+			* Even though standardized technical specifications such as [DOM](https://dom.spec.whatwg.org/) can simplify a large number of implementation details, incompatibility among different browsers is often problematic. Fortunately, as a dynamic language, JavaScript is easy to reduce problems by [shim](https://en.wikipedia.org/wiki/Shim_%28computing%29) (instead of changing the running environment), but this is at least at the cost of adaptation workload, and it is not always feasible (for example, the lack of support for [PTC (proper tail call)]((https://262.ecma-international.org/6.0/#sec-tail-position-calls)) of ES6 can hardly be solved except modifying the underlying implementation of the language.
+	* The actual implementations are extremely complex, obviously more difficult to customize than other solutions.
+		* The core parts of the browser (implementing the typesetting engine such as HTML and CSS and the runtime of languages such as JavaScript) are highly encapsulated integrated components, which are mostly implemented in C/C++, but more difficult to modify than almost all other C/C++ programs.
+		* Therefore, Web-based GUI solutions can only bundle these native components without significant changes. Even functions not depended on by the application are not easily removed before deployment. Unless distributed by the system, this will seriously bloat the the programs.
+	* For some traditional factors (like security concerns), the interaction between the Web programs and the native environment is limited, and the development of desktop applications may require a lot of additional work.
+* Hybrid frameworks that rely on other components have path dependency problems correspondingly.
+	* If relying on the framework of the native GUI implementation provided by the system, there are problems of the above native solution.
+	* Relying on the frameworks having dependencies on the Web (such as Electron, [Cordova](https://cordova.apache.org/), [Tauri](https://tauri.app/)) will bring the problems of the above Web-based solutions.
+	* If all are relied on, all similar limitations will eventually be jointly inherited.
+	* Nevertheless, if only using these targets as one of the optional output configurations (for instance, using WebAssembly as the generation target), there will be less problems as above。
+* Native but not OS-native GUI frameworks as Qt have few global architecture defects comparable to the above problems, but there are still many problems in the implementation architecture and API design, and the development experience is not satisfactory.
 
-　　当前计划中，Unilang 将会支持基于 Qt 的绑定的库，以便衔接过渡现有的一些桌面应用项目。
+So, no existing solution can take into account all kinds of problems and become the preferred solution for desktop development without doubt.
 
-# 文档说明
+A considerable part of the above problems (performance, deployment difficulty and portability) are directly related to the language. Looking at the language part, we find that existing languages are not able to solve all these major issues well enough, because:
 
-　　本项目包含以下文档：
+* Most popular standardized languages, such as C, C++ and ECMAScript, have a heavy historical burden and do not have the ability to extend the language itself to meet these needs.
+* Dart and other languages specially designed for these solutions have problems in the basic design decisions (like relying on global GC), which make it unable to fully fit some important scenarios.
+* Other general purpose languages, such as [Rust](https://www.rust-lang.org/) and [Go](https://golang.org), do not provide GUI solutions together.
+	* Although there are some third-party GUI projects, their advantages in design still cannot well meet the needs of desktop application development.
+	* The language community has not focused on developing desktop applications.
 
-* `README` ：本文档，介绍项目的整体状况，使用方法和支持的主要功能，附更新记录。
-	* 预期提供给所有对本项目有兴趣的读者。
-* [语言规范文档](doc/Language.zh-CN.md)：正式的语言规范，包含实现的基准、要求支持的特性和部分解释性说明。
-	* 供项目的贡献者、语言及其实现最终用户（开发者）参考。
-	* 是确定语言设计和语言实现（解释器和库代码）存在缺陷的主要依据。
-* [解释器实现文档](doc/Interpreter.zh-CN.md)：描述解释器中一般不作为语言特性公开的设计以及对应的实现，也包含一些和项目演进和设计决策相关的原理说明。
-	* 预期给项目的维护者（解释器的实现者）和对改进语言设计有兴趣的读者参考。
-* [语言介绍文档](doc/Introduction.zh-CN.md)：介绍语言的使用方式。
-	* 预期作为语言首选的入门文档。
-	* 建议所有本项目（语言、解释器和库）的用户阅读。
-* [特性介绍文档](doc/Features.zh-CN.md)：补充语言介绍文档，列出特性列表，介绍其主要使用方式。
-	* 预期给语言的最终用户（开发者）参考。
-	* 建议需要对语言的使用深入了解和需要提议新语言特性的用户阅读。
+We are eager to have a new language to solve all the above pain points. However, it is not enough to provide a new language design and implementation. New languages are not magic to automatically solve legacy problems -- especially considering that there is no lack of "new" programming languages in the market, but they still do not meet the needs.
 
-　　项目的贡献者一般应能确定以上文档中的内容和对应实现的修改（若存在）的关联性。
+One of the technical reasons for this situation is that many designs are too focused on specific requirements and lack of consideration of the general factors of long-term evolution of the language, and their applicability outside the expected target areas drops sharply, which is not universal enough; or they fail to balance universality and complexity. This makes the application field slightly deviate from the expectation and exposes the limitations of the original design. Even if users knows how to improve a language, they will encounter practical difficulties in development of the language and eventually give up.
 
-　　若文档的内容之间存在逻辑矛盾或者和其它部分不匹配，请联系维护者报告缺陷。
+If new options are put forward without avoiding this situation, it will only further hinder the solution of the problem. Therefore, on the basis of meeting the needs, we hope that the new language can truly achieve universality in a deeper way - by reducing the built-in *ad-hoc* features specifically for individual problem areas and replacing them with a more general set of primitive features.
 
-# 构建
+> Programming languages should be designed not by piling feature on top of feature, but by removing the weaknesses and restrictions that make additional features appear necessary.
 
-　　本项目支持不同方法构建。
+<p align="right">—— <a href="https://schemers.org/Documents/Standards/">R<sup>n</sup>RS</a> & <a href="https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf">R<sup>-1</sup>RK</a></p>
 
-　　支持的宿主环境为 MSYS2 MinGW32 和 Linux 。
+## Characteristics
 
-　　以下使用版本库根目录作为当前工作目录。
+Unilang is the language part of the new solution to comprehensively solve the existing problems. The distinguishing features are:
 
-## 构建环境依赖
+* As a dynamic language, it provides more extensibility at the language level than other languages.
+	* Features provided by the language core rules in most other languages are expected to be library modules implemented in Unilang, e.g. statically type checking can be provided by user programs.
+		* Customization of the functionality of the language by user-provided components may effectively rule out unexpected dynamic features, and **eventually get advanced development experience as in most static languages without the defects of inconvenience from the core rules of static languages**.
+		* It allows the existing language features to be complemented by adding libraries in the environment where the Unilang program has been deployed, without the need to redeploy the implementation of the toolchain.
+		* A basic language is provided, and the practical feature set is built by extending this language in the form of libraries. Libraries are expected to be provided by this project and users.
+	* Similar to C and C++ but different from [Java](https://docs.oracle.com/javase/specs/jls/se18/html/jls-1.html), it does not explicitly require or assume specific forms of translation and execution. The implementation details such as compilation, interpretation and what image format to load are transparent to the core language rules.
+	* There is no preset *phases of translation* as explicitly specified in C and [C++](http://eel.is/c++draft/lex.phases). There is no need of macros expanded in separated phase -- they can be replaced by functions that support first-class environments.
+	* It supports [homoiconicity](https://en.wikipedia.org/wiki/Homoiconicity) and allows code as data programming.
+	* Functions are [first-class objects](https://en.wikipedia.org/wiki/First-class_citizen).
+	* *Environments* have ownership of variable bindings. *First-class environments* are supported.
+* It supports C++-like object model and (currently unchecked) unsafe ownership semantics.
+	* Unlike C# or rust, it does not provide an ad-hoc `unsafe` keyword to mark "unsafe" code fragments. The most primitive features are "unsafe" by default.
+	* Safety is not uniquely defined by language, and users are allowed to implement customized safety of different types and degrees by ways like extending the type system.
+* Global GC is not required, and a subset of the language allows the same level of "insecurity" as C++, but ensures deterministic resource allocation.
+	* There is no native static check for unsafe operations, but the extensibility of the language allows direct implementation of the type system or automatic proof of stronger memory safety. It may be provided as a library in the future.
+	* The language rules still allow the interoperations introducing GC. In particular, multiple non-global GC instances are allowed.
+* The language supports [PTC](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) in the formal sense. This makes users have no need to work around about undefined behaviors like stack overflow in the programs.
+	* Mainstream languages do not provide such guarantees without aid of GC.
+* Implicit [*latent typing*](https://en.wikipedia.org/wiki/Latent_typing) is used instead of explicit [*manifest typing*](https://en.wikipedia.org/wiki/Manifest_typing).
+	* This naturally avoids the conflict between the user-provided extended type system and the built-in rules while maintaining scalability.
+		* Even without extension, as an implementation detail, the language already allows [*type inference*](https://en.wikipedia.org/wiki/Type_inference) to eliminate some type checks without affecting the semantics of the programs.	
+		* User programs are allowed to extend the type system with the syntax and related checks of *type annotations*.
+	* Expressions are similar to those in C++ with a few different rules of [*(value category)*](http://eel.is/c++draft/basic.lval). However, unlike C++, it is not the property of statically determined expressions, but the dynamic metadata following the objects implied by the expressions.
+	* Similar to the `const` type qualifier in C++, objects referenced by lvalues are allowed to be marked as immutable (read-only), instead of the default convention of *immutable* values as in languages like Rust.
+	* Similar to the *expired value (xvalue)* in C++, the object referenced by the lvalue may be tagged unique, allowing the resources in it to be transferred.	
+** *Rationale** In the representative decisions above, a common method is to compare the technical feasibility between different directions and adopt the option that is easy to extend to other direction. Otherwise, even if it is feasible, there will be a lot of ineffective work that should have been avoided.
+	* Designing a static language, and then adding some rules to disguise it as a dynamic language with sufficient dynamic characteristics, is far more difficult extending rules of a dynamic lanugage to get the feature set a static language would have.
+		* Therefore, the basic language is designed as a dynamic language at first.
+	* Adding proofs to restore some guarantees (without conflicts to others) where they have been already abandoned, is more difficult to just adding the proofs to make fresh guarantees in the plain contexts where such guarantees are never existed before.
+		* For instance, in languages using ad-hoc syntax notations like `unsafe`, ususally the safety guarantees defined by the language rules are dropped altogether, and a part of these guarantees cannot be retained. Even if this problem is ignored, these languages lack mechanisms to allow users to provide stricter guarantees integrating into current ones.
+			* Therefore, the basic language is unsafe by default.
+		* As another instance, although the default immutable data structures can guarantee the "correctness" like [const correctness](https://isocpp.org/wiki/faq/const-correctness) (an instance of [*type safety*] that keeps the defined immutable property from being discarded), it ignores the problem that the definition of "immutable" is not sufficiently preciesly described and it cannot be extended by the user program. In many cases, immutability only needs to be an equivalent relationship, not an unmodifiable one.
+			* This may cause abuse of specific non-modifiablitity, like the case of requirements on key types of associative containers in the C++ standard library. It actually need no `const` as currently mandated by ISO C++, because the immutablity of the key is defined by the equivalent relationship derived from the comparator. But the type system of C++ cannot distinguish these two case of immutablilty, leading to over-specification in the types of API, which blocks some operations on the key.
+				* Using unsafe casts like `const_cast` to cease the type safety guarantee introduced by `const` totally and assuming it not destroyed by other operations is a helpless workaround here (the "more difficult" situation; the type safety cannot be restored, and the effect is worse).
+			* Meanwhile, type system having immutability by default, like that in Rust, more fundamentally block ways of extensibility in the sense of type formation.
+				* This design implies there is only one kind of immutability, unless then modifying the design of the type system by dropping the original definition of "immutability" and reintroduce qualification like C++'s `const` (the "more difficult" situation).
+			* This also limits the extents of *constant propagation* optimization in the existing implementation, because in principle, the "constant" here only cares about whether the substitution of the generated code can maintain the semantic preservation property before and after the transformation, while caring nothing about the equality on concrete values.
+				* If the language allows the user to express that "some values with different representations are considered equivalent", the adaptability of the optimization will naturally grow.
+			* Therefore, objects in the basic languages are mutable by default.
+	* Excluding GC from a language that requires already the global GC, is far more difficult to adding the GC to a language with no mandatory of GC in its rules (especially when the GC is to be customized by users).
+		* Therefore, the language first excludes the dependencies on the global GC in its design.
+	* It is basically impossible to add extensions to a language implementation without PTC guarantee, unless the logic including the core evaluation rules is reimplemented (for example, by adding a fresh execution engine in the implementation).
+		* Therefore, the language first requires PTC to make sure the availablity, instead of encouraging of unreliable indirect implementations to complement the guarantee in future.
+		* Notice most fetures other than PTC can still be relatively easily implemented correctly by indirect implementations (e.g. ECMAScript dialects transpiled by [Babel](https://babeljs.io/)). Threfore, most other features are not (and need not) treated specially as PTC in the core language rules.
+* The implementation has good interoperability with C++.
+	* Currently, the interpreter (runtime) is implemented in C++.
+	* With the object model in the language, Unilang objects can be mapped to C++ objects.
+	* The language binding mostly focus on the availablity of C/C++ API for well-known ABIs.
 
-　　一些外部依赖项的源代码在版本库及 git 子模块中提供。
+To keep universality, Unilang does not provide GUI functionailty as built-in features, but provides related APIs through libraries. In the current plan, Unilang will support Qt-based binding libraries to ease the transition of some existing desktop application projects. The language design of Unilang keeps sufficient abstract ability and extensibility, allowing direct implementation of GUI frameworks in the future.
 
-　　构建环境依赖以下环境工具：
+# About the documents
+
+　　The following documents are maintained in this project:
+
+* `README` ：This document. It introduces the overall status, usage and main supported features.
+	* It is suitable for all readers interested in this project.
+* [Release notes (zh-CN)](ReleaseNotes.zh-CN.md): Release notes of different versions.
+	* It is suitable for all readers interested in this project.
+* [Language specification (zh-CN)](doc/Language.zh-CN.md)：This is the normative language specification, including the conforming requirements of the implementation, the supported features in the language and some informative descritpions.
+	* It is mainly used as a reference to the contributors of this project, as well as developers of the language and its implementations.
+	* It is the main source in determining whether the current design of the language and an implementation (both the interpreter and the library code) of the language having defects.
+* [Implementation document of the interpreter (zh-CN)](doc/Interpreter.zh-CN.md): This document describe the design of the intpreter, which is not intended or qualified as the publicly available features in the language. The document also contains some descriptions about the project-specific plan of the evolution and decisions, as well as the related rationale.
+	* It is sutable for the maintainers of this project (the implementors of the interpreter) and users who want to extend the language implementation.
+* [Introduction of the language](doc/Introduction.zh-CN.md)：This document introduces the use of the language and its features.
+	* It is hopefully useful for beginners.
+	* All users of this project (language, interpreter and library) are recommended to read it.
+* [Fetures document](doc/Features.zh-CN.md)：This is a reference to language features as supplement to the introcuction document above. There is a (still non-exhaustive) feature list and related information of how to use them.
+	* It is suitable for the end-users of the language (the developers using Unilang).
+	* Users having interested in the 
+	* Users who need to have an in-depth understanding of the language and need to propose new language features are recommended read it first.
+
+The contributors of this project shall generally be able to determine the relevance of the contents in the above documents and the corresponding implemented modifications (if any).
+
+If there is inconsistency between the contents of the document or it does not match other parts of the project, please contact the maintainers to report the defect.
+
+# Building
+
+This project supports several ways to build.
+
+The supported hosted environments are MSYS2 MinGW32 and Linux.
+
+The following instructions using the root directory of the repository as the current working directory.
+
+## Build dependencies
+
+Some external dependencies are used in the source form, provided as the git submodules.
+
+The building environment relies on the following tools:
 
 * `git`
 * `bash`
 * GNU coreutils
-* 支持 ISO C++ 11 的 G++ 和与之兼容的 GNU binutils
+* G++ supporting ISO C++, and compatible GNU binutils
 
-　　可选依赖：
+The following dependencies are optional:
 
-* 可使用 Clang++ 代替 G++ 。
+* Clang++ can be a replacement of G++.
 
-　　构建使用外部二进制依赖和相关工具：
+The binary form of the following dependencies are also used:
 
 * libffi
 * LLVM 7
 	* `llvm-config`
+* Qt 5
+* `pkg-config`
 
-　　安装构建环境依赖的包管理器命令行举例：
+The following commands illustrates how to prepare the build environment by package managers:
 
 ```
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (strech/buster)/Ubuntu (bionic-updates/focal)
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
-# UOS
-sudo apt install bash coreutils git g++ libffi-dev llvm-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
+# Deepin
+sudo apt install bash coreutils git g++ libffi-dev llvm-dev pkg-config qtbase5-dev
 ```
 
-### Qt 环境要求和假设
+### Qt environment requirements and assumptions
 
-* 使用 [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) 。
-* 不支持 `QT_NAMESPACE` 。
-* 直接依赖头文件和库文件在文件系统中的布局，不使用其它文件。
-* 使用编译器选项 `-I$PREFIX/include/QtWidgets` ，其中 `$PREFIX` 是头文件目录的系统前缀。
-* 使用链接器选项 `-lQt5Widgets -lQt5Core` 。
+* [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) is used.
+* `QT_NAMESPACE` is not supported.
+* Only headers and library files in the filesystem are used. There is no dependencies of other Qt files.
+* The compiler option `-I$PREFIX/include/QtWidgets` is used, where `$PREFIX` is the filesystem prefix of the header inclusion directory.
+* The linker option `-lQt5Widgets -lQt5Core` is used.
 
-## 构建环境更新
+## Updating the build environment
 
-　　构建之前，在版本库根目录运行以下命令确保外部依赖项：
+Before the build, run the following command to ensure the external source dependencies are setup properly:
 
 ```
 git submodule update --init
 ```
 
-　　若实际发生更新，且之前执行过 `install-sbuild.sh` 脚本，需清理补丁标记文件以确保再次执行这个脚本时能继续正确地处理源代码：
+If there exists the submodule update, and the script `install-sbuild.sh` is already executed previously, it is necessary to cleanup the intermediate file to make sure the script work properly again, by the command:
 
 ```
 rm -f 3rdparty/.patched
 ```
 
-　　使用以下 `git` 命令也能清理文件：
+Alternatively, the follwing `git` command can make the cleanup:
 
 ```
 git clean -f -X 3rdparty
 ```
 
-## 使用直接构建脚本
+## Using the direct building script
 
-　　运行脚本 `build.sh` 直接构建，在当前工作目录输出可执行文件：
+Run the script `build.sh` to build directly and the output executable file will be put into the current working directory:
 
 ```
 ./build.sh
 ```
-　　默认使用 `g++` 。环境变量 `CXX` 可指定要使用的其它替代，如：
+
+This uses `g++` by default. The environment variable `CXX` can override the default, as:
 
 ```
 env CXX=clang++ ./build.sh
 ```
 
-　　默认使用 `-std=c++11 -Wall -Wextra -g` 编译器选项。类似地，使用环境变量 `CXXFLAGS` 可替代默认值。
+The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use the environment variable `CXXFLAGS` can override the default value.
 
-　　这个脚本使用 shell 命令行调用 `$CXX` 指定的编译器驱动，不支持并行构建，可能较慢。
+The script uses shell command lines to call the compiler driver specified by `$CXX` directly, and no parallel builds are supported. It may be slow.
 
-　　优点是不需要进一步配置环境即可使用。适合一次性测试和部署。
+The advantage of this script is the ease to use without further configurations. It may be suitable for one-time testing and deployment.
 
-## 使用外部工具构建脚本
+## Using the script of external build tools
 
-　　利用[外部工具的脚本](https://frankhb.github.io/YSLib-book/Tools/Scripts.zh-CN.html)，可支持更多的构建配置。这个方式相比直接构建脚本更适合开发。
+With the [script of external build tools (zh-CN)](https://frankhb.github.io/YSLib-book/Tools/Scripts.zh-CN.html), more configurations are supported. This method is more suitable for the development in this project.
 
-　　当前 Linux 平台只支持 x86_64 宿主架构。
+Currently, only x86_64 architecture is supported on Linux.
 
-　　以下设并行构建任务数 `$(nproc)` 。可在命令中单独指定其它正整数的值代替。
+The following instructions assume the number of maximum parallel build tasks as `$(nproc)`. This can be overriden by a positive integer in the command lines.
 
-### 配置环境
+### Environment configuration
 
-　　配置环境完成工具和依赖项（包括动态库）的安装，仅需一次。（但更新子模块后一般建议重新配置。）
+The configuration of the environment installs the tools and build dependencies, which requires to be run only once. (But it is recommended to configure again after any git submodules update.)
 
-　　安装的文件由 `3rdparty/YSLib` 中的源代码构建。
+The installed files are built from the source code in `3rdparty/YSLib`.
 
-　　对 Linux 平台构建目标，首先需确保构建过程使用的外部依赖被安装：
+For Linux targets, first it is required to keep the external dependencies specific for the installation, even they are not used in this project at all:
 
 ```
 # Arch Linux
@@ -191,24 +280,24 @@ sudo pacman -S freetype2 --needed
 ```
 
 ```
-# Debian/Ubuntu/UOS
+# Debian/Ubuntu/Deepin
 sudo apt install libfreetype6-dev
 ```
 
-　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具和库。其中，二进制依赖直接被部署到源码树中。当前二进制依赖只支持 `x86_64-linux-gnu` 。本项目构建输出的文件分发时不需要依赖其中的二进制文件。
+Then run the script `./install-sbuild.sh` to install the external tools and libraries. The script updates precompiled binary dependencies, then builds and deploys the tools and the libraries. The binaray dependencies are deployed directly into the source tree. Currently the prebuilt dependencies only supports the `x86_64-linux-gnu` target. Any output files built by this project do not need to deploy these binary dependencies.
 
-**注释** 脚本安装的二进制依赖可能会随构建环境更新改变，但当前本项目保证不依赖其中可能存在的二进制不兼容的部分。因此，二进制依赖的更新是可选的。但是，在构建环境更新后，一般仍需再次运行脚本配置环境，以确保覆盖安装外部工具和（非二进制依赖形式分发的）库的最新版本。其中，若二进制依赖文件不再在脚本预期的部署位置中存在，脚本会重新获取最新版本的二进制依赖。
+**NOTE** The binary dependencies installed by the script may change as per the build environment updates. Nevertheless, currently it is guaranteed no binary-incompatible parts are depended on. Therefore, it is optional to update the binary dependencies. However, after the update of the build environment, usually the script required to run again, to ensure up-to-date tools and libraries are installed. If the binary dependencies are no longer existing, the script will automatically fetch them.
 
-　　以下环境变量控制脚本的行为：
+The following environment variables controls the behavior of the script:
 
-* `SHBuild_BuildOpt` ：构建选项。默认值为 `-xj,$(nproc)` ，其中 `$(nproc)` 是并行构建任务数。可调整 `$(nproc)` 为其它正整数。
-* `SHBuild_SysRoot` ：安装根目录。默认指定值指定目录 `"3rdparty/YSLib/sysroot"` 。
-* `SHBuild_BuildDir` ：中间文件安装的目录。默认值指定目录 `"3rdparty/YSLib/build"` 。
-* `SHBuild_Rebuild_S1` ：非空值指定重新构建 [stage 1 SHBuild](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA)（较慢）。
-	* **注意** 构建环境更新 `3rdparty/YSLib/Tools/Scripts` 的文件后，需指定此环境变量为非空值，以避免可能和更新后的文件不兼容的问题。
-	* 其它情形不必要，建议忽略，以提升构建性能。
+* `SHBuild_BuildOpt`: The build options, defaulted to  `-xj,$(nproc)`, where `$(nproc)` is the number of parallel builds.
+* `SHBuild_SysRoot`: The root directory for the installation, defaulted to `"3rdparty/YSLib/sysroot"`.
+* `SHBuild_BuildDir`: The directory for intermediate files during the installation, defaulted to `"3rdparty/YSLib/build"`.
+* `SHBuild_Rebuild_S1`: If not empty, specify the rebuild of [stage 1 SHBuild (zh-CN)](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA) (it might be slow).
+	* **CAUTION** Update of `3rdparty/YSLib/Tools/Scripts` requires the rebuild to prevent imcompatibility.
+	* This is not necessary in other cases. It is recommened to not rebuild to improve performance during the installation.
 
-　　使用安装的二进制工具和动态库需配置路径，如下：
+Using of the installed binary tools and dynamic libraries requires the configurations of paths, as:
 
 ```
 # Configure PATH.
@@ -217,33 +306,33 @@ export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　以上 `export` 命令的逻辑可放到 shell 启动脚本（如 `.bash_profile` ）中而不需重复配置。
+The `export` commands can be put into the initialization scripts of the shell (such as `.bash_profile`) so there are no need to repeat.
 
-### 构建命令
+### Building commands
 
-　　配置环境后，运行脚本 `sbuild.sh` 构建。
+After the configuration of the build environment, run the script `sbuild.sh` to build this project.
 
-　　和直接构建脚本相比，支持并行构建，且支持不同的配置，如：
+This method support parallel builds and different configurations compared to the direct building script, as:
 
 ```
 ./sbuild.sh release-static -xj,$(nproc)
 ```
 
-　　则默认在 `build/.release-static` 目录下输出构建的文件。为避免和中间目录冲突，输出的可执行文件后缀名统一为 `.exe` 。
+The command above specify the output built files in the directory `build/.release-static`. To avoid the confilicts with intermediate files, the output executable files always having the suffix `.exe`.
 
-　　此处 `release-static` 是**配置名称**。
+Here, `release-static` is the **configuration name**.
 
-　　设非空的配置名称为 `$CONF` 。当 `$SHBuild_BuildDir` 非空时输出文件目录是 `SHBuild_BuildDir/.$CONF` ；否则，输出文件目录是 `build/.$CONF` 。
+Let non-empty configuration name `$CONF`, when `$SHBuild_BuildDir` is not empty, the output directory is `SHBuild_BuildDir/.$CONF`; otherwise, the output directory is `build/.$CONF` 。
 
-　　当 `$CONF` 前缀为 `debug` 时，使用调试版本的库，否则使用非调试版本的库。当 `$CONF` 后缀为 `static` 时，使用静态库，否则使用动态库。使用动态库的可执行文件依赖先前设置的 `LD_LIBRARY_PATH` 路径下的动态库文件。
+When `$CONF` has the prefix by `debug`, the debug versions of the libraries (already built from `3rdparty` source in the previously installation steps for the build environment configuration) are used automatically, otherwise libraries of non-debug version are used. When `$CONF` has the suffix `static`, static libraries are used instead of dynamic libraries. The use of dynamic libraries makes the output executable file relying on the files in `$LD_LIBRARY_PATH` set up previously.
 
-　　运行直接构建脚本使用静态链接，相当于此处使用非 debug 静态库构建。
+Running the direct building script links against static libraries. This is roughly equivalent to the non-debug static library builds here.
 
-# 运行
+# Running
 
-## 运行环境
+## Running environment
 
-　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含），如：
+The interpreter executable file using of the dynamic library configuration relies on the correspoinding dynamic library files at runtime. It is necessary to ensure these libraries files can be found by the system (which should be prepared by the steps of the above build environment configuration), as:
 
 ```
 # MinGW32
@@ -255,37 +344,37 @@ export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
-　　若使用系统包管理器以外的方式安装 LLVM 运行时库到非默认位置，类似添加 LLVM 的路径，如：
+If LLVM is installed to non-default location by means other than the system package manager, it may need also to configure for LLVM, as:
 
 ```
 # Linux
 export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 ```
 
-　　以上 Linux 配置的 `LD_LIBRARY_PATH` 也可通过 [`ldconfig`](https://man7.org/linux/man-pages/man8/ldconfig.8.html) 等其它方式代替。
+The `LD_LIBRARY_PATH` in Linux configurations above can also be configured by other ways instead, such as [`ldconfig`](https://man7.org/linux/man-pages/man8/ldconfig.8.html).
 
-　　使用静态链接构建的版本不需要这样的运行环境配置；不过 LLVM 通常使用动态库。
+Use of static library instead can avoid the necessity of the configurations above. However, LLVM may be deployed only with dynamic libraries.
 
-**注意** 非脚本配置的外部二进制依赖项可能不兼容，需要通过系统包管理器等方式部署，依赖这些库导致解释器最终的二进制文件不保证跨系统环境（如不同 Linux 发行版）之间可移植。
+**CAUTION** There is no guarantee to ensure the compatibility among external binary dependencies not configurated by the scripts. They may need other reliable ways of deployment, e.g. by the system package manager. Relying on such libraries cuases the final executable of the interpreter not portable among different system enviornments (like different Linux distrobutions).
 
-## 运行解释器
+## Running the interpreter
 
-　　运行解释器可执行文件直接进入交互模式运行 REPL ；或在命令行指定一个脚本，进入脚本模式执行脚本中的源程序。脚本名称 `-` 被视为标准输入。
+Running the executable file of the interpreter enters the REPL, and the interpreter run in the interactive mode. Alternatively, specify a script name in the command line, then the interpreter will be run in the scripting mode, and the script will be loaded and executed. The script name `-` is treated as the standard input.
 
-　　运行解释器时使用命令行选项 `-e` 可在进入交互模式或脚本模式前直接求值字符串参数。选项 `-e` 可以使用多次，每个选项后具有一个命令行参数，这些参数字符串被作为 Unilang 源代码顺序求值。
+Running the interpreter with the command line option `-e` accepts string arguments to specify the code being evaluated before entering the interactive or scripting mode. The option `-e` can occur multiple times with one string argument for each instance. These strings are treated as Unilang source code and to be evaluated in order.
 
-　　解释器命令行支持 POSIX 约定，在命令行参数 `--` 之后的其它参数不被解释为选项。这允许指定和选项重名的脚本文件。
+The command line of interpreter also supports the POSIX convention of `--`, which indicates all command line arguments after are not interpreted as command line options. This allows to specify script names same to options.
 
-　　命令行选项 `-h` 或 `--help` 显示解释器命令行的帮助。
+The commond line option `-h` or `--help` shows the help message of the interpreter.
 
-　　可选环境变量：
+Optionally, the environment variables are handled by the interpreter:
 
-* `ECHO`：启用 REPL 回显。
-* `UNILANG_NO_JIT`：停用基于 JIT 编译的代码执行优化，使用纯解释器。
-* `UNILANG_NO_SRCINFO`：停用用于诊断消息输出的从源文件取得的源代码信息。源文件名仍被使用。
-* `UNILANG_PATH`：库加载路径。详见[语言规范](doc/Language.zh-CN.md)对标准库函数 `load` 的说明以及[解释器实现](Interpreter.zh-CN.md)对标准库模块操作的说明。
+* `ECHO`: If not empty, enable REPL echo. This makes sure the interpreter prints the evaluated result after each interaction session.
+* `UNILANG_NO_JIT`: Disable JIT compilation, using pure interpreter instead.
+* `UNILANG_NO_SRCINFO`: Disable source information for diagnostic message output. The source names are still used in the diagnostics.
+* `UNILANG_PATH`: Specify the library load path. See the descriptions of standard library `load` in the [language specifciation (zh-CN)], as well as the descriptions of standard library operations in the [implementation document of the interpreter (zh-CN)](doc/Interpreter.zh-CN.md).
 
-　　除使用选项 `-e` ，配合 `echo` 命令，也可支持非交互式输入，如：
+Except the option `-e`, with the external `echo` command, the interpreter can support non-interactive input, such as:
 
 ```
 echo 'display "Hello world."; () newline' | ./unilang
@@ -297,7 +386,7 @@ echo 'display "Hello world."; () newline' | ./unilang
 ./unilang demo/qt.txt
 ```
 
-　　等价的 Python 实现参考 `demo/qt.py` 。
+See `demo/qt.py` for the Python implementation with the equivalent functionality.
 
 ### Quicksort demo
 
@@ -305,481 +394,35 @@ echo 'display "Hello world."; () newline' | ./unilang
 ./unilang demo/quicksort.txt
 ```
 
-## 运行测试脚本
+## Running the test script
 
-　　文件 `test.sh` 是测试脚本。可以直接运行测试用例，其中调用解释器。
+The file `test.sh` is the test script. This can be directly with a few test cases. The script will call the interpreter internally.
 
-　　测试用例直接在脚本中指定，包括调用解释器运行测试程序 `test.txt`。在 REPL 中 `load "test.txt"` 也可以调用测试程序。
+The test cases are specified in the script code, including call the interpreter to run the test program `test.txt`. In REPL, `load "test.txt"` also call to load the test program.
 
-　　脚本以下支持环境变量：
+The script supports following environment variables:
 
-* `UNILANG` ：指定解释器可执行文件路径，默认为 `./unilang` 。
-* `PTC` ：非空时，运行 PTC 测试用例。手动终止进程后结束用例。在此期间，正确的 PTC 实现可确保最终内存占用不随时间增长。
+* `UNILANG`: Specify the path of the interpreter, defalted to `./unilang`.
+* `PTC`: If not empty, the PTC test case is run. This requires manually termination of the process. During the running, a correct PTC implementation ensures the memory footprint of the intpreter eventually not grow over time.
 
-　　使用 `sbuild.sh` 构建的可执行文件不在当前目录。可使用类似以下的 `bash` 命令调用：
+The built executables built using`sbuild.sh` are not in the current working directory. This can be called by the test script as the following command:
 
 ```
 UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
-# 支持的语言特性
+# Supported language features
 
-　　语言特性可参照[《Unilang 介绍》](doc/Introduction.zh-CN.md)中的例子（尚未完全支持）和[特性清单](doc/Features.zh-CN.md)。
+See the examples [introduction of Unilang (zh-CN)](doc/Introduction.zh-CN.md) (not all of them are yet supported) the [feature list document (zh-CN)](doc/Features.zh-CN.md) for features.
 
-　　另见[语言规范](doc/Language.zh-CN.md)和[解释器设计和实现文档](Interpreter.zh-CN.md)。
+See also the [language specification (zh-CN)](doc/Language.zh-CN.md) and the design and the [implementation document of the interpreter (zh-CN)]((Interpreter.zh-CN.md)).
 
-## 已知问题
+## Known issues
 
-　　不精确数使用 C++ 标准库 `<cstdio>` 兼容格式输出，可能在非默认区域(locale) 设置中输出非预期的格式，如：
+Output of imprecise numbers are compatible to the format of C++ functions in `<cstdio>`, and it is not guaranteed to have expected lexical notations when non-default locales are used:
 
-* 小数点不是 `.` 。
-* 数值中出现小数点、符号和指数字符以外的非数字分隔符。
+* The decimal point may be not `.`.
+* The output may have characters other than the decimal point, digits, signs and exponent indicators as the delimiters.
 
-　　当前版本在非默认区域下不确保这些输出能被作为 Unilang 数值字面量解析。
-
-# 版本历史
-
-* **V0.0**
-	* 依赖 ISO C++17 。
-	* 实现解释器 REPL 框架。
-* **V0.1**
-	* 支持特性：
-		* 基本语法和求值算法：
-			* 环境和变量解析。
-			* 函数应用。
-		* 函数：
-			* `$if`
-			* `$sequence`
-			* `display`
-			* `newline`
-	* 添加外部依赖项 [YSLib](https://gitee.com/FrankHB/YSLib) 。
-	* 降低构建环境要求，依赖 ISO C++14 。
-* **V0.2**
-	* 新增支持特性：
-		* 基本语法和求值算法：
-			* 环境引用。
-		* 各种不同的异常类。
-		* 变量绑定。
-		* 函数：
-			* `$def!`
-			* `list`
-			* `null?`
-			* `cons`
-			* `eval`
-			* `get-current-environment`
-			* `make-environment`
-			* `$vau/e`
-			* `$vau`
-			* `wrap`
-			* `$lambda`
-			* `unwrap`
-			* `$set!`
-			* `$defv!`
-			* `$defl!`
-		* 对象 `ignore`
-	* 输出格式调整。
-	* 使用外部依赖简化部分实现。
-* **V0.3**
-	* 新增支持特性：
-		* 函数：
-			* `raise-invalid-syntax-error`
-			* `apply`
-			* `list*`
-			* `$defw!`
-			* `first`
-			* `rest`
-			* `accr`
-			* `foldr1`
-			* `map1`
-			* `$let`
-	* 添加文档：
-		* [语言规范文档](doc/Language.zh-CN.md)。
-		* [解释器实现文档](doc/Interpreter.zh-CN.md)。
-	* 降低构建环境要求，依赖 ISO C++11 。
-* **V0.4**
-	* 新增支持特性：
-		* 函数：
-			* `list-concat`
-			* `append`
-			* `$let/d`
-			* `lock-environment`
-			* `lock-current-environment`
-			* `make-standard-environment`
-			* `$let*`
-			* `$letrec`
-			* `$bindings/p->environment`
-			* `$bindings->environment`
-			* `$provide!`
-			* `$provide/d!`
-			* `$import!`
-			* `$cond`
-			* `$when`
-			* `$unless`
-	* 修复求值中非布尔值不被作为 `#t` 处理。
-	* 解释器文档添加详细设计。
-* **V0.5**
-	* 修改内部对象模型。
-	* 新增支持特性：
-		* 函数：
-			* `eq?`
-			* `eqv?`
-			* `$and?`
-			* `$or?`
-			* `not?`
-			* `make-encapsulation-type`
-			* `load`
-* **V0.6**
-	* 新增支持特性：
-		* **实验性** FFI 支持。
-		* 支持绑定的变量（包括函数参数）以引用传递。
-		* 默认在调试构建启用安全检查：
-			* 父环境引用。
-			* 对象悬空引用。
-		* 函数：
-			* 辅助库函数：
-				* `random.choice`
-				* `sys.exit`
-			* `$lambda/e`
-			* `bound-lvalue?`
-			* `$resolve-identifier`
-			* 保留引用值的不安全操作：
-				* `list%`
-				* `$vau/e%`
-				* `eval%`
-				* `$vau%`
-				* `$lambda%`
-				* `$defv%!`
-			* `move!`
-			* `forward!`
-			* 比较 `int` 操作数的关系操作：
-				* `<?`
-				* `<=?`
-				* `>=?`
-				* `>?`
-			* `filter`
-	* 优化实现：
-		* 移除部分标准库函数内部实现中参数传递的不必要的复制。
-		* 函数 `make-environment` 转移实际参数中的本机环境引用。
-	* 修复缺陷：
-		* 缺少列表参数检查。
-		* 错误的常规项（列表或非列表值的内部表示）检查。
-	* 更新外部依赖项，增强构建脚本支持。
-* **V0.7**
-	* 添加关于模块的规则和约定。
-	* 新增支持特性：
-		* 新增标准库函数：
-			* `derive-current-environment`
-			* `$as-environment`
-			* `$provide/d!`
-			* `$provide/let!`
-			* `$defl/e!`
-			* 模块 `std.strings` 及其中的函数：
-				* `++`
-				* `string-empty?`
-				* `string<-`
-				* `string=?`
-				* `string-contains?`
-				* `string-contains-ci?`
-				* `string->symbol`
-				* `symbol->string`
-				* `string->regex`
-				* `regex->match?`
-			* 整数数值操作：
-				* `+`
-				* `add2`
-				* `-`
-				* `*`
-				* `multiply2`
-				* `/`
-				* `div`
-				* `mod`
-			* `cons%`
-			* `id`
-			* `as-const`
-			* `expire`
-			* `$move-resolved!`
-			* `$lvalue-identifier?`
-			* `forward-first%`
-			* `first%`
-			* `rest%`
-			* `$while`
-			* `$until`
-			* `uncollapsed?`
-			* `$defv/e%!`
-		* 构造合并子等标准库函数支持环境列表作为父环境。
-		* 引用值支持增强：
-			* 函数 `cons` 复制左值操作数。
-			* 以下函数支持保留引用值和转发参数：
-				* `apply`
-				* `$cond`
-				* `$when`
-				* `$unless`
-				* `first`
-				* `accr`
-				* `foldr1`
-				* `map1`
-				* `list-concat`
-		* 形式参数树支持引用标记字符 `@` 绑定列表左值子对象的引用值。
-		* 支持通过 `eval` 求值和合并子调用的上下文的 PTC(proper tail call) 保证。
-	* 修复实现问题：
-		* 修复以下函数中的非预期对象复制：
-			* `foldr1`
-			* `map1`
-			* `$let`
-			* `$let*`
-			* `$letrec`
-		* 修复解释器中可能由用户程序中构造的深度过大的嵌套列表引起的未定义行为，包括列表对象被销毁时和形式参数树被检查时（自从 V0.1 前）。
-	* 确保符号求值为左值。
-	* 优化实现：
-		* 支持合并子右值调用转移而不是复制内部资源。
-		* 省略合并子调用时对形式参数的冗余检查。
-* **V0.8**
-	* 调整和优化解释器实现：
-		* 启用内存池。
-		* 命令行添加 `-e` 选项支持。
-		* 增强异常处理。
-		* 新增可选的 LLVM 代码生成。
-	* 修复实现问题（除非另行指定，自从 V0.7 ）：
-		* 修复用户定义的函数右值调用转移资源未生效的问题。
-		* 修复标准库函数：
-			* 修复 `list%` 中的非预期对象复制：
-			* 修复 `$provide/let!` 和 `$provide!` 最后的符号以 `.` 起始时错误地被忽略。
-			* 修复 `wrap` 和 `unwrap` 操作对操作数的表示的检查。
-		* 修复 Unilang 解释器数值减法操作（自从 V0.6 ）。
-		* 修复返回值转换的实现中缺失对象转移支持。
-	* 新增支持特性：
-		* 新增标准库函数：
-			* `desigil`
-			* `symbols->imports`
-			* 标准库模块 `std.strings` 中：
-				* `string-split`
-				* `regex-replace`
-			* `raise-error`
-			* `$remove-eval`
-			* `$remove-eval%`
-			* 标准库模块 `std.system` 中：
-				* `env-get`
-			* 标准库模块 `std.modules`
-			* `check-list-reference`
-			* `first&`
-			* `rest&`
-			* `$lambda/e%`
-			* `$defl/e%!`
-			* `$let%`
-			* `$let*%`
-			* `assign@!`
-			* `idv`
-			* `collapse`
-			* `assign%!`
-			* `set-first%!`
-			* `check-environment`
-			* 标准库模块 `std.promises`
-			* `wrap%`
-		* 调整标准库函数：
-			* `$provide/let!` 、`$provide!` 和 `$import!` 支持指定引用标记字符。
-			* 函数 `load` 移至标准库模块 `std.io` 。
-			* 涉及形式参数树的检查中支持递归检查和符号类型错误。
-			* 函数 `wrap` 和 `unwrap` 避免冗余复制，并添加合并子的子对象引用支持。
-	* 分离启动脚本 `init.txt` 。
-		* 保持以下标准库核心函数在初始环境可用：
-			* `display`
-			* `newline`
-			* `load`
-			* `display`
-			* `puts`
-			* `++`
-		* 新增库函数 `putss` 和测试框架。
-	* 添加测试脚本 `test.txt`，添加测试用例。
-	* 修复语言规范中一些等价谓词的比较规则不够充分及相关的解释器实现中关于合并子的子对象引用的相等操作。
-* **V0.9**
-	* 修复实现问题（除非另行指定，自从 V0.8 ）：
-		* 修复库函数：
-			* `make-encapsulation-type` 构造的封装类型相等性（以 `eqv?` 比较）。
-			* `set-first%!` 调用失败
-			* `collapse` 的调用结果没有保留右值引用
-			* `first` 和 `first&` 的调用结果没有保留消亡值或左值列表的临时对象元素的右值引用
-			* 标准库模块 `std.promises` 中：
-				* `force` 对嵌套的 promise 对象调用失败及对右值不正确共享状态转移
-	* 新增支持特性：
-		* 新增标准库函数：
-			* `itos`
-			* `stoi`
-			* `assign!`
-			* 标准库模块 `std.io` 中：
-				* `write`
-			* `weaken-environment`
-			* `$wvau`
-			* `$wvau%`
-			* `$wvau/e`
-			* `$wvau/e%`
-			* `first@`
-			* 补充数值操作函数：
-				* `number?`
-				* `real?`
-				* `rational?`
-				* `integer?`
-				* `exact-integer?`
-				* `exact?`
-				* `inexact?`
-				* `finite?`
-				* `infinite?`
-				* `nan?`
-				* `zero?`
-				* `=?`
-				* `zero?`
-				* `positive?`
-				* `negative?`
-				* `odd?`
-				* `even?`
-				* `max`
-				* `min`
-				* `add1`
-				* `sub1`
-				* `/`
-				* `abs`
-		* 启动脚本默认库函数：
-			* `stoi-exact`
-			* `rmatch?`
-			* 依赖控制 API
-				* `version?`
-				* `string->version`
-				* `version->string`
-				* `version<?`
-				* `dependency?`
-				* `make-dependency`
-				* `name-of`
-				* `version-of`
-				* `check-of`
-				* `validate`
-				* `strings->dependency-contract`
-				* `dependency-set?`
-				* `make-dependency-set`
-				* `has-dependency?`
-			* 测试 API ：
-				* `moved?`
-				* `unit`
-				* `$expect-moved`
-		* 新增支持基本转义字符序列。
-		* 支持使用 `'` 分隔的字面量构成符号。
-		* 新增非符整数以外的数值字面量及对应的数值类型。
-	* 调整支持特性：
-		* 调整标准库函数：
-			* 标准库模块 `std.io` 中：
-				* `display` 不输出字符串字面量的引号（保持原行为使用 `write` ）。
-			* 修改算术操作为数值操作，支持不同的数值类型：
-				* 算术操作（包括算术计算和比较，下同）统一支持两个操作数，不再支持多个操作数。
-				* 算术操作支持不同的数值类型的内部表示。
-				* 移除函数：
-					* `add2`
-					* `multiply2`
-		* `#ignore` 是具有单独的类型的字面量，不再是符号。
-	* 测试脚本 `test.txt` 添加测试用例。
-	* 调整和优化解释器实现：
-		* 简化部分标准库实现。
-		* 增强命令行选项支持。
-			* 选项 `-e` 支持重复多次。
-			* 新增脚本模式，支持从命令行指定文件名或标准输入 `-` 。
-			* 新增显示命令行帮助的选项。
-* **V0.10**
-	* 新增上层语言特性：
-		* 语法：扩展中缀变换，包括中缀的赋值和算术操作。
-		* 语法： `()` 以外的括号的解析和匹配。
-		* 启动脚本实现上层语言函数：
-			* `if`
-			* `while`
-			* `!=`
-			* 标准库函数的若干其它别名
-		* 测试库 API 作为上层语言特性。
-	* 添加新的示例程序，包括使用基础语言和上层语言版本。
-* **V0.11**
-	* 修复实现问题：
-		* 转移值和访问列表元素的一些操作可能错误地得到临时值（自从 V0.6 ）。
-		* 修复标准库函数实现对临时对象的处理（自从 V0.7 ）：
-			* `first`
-			* `first&`
-		* 修复 ignore 的值及其引起的通过 $lambda 等方式构造的函数递归调用不满足 PTC（自从 V0.9 ）。
-	* 新增支持特性：
-		* 启动脚本默认库函数：
-			* 新增类型库函数：
-				* `type?`
-				* `type->string`
-				* `has-type?`
-				* `typed-ptree->ptree`
-			* 标准库函数别名转为类型标注操作函数：
-				* `lambda`
-				* `def`
-				* `defn`
-				* `let`
-			* 新增类型标注操作函数：
-				* `let*`
-				* `letrec`
-		* 新增标准库函数：
-			* `reference?`
-			* `unique?`
-			* `list?`
-			* 标准库模块 `std.strings` 中：
-				* `string?`
-			* `forward`
-			* `and`
-			* `or`
-	* 调整支持特性：
-		* 调整标准库函数：
-			* `$and?` 重命名为 `$and` 。
-			* `$or?` 重命名为 `$or` 。
-			* `list-extract-first` 和 `list-extract-rest%` 支持转发参数。`
-		* 移除启动脚本默认库函数别名 `and` 和 `or`（这些函数在标准库中提供，不再短路求值）。
-	* 测试脚本 `test.txt` 添加关于类型库等新增特性的测试用例。
-	* 整理特性文档的示例，在 `demo` 中提供。
-	* 构建脚本 `build.sh` 支持使用定制的编译器命令和选项。
-* **V0.12**
-	* 修复实现问题：
-		* 修复标准库函数实现：
-			* 修复保留引用值值类别（自从 V0.7 ）：
-				* `first&`
-				* `collapse`
-			* 避免部分本机实现的函数右值调用在结果中遗留临时对象标签（自从 V0.7 ）：
-				* `$def!`
-				* `eval`
-				* `eval%`
-				* `$vau`
-				* `$vau%`
-				* `$vau/e`
-				* `$vau/e%`
-			* 修复 `$resolve-identifier` 结果可能遗留临时对象标签（自从 V0.6 ）。
-			* 修复 `$move-resolved!` 结果可能遗留临时对象标签（自从 V0.8 ）。
-		* 修复递归复制 Unilang 对象可能导致解释器未定义行为的问题（自从 V0.1 前）。
-		* 修复内部表示为嵌套单元素列表的非列表值可能被错误地作为列表求值（自从 V0.8 ）。
-		* 修复 PTC 实现资源释放顺序（自从 V0.7 ）。
-	* 新增支持特性：
-		* 新增标准库函数：
-			* 新增标准库模块 `std.continuations`
-			* `$quote`
-			* 新增标准库模块 `std.classes`
-			* 标准库模块 `std.io` 中：
-				* `read-line`
-		* 新增库函数：
-			* 异常库
-			* `$check`
-		* 新增和源文件名以及源代码内容关联的源代码信息用于诊断。
-		* 新增环境变量 `UNILANG_NO_SRCINFO` 指定停用用于诊断的源代码信息（不含源文件名）。
-		* 启动脚本默认库函数：
-			* 新增类型库函数：
-			* 标准库函数别名转为类型标注操作函数：
-			* 新增类型标注操作函数：
-		* 新增 Qt 绑定支持。
-			* 新增 Qt 示例。
-	* 调整支持特性：
-		* 调整标准库函数：
-			* `$and` 和 `$or` 支持转发引用参数。
-	* 其它实现增强：
-		* 分隔符变换使用分配器。
-		* 优化 `#ignore` 处理。
-		* 改进构建脚本对 Clang++ 的支持，移除不支持的编译选项。
-		* `init.txt` ：
-			* 移除冗余的 `let` 定义。
-		* 加入断言检查不应在一等对象的表示中出现的临时对象标签。
-		* 改进项节点内部 API 。
-		* 简化标签值。
-		* 优化 PTC 的内部数据结构和尾调用实现。
-	* 修复（上层语言）排序示例（自从 V0.11 ）。
+Currently, the output number under non-default locales may not be successfully parsed as the numerical literals. 
 
