@@ -1,0 +1,8 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Unilang
+Upstream-Contact: FrankHB <frankhb1989@gmail.com>
+Source: https://github.com/linuxdeepin/unilang
+
+Files: *
+Copyright: 2020-2022 UnionTech Software Technology Co., Ltd.
+License: BSD-2-Clause-Patent
