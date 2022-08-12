@@ -61,7 +61,7 @@ From the perspective of higher-level structure, different types of GUI solutions
 	* If relying on the framework of the native GUI implementation provided by the system, there are problems of the above native solution.
 	* Relying on the frameworks having dependencies on the Web (such as Electron, [Cordova](https://cordova.apache.org/), [Tauri](https://tauri.app/)) will bring the problems of the above Web-based solutions.
 	* If all are relied on, all similar limitations will eventually be jointly inherited.
-	* Nevertheless, if only using these targets as one of the optional output configurations (for instance, using WebAssembly as the generation target), there will be less problems as above。
+	* Nevertheless, if only using these targets as one of the optional output configurations (for instance, using WebAssembly as the generation target), there will be less problems as above.
 * Native but not OS-native GUI frameworks as Qt have few global architecture defects comparable to the above problems, but there are still many problems in the implementation architecture and API design, and the development experience is not satisfactory.
 
 So, no existing solution can take into account all kinds of problems and become the preferred solution for desktop development without doubt.
@@ -78,7 +78,7 @@ We are eager to have a new language to solve all the above pain points. However,
 
 One of the technical reasons for this situation is that many designs are too focused on specific requirements and lack of consideration of the general factors of long-term evolution of the language, and their applicability outside the expected target areas drops sharply, which is not universal enough; or they fail to balance universality and complexity. This makes the application field slightly deviate from the expectation and exposes the limitations of the original design. Even if users knows how to improve a language, they will encounter practical difficulties in development of the language and eventually give up.
 
-If new options are put forward without avoiding this situation, it will only further hinder the solution of the problem. Therefore, on the basis of meeting the needs, we hope that the new language can truly achieve universality in a deeper way - by reducing the built-in *ad-hoc* features specifically for individual problem areas and replacing them with a more general set of primitive features.
+If new options are put forward without avoiding this situation, it will only further hinder the solution of the problem. Therefore, on the basis of meeting the needs, we hope that the new language can truly achieve universality in a deeper way - by reducing the built-in *ad-hoc* features specifically for individual problem domains and replacing them with a more general set of primitive features.
 
 > Programming languages should be designed not by piling feature on top of feature, but by removing the weaknesses and restrictions that make additional features appear necessary.
 
@@ -119,7 +119,7 @@ Unilang is the language part of the new solution to comprehensively solve the ex
 	* Adding proofs to restore some guarantees (without conflicts to others) where they have been already abandoned, is more difficult to just adding the proofs to make fresh guarantees in the plain contexts where such guarantees are never existed before.
 		* For instance, in languages using ad-hoc syntax notations like `unsafe`, ususally the safety guarantees defined by the language rules are dropped altogether, and a part of these guarantees cannot be retained. Even if this problem is ignored, these languages lack mechanisms to allow users to provide stricter guarantees integrating into current ones.
 			* Therefore, the basic language is unsafe by default.
-		* As another instance, although the default immutable data structures can guarantee the "correctness" like [const correctness](https://isocpp.org/wiki/faq/const-correctness) (an instance of [*type safety*] that keeps the defined immutable property from being discarded), it ignores the problem that the definition of "immutable" is not sufficiently preciesly described and it cannot be extended by the user program. In many cases, immutability only needs to be an equivalent relationship, not an unmodifiable one.
+		* As another instance, although the default immutable data structures can guarantee the "correctness" like [const correctness](https://isocpp.org/wiki/faq/const-correctness) (an instance of [*type safety*](https://en.wikipedia.org/wiki/Type_safety) that keeps the defined immutable property from being discarded), it ignores the problem that the definition of "immutable" is not sufficiently preciesly described and it cannot be extended by the user program. In many cases, immutability only needs to be an equivalent relationship, not an unmodifiable one.
 			* This may cause abuse of specific non-modifiablitity, like the case of requirements on key types of associative containers in the C++ standard library. It actually need no `const` as currently mandated by ISO C++, because the immutablity of the key is defined by the equivalent relationship derived from the comparator. But the type system of C++ cannot distinguish these two case of immutablilty, leading to over-specification in the types of API, which blocks some operations on the key.
 				* Using unsafe casts like `const_cast` to cease the type safety guarantee introduced by `const` totally and assuming it not destroyed by other operations is a helpless workaround here (the "more difficult" situation; the type safety cannot be restored, and the effect is worse).
 			* Meanwhile, type system having immutability by default, like that in Rust, more fundamentally block ways of extensibility in the sense of type formation.
@@ -143,7 +143,7 @@ To keep universality, Unilang does not provide GUI functionailty as built-in fea
 
 　　The following documents are maintained in this project:
 
-* `README` ：This document. It introduces the overall status, usage and main supported features.
+* `README`: This document. It introduces the overall status, usage and main supported features.
 	* It is suitable for all readers interested in this project.
 * [Release notes (zh-CN)](ReleaseNotes.zh-CN.md): Release notes of different versions.
 	* It is suitable for all readers interested in this project.
@@ -322,7 +322,7 @@ The command above specify the output built files in the directory `build/.releas
 
 Here, `release-static` is the **configuration name**.
 
-Let non-empty configuration name `$CONF`, when `$SHBuild_BuildDir` is not empty, the output directory is `SHBuild_BuildDir/.$CONF`; otherwise, the output directory is `build/.$CONF` 。
+Let non-empty configuration name `$CONF`, when `$SHBuild_BuildDir` is not empty, the output directory is `SHBuild_BuildDir/.$CONF`; otherwise, the output directory is `build/.$CONF` .
 
 When `$CONF` has the prefix by `debug`, the debug versions of the libraries (already built from `3rdparty` source in the previously installation steps for the build environment configuration) are used automatically, otherwise libraries of non-debug version are used. When `$CONF` has the suffix `static`, static libraries are used instead of dynamic libraries. The use of dynamic libraries makes the output executable file relying on the files in `$LD_LIBRARY_PATH` set up previously.
 
