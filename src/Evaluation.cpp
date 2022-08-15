@@ -6,9 +6,9 @@
 //	TermReference, byte, pmr::polymorphic_allocator, lref, SourceInformation,
 //	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
 //	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple, Continuation,
-//	TermToStringWithReferenceMark, IsList, AccessFirstSubterm, GetLValueTagsOf,
-//	ThrowTypeErrorForInvalidType, TermToNamePtr, in_place_type, IsPair,
-//	yunseq, ResolveTerm, IsAtom, ResolveSuffix, IsTyped,
+//	TermToStringWithReferenceMark, IsSingleElementList, AccessFirstSubterm,
+//	GetLValueTagsOf, ThrowTypeErrorForInvalidType, TermToNamePtr, IsList,
+//	in_place_type, IsPair, yunseq, ResolveTerm, IsAtom, ResolveSuffix, IsTyped,
 //	ThrowInsufficientTermsError, ThrowListTypeErrorForAtom, YSLib::lock_guard,
 //	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
 //	AssertValueTags;
@@ -337,7 +337,7 @@ ReduceCombining(TermNode& term, Context& ctx)
 {
 	assert(IsCombiningTerm(term) && "Invalid term found.");
 	AssertValueTags(term);
-	if(term.size() != 1 || !IsList(term))
+	if(!IsSingleElementList(term))
 	{
 		AssertNextTerm(ctx, term);
 		ctx.LastStatus = ReductionStatus::Neutral;
@@ -355,9 +355,7 @@ ReduceCombining(TermNode& term, Context& ctx)
 	auto term_ref(ystdex::ref(term));
 
 	ystdex::retry_on_cond([&]{
-		auto& tm(term_ref.get());
-
-		return IsList(tm) && tm.size() == 1;
+		return IsSingleElementList(term_ref);
 	}, [&]{
 		term_ref = AccessFirstSubterm(term_ref);
 	});
