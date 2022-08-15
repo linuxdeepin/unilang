@@ -2,7 +2,7 @@
 
 #include "Context.h" // for Unilang::allocate_shared, lref, type_id;
 #include <cassert> // for assert;
-#include "TermNode.h" // for AssertValueTags;
+#include "TermNode.h" // for AssertValueTags, IsAtom;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
 #include <exception> // for std::throw_with_nested;
@@ -376,7 +376,7 @@ pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode& term)
 {
 	return ResolveTerm([&](const TermNode& nd, bool has_ref){
-		if(!IsExtendedList(nd))
+		if(IsAtom(nd))
 			return ResolveEnvironment(nd.Value);
 		throw ListTypeError(
 			ystdex::sfmt("Invalid environment formed from list '%s' found.",
@@ -387,7 +387,7 @@ pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(TermNode& term)
 {
 	return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		if(!IsExtendedList(nd))
+		if(IsAtom(nd))
 			return ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref));
 		throw ListTypeError(
 			ystdex::sfmt("Invalid environment formed from list '%s' found.",
