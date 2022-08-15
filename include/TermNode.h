@@ -554,6 +554,12 @@ IsPair(const TermNode& nd) noexcept
 	return !IsAtom(nd);
 }
 
+YB_ATTR_nodiscard YB_PURE inline bool
+IsSingleElementList(const TermNode& term) ynothrow
+{
+	return IsList(term) && term.size() == 1;
+}
+
 using YSLib::IsTyped;
 template<typename _type>
 YB_ATTR_nodiscard YB_PURE inline bool
