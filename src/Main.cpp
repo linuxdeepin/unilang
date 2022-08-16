@@ -783,11 +783,11 @@ $defv%! $unless (&test .&exprseq) d
 $defv%! $while (&test .&exprseq) d
 	$when (eval test d)
 		(eval% (list* () $sequence exprseq) d)
-		(eval% (list* () $while (move! test) (forward! exprseq)) d);
+		(eval% (list* () $while (forward! test) (forward! exprseq)) d);
 $defv%! $until (&test .&exprseq) d
 	$unless (eval test d)
 		(eval% (list* () $sequence exprseq) d)
-		(eval% (list* () $until (move! test) (forward! exprseq)) d);
+		(eval% (list* () $until (forward! test) (forward! exprseq)) d);
 $defl! not? (x) eqv? x #f;
 $defv%! $and &x d
 	$cond
@@ -1039,7 +1039,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.57"
+#define APP_VER "0.12.62"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
