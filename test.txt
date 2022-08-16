@@ -44,7 +44,12 @@ info "function calls";
 	$expect ()
 		($def! foo $lambda (z) z; ($lambda (x) ($lambda (y) foo y) x) ());
 	$expect () ($lambda (x) ($lambda (y) ($lambda (z) z) y) x) ();
-	$expect () ($def! l list (); ($lambda ((&x .)) x) l)
+	$expect () ($def! l list (); ($lambda ((&x .)) x) l);
+	subinfo "apply";
+	$expect 42 apply list% 42;
+	$expect (list 1 2) apply list% (list% 1 2);
+	$expect (cons 1 2) apply list% (cons% 1 2);
+	$expect (list* 1 2 3) apply list% (list* 1 2 3)
 );
 
 info "recursive function calls";
