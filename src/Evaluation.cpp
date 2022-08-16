@@ -625,16 +625,7 @@ public:
 				if(sigil == '%' || sigil == char())
 					BindSubpairCopySubterms(t, o, first);
 				else
-				{
-					auto p_sub(Unilang::AllocateSharedTerm(a));
-					auto& sub(Unilang::Deref(p_sub));
-
-					LiftTermRef(sub, o.Value);
-					tcon.push_back(
-						Unilang::MakeSubobjectReferent(a, std::move(p_sub)));
-					t.Value = ValueObject(std::allocator_arg, a,
-						in_place_type<TermReference>, tags, sub, Referenced);
-				}
+					LiftTermRef(t.Value, o.Value);
 			}
 			else
 				assert(first == o.end() && "Invalid representation found.");
