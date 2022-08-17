@@ -539,7 +539,7 @@ $provide/let! (registered-requirement? register-requirement!
 $defl%! require (&req)
 	$if (registered-requirement? req) #inert
 		($let ((filename find-requirement-filename req))
-			$sequence (register-requirement! (move! req))
+			$sequence (register-requirement! (forward! req))
 				(($remote-eval% load std.io) filename));
 	)Unilang");
 }
@@ -1039,7 +1039,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.62"
+#define APP_VER "0.12.63"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
