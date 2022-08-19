@@ -14,9 +14,10 @@
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include <algorithm> // for std::find_if;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
+#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/function.hpp> // for ystdex::make_function_type_t,
 //	ystdex::make_parameter_list_t, function;
-#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
+#include "TermAccess.h" // for AssertCombiningTerm;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <cassert> // for assert;
 #include <type_traits> // for std::is_constructibe;
@@ -345,7 +346,7 @@ FetchArgumentN(const TermNode& term) noexcept
 inline ReductionStatus
 Retain(const TermNode& term) noexcept
 {
-	AssertBranchedList(term);
+	AssertCombiningTerm(term);
 	return ReductionStatus::Regular;
 }
 
