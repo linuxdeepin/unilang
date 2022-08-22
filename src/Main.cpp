@@ -758,18 +758,10 @@ $defl%! rest% ((#ignore .%xs)) $move-resolved! xs;
 $defl%! rest& (&l)
 	($lambda% ((#ignore .&xs)) xs) (check-pair-reference (forward! l));
 $defl! set-first%! (&l &x) assign%! (first@ (forward! l)) (forward! x);
-$defl/e! equal? (() ($lambda/e (() get-current-environment) ()
-	(
-		$defl! peq? (&x &y)
-		(
-			$def! (px py) list (pair? x) (pair? y);
-			$if ($if px py #f)
-				($if (equal? (first& x) (first& y)) (peq? (rest& x) (rest& y)) 
-					#f)
-				(eqv? px py)
-		);
-		() lock-current-environment
-	))) (&x &y) $if (eql? x y) (peq? x y) #f;
+$defl! equal? (&x &y)
+	$if ($if (pair? x) (pair? y) #f)
+		($if (equal? (first& x) (first& y)) (equal? (rest& x) (rest& y)) #f)
+		(eqv? x y);
 $defl%! check-environment (&e) $sequence (eval% #inert e) (forward! e);
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
@@ -1039,7 +1031,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.63"
+#define APP_VER "0.12.68"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
