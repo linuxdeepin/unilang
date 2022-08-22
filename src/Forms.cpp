@@ -128,7 +128,7 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
-	}, Unilang::Deref(i));
+	}, *i);
 	ClearCombiningTags(term);
 	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
 		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
@@ -349,7 +349,7 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 	CheckVariadicArity(term, 2);
 
 	auto i(term.begin());
-	auto& tm(Unilang::Deref(++i));
+	auto& tm(*++i);
 
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		LiftTermOrCopy(tm, nd, Unilang::IsMovable(p_ref));
@@ -575,7 +575,7 @@ ConsImpl(TermNode& term, TermNode(&cons_item)(TermNode& y))
 
 	if(cons_item == ConsItem)
 		LiftToReturn(*i);
-	ConsSplice(cons_item(Unilang::Deref(++i)), term);
+	ConsSplice(cons_item(*++i), term);
 }
 
 
@@ -610,7 +610,7 @@ CheckReference(TermNode& term, void(&f)(TermNode&, bool))
 {
 	return Forms::CallResolvedUnary([&](TermNode& nd, bool has_ref){
 		f(nd, has_ref);
-		LiftTerm(term, Unilang::Deref(std::next(term.begin())));
+		LiftTerm(term, *std::next(term.begin()));
 		return ReductionStatus::Regular;
 	}, term);
 }
@@ -955,7 +955,7 @@ Call1CC(TermNode& term, Context& ctx)
 {
 	RetainN(term);
 	yunused(Unilang::ResolveRegular<const ContextHandler>(
-		Unilang::Deref(std::next(term.begin()))));
+		*std::next(term.begin())));
 	RemoveHead(term);
 
 	auto& current(ctx.GetCurrentRef());
