@@ -274,6 +274,21 @@ YB_ATTR_nodiscard TermNode
 PrepareCollapse(TermNode&, const shared_ptr<Environment>&);
 
 YB_ATTR_nodiscard YB_PURE inline TermNode&
+ReferenceLeaf(TermNode& term)
+{
+	if(const auto p = TryAccessLeaf<const TermReference>(term))
+		return p->get();
+	return term;
+}
+YB_ATTR_nodiscard YB_PURE inline const TermNode&
+ReferenceLeaf(const TermNode& term)
+{
+	if(const auto p = TryAccessLeaf<const TermReference>(term))
+		return p->get();
+	return term;
+}
+
+YB_ATTR_nodiscard YB_PURE inline TermNode&
 ReferenceTerm(TermNode& term)
 {
 	if(const auto p = TryAccessLeafAtom<const TermReference>(term))
