@@ -3,8 +3,8 @@
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
 //	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, Unilang::IsMovable,
 //	ystdex::sfmt, Unilang::Deref, ClearCombiningTags, AssertValueTags,
-//	IsBranchedList, IsList, IsLeaf, FormContextHandler, IsAtom, ystdex::ref_eq,
-//	ReferenceTerm, Forms::CallResolvedUnary, LiftTerm,
+//	IsBranchedList, IsList, IsLeaf, FormContextHandler, ReferenceLeaf, IsAtom,
+//	ystdex::ref_eq, ReferenceTerm, Forms::CallResolvedUnary, LiftTerm,
 //	ThrowListTypeErrorForNonList, ThrowValueCategoryError,
 //	Unilang::EmplaceCallResultOrReturn;
 #include <exception> // for std::throw_with_nested;
@@ -487,7 +487,7 @@ void
 EqTermValue(TermNode& term, _func f)
 {
 	EqTermRet(term, f, [](const TermNode& x) -> const ValueObject&{
-		return ReferenceTerm(x).Value;
+		return ReferenceLeaf(x).Value;
 	});
 }
 
