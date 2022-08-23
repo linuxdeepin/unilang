@@ -629,7 +629,7 @@ public:
 			}
 			else
 				assert(first == o.end() && "Invalid representation found.");
-			if(sigil != '&')
+			if(sigil != '&' && sigil != '@')
 				MarkTemporaryTerm(mv(std::move(tcon), std::move(t.Value)),
 					sigil);
 			else
