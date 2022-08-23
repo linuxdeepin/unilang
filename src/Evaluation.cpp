@@ -908,7 +908,10 @@ public:
 				{
 					auto& j(std::get<OperandFirst>(e));
 
-					assert(!IsSticky(i->Tags) && "Invalid term found."),
+					assert(!IsSticky(i->Tags)
+						&& "Invalid representation found."),
+					assert(!IsSticky(j->Tags)
+						&& "Invalid representation found."),
 					assert(j != std::get<OperandRef>(e).get().end()
 						&& "Invalid state of operand found.");
 					Dispatch(ystdex::true_(),
