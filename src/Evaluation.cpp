@@ -12,13 +12,13 @@
 //	ThrowInsufficientTermsError, ThrowListTypeErrorForAtom, YSLib::lock_guard,
 //	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
 //	AssertValueTags;
+#include "TermAccess.h" // for ClearCombiningTags, TryAccessLeafAtom,
+//	TokenValue, AssertCombiningTerm, IsCombiningTerm, TryAccessTerm;
 #include <cassert> // for assert;
 #include "Math.h" // for ReadDecimal;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
-#include "TermAccess.h" // for TryAccessLeafAtom, TokenValue,
-//	AssertCombiningTerm, IsCombiningTerm, ClearCombiningTags, TryAccessTerm;
 #include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
@@ -71,7 +71,13 @@ public:
 		const EnvironmentReference& env_ref) noexcept
 		: anchor_ptr(env_ref.GetAnchorPtr()), HandlerRef(h)
 	{}
-	DefDeCopyMoveCtorAssignment(RefContextHandler)
+	RefContextHandler(const RefContextHandler&) = default;
+	RefContextHandler(RefContextHandler&&) = default;
+
+	RefContextHandler&
+	operator=(const RefContextHandler&) = default;
+	RefContextHandler&
+	operator=(RefContextHandler&&) = default;
 
 	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const RefContextHandler& x, const RefContextHandler& y)
@@ -82,6 +88,7 @@ public:
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
+		ClearCombiningTags(term);
 		return HandlerRef.get()(term, ctx);
 	}
 };
