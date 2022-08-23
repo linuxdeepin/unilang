@@ -1033,12 +1033,6 @@ using string = basic_string<char>;
 * 标准库：
 	* `random.choice`
 	* `sys.exit`
-* 面向对象原型/可调用绑定 API 的面向对象支持（类）：
-	* 类创建。
-		* 初始化（构造函数）。
-		* 单一基类。
-	* 对象创建。
-	* 成员访问。
 
 　　包含以下在 Demo 中需要使用的非公开特性：
 
