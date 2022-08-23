@@ -1202,6 +1202,7 @@ BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 {
 	auto& env(Unilang::Deref(p_env));
 
+	AssertValueTags(o);
 	MakeParameterMatcher<_tTraits>(t.get_allocator(), DefaultBinder(env))(t, o,
 		TermTags::Temporary, p_env);
 }
