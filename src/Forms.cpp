@@ -216,10 +216,10 @@ private:
 	static ReductionStatus
 	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
-		auto wenv(ctx.WeakenRecord());
+		auto r_env(ctx.WeakenRecord());
 		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
-		vau.BindEnvironment(ctx, std::move(wenv));
+		vau.BindEnvironment(ctx, std::move(r_env));
 		return vau.DoCall(term, ctx, gd);
 	}
 
@@ -236,9 +236,13 @@ private:
 	{
 		assert(p_eval_struct);
 
-		const bool move(p_eval_struct.use_count() == 1
-			&& bool(term.Tags & TermTags::Temporary));
+		bool move = {};
 
+		if(bool(term.Tags & TermTags::Temporary))
+		{
+			ClearCombiningTags(term);
+			move = p_eval_struct.use_count() == 1;
+		}
 		RemoveHead(term);
 		BindParameterWellFormed(ctx.GetRecordPtr(), Unilang::Deref(p_formals),
 			term);
