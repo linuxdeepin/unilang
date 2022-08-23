@@ -571,12 +571,12 @@ public:
 
 					if(can_modify && temp)
 						mv(std::move(o.GetContainerRef()),
-							ValueObject(std::allocator_arg, a, in_place_type<
-							TermReference>, ref_tags, std::move(*p)));
+							ValueObject(in_place_type<TermReference>, ref_tags,
+							std::move(*p)));
 					else
-						mv(TermNode::Container(o.GetContainer()),
-							ValueObject(std::allocator_arg, a,
-							in_place_type<TermReference>, ref_tags, *p));
+						mv(TermNode::Container(o.GetContainer(), a),
+							ValueObject(in_place_type<TermReference>, ref_tags,
+							*p));
 				}
 				else
 				{
@@ -614,8 +614,8 @@ public:
 		TNIter first, _fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
-		const auto a(o.get_allocator());
 		const auto bind_subpair([&](TermTags tags){
+			const auto a(o.get_allocator());
 			TermNode t(a);
 			auto& tcon(t.GetContainerRef());
 
@@ -646,6 +646,7 @@ public:
 
 		if(sigil != '@')
 		{
+			const auto a(o.get_allocator());
 			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
 
 			if(const auto p = TryAccessLeaf<TermReference>(o))
@@ -721,8 +722,7 @@ private:
 		TNIter& j, TermTags tags) const
 	{
 		for(; j != o.end() && !IsSticky(j->Tags); ++j)
-			(*this)(sigil, {}, tags, Unilang::Deref(j),
-				[&](const TermNode& tm){
+			(*this)(sigil, {}, tags, Unilang::Deref(j), [&](const TermNode& tm){
 				CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value),
 					tm);
 			}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
