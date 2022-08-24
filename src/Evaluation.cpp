@@ -1354,7 +1354,7 @@ inline namespace Internals
 
 ReductionStatus
 ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
-	const EnvironmentReference& r_env)
+	const EnvironmentReference& r_env, TermTags tags)
 {
 	assert(bool(p_sub)
 		&& "Invalid subterm to form a subobject reference found.");
@@ -1362,7 +1362,7 @@ ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
 	auto& con(term.GetContainerRef());
 	auto i(con.begin());
 
-	term.SetValue(TermReference(Unilang::Deref(p_sub), r_env)),
+	term.SetValue(TermReference(tags, Unilang::Deref(p_sub), r_env)),
 	term.Tags = TermTags::Unqualified;
 	con.insert(i,
 		Unilang::MakeSubobjectReferent(con.get_allocator(), std::move(p_sub)));		
@@ -1379,8 +1379,8 @@ ReduceForCombinerRef(TermNode& term, const TermReference& ref,
 
 	return ReduceAsSubobjectReference(term, Unilang::allocate_shared<TermNode>(
 		a, Unilang::AsTermNode(a, ContextHandler(std::allocator_arg, a,
-		FormContextHandler(RefContextHandler(h, r_env), n)))),
-		ref.GetEnvironmentReference());
+		FormContextHandler(RefContextHandler(h, r_env), n)))), r_env,
+		ref.GetTags());
 }
 
 } // inline namespace Internals;

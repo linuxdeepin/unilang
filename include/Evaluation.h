@@ -277,7 +277,7 @@ inline namespace Internals
 
 ReductionStatus
 ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
-	const EnvironmentReference&);
+	const EnvironmentReference&, TermTags);
 
 ReductionStatus
 ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
