@@ -713,7 +713,7 @@ $def! apply $lambda% (&appv &arg .&opt)
 $def! list* $lambda (&head .&tail)
 	$if (null? tail) (forward! head)
 		(cons (forward! head) (apply list* (forward! tail)));
-$def! list*% $lambda (&head .&tail)
+$def! list*% $lambda% (&head .&tail)
 	$if (null? tail) (forward! head)
 		(cons% (forward! head) (apply list*% (forward! tail)));
 $def! $defv! $vau (&$f &formals &ef .&body) d
@@ -1031,7 +1031,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.68"
+#define APP_VER "0.12.76"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
