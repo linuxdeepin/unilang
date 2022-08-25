@@ -739,17 +739,26 @@ $defl%! first (&pr)
 	$if ($lvalue-identifier? pr) (($lambda% ((@x .)) $if (uncollapsed? x)
 		($if (modifiable? x) (idv x) (as-const (idv x))) x) pr)
 		(forward-first% idv (expire pr));
-$defl%! first@ (&pr) ($lambda% ((@x .)) x) (check-pair-reference (forward! pr));
+$defl%! first@ (&pr) ($lambda% ((@x .))
+	$if (unique? ($resolve-identifier pr)) (expire x) x)
+	($if (unique? ($resolve-identifier pr)) pr
+		(check-pair-reference (forward! pr)));
 $defl%! first% (&pr)
 	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? pr) id expire) pr;
 $defl%! first& (&pr)
-	($lambda% ((@x .)) $if (uncollapsed? x) (idv x) x)
-		(check-pair-reference (forward! pr));
+	($lambda% ((@x .)) $if (uncollapsed? x)
+		($if (modifiable? pr) (idv x) (as-const (idv x)))
+		($if (unique? ($resolve-identifier pr)) (expire x) x))
+	($if (unique? ($resolve-identifier pr)) pr
+		(check-pair-reference (forward! pr)));
 $defl! firstv ((&x .)) $move-resolved! x;
 $defl! rest ((#ignore .xs)) $move-resolved! xs;
 $defl%! rest% ((#ignore .%xs)) $move-resolved! xs;
 $defl%! rest& (&pr)
-	($lambda% ((#ignore .&xs)) xs) (check-pair-reference (forward! pr));
+	($lambda% ((#ignore .&xs)) $if (unique? ($resolve-identifier pr))
+		(expire xs) ($resolve-identifier xs))
+	($if (unique? ($resolve-identifier pr)) pr
+		(check-pair-reference (forward! pr)));
 $defl! set-first%! (&pr &x) assign%! (first@ (forward! pr)) (forward! x);
 $defl! equal? (&x &y)
 	$if ($if (pair? x) (pair? y) #f)
@@ -1024,7 +1033,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.79"
+#define APP_VER "0.12.80"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
