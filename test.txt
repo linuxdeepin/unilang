@@ -300,9 +300,8 @@ $expect (cons 1 2)
 subinfo "improper list cons";
 $expect (cons (list 1 2) 4) cons (list 1 2) 4;
 $let* ((a 1) (b 4) (l list% a 2)) $expect (cons (list 1 2) 4) cons l b;
-$let ()
+$let ((n 1))
 (
-	$def! n 1;
 	$let ((a list 2 3))
 	(
 		subinfo "list lvalue elements accesses";
@@ -314,6 +313,43 @@ $let ()
 		$expect 2 first (as-const (expire a));
 		$expect 2 first (expire a);
 		$expect-moved first a
+	);
+	subinfo "first@ and first& xvalues";
+	$let ((l0 list n) (l1 list% n) (l2 list% (expire n)))
+	(
+		subinfo "first@ unique";
+		$check-not unique? (first@ l0);
+		$check-not unique? (first@ l1);
+		$check-not unique? (first@ l2);
+		subinfo "first@ xvalue";
+		$check unique? (first@ (expire l0));
+		$check unique? (first@ (expire l1));
+		$check unique? (first@ (expire l2));
+		subinfo "first& unique";
+		$check-not unique? (first& l0);
+		$check-not unique? (first& l1);
+		$check unique? (first& l2);
+		subinfo "first& xvalue";
+		$check-not unique? (first& (expire l1));
+		$check unique? (first& (expire l2));
+		subinfo "first& non-reference element unique preserving";
+		$check unique? (first& (expire l0))
+	);
+	subinfo "rest& xvalues";
+	$let ((l0 list n n) (l1 list% n n) (l2 list% (expire n)
+		(expire n)) (l3 cons% (expire n) (expire n)))
+	(
+		subinfo "rest& unique";
+		$check-not unique? (rest& l0);
+		$check-not unique? (rest& l1);
+		$check-not unique? (rest& l2);
+		subinfo "rest& unique element preservation";
+		$check unique? (rest& l3);
+		subinfo "rest& xvalue";
+		$check unique? (rest& (expire l0));
+		$check unique? (rest& (expire l1));
+		$check unique? (rest& (expire l2));
+		$check unique? (rest& (expire l3))
 	);
 	subinfo "first forwarding";
 	$let ()
