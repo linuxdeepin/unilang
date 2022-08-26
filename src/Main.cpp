@@ -752,13 +752,13 @@ $defl%! first& (&pr)
 	($if (unique? ($resolve-identifier pr)) pr
 		(check-pair-reference (forward! pr)));
 $defl! firstv ((&x .)) $move-resolved! x;
-$defl! rest ((#ignore .xs)) $move-resolved! xs;
 $defl%! rest% ((#ignore .%xs)) $move-resolved! xs;
 $defl%! rest& (&pr)
 	($lambda% ((#ignore .&xs)) $if (unique? ($resolve-identifier pr))
 		(expire xs) ($resolve-identifier xs))
 	($if (unique? ($resolve-identifier pr)) pr
 		(check-pair-reference (forward! pr)));
+$defl! restv ((#ignore .xs)) $move-resolved! xs;
 $defl! set-first%! (&pr &x) assign%! (first@ (forward! pr)) (forward! x);
 $defl! equal? (&x &y)
 	$if ($if (pair? x) (pair? y) #f)
@@ -1034,7 +1034,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.81"
+#define APP_VER "0.12.82"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
