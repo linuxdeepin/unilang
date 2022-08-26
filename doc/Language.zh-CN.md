@@ -2121,9 +2121,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　同 `first` ，但结果总是返回值转换后的值。
 
-`rest <pair>`
+`restv <pair>`
 
-　　取有序对的第一个元素以外的元素值构成的列表。
+　　取有序对的第一个元素以外的元素值构成的列表。结果总是返回值转换后的值。
 
 `rest% <pair>`
 
@@ -3145,6 +3145,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 	* `unless` ：同核心库函数 `$unless` 。
 	* `until` ：同核心库函数 `$until` 。
 	* `when` ：同核心库函数 `$when` 。
+	* `rest` ：同核心库函数 `restv` 。
+		* 函数 `rest` 仅为兼容保留。同名的函数可能会在未来重新添加到核心库，但其结果不总是保证保留引用值。
 
 **注释** 不显式指定为别名的函数也可能实现为别名。
 

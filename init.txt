@@ -17,6 +17,7 @@ $def! &not not?;
 $def! &unless $unless;
 $def! &until $until;
 $def! &when $when;
+$def! &rest restv;
 
 $defv%! if (&test &consequent .&opt) e $let*%
 (
