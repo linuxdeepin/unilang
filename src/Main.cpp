@@ -820,7 +820,7 @@ $defl! list-concat (&x &y) foldr1 cons% (forward! y) (forward! x);
 $defl! append (.&ls) foldr1 list-concat () (move! ls);
 $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
-$def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
+$def! ($let $let% $let* $let*% $letrec $bindings/p->environment) ($lambda (&ce)
 (
 	$def! mods () ($lambda/e ce ()
 	(
@@ -860,7 +860,13 @@ $def! ($let $let% $let* $let*% $letrec) ($lambda (&ce)
 		eval% (mk-let* $let% $let*% ($lqual* bindings) (forward! body)) d;
 	$defv/e%! $letrec mods (&bindings .&body) d
 		eval% (mk-letrec $let ($lqual bindings) (forward! body)) d;
-	map1 move! (list% $let $let% $let* $let*% $letrec)
+	$defv/e! $bindings/p->environment mods (&parents .&bindings) d $sequence
+		($def! (res bref) list (apply make-environment
+			(map1 ($lambda% (x) eval% x d) parents)) (rulist bindings))
+		(eval% (list $set! res (list-extract-first bref)
+			(list* () list (list-extract-rest% bref))) d)
+		res;
+	map1 move! (list% $let $let% $let* $let*% $letrec $bindings/p->environment)
 )) (() get-current-environment);
 $defv! $as-environment (.&body) d
 	eval (list $let () (list $sequence (forward! body)
@@ -868,13 +874,8 @@ $defv! $as-environment (.&body) d
 $defw! derive-current-environment (.&envs) d
 	apply make-environment (append envs (list d)) d;
 $defl! make-standard-environment () () lock-current-environment;
-$defv! $bindings/p->environment (&parents .&bindings) d $sequence
-	($def! res apply make-environment (map1 ($lambda (x) eval x d) parents))
-	(eval (list $set! res (map1 first bindings)
-		(list* () list (map1 rest bindings))) d)
-	res;
 $defv! $bindings->environment (.&bindings) d
-	eval (list* $bindings/p->environment () bindings) d;
+	eval (list* $bindings/p->environment () (forward! bindings)) d;
 $defl! symbols->imports (&symbols)
 	list* () list% (map1 ($lambda (&s) list forward! (desigil s))
 		(forward! symbols));
@@ -1033,7 +1034,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.80"
+#define APP_VER "0.12.81"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
