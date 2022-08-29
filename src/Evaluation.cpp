@@ -728,6 +728,8 @@ private:
 	BindSubpairSubterms(char sigil, TermNode::Container& tcon, TermNode& o,
 		TNIter& j, TermTags tags) const
 	{
+		assert(!bool(tags & TermTags::Temporary)
+			&& "Unexpected temporary tag found.");
 		for(; j != o.end() && !IsSticky(j->Tags); ++j)
 			(*this)(sigil, {}, tags, Unilang::Deref(j), [&](const TermNode& tm){
 				CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value),
