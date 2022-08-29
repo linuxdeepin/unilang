@@ -984,8 +984,8 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * `<body>`： 出现在元素的末尾 `<expressions>?` 形式，用于函数体等替换求值的目标。
 * `<expression-sequence>` ：同 `<expression>...` 但蕴含顺序求值。
 	* 求值 `<expression-sequence>` 的结果被定义为求值其最后一个子表达式（若存在）的结果，或当不存在子表达式时为 `#inert` 。
-* `<consequent>` ：同 `<expression>` 仅用于 `<test>` 求值为 `#t` 时。
-* `<alternate>` ：同 `<expression>` ，仅用于 `<test>` 求值不为 `#t` 时。
+* `<consequent>` ：同 `<expression>` ，仅用于 `<test>` 求值结果经[左值到右值转换](#引用值的访问) 不为 `#f` 时。
+* `<alternative>` ：同 `<expression>` ，仅用于 `<test>` 求值结果经左值到右值转换为 `#f` 时。
 * `<ptree>` ：形式参数树，是包含符号或 `#ignore` 及其它形式参数树构成的有向无环图的表达式。
 	* 语法要求由上下文无关文法描述：`<ptree> ::= <symbol> | #ignore | () | (<ptree>...)` 。
 * `<definiend>` ：被绑定项的目标的 `<ptree>` 。
@@ -1624,7 +1624,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 * 不等价的函数的 `eqv?` 比较结果是 `#f` 。
 	* 这里的等价关系定义为：仅当一个函数或其作为子表达式的任意表达式和对应把这个函数替换为另一个函数的表达式的求值的可观察行为总是相同，则两个函数等价。
 
-`$if <test> <consequent> <alternate>`
+`$if <test> <consequent> <alternative>`
 
 　　条件分支，按条件成立与否返回 `<consequent>` 或 `<alternative>` 之一，可能是引用值。
 
@@ -3152,7 +3152,7 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 ### 控制操作
 
-`if <test> <consequent> else <alternate>`
+`if <test> <consequent> else <alternative>`
 `if <test> <consequent>`
 
 　　条件分支，功能同核心库的 `$if` ，但表达式不能是符号 `else` ，否则引起错误。
