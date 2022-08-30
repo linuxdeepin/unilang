@@ -426,3 +426,7 @@ Output of imprecise numbers are compatible to the format of C++ functions in `<c
 
 Currently, the output number under non-default locales may not be successfully parsed as the numerical literals. 
 
+# License
+
+Unilang is released under [BSD-2-Clause-Patent](https://spdx.org/licenses/BSD-2-Clause-Patent.html).
+
