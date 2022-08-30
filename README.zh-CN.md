@@ -420,3 +420,7 @@ UNILANG=build/.debug/unilang.exe ./test.sh
 
 　　当前版本在非默认区域下不确保这些输出能被作为 Unilang 数值字面量解析。
 
+# 许可证
+
+　　Unilang 在 [BSD-2-Clause-Patent](https://spdx.org/licenses/BSD-2-Clause-Patent.html) 下发布。
+
