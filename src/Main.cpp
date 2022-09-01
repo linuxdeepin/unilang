@@ -180,6 +180,10 @@ LoadModule_std_continuations(Interpreter& intp)
 	RegisterStrict(ctx, "call/1cc", Call1CC);
 	RegisterStrict(ctx, "continuation->applicative",
 		ContinuationToApplicative);
+	intp.Perform(R"Unilang(
+$defl! apply-continuation (&k &arg)
+	apply (continuation->applicative (forward! k)) (forward! arg);
+	)Unilang");
 }
 
 void
@@ -1034,7 +1038,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.82"
+#define APP_VER "0.12.84"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
