@@ -2409,6 +2409,12 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　结果的底层合并子被调用时，传递操作数树给 `<continuation>` 。
 
+`apply-continuation <continuation> <object>`
+
+　　应用续延。
+
+　　以第二参数作为参数，以 `apply` 应用第一参数指定的续延转换的应用子，即同求值：`apply (apply-continuation <continuation>) <object>` 。
+
 ## 代理求值
 
 　　代理求值操作加载为基础环境下的 `std.promises` 环境。
