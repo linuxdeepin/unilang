@@ -426,6 +426,83 @@ Output of imprecise numbers are compatible to the format of C++ functions in `<c
 
 Currently, the output number under non-default locales may not be successfully parsed as the numerical literals. 
 
+# Contribution
+
+We encourage reporting issues and contributing modifications to the project.
+
+See [Contribution Guidelines for Developers](https://github.com/linuxdeepin/developer-center/wiki/Contribution-Guidelines-for-Developers-en) for basic information.
+
+However, the following probably different rules are more applicable in this project:
+
+* In the normative text of documentation, use the verbal forms specified by [ISO/IEC Directive 2](https://www.iso.org/sites/directives/current/part2/index.xhtml).
+	* **NOTE** This is stricter than [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
+* Version metadata:
+	* Versions shall conform to the conventions in [Semantic Versioning](https://semver.org).
+	* Explicit version numbers (including those in Git tags) are updated by maintainers.
+* Commit messages:
+	* If the change is non-English, the message shall in the corresponding non-English language. Otherwise, it shall be in English.
+	* There is no requirement of using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
+		* The format in title is `[optinal scope: ]<description>`.
+			* **NOTE** There are no parentheses around the scope.The character sequence `: ` is optional and it appertain to the scope.
+			* The scope should be specified as directories in the repositiory. Only when the change is not in a same top-level scope, it is global, and the scope should be omitted.
+		* Descripitons in the title or the body should be statements.
+		* The conventions on the body and footers share the same requirements of Conventional Commits, except there is no requirements of **BREAKING CHANGE**.
+		* **Rationale**
+			* Different to widely adopted [Git trailers](https://git-scm.com/docs/git-interpret-trailers), most popular projects do not use Conventional Commits at current.
+			* There are no tools cosuming Conventional Commits in this project at current and *type* field can be parsed.
+			* The predifined types in Conventional Commits do not always meet the conventions in semantic versioning.
+			* Without explicit constraints about how to specify the type, types in the title do not improve the readability of the title.
+	* There shall be no hard returns within a paragraph.
+* Text files:
+	* Executable scripts in text files shall have the file access permission for *execute*, with optional [shebang](https://en.wikipedia.org/wiki/Shebang_%28Unix%29).
+	* Other scripts in text files ahsll not have the file access permission for *execute* and shall not have shebang.
+		* **NOTE** Currently Unilang does not support shebang in source programs, and the code need to be wrapped by a call to the interpreter. This may be changed in future.
+	* Text files already having shebang or other file headers, as well as text files only used as binary form, shall not have BOM.
+	* If possible, text files in all other cases uses UTF-8 + BOM encoding and CR+LF EOL by default.
+		* **NOTE** This will keep sufficient metadata for *files* and keep cross-editor portability, as well as the ease to check against the misuse. 
+	* Except license and external documents, if possible, there shall be no redundant whitespaces at end of the line and there shall be 2 empty lines at end of the file.
+	* For text other than verbatim quoted, no more than one whitespace characters should be used to represent a single indent, except there are preferred combination in the language.
+		* **Rationale** There should be no chance to insert a character in the middle of an indent.
+		* **NOTE** In general, in horizontal text there should be only horizontal tabs to represent indents, except those for hangling indent in east Asian languages where a sequence of 2 U+3000 characters is preferred.
+	* ` ` should be used for alignment.
+		* This makes the visal effect easy to predicate in the usual settings with monospaced fonts and more portabability than other characters.
+* Source code:
+	* Text files used as program source code should contain no more than 80 characters in a line, except for necessary one-line cases such as URLs.
+	* C++:
+		* Language standard:
+			* ISO C++11 is used, excluding features incompatible to the future standards.
+				* **NOTE** For example, ISO C++20 have some changes on rules of default capture in *lambda-expression* and the `u8` literals, so some code may have different meaning and it shall not be used here.
+			* The code shall be compatible to G++/Clang++'s options `-std=c++11 -pedantic-errors`.
+		* Lexical style:
+			* **NOTE** The indentation and alignment rules for text files are inherited here.
+			* `{` and `}` shall be in one line by itself, except those consist a *braced-init-list* or the outermost block of a *lambda-expression*.
+				* **Rationale** To balance the ease of indexing and succinctness in visual.
+			* The identifier prefix `INC_Unilang_` is reserved to the header file guards.
+			* Except macro names, identifiers of public API shall be in `PascalCase`.
+		* Name lookup:
+			* Unless specified explicitly by the design of interface, `namespace` directives shall not be used (`using namespace` are only allowed for internal implementations).
+			* ADL shall be considered. Unqualified names shall be used only when there is no ambiguity.
+		* Type names:
+			* No `typedef` shall be used.
+				* **NOTE** Use `using` instead.
+			* There should be one newline after the first identifier of the type name in a function declaration.
+	* Markdown: The code shall conform to [GitHub Flavor Markdown](https://github.github.com/gfm/).
+	* Doxygen (currently not in use):
+		* In commands, `\` shall be used instead of `@`.
+		* If possible, no more than one `*` or `/` shall be used together.
+			* **NOTE** For instance, use `//!` rather than `///`.
+* Localization：
+	* Currently this project does not support localized resources except the documentation.
+	* The programs in this project do not interoperate with system locale settings (see also [Known issues](#Known-issues)), and all messages in the user interface are treated as in `en-US` locale.
+	* **NOTE** The limitations above are expected removed in future.
+	* The translated edition of documents in this repository can be added as the program code. The filename of translated editions shall conform to the following rules:
+		* Each file should be in a specific language indicated by a language code, or defaulted to `en-US`.
+		* The language code, if any, shall occur once together with its prefixed `.` in the filename, before the prefixed `.` and file extension (if any).
+		* The language code shall consist of a sequence of [ISO 639-1](https://en.wikipedia.org/wiki/ISO_639-1) code, `-` and [ISO 3166-1](https://en.wikipedia.org/wiki/ISO_3166-1) code.
+		* The preferred captalization in the standards shall be used in the language code, i.e. the small case in ISO 639-1 and the capital case in ISO 3166-1.
+		* **NOTE** The form of the language code conforms to the recommendation of [IETF language tag](https://en.wikipedia.org/wiki/IETF_language_tag), specifically, the "language" and "region" syntax elements in [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646.html).
+		* **NOTE** The filename of `en-US` edition omits `.en-US`. For instance, `README.md` is the filename of the translated edition in `en-US` locale. The corresponding edition in `zh-CN` is `README.zh-CN.md`.
+
 # License
 
 Unilang is released under [BSD-2-Clause-Patent](https://spdx.org/licenses/BSD-2-Clause-Patent.html).
