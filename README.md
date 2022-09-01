@@ -1,5 +1,10 @@
 ﻿# Unilang
 
+The contents in this document are available in:
+
+* **English**
+* [简体中文](README.zh-CN.md)
+
 © 2020-2022 UnionTech Software Technology Co., Ltd.
 
 This is the repository of the programming language named **Unilang**, including documents and an interpreter as the reference implementation.
@@ -495,6 +500,10 @@ However, the following probably different rules are more applicable in this proj
 	* Currently this project does not support localized resources except the documentation.
 	* The programs in this project do not interoperate with system locale settings (see also [Known issues](#Known-issues)), and all messages in the user interface are treated as in `en-US` locale.
 	* **NOTE** The limitations above are expected removed in future.
+	* Multilingual hyperlinks may be added at the top of each translated edition of a document.
+		* The links shall be exist in all translated edition, if any, except the edition of the current language may not be a link and have a different visual style.
+		* **Rationale** Given that there is no widely adopted and out-of-box native solution for switching the language of the documentation, explicit links maintained in the document may be needed for switching the language.
+		* **NOTE** See also related discussions: [[1]](https://github.com/github/markup/issues/899), [[2]](https://github.com/github/cmark-gfm/issues/243) and [[3]](https://talk.commonmark.org/t/adding-lang-lang-syntax/3998).
 	* The translated edition of documents in this repository can be added as the program code. The filename of translated editions shall conform to the following rules:
 		* Each file should be in a specific language indicated by a language code, or defaulted to `en-US`.
 		* The language code, if any, shall occur once together with its prefixed `.` in the filename, before the prefixed `.` and file extension (if any).
