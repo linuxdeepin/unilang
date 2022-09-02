@@ -2,4 +2,8 @@
 
 $expect 21 try/catch (17 + 4) idv;
 $expect 10 try/catch (17 + (throw (2 + 3))) (lambda (x) (x * 2));
+$expect 30
+	try/catch (try/catch (17 + (throw (2 + 4))) (lambda (x) (x * 5))) idv;
+$expect 30
+	try/catch (try/catch (17 + (throw (2 + 4))) (lambda (x) throw (x * 5))) idv;
 
