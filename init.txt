@@ -172,7 +172,8 @@ $defv! defn (&f &formals .&body) d
 
 $defv%! throw (&ex) d
 	eval% (list% ($remote-eval% apply-continuation std.continuations)
-		(list% move! ($quote __cc)) (list% ($quote __h) (forward! ex))) d;
+		(list% move! ($quote __cc)) (list% apply ($quote __h)
+		(list% list% (forward! ex)) (list% make-environment ($quote __d)))) d;
 
 $defv%! try/catch (&expr &h) d
 	($remote-eval% call/1cc std.continuations)
