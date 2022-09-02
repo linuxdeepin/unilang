@@ -175,18 +175,12 @@ $defv%! throw (&ex) d
 		(list% move! ($quote __cc)) (list% ($quote __h) (forward! ex))) d;
 
 $defv%! try/catch (&expr &h) d
-(
-	$set! d __h (eval% h d);
-	eval% (list% ($remote-eval% call/1cc std.continuations)
-		(list% $lambda%
-			(list% ($quote &k))
-			(list% $sequence
-				(list% $set! d ($quote __cc) move! ($quote k))
-				(list% (forward! expr))
-			)
-		)
-	) d
-);
+	($remote-eval% call/1cc std.continuations)
+		(eval% (list% $lambda% (list% ($quote &k))
+		(list% $sequence
+			(list% $def! ((unwrap list%) __h __d __cc)
+				list% (eval% h d) d (move! ($quote k)))
+		(forward! expr))) d);
 
 $defl! info (.&msgs) apply putss (list* "Test case: " (move! msgs));
 
