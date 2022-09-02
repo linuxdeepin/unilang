@@ -788,3 +788,9 @@ try/catch (17 + (throw (2 + 3))) (lambda (x) x * 2); "=> 10";
 
 　　异常处理器应为合并子。一般应为应用子，以取得异常对象，而不是 `throw` 的未求值的操作数。
 
+　　异常处理可以嵌套，如：
+
+```
+try/catch (try/catch (17 + (throw (2 + 4))) (lambda (x) (x * 5))) idv; "=> 30";
+try/catch (try/catch (17 + (throw (2 + 4))) (lambda (x) throw (x * 5))) idv; "=> 30";
+```
