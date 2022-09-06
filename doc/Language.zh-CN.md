@@ -2423,7 +2423,9 @@ Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pd
 
 　　应用续延。
 
-　　以第二参数作为参数，以 `apply` 应用第一参数指定的续延转换的应用子，即同求值：`apply (apply-continuation <continuation>) <object>` 。
+　　以第二参数作为参数，以 `apply` 应用第一参数指定的续延转换的应用子。
+
+**注释** 即同求值：`apply (apply-continuation <continuation>) <object>` 。
 
 ## 代理求值
 
