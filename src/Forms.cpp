@@ -17,7 +17,7 @@
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
-#include "TermNode.h" // for TNCIter;
+#include "TermNode.h" // for CountPrefix, TNCIter;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
@@ -508,7 +508,7 @@ EqTermReference(TermNode& term, _func f)
 YB_ATTR_nodiscard YB_PURE inline bool
 TermUnequal(const TermNode& x, const TermNode& y)
 {
-	return x.size() != y.size() || x.Value != y.Value;
+	return CountPrefix(x) != CountPrefix(y) || x.Value != y.Value;
 }
 
 void
