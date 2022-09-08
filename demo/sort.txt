@@ -1,15 +1,15 @@
 ﻿"QuickSort variant, leftmost pivot, non-in-place.";
 
 defn log (&title &r)
-(
+{
 	display title;
 	display r;
 	() newline;
 	forward! r
-);
+};
 
 defn sort (&lst)
-(
+{
 	if ($or (null? lst) (null? (rest& lst)))
 	{
 		forward! lst
@@ -32,7 +32,7 @@ defn sort (&lst)
 			}
 		)
 	}
-);
+};
 
 def data (list 2 3 13 11 5 1 14 6 16 8 10 9 15 7 12 4);
 log "original: " data;

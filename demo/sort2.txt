@@ -7,23 +7,23 @@ $defl%! list-at& (&l i)
 	if (i <= 0) {first& l} else {list-at& (rest& l) (i - 1)};
 
 defn swap! (&x &y)
-(
+{
 	def t move! x;
 	x := move! y;
 	y := move! t;
 	#inert
-);
+};
 
 defn log (&title &r)
-(
+{
 	display title;
 	display r;
 	() newline;
 	forward! r
-);
+};
 
 defn partition! (&lst i j pivot)
-(
+{
 	unless (i = j)
 	{
 		while ($and (not? (i = j)) ((list-at& lst i) < pivot))
@@ -44,10 +44,10 @@ defn partition! (&lst i j pivot)
 		}
 	};
 	i
-);
+};
 
 defn sort-range! (&lst lo hi)
-(
+{
 	$if (hi - lo > 1)
 	(
 		let ([m partition! lst (lo + 1) hi (list-at& lst lo)])
@@ -61,7 +61,7 @@ defn sort-range! (&lst lo hi)
 		}
 	);
 	#inert
-);
+};
 
 defn sort! (&lst) sort-range! lst 0 (list-length lst);
 
