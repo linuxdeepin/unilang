@@ -4,7 +4,7 @@ def l list "a" "b" "c" "d";
 
 info "while loops: test a list element in a list";
 defn list-contains? (l x)
-(
+{
 	def not-found #t;
 	while (and not-found (not (null? l)))
 	{
@@ -18,7 +18,7 @@ defn list-contains? (l x)
 		}
 	};
 	not not-found
-);
+};
 $check list-contains? l "b";
 $check-not list-contains? l "e";
 
