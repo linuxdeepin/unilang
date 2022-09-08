@@ -19,7 +19,7 @@ $def! std.classes $let ()
 			() make-encapsulation-type;
 		$defl! make-class (base ctor)
 			encapsulate-class% (list base ctor);
-		$defl! ctor-of (c) first (rest (decapsulate-class c));
+		$defl! ctor-of (c) first (rest% (decapsulate-class c));
 		$defl! base-of (c) first (decapsulate-class c);
 		$defl! apply-ctor (c self args)
 			apply (ctor-of c) (list* self args);
