@@ -48,8 +48,8 @@ defn partition! (&lst i j pivot)
 
 defn sort-range! (&lst lo hi)
 {
-	$if (hi - lo > 1)
-	(
+	if (hi - lo > 1)
+	{
 		let ([m partition! lst (lo + 1) hi (list-at& lst lo)])
 		{
 			swap! (list-at& lst lo) (list-at& lst (m - 1));
@@ -59,7 +59,7 @@ defn sort-range! (&lst lo hi)
 			sort-range! lst m hi;
 			log "right sorted: " lst;
 		}
-	);
+	};
 	#inert
 };
 
