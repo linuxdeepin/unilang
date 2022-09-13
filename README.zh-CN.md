@@ -57,7 +57,7 @@
 		* 这些技术并非能确保良好支持本机应用的开发。
 			* 历史上，HTML 呈现 Web 中的静态的文档（称为“页面”）而不是交互式的动态程序而设计。
 			* JavaScript 和 CSS 角色上把静态页面转换为动态内容的客户端补丁，在早期也曾经功能严重受限（因此有 [Flash](https://en.wikipedia.org/wiki/Adobe_Flash) 等其它技术的流行）。
-			* 即便 [DOM](https://dom.spec.whatwg.org/) 等标准化的技术规格能简化大量实现细节，跨浏览器不兼容时有发生。所幸 JavaScript 作为动态语言易于通过 [shim](https://en.wikipedia.org/wiki/Shim_%28computing%29) （而无需更改运行环境）等方式减少问题，但这至少以适配工作量为代价，而且不总是可行（例如，缺乏对 [ES6 的 PTC(proper tail call)](https://262.ecma-international.org/6.0/#sec-tail-position-calls) 的支持基本不能通过不修改底层实现解决）。
+			* 即便 [DOM](https://dom.spec.whatwg.org/) 等标准化的技术规格能简化大量实现细节，跨浏览器不兼容时有发生。所幸 JavaScript 作为动态语言易于通过 [shim](https://en.wikipedia.org/wiki/Shim_%28computing%29) （而无需重新部署运行环境）等方式减少问题，但这至少以适配工作量为代价，而且不总是可行。例如，缺乏对 [ES6 的 PTC(proper tail call)](https://262.ecma-international.org/6.0/#sec-tail-position-calls) 的支持基本不能通过不修改底层实现解决。
 	* 实际的实现极端复杂，明显比其它方案更加难以定制。
 		* 浏览器的核心部分（实现 HTML 和 CSS 等的排版引擎和 JavaScript 等语言的运行时）是高度封装的集成组件，大多使用 C/C++ 实现，却比几乎所有 C/C++ 程序更难修改和裁剪。
 		* 因此，基于 Web 的 GUI 方案，基本只能捆绑这些原生组件而不能做出大的改动。即便应用不依赖的功能也不便在部署前被移除。除非被系统分发，这将严重使程序的体积膨胀。
@@ -125,11 +125,11 @@
 		* 例如，用 `unsafe` 等特设语法标记“不安全”的语言中，通常会放弃语言定义的任意安全保证，而不能选择保留其中的一部分。即便忽略这个问题，语言也缺乏机制允许用户提供更严格的保证。
 			* 因此，基础语言默认是不安全的。
 		* 再如，默认不可变的数据结构虽然能保证 [const correctness](https://isocpp.org/wiki/faq/const-correctness) 这样的“正确性”（一种保持被限定的不可变性质不被丢弃的[*类型安全性(type safety)*](https://en.wikipedia.org/wiki/Type_safety)），却忽略对“不可变”的定义描述不充分而不能让用户程序扩展的问题——很多情形下，不可变仅仅需要是一种等价关系，而并非不可修改。
-			* 这可能导致具体的不可修改性被滥用，例如 C++ 标准库关联容器的键类型实际上不需要符合 C++ 的 `const` ，因为键的不可变确切地由比较关系导出的等价关系定义，但类型系统无法区别两种情形。这过度地限制了键上的本应允许的操作。
+			* 这可能导致具体的不可修改性被滥用，例如 C++ 标准库关联容器的键类型实际上不需要符合 C++ 的 `const` ，因为键的不可变确切地由[比较对象导出的等价关系](http://www.eel.is/c++draft/associative.reqmts#general-3)定义，但类型系统无法区别两种情形。这过度地限制了键上的本应允许的操作。
 				* 这里用 `const_cast` 这样的不安全转换取消 `const` 引入的类型安全保证并自行假定不会破坏不可变性，是个无奈的变通（“更困难”的情形，且无法恢复类型安全性而效果更差）。
 			* 默认不可变的类型系统，如 Rust 的设计，则更根本地在类型组合构造上阻止了扩展的方向。
 				* 这蕴含不可变性只有一种，除非修改类型系统设计，放弃原有的不可变定义并重新引入类似 C++ `const` 的限定符机制（“更困难”的情形）。
-			* 这也限制了现有的实现的*常量传播(const propagation)* 的优化范围，因为原则上这里的“常量”只关心替换能保持变换前后的语义等价性(semantic-preserving) ，而不在意具体的值是否相等。
+			* 这也限制了现有实现中的[*常量传播(const propagation)*](https://zh.wikipedia.org/zh-cn/%E5%B8%B8%E6%95%B8%E6%8A%98%E7%96%8A#%E5%B8%B8%E6%95%B8%E5%82%B3%E6%92%AD) 的优化范围，因为原则上这里的“常量”只关心替换能保持变换前后的语义等价性(semantic-preserving)（对 C++ ，这是关于[抽象机语义](http://www.eel.is/c++draft/intro.compliance#intro.abstract-1)上的），而不在意具体的值是否相等。
 				* 若语言允许用户表达“一些具有不同表示的值被视为等价”，则优化的适应性会自然地扩展。
 			* 因此，基础语言中的对象默认可变。
 	* 在一个已经要求全局 GC 的语言中排除 GC ，远远难于在不依赖 GC 的语言规则基础上添加和 GC 交互的能力（特别是 GC 允许用户定制时）。
@@ -182,7 +182,7 @@
 
 * `git`
 * `bash`
-* GNU coreutils
+* [GNU coreutils](https://www.gnu.org/software/coreutils/)
 * 支持 ISO C++ 11 的 G++ 和与之兼容的 GNU binutils
 
 　　可选依赖：
@@ -194,21 +194,23 @@
 * libffi
 * LLVM 7
 	* `llvm-config`
+* Qt 5
+* `pkg-config`
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
 yay -S llvm70 # Or some other AUR frontend command.
-# Debian (strech/buster)/Ubuntu (bionic-updates/focal)
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev
-# Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-dev
+# Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
 ```
+
+　　另见以下的[环境配置](#环境配置)安装更多可选的依赖。
 
 ### Qt 环境要求和假设
 
@@ -265,7 +267,7 @@ env CXX=clang++ ./build.sh
 
 　　以下设并行构建任务数 `$(nproc)` 。可在命令中单独指定其它正整数的值代替。
 
-### 配置环境
+### 环境配置
 
 　　配置环境完成工具和依赖项（包括动态库）的安装，仅需一次。（但更新子模块后一般建议重新配置。）
 
@@ -273,19 +275,39 @@ env CXX=clang++ ./build.sh
 
 　　对 Linux 平台构建目标，首先需确保构建过程使用的外部依赖被安装：
 
+* [freetype2](https://freetype.org/)
+
+　　例如，使用包管理器：
+
 ```
 # Arch Linux
 sudo pacman -S freetype2 --needed
-```
-
-```
 # Debian/Ubuntu/Deepin
 sudo apt install libfreetype6-dev
 ```
 
+　　为以下脚本中自动更新二进制依赖和对源文件补丁，需要以下依赖：
+
+* `wget`
+* `7za`
+* `sed`（避免可能破坏行尾的 Win32 版本）
+
+　　例如，使用包管理器：
+
+```
+# MSYS2
+# XXX: Do not use mingw-w64-x86_64-sed to ensure the EOL characters as-is.
+pacman -S --needed mingw-w64-x86_64-wget p7zip sed
+# Arch Linux
+sudo pacman -S --needed wget p7zip sed
+yay -S llvm70 # Or some other AUR frontend command.
+# Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
+sudo apt install wget p7zip-full sed
+```
+
 　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具和库。其中，二进制依赖直接被部署到源码树中。当前二进制依赖只支持 `x86_64-linux-gnu` 。本项目构建输出的文件分发时不需要依赖其中的二进制文件。
 
-**注释** 脚本安装的二进制依赖可能会随构建环境更新改变，但当前本项目保证不依赖其中可能存在的二进制不兼容的部分。因此，二进制依赖的更新是可选的。但是，在构建环境更新后，一般仍需再次运行脚本配置环境，以确保覆盖安装外部工具和（非二进制依赖形式分发的）库的最新版本。其中，若二进制依赖文件不再在脚本预期的部署位置中存在，脚本会重新获取最新版本的二进制依赖。
+**注释** 脚本安装的二进制依赖可能会随构建环境更新改变，但当前本项目保证不依赖其中可能存在的二进制不兼容的部分。因此，二进制依赖的更新是可选的。但是，在构建环境更新后，一般仍需再次运行脚本配置环境，以确保覆盖安装外部工具和（非二进制依赖形式分发的）库的最新版本。其中，若二进制依赖文件不再在脚本预期的部署位置中存在，脚本会从网络重新获取最新版本的二进制依赖。
 
 　　以下环境变量控制脚本的行为：
 
