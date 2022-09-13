@@ -43,7 +43,7 @@ Currently, there are many options for desktop application development, with thei
 From the perspective of higher-level structure, different types of GUI solutions also have different technical limitations in the sense of architecture, which greatly limits the choices of real general solutions:
 
 * Compared with the traditional *retained mode* GUI, the *immediate mode* GUI as [Dear ImGUI](https://github.com/ocornut/imgui) lacks the abstraction of entities, not reflecting the traditonal approach of [WIMP metaphor](https://en.wikipedia.org/wiki/WIMP_%28computing%29).
-	* The so-called [immediate mode](https://en.wikipedia.org/wiki/Immediate_mode_%28computer_graphics%29) was originally focused on graphics rendering and lacked attention to UI interaction. Therefore, even if good display output is achieved, a lot of work is still needed to improve interactivity.
+	* The so-called [immediate mode](https://en.wikipedia.org/wiki/Immediate_mode_%28computer_graphics%29) originally focused on graphics rendering and lacked attention to UI interaction. Therefore, even if good display output is achieved, a lot of work is still needed to improve interactivity.
 	* Due to the simplification of intermediate states, immediate mode GUI is basically difficult to extend to implement the UI automation interface in nature.
 * It is difficult to overcome the specific functional limitations of the underlying implementation by relying on the "native" solution provided with the system.
 	* For example, the [Win32 window style `WS_EX_LAYERED` is only supported in the top-level windows but not in the child windows before Windows 8](https://docs.microsoft.com/windows/win32/winmsg/extended-window-styles).
@@ -57,7 +57,7 @@ From the perspective of higher-level structure, different types of GUI solutions
 		* These technologies do not ensure good support for the development of native applications.
 			* Historically, HTML was designed to present static documents (called "pages") in the web rather than interactive dynamic programs.
 			* As the role of the client-side patching for converting static pages into dynamic content, JavaScript and CSS were also severely limited in function in the early stage (therefore, [Flash](https://en.wikipedia.org/wiki/Adobe_Flash) and other technologies were once popular).
-			* Even though standardized technical specifications such as [DOM](https://dom.spec.whatwg.org/) can simplify a large number of implementation details, incompatibility among different browsers is often problematic. Fortunately, as a dynamic language, JavaScript is easy to reduce problems by [shim](https://en.wikipedia.org/wiki/Shim_%28computing%29) (instead of changing the running environment), but this is at least at the cost of adaptation workload, and it is not always feasible (for example, the lack of support for [PTC (proper tail call)]((https://262.ecma-international.org/6.0/#sec-tail-position-calls)) of ES6 can hardly be solved except modifying the underlying implementation of the language.
+			* Even though standardized technical specifications such as [DOM](https://dom.spec.whatwg.org/) can simplify a large number of implementation details, incompatibility among different browsers is often problematic. Fortunately, as a dynamic language, JavaScript is easy to reduce problems by [shim](https://en.wikipedia.org/wiki/Shim_%28computing%29) (instead of re-deploying the running environment), but this is at least at the cost of adaptation workload, and it is not always feasible. For example, the lack of support for [PTC (proper tail call)](https://262.ecma-international.org/6.0/#sec-tail-position-calls) of ES6 can hardly be solved except modifying the underlying implementation of the language.
 	* The actual implementations are extremely complex, obviously more difficult to customize than other solutions.
 		* The core parts of the browser (implementing the typesetting engine such as HTML and CSS and the runtime of languages such as JavaScript) are highly encapsulated integrated components, which are mostly implemented in C/C++, but more difficult to modify than almost all other C/C++ programs.
 		* Therefore, Web-based GUI solutions can only bundle these native components without significant changes. Even functions not depended on by the application are not easily removed before deployment. Unless distributed by the system, this will seriously bloat the the programs.
@@ -125,11 +125,11 @@ Unilang is the language part of the new solution to comprehensively solve the ex
 		* For instance, in languages using ad-hoc syntax notations like `unsafe`, ususally the safety guarantees defined by the language rules are dropped altogether, and a part of these guarantees cannot be retained. Even if this problem is ignored, these languages lack mechanisms to allow users to provide stricter guarantees integrating into current ones.
 			* Therefore, the basic language is unsafe by default.
 		* As another instance, although the default immutable data structures can guarantee the "correctness" like [const correctness](https://isocpp.org/wiki/faq/const-correctness) (an instance of [*type safety*](https://en.wikipedia.org/wiki/Type_safety) that keeps the defined immutable property from being discarded), it ignores the problem that the definition of "immutable" is not sufficiently preciesly described and it cannot be extended by the user program. In many cases, immutability only needs to be an equivalent relationship, not an unmodifiable one.
-			* This may cause abuse of specific non-modifiablitity, like the case of requirements on key types of associative containers in the C++ standard library. It actually need no `const` as currently mandated by ISO C++, because the immutablity of the key is defined by the equivalent relationship derived from the comparator. But the type system of C++ cannot distinguish these two case of immutablilty, leading to over-specification in the types of API, which blocks some operations on the key.
+			* This may cause abuse of specific non-modifiablitity, like the case of requirements on key types of associative containers in the C++ standard library. It actually need no `const` as currently mandated by ISO C++, because the immutablity of the key is exactly defined by [the equivalent relationship derived from the comparison object](http://www.eel.is/c++draft/associative.reqmts#general-3). But the type system of C++ cannot distinguish these two case of immutablilty, leading to over-specification in the types of API, which blocks some operations on the key.
 				* Using unsafe casts like `const_cast` to cease the type safety guarantee introduced by `const` totally and assuming it not destroyed by other operations is a helpless workaround here (the "more difficult" situation; the type safety cannot be restored, and the effect is worse).
 			* Meanwhile, type system having immutability by default, like that in Rust, more fundamentally block ways of extensibility in the sense of type formation.
 				* This design implies there is only one kind of immutability, unless then modifying the design of the type system by dropping the original definition of "immutability" and reintroduce qualification like C++'s `const` (the "more difficult" situation).
-			* This also limits the extents of *constant propagation* optimization in the existing implementation, because in principle, the "constant" here only cares about whether the substitution of the generated code can maintain the semantic preservation property before and after the transformation, while caring nothing about the equality on concrete values.
+			* This also limits the extents of [the *constant propagation*](https://en.wikipedia.org/wiki/Constant_folding#Constant_propagation) optimization in existing implementations, because in principle, the "constant" here only cares about whether the substitution of the generated code can maintain the semantic preservation property before and after the transformation (regarding to [the abstraction machine semantics](http://www.eel.is/c++draft/intro.compliance#intro.abstract-1) in the case of C++), while caring nothing about the equality on concrete values.
 				* If the language allows the user to express that "some values with different representations are considered equivalent", the adaptability of the optimization will naturally grow.
 			* Therefore, objects in the basic languages are mutable by default.
 	* Excluding GC from a language that requires already the global GC, is far more difficult to adding the GC to a language with no mandatory of GC in its rules (especially when the GC is to be customized by users).
@@ -185,7 +185,7 @@ The building environment relies on the following tools:
 
 * `git`
 * `bash`
-* GNU coreutils
+* [GNU coreutils](https://www.gnu.org/software/coreutils/)
 * G++ supporting ISO C++, and compatible GNU binutils
 
 The following dependencies are optional:
@@ -209,11 +209,11 @@ pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binu
 # Arch Linux
 sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
 yay -S llvm70 # Or some other AUR frontend command.
-# Debian (strech/buster)/Ubuntu (bionic-updates/focal)
+# Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
 sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
-# Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-dev pkg-config qtbase5-dev
 ```
+
+See also the [environment configuration](#environment-configuration) below for some optional additional dependencies.
 
 ### Qt environment requirements and assumptions
 
@@ -279,19 +279,39 @@ The installed files are built from the source code in `3rdparty/YSLib`.
 
 For Linux targets, first it is required to keep the external dependencies specific for the installation, even they are not used in this project at all:
 
+* [freetype2](https://freetype.org/)
+
+For example, by package managers:
+
 ```
 # Arch Linux
 sudo pacman -S freetype2 --needed
-```
-
-```
 # Debian/Ubuntu/Deepin
 sudo apt install libfreetype6-dev
 ```
 
+For automatic update of binary dependencies and patching the source in the script below, the following dependencies are needed:
+
+* `wget`
+* `7za`
+* `sed` (avoiding Win32 ones which may corrupt the line ending)
+
+For example, by package managers:
+
+```
+# MSYS2
+# XXX: Do not use mingw-w64-x86_64-sed to ensure the EOL characters as-is.
+pacman -S --needed mingw-w64-x86_64-wget p7zip sed
+# Arch Linux
+sudo pacman -S --needed wget p7zip sed
+yay -S llvm70 # Or some other AUR frontend command.
+# Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
+sudo apt install wget p7zip-full sed
+```
+
 Then run the script `./install-sbuild.sh` to install the external tools and libraries. The script updates precompiled binary dependencies, then builds and deploys the tools and the libraries. The binaray dependencies are deployed directly into the source tree. Currently the prebuilt dependencies only supports the `x86_64-linux-gnu` target. Any output files built by this project do not need to deploy these binary dependencies.
 
-**NOTE** The binary dependencies installed by the script may change as per the build environment updates. Nevertheless, currently it is guaranteed no binary-incompatible parts are depended on. Therefore, it is optional to update the binary dependencies. However, after the update of the build environment, usually the script required to run again, to ensure up-to-date tools and libraries are installed. If the binary dependencies are no longer existing, the script will automatically fetch them.
+**NOTE** The binary dependencies installed by the script may change as per the build environment updates. Nevertheless, currently it is guaranteed no binary-incompatible parts are depended on. Therefore, it is optional to update the binary dependencies. However, after the update of the build environment, usually the script needs to run again, to ensure up-to-date tools and libraries are installed. If the binary dependencies are no longer existing, the script will automatically fetch them from the network.
 
 The following environment variables controls the behavior of the script:
 
