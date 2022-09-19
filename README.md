@@ -157,10 +157,10 @@ To keep universality, Unilang does not provide GUI functionailty as built-in fea
 	* It is the main source in determining whether the current design of the language and an implementation (both the interpreter and the library code) of the language having defects.
 * [Implementation document of the interpreter (zh-CN)](doc/Interpreter.zh-CN.md): This document describe the design of the intpreter, which is not intended or qualified as the publicly available features in the language. The document also contains some descriptions about the project-specific plan of the evolution and decisions, as well as the related rationale.
 	* It is sutable for the maintainers of this project (the implementors of the interpreter) and users who want to extend the language implementation.
-* [Introduction of the language](doc/Introduction.zh-CN.md)：This document introduces the use of the language and its features.
+* [Introduction of the language (zh-CN)](doc/Introduction.zh-CN.md)：This document introduces the use of the language and its features.
 	* It is hopefully useful for beginners.
 	* All users of this project (language, interpreter and library) are recommended to read it.
-* [Fetures document](doc/Features.zh-CN.md)：This is a reference to language features as supplement to the introcuction document above. There is a (still non-exhaustive) feature list and related information of how to use them.
+* [Fetures document (zh-CN)](doc/Features.zh-CN.md)：This is a reference to language features as supplement to the introcuction document above. There is a (still non-exhaustive) feature list and related information of how to use them.
 	* It is suitable for the end-users of the language (the developers using Unilang).
 	* Users having interested in the 
 	* Users who need to have an in-depth understanding of the language and need to propose new language features are recommended read it first.
@@ -168,6 +168,21 @@ To keep universality, Unilang does not provide GUI functionailty as built-in fea
 The contributors of this project shall generally be able to determine the relevance of the contents in the above documents and the corresponding implemented modifications (if any).
 
 If there is inconsistency between the contents of the document or it does not match other parts of the project, please contact the maintainers to report the defect.
+
+## Consistency
+
+The documents shall provide no descriptions with misconceptions on the objects being documented. 
+
+The documents should usually be consistent with other parts of the repository (including the interpreter and the standrd library code which is used as the reference implementation).
+
+However, as this project is in an early development stage, some documents may have differences on the requirements of consistency.
+
+* The languaged implementation *conforms* to the language specification.
+* Between released versions (with Git tag), the implementation document of the interpreter, introduction of the language and features document may be inconsistent to the commit revision (in `master` branch) in a limited way.
+* Introduction of the language and features document may be incomplete compared to the language specification, i.e. not all features are covered.
+* In all other cases, all other contents meet the requirements in the `README` document.
+
+If not all requirements above are met, such inconsistent shall be treated as the defects of the documents or the objects being described in the documents.
 
 # Building
 
