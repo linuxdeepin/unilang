@@ -89,6 +89,57 @@ If new options are put forward without avoiding this situation, it will only fur
 
 <p align="right">—— <a href="https://schemers.org/Documents/Standards/">R<sup>n</sup>RS</a> & <a href="https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf">R<sup>-1</sup>RK</a></p>
 
+## The necessity of a new language
+
+Well ... but why a **new** language?
+
+As we have known, most properties of a programming language are provided through the *features* specificed by the language rules. Moreover, some other required properties are guaranteed by deliberately lacking of specific set of features (i.e. *misfeatures*).
+
+Users want features but not misfeatures. In reality, the concrete sets of features and misfeatures needed by users are not totally fixed. It might be easy to add new features to a current programming language. However, it is almost always quite different (if not impossible) to remove the misfeatures due to the risks on (in)compatibilities, unless the language is expected to do so, by design.
+
+There are many technical concerns to determine whether a feature satisfies our need here, and the decisions may likely vary for other uses. So, the common features set would be surprisingly small. But almost all industrial languages just provide too much, and those features are not easy to be added back on demand, by users (rather than the designers) of the language. In such case, it just means many misfeatures are unavoidable.
+
+For practical reasons, we decide to not change the current languages (which is likely to add additional complexity on the languages and to create more misfeatures to some users), but to reinvent our own wheel, to solve the problem.
+
+We also prefer only **one** language to serve the needs as possible. Otherwise, we can have several languages. Such languages naturally serve to different problem domains, hence *domain-specific languages (DSLs)*.
+
+The latter might work well when such domains share few common works. On the other hand, to our experience, it is a pain to maintain different DSLs together for a slightly greater problem domain consisting of related subdomains. There are also unneeded cost on interoperability. Even we want different tool sets specialized for different problem domains, there should been more common design and implementation reused among different languages. They should not be totally independent by design. In other words, the replacements of the DSLs should better be dialects of a general-purpose language.
+
+Some users may have concerns on the look and feel of the resulted "one" language. It is true that a unique and universal syntax can hardly work across different problem domains, because there are conflict needs on the syntax: we may need radically different visual styles for different purpose. But there is actually no law to rules out the possibility to support more than one sets of concrete syntaxes in one language.
+
+So, the syntaxes of a language should not be the problem. If the syntax is not satisfying, just change it. This is done by users, but not the designers of the languages. Of course there is some cost, but it should be cheaper than designing and implementing a radically different language, once the underlying language is properly provided.
+
+## The methodology
+
+As said, to design a language indeed general-purpose, we don't want to pile features at the top of the existing ones.
+
+Instead of specifying a rich feature set, we first provide the *base language*, which only have the features fundamental enough. Such features can be used to implement other features in terms of library API. The language is then *derived*.
+
+The base language is designed specifically for the ease of integration in the very beginning. In other words, besides the common feature set, it also serves the problem domain of language derivation, which is neglected by most programming languages. It should be relatively easy to use in this aspect compare to most (if not all) mainstream programming languages. To be concrete, the basic languages works well without many popular core language features (like type systems) in other languages. This significantly decreases the risks of misfeatures from premature designs for all derivations.
+
+We acknowledge that users may have the need of out-of-box features not provided in the native language design. This is solved by allowing fundamental features of the language more programmable, i.e. most features are in the libraries.
+
+We also encourage users to add new sets of features from the current language and contribute to us in the form of libarary.
+
+This approach, like less contention with locks of smaller granularity, also improves the potential parallelism on the process of the language evolation. We have identified the high cost of communication in the development process in some major program languages and try to prevent some foreseeable problems in this way. Hopefully this would be more efficient than alternative methods.
+
+## How to do GUI?
+
+GUI is a major problem domain with non-trivial programming works in reality. It is important and complicated enough. In particular, it has quite a lot different subdomains of problems, and many solutions already choose the mixture of different DSLs. Thus, it is a great field to experiment our methodology.
+
+Due to the intrinsic complexity of the problems, we don't expect an omnipotent solution to meet all requirements. Instead, we have different plans to improve the current status.
+
+Among all the plans, the dynamic nature of the languages plays an important role. We believe it better to be dynamic for features like widget layout, widget hierarchy, runtime object inspection and hot reloading. Any effort to implement them in a static language needs to implement a dynamic description of the program at first, essentially implementing a dynamic language if it is reusable. Avoiding the need to choose a different solution to work around the problems here is an improvment over many technologies.
+
+There are more different improvements even when compared to current solutions already using some dynamic language:
+
+* There needs only one language, rather than a mixture of different ones.
+* To customize and extend language features specialized to any domains, including GUI, is easier.
+* To manage resources with precise lifetime is easier, because no GC is absolutely required.
+* Customization by end-user can be easier, because embedding a DSL for end-users (if needed) can share most semantic properties of the lanugage implementation, and there might need only minor adjustment on syntaxes.
+
+(More concrete works TBD here.)
+
 ## Characteristics
 
 Unilang is the language part of the new solution to comprehensively solve the existing problems. The distinguishing features are:
