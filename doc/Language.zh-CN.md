@@ -46,8 +46,7 @@
 * ISO/IEC 10646, Information technology — Universal Coded Character Set (UCS)
 * ISO/IEC 14882:2017, Information technology — Programming languages — C++
 * [Fexprs as the basis of Lisp function application or $vau : the ultimate abstraction](http://www.wpi.edu/Pubs/ETD/Available/etd-090110-124904/unrestricted/jshutt.pdf) ([Shu10])
-* [Revised<sup>-1</sup> Report on the
-Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf) ([RnRK])
+* [Revised<sup>-1</sup> Report on the Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf) ([RnRK])
 
 　　对文献的引用以 [] 包含的形式标记。除以上列表中结尾 () 备注的部分外，包括：
 
