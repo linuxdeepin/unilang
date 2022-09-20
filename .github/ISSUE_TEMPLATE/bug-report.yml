@@ -1,0 +1,78 @@
+---
+name: BUG Report | 缺陷报告
+description: General BUG report
+labels: []
+assignees: []
+body:
+- type: markdown
+  attributes:
+    value: |
+      **Thanks for taking a minute to file a bug report! 感谢抽出时间报告 BUG 缺陷**
+      
+      A valid bug report should let someone other than you be able to reproduce the same issue, so please provide as much details as possible.
+      一个有效的缺陷报告应能够使一个你之外的人可以根据所提供的信息有效的复现问题，所以请提供尽可能详细的信息。
+
+      ⚠ Read before creating issue 反馈之前请注意：
+      Only report BUG here, please use the [Discussion board][discussion-board] for non-bug feature request, troubleshooting or general discusion.
+      非 BUG 的反馈（如特性请求、疑难解答和常规讨论）请转到 [Discussion 面板][discussion-board]。
+      
+      [discussion-board]: https://github.com/linuxdeepin/unilang/discussions/new
+
+- type: textarea
+  attributes:
+    label: SUMMARY | 概要
+    description: |
+      describe the bug you want to report
+      在这里描述你遇到的缺陷
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: STEPS TO REPRODUCE | 重现步骤
+    description: |
+      describe the steps to reproduce the specific bug
+      在这里描述重现缺陷的步骤
+    placeholder: |
+      1. ...
+      2. ...
+      3. ...
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: OBSERVED BEHAVIORS | 观察到的行为
+    description: |
+      describe the observed behaviors
+      在这里描述观察到的结果
+
+- type: textarea
+  attributes:
+    label: EXPECTED BEHAVIORS | 预期行为
+    description: |
+      describe the expected behaviors
+      在这里描述你所预期的行为
+
+- type: textarea
+  attributes:
+    label: ENVIRONMENT INFORMATION | 环境信息
+    description: |
+      describe the related information of software version and environment configurations
+      在这里描述相关的软件版本信息和环境配置
+    placeholder: |
+      Example:
+      Distribution: deepin v20.7
+      Version: V0.12
+      Environment variables: ECHO=y
+  validations:
+    required: true
+
+- type: textarea
+  attributes:
+    label: ADDITIONAL INFORMATION | 附加信息
+    description: |
+      any additional information you may want to provide so we can offer better help
+      任何想要的附加信息可以补充到这里，以便我们能提供更好的帮助
+
+...
