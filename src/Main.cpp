@@ -1,7 +1,8 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter, ValueObject, string_view,
-//	string;
+//	string, YSLib::PolymorphicAllocatorHolder, YSLib::default_allocator,
+//	YSLib::ifstream;
 #include <cstdlib> // for std::getenv;
 #include "Context.h" // for Context, EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
@@ -13,7 +14,8 @@
 //	NameTypedContextHandler;
 #include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
 //	form implementations;
-#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee;
+#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
+//	UnilangException;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, IsTypedRegular, Unilang::ResolveRegular,
 //	ComposeReferencedTermOp, IsReferenceTerm, IsBoundLValueTerm,
@@ -31,7 +33,8 @@
 //	YSLib::FetchEnvironmentVariable;
 #include YFM_YSLib_Core_YShellDefinition // for std::to_string,
 //	YSLib::make_string_view, YSLib::to_std::string;
-#include <iostream> // for std::cout, std::endl, std::cin;
+#include <iostream> // for std::ios_base, std::cout, std::endl, std::cin;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <string> // for std::getline;
 #include "TCO.h" // for RefTCOAction;
 #include <random> // for std::random_device, std::mt19937,
@@ -425,10 +428,15 @@ LoadModule_std_math(Interpreter& intp)
 	});
 }
 
+template<typename _tStream>
+using PortHolder = YSLib::PolymorphicAllocatorHolder<std::ios_base, _tStream,
+	YSLib::default_allocator<byte>>;
+
 void
 LoadModule_std_io(Interpreter& intp)
 {
 	using namespace Forms;
+	using YSLib::ifstream;
 	auto& renv(intp.Root.GetRecordRef());
 
 	RegisterStrict(renv, "newline", [&](TermNode& term){
@@ -448,6 +456,15 @@ LoadModule_std_io(Interpreter& intp)
 			Unilang::ResolveRegular<const string>(Unilang::Deref(
 			std::next(term.begin()))), term.get_allocator())));
 		return ctx.ReduceOnce.Handler(term, ctx);
+	});
+	RegisterUnary<Strict, const string>(renv, "open-input-file",
+		[](const string& path){
+		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
+			return ValueObject(std::allocator_arg, path.get_allocator(),
+				any_ops::use_holder, in_place_type<PortHolder<ifstream>>,
+				std::move(ifs));
+		throw UnilangException(
+			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
 	RegisterStrict(renv, "read-line", [](TermNode& term){
 		RetainN(term, 0);
@@ -1038,7 +1055,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.84"
+#define APP_VER "0.12.90"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
