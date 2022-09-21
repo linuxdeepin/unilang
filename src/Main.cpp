@@ -2,7 +2,7 @@
 
 #include "Interpreter.h" // for Interpreter, ValueObject, string_view,
 //	string, YSLib::PolymorphicAllocatorHolder, YSLib::default_allocator,
-//	YSLib::ifstream;
+//	YSLib::ifstream, YSLib::istringstream;
 #include <cstdlib> // for std::getenv;
 #include "Context.h" // for Context, EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment;
@@ -35,6 +35,7 @@
 //	YSLib::make_string_view, YSLib::to_std::string;
 #include <iostream> // for std::ios_base, std::cout, std::endl, std::cin;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
+#include <sstream> // for complete istringstream;
 #include <string> // for std::getline;
 #include "TCO.h" // for RefTCOAction;
 #include <random> // for std::random_device, std::mt19937,
@@ -437,6 +438,7 @@ LoadModule_std_io(Interpreter& intp)
 {
 	using namespace Forms;
 	using YSLib::ifstream;
+	using YSLib::istringstream;
 	auto& renv(intp.Root.GetRecordRef());
 
 	RegisterStrict(renv, "newline", [&](TermNode& term){
@@ -465,6 +467,15 @@ LoadModule_std_io(Interpreter& intp)
 				std::move(ifs));
 		throw UnilangException(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
+	});
+	RegisterUnary<Strict, const string>(renv, "open-input-string",
+		[](const string& str){
+		if(istringstream iss{str})
+			return ValueObject(std::allocator_arg, str.get_allocator(),
+				any_ops::use_holder, in_place_type<PortHolder<istringstream>>,
+				std::move(iss));
+		throw UnilangException(
+			ystdex::sfmt("Failed opening string '%s'.", str.c_str()));
 	});
 	RegisterStrict(renv, "read-line", [](TermNode& term){
 		RetainN(term, 0);
@@ -1055,7 +1066,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.90"
+#define APP_VER "0.12.91"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
