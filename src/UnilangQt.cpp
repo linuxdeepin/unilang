@@ -16,6 +16,8 @@
 #	endif
 #endif
 #include <QHash> // for QHash;
+#include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
+//	Qt::ApplicationAttribute, Qt::AlignmentFlag;
 #include <QCoreApplication> // for QCoreApplication;
 #include <QApplication> // for QApplication;
 #include <QWidget> // for QWidget;
@@ -200,6 +202,9 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		});
 		return ReduceReturnUnspecified(term);
 	});
+	ctx.GetRecordRef().Bindings["Qt.AA_EnableHighDpiScaling"].Value
+		= Qt::AA_EnableHighDpiScaling;
+	ctx.GetRecordRef().Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
 	RegisterStrict(ctx, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
@@ -267,7 +272,6 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 			Unilang::ResolveRegular<string>(*++i).c_str()));
 		return ReductionStatus::Clean;
 	});
-	ctx.GetRecordRef().Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
 	RegisterStrict(ctx, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
 
@@ -322,6 +326,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		$def! UnilangQt $let ()
 		(
 			$import! UnilangQt.native__ QObject-connect
+				Qt.AA_EnableHighDpiScaling
 				QCoreApplication-setAttribute
 				make-QApplication QApplication-exec
 				make-QWidget QWidget-resize QWidget-show QWidget-setLayout
