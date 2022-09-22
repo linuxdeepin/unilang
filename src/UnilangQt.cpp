@@ -3,6 +3,7 @@
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
 //	YSLib::make_shared, std::bind, std::ref;
+#include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
 #include <cassert> // for assert;
 #include <iostream> // for std::cerr, std::endl, std::clog;
 #ifdef __GNUC__
@@ -15,6 +16,7 @@
 #	endif
 #endif
 #include <QHash> // for QHash;
+#include <QCoreApplication> // for QCoreApplication;
 #include <QApplication> // for QApplication;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
@@ -198,6 +200,23 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		});
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(ctx, "QCoreApplication-setAttribute", [](TermNode& term){
+		const auto n(FetchArgumentN(term));
+
+		if(n == 1 || n == 2)
+		{
+			auto i(term.begin());
+			const auto attribute(Unilang::ResolveRegular<
+				Qt::ApplicationAttribute>(*++i));
+
+			QCoreApplication::setAttribute(attribute,
+				n == 1 || ResolveRegular<bool>(*++i));
+			return ReduceReturnUnspecified(term);
+		}
+		if(n < 1)
+			ThrowInsufficientTermsError(term, {}, 1);
+		throw ArityMismatch(2, n);
+	});
 	RegisterStrict(ctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
@@ -302,10 +321,14 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	intp.Perform(R"Unilang(
 		$def! UnilangQt $let ()
 		(
-			$import! UnilangQt.native__ QObject-connect make-QApplication
-				QApplication-exec make-QWidget QWidget-resize
-				QWidget-show QWidget-setLayout make-QPushButton Qt.AlignCenter
-				make-QLabel QLabel-setText make-QVBoxLayout QLayout-addWidget;
+			$import! UnilangQt.native__ QObject-connect
+				QCoreApplication-setAttribute
+				make-QApplication QApplication-exec
+				make-QWidget QWidget-resize QWidget-show QWidget-setLayout
+				make-QPushButton
+				Qt.AlignCenter
+				make-QLabel QLabel-setText
+				make-QVBoxLayout QLayout-addWidget;
 			$def! impl__ $provide!
 			(
 				QWidget
