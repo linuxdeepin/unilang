@@ -1055,14 +1055,21 @@ using string = basic_string<char>;
 
 　　包含以下在 Demo 中需要使用的非公开特性：
 
-* `QtCore` 绑定 API ：
+* Qt 绑定 API `UnilangQt` ：
+	* `QtCore`
+		* `Qt.AA_EnableHighDpiScaling`
+		* `QCoreApplication`
+			* `QCoreApplication-setAttribute`
+		* `QApplication`
+			* `QApplication-exec`
+		* `QObject-connect`
+			* 信号连接可直接调用。
 	* `QtWidgets`
 		* `QWidget`
 		* `QPushButton`
 		* `QLabel`
 		* `QVBoxLayout`
 		* `QApplication`
-	* `Qt.Alignment`
-	* 信号连接（可直接调用）。
-
+		* `Qt.Alignment`
+		* `QLayout-addWidget`
 
