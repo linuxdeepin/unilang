@@ -24,6 +24,7 @@
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QString, QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
+#include <QQuickView> // for QQuickView;
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
 #endif
@@ -310,6 +311,11 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(ctx, "make-QQuickView", [](TermNode& term){
+		RetainN(term, 0);
+		term.Value = make_shared<QQuickView>();
+		return ReductionStatus::Clean;
+	});
 }
 
 } // unnamed namespace;
@@ -333,7 +339,8 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 				make-QPushButton
 				Qt.AlignCenter
 				make-QLabel QLabel-setText
-				make-QVBoxLayout QLayout-addWidget;
+				make-QVBoxLayout QLayout-addWidget
+				make-QQuickView;
 			$def! impl__ $provide!
 			(
 				QWidget
