@@ -9,8 +9,8 @@ YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
 . "$Unilang_BaseDir/detect-llvm.sh"
 
-CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
-LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
+CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
+LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
 
 echo "Building ..."
 

@@ -11,8 +11,8 @@ Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 
 . "$Unilang_BaseDir/detect-llvm.sh"
 
-CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets)"
-LIBS_Qt="$(pkg-config --libs Qt5Widgets)"
+CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
+LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
 
 case $(uname) in
 *MINGW64*)
