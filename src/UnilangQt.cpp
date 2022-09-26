@@ -316,6 +316,14 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		term.Value = make_shared<QQuickView>();
 		return ReductionStatus::Clean;
 	});
+	RegisterStrict(ctx, "QQuickView-show", [](TermNode& term){
+		RetainN(term, 1);
+
+		auto i(term.begin());
+
+		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->show();
+		return ReduceReturnUnspecified(term);
+	});
 }
 
 } // unnamed namespace;
@@ -340,7 +348,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 				Qt.AlignCenter
 				make-QLabel QLabel-setText
 				make-QVBoxLayout QLayout-addWidget
-				make-QQuickView;
+				make-QQuickView QQuickView-show;
 			$def! impl__ $provide!
 			(
 				QWidget
