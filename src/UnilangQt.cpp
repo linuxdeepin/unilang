@@ -324,6 +324,14 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->show();
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(ctx, "QQuickView-showFullScreen", [](TermNode& term){
+		RetainN(term, 1);
+
+		auto i(term.begin());
+
+		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->showFullScreen();
+		return ReduceReturnUnspecified(term);
+	});
 }
 
 } // unnamed namespace;
@@ -348,7 +356,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 				Qt.AlignCenter
 				make-QLabel QLabel-setText
 				make-QVBoxLayout QLayout-addWidget
-				make-QQuickView QQuickView-show;
+				make-QQuickView QQuickView-show QQuickView-showFullScreen;
 			$def! impl__ $provide!
 			(
 				QWidget
