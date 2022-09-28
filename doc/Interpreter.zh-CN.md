@@ -1072,4 +1072,7 @@ using string = basic_string<char>;
 		* `QApplication`
 		* `Qt.Alignment`
 		* `QLayout-addWidget`
+	* `QtQuick`
+		* `QQuickView`
+			* `QQuickView-showFullScreen`
 
