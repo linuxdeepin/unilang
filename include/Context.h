@@ -18,6 +18,7 @@
 #include <ystdex/swap.hpp> // for ystdex::swap_depedent;
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <exception> // for std::exception_ptr;
+#include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 
 namespace Unilang
 {
@@ -686,11 +687,42 @@ public:
 };
 
 
+template<typename _fParse>
+using GParsedValue = typename ParseResultOf<_fParse>::value_type;
+
+template<typename _fParse, typename... _tParams>
+using GTokenizer
+	= function<TermNode(const GParsedValue<_fParse>&, _tParams...)>;
+
+using Tokenizer = GTokenizer<ByteParser>;
+
+using SourcedTokenizer = GTokenizer<SourcedByteParser, Context&>;
+
+
 class GlobalState
 {
+private:
+	struct LeafConverter final
+	{
+		Context& ContextRef;
+
+		YB_ATTR_nodiscard TermNode
+		operator()(const GParsedValue<ByteParser>& val) const
+		{
+			return ContextRef.Global.get().ConvertLeaf(val);
+		}
+		YB_ATTR_nodiscard TermNode
+		operator()(const GParsedValue<SourcedByteParser>& val) const
+		{
+			return ContextRef.Global.get().ConvertLeafSourced(val, ContextRef);
+		}
+	};
+
 public:
 	TermNode::allocator_type Allocator;
 	SeparatorPass Preprocess{Allocator};
+	Tokenizer ConvertLeaf;
+	SourcedTokenizer ConvertLeafSourced;
 
 	GlobalState(TermNode::allocator_type a = {})
 		: Allocator(a)
