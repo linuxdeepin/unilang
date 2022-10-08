@@ -3,9 +3,9 @@
 #ifndef INC_Unilang_Interpreter_h_
 #define INC_Unilang_Interpreter_h_ 1
 
-#include "Context.h" // for pair, lref, stack, vector, pmr, string, shared_ptr,
-//	Environment, Context, TermNode, function, YSLib::allocate_shared,
-//	YSLib::Logger, YSLib::unique_ptr;
+#include "Context.h" // for pair, lref, stack, vector, GlobalState, string,
+//	shared_ptr, Environment, Context, TermNode, function,
+//	YSLib::allocate_shared, YSLib::Logger, YSLib::unique_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
@@ -51,6 +51,9 @@ using SourcedTokenizer = GTokenizer<SourcedByteParser>;
 
 class Interpreter final
 {
+public:
+	GlobalState Global{};
+
 private:
 	struct LeafConverter final
 	{
@@ -68,21 +71,19 @@ private:
 		}
 	};
 
-	pmr::pool_resource resource{pmr::new_delete_resource()};
 	string line{};
 	shared_ptr<Environment> p_ground{};
 
 public:
 	bool Echo = std::getenv("ECHO");
-	TermNode::allocator_type Allocator{&resource};
-	Context Root{resource};
-	SeparatorPass Preprocess{Allocator};
+	Context Root{*Global.Allocator.resource()};
+	SeparatorPass Preprocess{Global.Allocator};
 	Tokenizer ConvertLeaf;
 	SourcedTokenizer ConvertLeafSourced;
 	shared_ptr<string> CurrentSource{};
 	bool UseSourceLocation = !std::getenv("UNILANG_NO_SRCINFO");
-	TermNode Term{Allocator};
-	Context::ReducerSequence Backtrace{Allocator};
+	TermNode Term{Global.Allocator};
+	Context::ReducerSequence Backtrace{Global.Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
@@ -105,8 +106,8 @@ public:
 	void
 	ShareCurrentSource(_tParams&&... args)
 	{
-		CurrentSource
-			= YSLib::allocate_shared<string>(Allocator, yforward(args)...);
+		CurrentSource = YSLib::allocate_shared<string>(Global.Allocator,
+			yforward(args)...);
 	}
 
 	void
