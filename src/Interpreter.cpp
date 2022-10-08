@@ -2,25 +2,21 @@
 
 #include "Interpreter.h" // for TokenValue, ystdex::sfmt, HasValue,
 //	string_view, Context::DefaultHandleException, std::bind, std::getline;
+#include <ostream> // for std::ostream;
 #include "Math.h" // for FPToString;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
-#include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
-#include <cassert> // for assert;
 #include "Evaluation.h" // for ParseLeaf, ParseLeafWithSourceInformation,
 //	TraceBacktrace;
 #include "Exception.h" // for UnilangException;
-#include <ostream> // for std::ostream;
 #include <YSLib/Service/YModules.h>
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib, YSLib::Notice;
-#include YFM_YSLib_Core_YException // for YSLib::ExtractException,
-//	YSLib::stringstream;
+#include YFM_YSLib_Core_YException // for YSLib, YSLib::ExtractException,
+//	YSLib::Notice, YSLib::stringstream;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
-#include <ystdex/functor.hpp> // for ystdex::id;
-#include <algorithm> // for std::find_if, std::for_each;
+#include <algorithm> // for std::for_each;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
-#include <iostream> // for std::cout, std::cerr, std::endl, std::cin;
+#include <iostream> // for std::cout, std::endl, std::cin;
 #include "Syntax.h" // for ReduceSyntax;
 
 namespace Unilang
@@ -189,147 +185,6 @@ OpenFile(const char* filename)
 }
 
 } // unnamed namespace;
-
-struct SeparatorPass::TransformationSpec final
-{
-	enum SeparatorKind
-	{
-		NAry,
-		BinaryAssocLeft,
-		BinaryAssocRight
-	};
-
-	function<bool(const TermNode&)> Filter;
-	function<ValueObject(const ValueObject&)> MakePrefix;
-	SeparatorKind Kind;
-
-	TransformationSpec(decltype(Filter), decltype(MakePrefix),
-		SeparatorKind = NAry);
-	TransformationSpec(TokenValue, ValueObject, SeparatorKind = NAry);
-};
-
-SeparatorPass::TransformationSpec::TransformationSpec(
-	decltype(Filter) filter, decltype(MakePrefix) make_pfx, SeparatorKind kind)
-	: Filter(std::move(filter)), MakePrefix(std::move(make_pfx)), Kind(kind)
-{}
-SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
-	ValueObject pfx, SeparatorKind kind)
-	: TransformationSpec(ystdex::bind1(HasValue<TokenValue>, delim),
-		[=](const ValueObject&){
-		return pfx;
-	}, kind)
-{}
-
-SeparatorPass::SeparatorPass(TermNode::allocator_type a)
-	: allocator(a), transformations({{";", ContextHandler(Forms::Sequence)},
-	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))},
-	{[](const TermNode& nd) noexcept{
-		return HasValue<TokenValue>(nd, ":=");
-	}, [](const ValueObject&){
-		return TokenValue("assign!");
-	}, TransformationSpec::BinaryAssocRight},
-	{[](const TermNode& nd) noexcept{
-		return HasValue<TokenValue>(nd, "=") || HasValue<TokenValue>(nd, "!=");
-	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) noexcept{
-		return HasValue<TokenValue>(nd, "<") || HasValue<TokenValue>(nd, ">")
-			|| HasValue<TokenValue>(nd, "<=") || HasValue<TokenValue>(nd, ">=");
-	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) noexcept{
-		return HasValue<TokenValue>(nd, "+") || HasValue<TokenValue>(nd, "-"); 
-	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft},
-	{[](const TermNode& nd) noexcept{
-		return HasValue<TokenValue>(nd, "*") || HasValue<TokenValue>(nd, "/"); 
-	}, ystdex::id<>(), TransformationSpec::BinaryAssocLeft}}, a)
-{}
-SeparatorPass::~SeparatorPass() = default;
-
-ReductionStatus
-SeparatorPass::operator()(TermNode& term) const
-{
-	assert(remained.empty() && "Invalid state found.");
-	Transform(term, {}, remained);
-	while(!remained.empty())
-	{
-		const auto entry(std::move(remained.top()));
-
-		remained.pop();
-		for(auto& tm : entry.first.get())
-			Transform(tm, entry.second, remained);
-	}
-	return ReductionStatus::Clean;
-}
-
-void
-SeparatorPass::Transform(TermNode& term, bool skip_binary,
-	SeparatorPass::TermStack& terms) const
-{
-	if(IsBranch(term))
-	{
-		if(IsEmpty(*term.begin()))
-			skip_binary = true;
-		terms.push({term, skip_binary});
-		for(const auto& trans : transformations)
-		{
-			const auto& filter(trans.Filter);
-			auto i(std::find_if(term.begin(), term.end(), filter));
-
-			if(i != term.end())
-				switch(trans.Kind)
-				{
-				case TransformationSpec::NAry:
-					term = SeparatorTransformer::Process(std::move(term),
-						trans.MakePrefix(i->Value), filter);
-					break;
-				case TransformationSpec::BinaryAssocLeft:
-				case TransformationSpec::BinaryAssocRight:
-					if(skip_binary)
-						break;
-					if(trans.Kind == TransformationSpec::BinaryAssocLeft)
-					{
-						const auto ri(std::find_if(term.rbegin(), term.rend(),
-							filter));
-
-						assert(ri != term.rend());
-						i = ri.base();
-						--i;
-					}
-					if(i != term.begin() && std::next(i) != term.end())
-					{
-						const auto a(term.get_allocator());
-						auto res(Unilang::AsTermNode(a, yforward(term).Value));
-						auto im(std::make_move_iterator(i));
-						using it_t = decltype(im);
-						const auto range_add([&](it_t b, it_t e){
-							const auto add([&](TermNode& node, it_t j){
-								node.Add(Unilang::Deref(j));
-							});
-
-							assert(b != e);
-							if(std::next(b) == e)
-								add(res, b);
-							else
-							{
-								auto child(Unilang::AsTermNode(a));
-
-								do
-								{
-									add(child, b++);
-								}while(b != e);
-								res.Add(std::move(child));
-							}
-						});
-
-						res.Add(
-							Unilang::AsTermNode(a, trans.MakePrefix(i->Value)));
-						range_add(std::make_move_iterator(term.begin()), im);
-						range_add(++im, std::make_move_iterator(term.end()));
-						term = std::move(res);
-					}
-				}
-		}
-	}
-}
 
 
 Interpreter::Interpreter()
@@ -500,7 +355,7 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 		return term;
 	}) != parse_result.cend())
 		throw UnilangException("Redundant ')', ']' or '}' found.");
-	Preprocess(res);
+	Global.Preprocess(res);
 	return res;
 }
 TermNode
@@ -519,7 +374,7 @@ Interpreter::ReadParserResult(const SourcedByteParser& parse) const
 		return term;
 	}) != parse_result.cend())
 		throw UnilangException("Redundant ')', ']' or '}' found.");
-	Preprocess(res);
+	Global.Preprocess(res);
 	return res;
 }
 
