@@ -448,7 +448,7 @@ FFICallbackEntry(::ffi_cif*, void* ret, void** args, void* user_data)
 void
 InitializeFFI(Interpreter& intp)
 {
-	auto& ctx(intp.Root);
+	auto& ctx(intp.Main);
 	using namespace Forms;
 
 	RegisterUnary<>(ctx, "ffi-library?",

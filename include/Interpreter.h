@@ -17,19 +17,19 @@ namespace Unilang
 class Interpreter final
 {
 public:
-	GlobalState Global{};
+	bool Echo = std::getenv("ECHO");
+	bool UseSourceLocation = !std::getenv("UNILANG_NO_SRCINFO");
 
 private:
 	string line{};
 	shared_ptr<Environment> p_ground{};
 
 public:
-	bool Echo = std::getenv("ECHO");
-	Context Root{Global};
-	shared_ptr<string> CurrentSource{};
-	bool UseSourceLocation = !std::getenv("UNILANG_NO_SRCINFO");
+	GlobalState Global{};
+	Context Main{Global};
 	TermNode Term{Global.Allocator};
 	Context::ReducerSequence Backtrace{Global.Allocator};
+	shared_ptr<string> CurrentSource{};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;

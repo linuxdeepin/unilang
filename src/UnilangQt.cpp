@@ -295,7 +295,7 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 void
 InitializeQt(Interpreter& intp, int& argc, char* argv[])
 {
-	auto& ctx(intp.Root);
+	auto& ctx(intp.Main);
 
 	ctx.GetRecordRef().Bindings["UnilangQt.native__"].Value = GetModuleFor(ctx,
 		std::bind(InitializeQtNative, std::ref(ctx), std::ref(argc), argv));
