@@ -1,6 +1,6 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
-#include "Context.h" // for Unilang::allocate_shared, lref, type_id;
+#include "Context.h" // for string_view, Unilang::allocate_shared, lref;
 #include <cassert> // for assert;
 #include "TermNode.h" // for AssertValueTags, IsAtom;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
@@ -127,6 +127,10 @@ Environment::ThrowForInvalidType(const type_info& tp)
 		ystdex::sfmt("Invalid environment type '%s' found.", tp.name()));
 }
 
+
+Context::Context(const GlobalState& g)
+	: memory_rsrc(*g.Allocator.resource()), Global(g)
+{}
 
 TermNode&
 Context::GetNextTermRef() const
