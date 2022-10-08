@@ -76,7 +76,7 @@ private:
 
 public:
 	bool Echo = std::getenv("ECHO");
-	Context Root{*Global.Allocator.resource()};
+	Context Root{Global};
 	SeparatorPass Preprocess{Global.Allocator};
 	Tokenizer ConvertLeaf;
 	SourcedTokenizer ConvertLeafSourced;
