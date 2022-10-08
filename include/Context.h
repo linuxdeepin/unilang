@@ -332,6 +332,9 @@ private:
 	ReducerSequence stacked{current.get_allocator()};
 
 public:
+	Reducer TailAction{};
+	ExceptionHandler HandleException{DefaultHandleException};
+	ReductionStatus LastStatus = ReductionStatus::Neutral;
 	lref<const GlobalState> Global;
 
 private:
@@ -339,11 +342,8 @@ private:
 	TermNode* combining_term_ptr = {};
 
 public:
-	mutable ValueObject OperatorName{};
-	Reducer TailAction{};
-	ExceptionHandler HandleException{DefaultHandleException};
-	ReductionStatus LastStatus = ReductionStatus::Neutral;
 	Continuation ReduceOnce{DefaultReduceOnce, *this};
+	mutable ValueObject OperatorName{};
 
 	Context(const GlobalState&);
 
