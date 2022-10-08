@@ -328,6 +328,11 @@ private:
 	ReducerSequence
 		current{ReducerSequence::allocator_type(&memory_rsrc.get())};
 	ReducerSequence stacked{current.get_allocator()};
+
+public:
+	lref<const GlobalState> Global;
+
+private:
 	TermNode* next_term_ptr = {};
 	TermNode* combining_term_ptr = {};
 
@@ -338,9 +343,7 @@ public:
 	ReductionStatus LastStatus = ReductionStatus::Neutral;
 	Continuation ReduceOnce{DefaultReduceOnce, *this};
 
-	Context(pmr::memory_resource& rsrc)
-		: memory_rsrc(rsrc)
-	{}
+	Context(const GlobalState&);
 
 	bool
 	IsAlive() const noexcept
