@@ -179,7 +179,7 @@ void
 LoadModule_std_continuations(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Root.GetRecordRef());
+	auto& ctx(intp.Main.GetRecordRef());
 
 	RegisterStrict(ctx, "call/1cc", Call1CC);
 	RegisterStrict(ctx, "continuation->applicative",
@@ -239,7 +239,7 @@ void
 LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Root.GetRecordRef());
+	auto& ctx(intp.Main.GetRecordRef());
 
 	RegisterUnary(ctx, "string?", [](const TermNode& x) noexcept{
 		return IsTypedRegular<string>(ReferenceTerm(x));
@@ -358,7 +358,7 @@ void
 LoadModule_std_math(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Root.GetRecordRef());
+	auto& ctx(intp.Main.GetRecordRef());
 
 	RegisterUnary(ctx, "number?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
@@ -439,7 +439,7 @@ LoadModule_std_io(Interpreter& intp)
 	using namespace Forms;
 	using YSLib::ifstream;
 	using YSLib::istringstream;
-	auto& renv(intp.Root.GetRecordRef());
+	auto& renv(intp.Main.GetRecordRef());
 
 	RegisterStrict(renv, "newline", [&](TermNode& term){
 		RetainN(term, 0);
@@ -506,7 +506,7 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Root.GetRecordRef());
+	auto& ctx(intp.Main.GetRecordRef());
 
 	RegisterUnary<Strict, const string>(ctx, "env-get", [](const string& var){
 		string res(var.get_allocator());
@@ -597,7 +597,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 {
 	using namespace Forms;
 	using namespace std::placeholders;
-	auto& ctx(intp.Root);
+	auto& ctx(intp.Main);
 	auto& env(ctx.GetRecordRef());
 
 	if(jit)
@@ -943,7 +943,7 @@ $defv! $import! (&e .&symbols) d
 		std::exit(status);
 	});
 
-	auto& rctx(intp.Root);
+	auto& rctx(intp.Main);
 	const auto load_std_module([&](string_view module_name,
 		void(&load_module)(Interpreter& intp)){
 		LoadModuleChecked(rctx, "std." + string(module_name),
@@ -1066,7 +1066,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.91"
+#define APP_VER "0.12.98"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

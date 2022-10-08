@@ -193,7 +193,7 @@ Interpreter::Interpreter()
 void
 Interpreter::Evaluate(TermNode& term)
 {
-	Root.RewriteTermGuarded(term);
+	Main.RewriteTermGuarded(term);
 }
 
 ReductionStatus
@@ -218,7 +218,7 @@ Interpreter::ExecuteString(string_view unit, Context& ctx)
 ReductionStatus
 Interpreter::Exit()
 {
-	Root.UnwindCurrent();
+	Main.UnwindCurrent();
 	return ReductionStatus::Neutral;
 }
 
@@ -381,7 +381,7 @@ Interpreter::ReadParserResult(const SourcedByteParser& parse) const
 void
 Interpreter::Run()
 {
-	Root.Rewrite(Unilang::ToReducer(Global.Allocator, std::bind(
+	Main.Rewrite(Unilang::ToReducer(Global.Allocator, std::bind(
 		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
 }
 
@@ -391,7 +391,7 @@ Interpreter::RunLine(string_view unit)
 	if(!unit.empty() && unit != "exit")
 	{
 		ShareCurrentSource("*STDIN*");
-		Root.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
+		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			return ExecuteString(unit, ctx);
 		}));
 	}
@@ -403,7 +403,7 @@ Interpreter::RunScript(string filename)
 	if(filename == "-")
 	{
 		ShareCurrentSource("*STDIN*");
-		Root.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
+		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(std::cin);
 			return ExecuteOnce(ctx);
@@ -412,7 +412,7 @@ Interpreter::RunScript(string filename)
 	else if(!filename.empty())
 	{
 		ShareCurrentSource(filename);
-		Root.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
+		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(*OpenUnique(std::move(filename)));
 			return ExecuteOnce(ctx);
@@ -439,7 +439,7 @@ Interpreter::SaveGround()
 {
 	if(!p_ground)
 	{
-		auto& cs(Root);
+		auto& cs(Main);
 
 		p_ground = Unilang::SwitchToFreshEnvironment(cs,
 			ValueObject(cs.WeakenRecord()));
