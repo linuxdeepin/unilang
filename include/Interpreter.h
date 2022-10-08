@@ -6,7 +6,6 @@
 #include "Context.h" // for pair, lref, stack, vector, GlobalState, string,
 //	shared_ptr, Environment, Context, TermNode, function,
 //	YSLib::allocate_shared, YSLib::Logger, YSLib::unique_ptr;
-#include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 #include <algorithm> // for std::find_if;
 #include <cstdlib> // for std::getenv;
 #include <istream> // for std::istream;
@@ -15,47 +14,18 @@
 namespace Unilang
 {
 
-template<typename _fParse>
-using GParsedValue = typename ParseResultOf<_fParse>::value_type;
-
-template<typename _fParse>
-using GTokenizer = function<TermNode(const GParsedValue<_fParse>&)>;
-
-using Tokenizer = GTokenizer<ByteParser>;
-
-using SourcedTokenizer = GTokenizer<SourcedByteParser>;
-
-
 class Interpreter final
 {
 public:
 	GlobalState Global{};
 
 private:
-	struct LeafConverter final
-	{
-		const Interpreter& Host;
-
-		YB_ATTR_nodiscard TermNode
-		operator()(const GParsedValue<ByteParser>& val) const
-		{
-			return Host.ConvertLeaf(val);
-		}
-		YB_ATTR_nodiscard TermNode
-		operator()(const GParsedValue<SourcedByteParser>& val) const
-		{
-			return Host.ConvertLeafSourced(val);
-		}
-	};
-
 	string line{};
 	shared_ptr<Environment> p_ground{};
 
 public:
 	bool Echo = std::getenv("ECHO");
 	Context Root{Global};
-	Tokenizer ConvertLeaf;
-	SourcedTokenizer ConvertLeafSourced;
 	shared_ptr<string> CurrentSource{};
 	bool UseSourceLocation = !std::getenv("UNILANG_NO_SRCINFO");
 	TermNode Term{Global.Allocator};
