@@ -435,14 +435,14 @@ Interpreter::Read(string_view unit)
 
 	if(UseSourceLocation)
 	{
-		SourcedByteParser parse(lexer, Allocator);
+		SourcedByteParser parse(lexer, Global.Allocator);
 
 		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
 		return ReadParserResult(parse);
 	}
 	else
 	{
-		ByteParser parse(lexer, Allocator);
+		ByteParser parse(lexer, Global.Allocator);
 
 		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
 		return ReadParserResult(parse);
@@ -457,14 +457,14 @@ Interpreter::ReadFrom(std::streambuf& buf) const
 
 	if(UseSourceLocation)
 	{
-		SourcedByteParser parse(lexer, Allocator);
+		SourcedByteParser parse(lexer, Global.Allocator);
 
 		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
 		return ReadParserResult(parse);
 	}
 	else
 	{
-		ByteParser parse(lexer, Allocator);
+		ByteParser parse(lexer, Global.Allocator);
 
 		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
 		return ReadParserResult(parse);
@@ -487,12 +487,12 @@ Interpreter::ReadFrom(std::istream& is) const
 TermNode
 Interpreter::ReadParserResult(const ByteParser& parse) const
 {
-	TermNode res{Allocator};
+	TermNode res{Global.Allocator};
 	const auto& parse_result(parse.GetResult());
 
 	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
 		[&](const GParsedValue<ByteParser>& str){
-		auto term(Unilang::AsTermNode(Allocator));
+		auto term(Unilang::AsTermNode(Global.Allocator));
 		const auto id(YSLib::make_string_view(str));
 
 		if(!id.empty())
@@ -506,12 +506,12 @@ Interpreter::ReadParserResult(const ByteParser& parse) const
 TermNode
 Interpreter::ReadParserResult(const SourcedByteParser& parse) const
 {
-	TermNode res{Allocator};
+	TermNode res{Global.Allocator};
 	const auto& parse_result(parse.GetResult());
 
 	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
 		[&](const GParsedValue<SourcedByteParser>& val){
-		auto term(Unilang::AsTermNode(Allocator));
+		auto term(Unilang::AsTermNode(Global.Allocator));
 		const auto id(YSLib::make_string_view(val.second));
 
 		if(!id.empty())
@@ -526,7 +526,7 @@ Interpreter::ReadParserResult(const SourcedByteParser& parse) const
 void
 Interpreter::Run()
 {
-	Root.Rewrite(Unilang::ToReducer(Allocator, std::bind(
+	Root.Rewrite(Unilang::ToReducer(Global.Allocator, std::bind(
 		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
 }
 
@@ -536,7 +536,7 @@ Interpreter::RunLine(string_view unit)
 	if(!unit.empty() && unit != "exit")
 	{
 		ShareCurrentSource("*STDIN*");
-		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+		Root.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			return ExecuteString(unit, ctx);
 		}));
 	}
@@ -548,7 +548,7 @@ Interpreter::RunScript(string filename)
 	if(filename == "-")
 	{
 		ShareCurrentSource("*STDIN*");
-		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+		Root.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(std::cin);
 			return ExecuteOnce(ctx);
@@ -557,7 +557,7 @@ Interpreter::RunScript(string filename)
 	else if(!filename.empty())
 	{
 		ShareCurrentSource(filename);
-		Root.Rewrite(Unilang::ToReducer(Allocator, [&](Context& ctx){
+		Root.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(*OpenUnique(std::move(filename)));
 			return ExecuteOnce(ctx);
