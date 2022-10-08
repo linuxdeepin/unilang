@@ -3,9 +3,10 @@
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
-#include "TermAccess.h" // for ValueObject, vector, string, lref, TermNode,
-//	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref, type_info,
-//	Unilang::allocate_shared, observer_ptr, EnvironmentReference;
+#include "TermAccess.h" // for ValueObject, vector, string, pair, lref,
+//	TermNode, ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
+//	type_info, Unilang::allocate_shared, observer_ptr, EnvironmentReference,
+//	stack;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
@@ -662,10 +663,34 @@ RelaySwitched(Context& ctx, _fCurrent&& cur)
 }
 
 
+class SeparatorPass final
+{
+private:
+	using TermStackEntry = pair<lref<TermNode>, bool>;
+	using TermStack = stack<TermStackEntry, vector<TermStackEntry>>;
+	struct TransformationSpec;
+
+	TermNode::allocator_type allocator;
+	vector<TransformationSpec> transformations;
+	mutable TermStack remained{allocator};
+
+public:
+	SeparatorPass(TermNode::allocator_type);
+	~SeparatorPass();
+
+	ReductionStatus
+	operator()(TermNode&) const;
+
+	void
+	Transform(TermNode&, bool, TermStack&) const;
+};
+
+
 class GlobalState
 {
 public:
 	TermNode::allocator_type Allocator;
+	SeparatorPass Preprocess{Allocator};
 
 	GlobalState(TermNode::allocator_type a = {})
 		: Allocator(a)
