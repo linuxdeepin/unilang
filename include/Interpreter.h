@@ -15,29 +15,6 @@
 namespace Unilang
 {
 
-class SeparatorPass final
-{
-private:
-	using TermStackEntry = pair<lref<TermNode>, bool>;
-	using TermStack = stack<TermStackEntry, vector<TermStackEntry>>;
-	struct TransformationSpec;
-
-	TermNode::allocator_type allocator;
-	vector<TransformationSpec> transformations;
-	mutable TermStack remained{allocator};
-
-public:
-	SeparatorPass(TermNode::allocator_type);
-	~SeparatorPass();
-
-	ReductionStatus
-	operator()(TermNode&) const;
-
-	void
-	Transform(TermNode&, bool, TermStack&) const;
-};
-
-
 template<typename _fParse>
 using GParsedValue = typename ParseResultOf<_fParse>::value_type;
 
@@ -77,7 +54,6 @@ private:
 public:
 	bool Echo = std::getenv("ECHO");
 	Context Root{Global};
-	SeparatorPass Preprocess{Global.Allocator};
 	Tokenizer ConvertLeaf;
 	SourcedTokenizer ConvertLeafSourced;
 	shared_ptr<string> CurrentSource{};
