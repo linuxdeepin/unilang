@@ -3,7 +3,7 @@
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
-#include "TermAccess.h" // for ValueObject, vector, string, TermNode,
+#include "TermAccess.h" // for ValueObject, vector, string, lref, TermNode,
 //	ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref, type_info,
 //	Unilang::allocate_shared, observer_ptr, EnvironmentReference;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -236,6 +236,8 @@ public:
 	operator()(Context& ctx) const;
 };
 
+
+class GlobalState;
 
 class Context final
 {
@@ -655,6 +657,17 @@ RelaySwitched(Context& ctx, _fCurrent&& cur)
 	ctx.SetupFront(yforward(cur));
 	return ReductionStatus::Partial;
 }
+
+
+class GlobalState
+{
+public:
+	TermNode::allocator_type Allocator;
+
+	GlobalState(TermNode::allocator_type a = {})
+		: Allocator(a)
+	{}
+};
 
 } // namespace Unilang;
 
