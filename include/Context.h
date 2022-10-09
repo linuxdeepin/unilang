@@ -733,9 +733,7 @@ public:
 	Tokenizer ConvertLeaf;
 	SourcedTokenizer ConvertLeafSourced;
 
-	GlobalState(TermNode::allocator_type a = {})
-		: Allocator(a)
-	{}
+	GlobalState(TermNode::allocator_type = {});
 };
 
 } // namespace Unilang;
