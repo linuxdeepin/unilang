@@ -1,13 +1,15 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
-#include "Context.h" // for string_view, Unilang::allocate_shared, lref;
+#include "Context.h" // for string_view, Unilang::allocate_shared, lref,
+//	YSLib::make_string_view;
 #include <cassert> // for assert;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
 #include "TermNode.h" // for AssertValueTags, IsAtom;
 #include <exception> // for std::throw_with_nested;
 #include <ystdex/utility.hpp> // ystdex::exchange;
-#include "Evaluation.h" // for ReduceOnce;
+#include "Evaluation.h" // for ReduceOnce, ParseLeaf,
+//	ParseLeafWithSourceInformation;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include "TermAccess.h" // for Unilang::IsMovable;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
@@ -543,6 +545,27 @@ SeparatorPass::Transform(TermNode& term, bool skip_binary,
 		}
 	}
 }
+
+
+GlobalState::GlobalState(TermNode::allocator_type a)
+	: Allocator(a), ConvertLeaf([this](const GParsedValue<ByteParser>& str){
+	TermNode term(Allocator);
+	const auto id(YSLib::make_string_view(str));
+
+	if(!id.empty())
+		ParseLeaf(term, id);
+	return term;
+}), ConvertLeafSourced([this](const GParsedValue<SourcedByteParser>& val,
+	const Context& ctx){
+	TermNode term(Allocator);
+	const auto id(YSLib::make_string_view(val.second));
+
+	if(!id.empty())
+		ParseLeafWithSourceInformation(term, id, ctx.CurrentSource,
+			val.first);
+	return term;
+})
+{}
 
 } // namespace Unilang;
 
