@@ -29,7 +29,6 @@ public:
 	Context Main{Global};
 	TermNode Term{Global.Allocator};
 	Context::ReducerSequence Backtrace{Global.Allocator};
-	shared_ptr<string> CurrentSource{};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
@@ -48,19 +47,11 @@ public:
 	ReductionStatus
 	Exit();
 
-	template<typename... _tParams>
-	void
-	ShareCurrentSource(_tParams&&... args)
-	{
-		CurrentSource = YSLib::allocate_shared<string>(Global.Allocator,
-			yforward(args)...);
-	}
-
 	void
 	HandleREPLException(std::exception_ptr, YSLib::Logger&);
 
-	YSLib::unique_ptr<std::istream>
-	OpenUnique(string);
+	static YSLib::unique_ptr<std::istream>
+	OpenUnique(Context&, string);
 
 	TermNode
 	Perform(string_view);

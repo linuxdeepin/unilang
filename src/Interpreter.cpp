@@ -236,19 +236,19 @@ Interpreter::HandleREPLException(std::exception_ptr p, YSLib::Logger& trace)
 		}));
 
 		TraceException(e, trace);
-		trace.TraceFormat(YSLib::Notice, "Location: %s.", CurrentSource
-			? CurrentSource->c_str() : "<unknown>");
+		trace.TraceFormat(YSLib::Notice, "Location: %s.", Main.CurrentSource
+			? Main.CurrentSource->c_str() : "<unknown>");
 		TraceBacktrace(Backtrace, trace);
 	}
 }
 
 YSLib::unique_ptr<std::istream>
-Interpreter::OpenUnique(string filename)
+Interpreter::OpenUnique(Context& ctx, string filename)
 {
 	using namespace YSLib;
 	auto p_is(OpenFile(filename.c_str()));
 
-	CurrentSource = YSLib::share_move(filename);
+	ctx.CurrentSource = YSLib::share_move(filename);
 	return p_is;
 }
 
@@ -370,7 +370,8 @@ Interpreter::ReadParserResult(const SourcedByteParser& parse) const
 		const auto id(YSLib::make_string_view(val.second));
 
 		if(!id.empty())
-			ParseLeafWithSourceInformation(term, id, CurrentSource, val.first);
+			ParseLeafWithSourceInformation(term, id, Main.CurrentSource,
+				val.first);
 		return term;
 	}) != parse_result.cend())
 		throw UnilangException("Redundant ')', ']' or '}' found.");
@@ -390,7 +391,7 @@ Interpreter::RunLine(string_view unit)
 {
 	if(!unit.empty() && unit != "exit")
 	{
-		ShareCurrentSource("*STDIN*");
+		Main.ShareCurrentSource("*STDIN*");
 		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			return ExecuteString(unit, ctx);
 		}));
@@ -402,7 +403,7 @@ Interpreter::RunScript(string filename)
 {
 	if(filename == "-")
 	{
-		ShareCurrentSource("*STDIN*");
+		Main.ShareCurrentSource("*STDIN*");
 		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = ReadFrom(std::cin);
@@ -411,10 +412,10 @@ Interpreter::RunScript(string filename)
 	}
 	else if(!filename.empty())
 	{
-		ShareCurrentSource(filename);
+		Main.ShareCurrentSource(filename);
 		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
-			Term = ReadFrom(*OpenUnique(std::move(filename)));
+			Term = ReadFrom(*OpenUnique(Main, std::move(filename)));
 			return ExecuteOnce(ctx);
 		}));
 	}
@@ -425,7 +426,7 @@ Interpreter::RunLoop(Context& ctx)
 {
 	if(WaitForLine())
 	{
-		ShareCurrentSource("*STDIN*");
+		Main.ShareCurrentSource("*STDIN*");
 		RelaySwitched(ctx, std::bind(&Interpreter::RunLoop, std::ref(*this),
 			std::placeholders::_1));
 		return !line.empty() ? (line != "exit" ? ExecuteString(line, ctx)

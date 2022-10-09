@@ -344,6 +344,7 @@ private:
 public:
 	Continuation ReduceOnce{DefaultReduceOnce, *this};
 	mutable ValueObject OperatorName{};
+	shared_ptr<string> CurrentSource{};
 
 	Context(const GlobalState&);
 
@@ -458,6 +459,14 @@ public:
 	{
 		current.push_front(
 			Unilang::ToReducer(get_allocator(), yforward(args)...));
+	}
+
+	template<typename... _tParams>
+	void
+	ShareCurrentSource(_tParams&&... args)
+	{
+		CurrentSource = YSLib::allocate_shared<string>(
+			string::allocator_type(&memory_rsrc.get()), yforward(args)...);
 	}
 
 	YB_ATTR_nodiscard YB_PURE shared_ptr<Environment>
