@@ -452,9 +452,9 @@ LoadModule_std_io(Interpreter& intp)
 	});
 	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
-		RefTCOAction(ctx).SaveTailSourceName(intp.CurrentSource,
-			std::move(intp.CurrentSource));
-		term = intp.ReadFrom(*intp.OpenUnique(string(
+		RefTCOAction(ctx).SaveTailSourceName(intp.Main.CurrentSource,
+			std::move(intp.Main.CurrentSource));
+		term = intp.ReadFrom(*intp.OpenUnique(intp.Main, string(
 			Unilang::ResolveRegular<const string>(Unilang::Deref(
 			std::next(term.begin()))), term.get_allocator())));
 		return ctx.ReduceOnce.Handler(term, ctx);
@@ -581,7 +581,7 @@ PreloadExternal(Interpreter& intp, const char* filename)
 {
 	try
 	{
-		auto term(intp.ReadFrom(*intp.OpenUnique(filename)));
+		auto term(intp.ReadFrom(*intp.OpenUnique(intp.Main, filename)));
 
 		intp.Evaluate(term);
 	}
@@ -1066,7 +1066,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.98"
+#define APP_VER "0.12.99"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
