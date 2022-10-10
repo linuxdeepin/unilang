@@ -14,7 +14,7 @@
 #include "TermAccess.h" // for Unilang::IsMovable;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <ystdex/functor.hpp> // for ystdex::id;
-#include <algorithm> // for std::find_if, std::for_each;
+#include <algorithm> // for std::find_if;
 #include "Syntax.h" // for ReduceSyntax;
 
 namespace Unilang
@@ -577,16 +577,9 @@ GlobalState::Read(string_view unit, Context& ctx)
 	{
 		SourcedByteParser parse(lexer, Allocator);
 
-		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
-		return ReadParserResult(parse, ctx);
+		return Prepare(ctx, unit.begin(), unit.end(), ystdex::ref(parse));
 	}
-	else
-	{
-		ByteParser parse(lexer, Allocator);
-
-		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
-		return ReadParserResult(parse);
-	}
+	return Prepare(lexer, ctx, unit.begin(), unit.end());
 }
 
 TermNode
@@ -599,16 +592,9 @@ GlobalState::ReadFrom(std::streambuf& buf, Context& ctx) const
 	{
 		SourcedByteParser parse(lexer, Allocator);
 
-		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
-		return ReadParserResult(parse, ctx);
+		return Prepare(ctx, s_it_t(&buf), s_it_t(), ystdex::ref(parse));
 	}
-	else
-	{
-		ByteParser parse(lexer, Allocator);
-
-		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
-		return ReadParserResult(parse);
-	}
+	return Prepare(lexer, ctx, s_it_t(&buf), s_it_t());
 }
 TermNode
 GlobalState::ReadFrom(std::istream& is, Context& ctx) const
@@ -624,7 +610,7 @@ GlobalState::ReadFrom(std::istream& is, Context& ctx) const
 }
 
 TermNode
-GlobalState::ReadParserResult(const ByteParser& parse) const
+GlobalState::ReadParserResult(const ByteParser& parse, Context&) const
 {
 	TermNode res{Allocator};
 	const auto& parse_result(parse.GetResult());

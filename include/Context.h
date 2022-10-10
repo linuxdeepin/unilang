@@ -19,6 +19,9 @@
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <exception> // for std::exception_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
+#include "Lexical.h" // for LexicalAnalyzer;
+#include <ystdex/ref.hpp> // for ystdex::ref;
+#include <algorithm> // for std::for_each;
 #include <streambuf> // for std::streambuf;
 #include <istream> // for std::istream;
 
@@ -738,6 +741,22 @@ public:
 
 	GlobalState(TermNode::allocator_type = {});
 
+	template<typename _tIn>
+	YB_ATTR_nodiscard TermNode
+	Prepare(LexicalAnalyzer& lexer, Context& ctx, _tIn first, _tIn last) const
+	{
+		ByteParser parse(lexer, Allocator);
+
+		return Prepare(ctx, first, last, ystdex::ref(parse));
+	}
+	template<typename _tIn, typename _fParse>
+	YB_ATTR_nodiscard TermNode
+	Prepare(Context& ctx, _tIn first, _tIn last, _fParse parse) const
+	{
+		std::for_each(first, last, parse);
+		return ReadParserResult(parse, ctx);
+	}
+
 	YB_ATTR_nodiscard TermNode
 	Read(string_view, Context&);
 
@@ -747,7 +766,7 @@ public:
 	ReadFrom(std::istream&, Context&) const;
 
 	YB_ATTR_nodiscard TermNode
-	ReadParserResult(const ByteParser&) const;
+	ReadParserResult(const ByteParser&, Context&) const;
 	YB_ATTR_nodiscard TermNode
 	ReadParserResult(const SourcedByteParser&, Context&) const;
 };
