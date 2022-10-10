@@ -14,7 +14,8 @@
 #include "TermAccess.h" // for Unilang::IsMovable;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
 #include <ystdex/functor.hpp> // for ystdex::id;
-#include <algorithm> // for std::find_if;
+#include <algorithm> // for std::find_if, std::for_each;
+#include "Syntax.h" // for ReduceSyntax;
 
 namespace Unilang
 {
@@ -566,6 +567,102 @@ GlobalState::GlobalState(TermNode::allocator_type a)
 	return term;
 })
 {}
+
+TermNode
+GlobalState::Read(string_view unit, Context& ctx)
+{
+	LexicalAnalyzer lexer;
+
+	if(UseSourceLocation)
+	{
+		SourcedByteParser parse(lexer, Allocator);
+
+		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
+		return ReadParserResult(parse, ctx);
+	}
+	else
+	{
+		ByteParser parse(lexer, Allocator);
+
+		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
+		return ReadParserResult(parse);
+	}
+}
+
+TermNode
+GlobalState::ReadFrom(std::streambuf& buf, Context& ctx) const
+{
+	using s_it_t = std::istreambuf_iterator<char>;
+	LexicalAnalyzer lexer;
+
+	if(UseSourceLocation)
+	{
+		SourcedByteParser parse(lexer, Allocator);
+
+		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
+		return ReadParserResult(parse, ctx);
+	}
+	else
+	{
+		ByteParser parse(lexer, Allocator);
+
+		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
+		return ReadParserResult(parse);
+	}
+}
+TermNode
+GlobalState::ReadFrom(std::istream& is, Context& ctx) const
+{
+	if(is)
+	{
+		if(const auto p = is.rdbuf())
+			return ReadFrom(*p, ctx);
+		throw std::invalid_argument("Invalid stream buffer found.");
+	}
+	else
+		throw std::invalid_argument("Invalid stream found.");
+}
+
+TermNode
+GlobalState::ReadParserResult(const ByteParser& parse) const
+{
+	TermNode res{Allocator};
+	const auto& parse_result(parse.GetResult());
+
+	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
+		[&](const GParsedValue<ByteParser>& str){
+		auto term(Unilang::AsTermNode(Allocator));
+		const auto id(YSLib::make_string_view(str));
+
+		if(!id.empty())
+			ParseLeaf(term, id);
+		return term;
+	}) != parse_result.cend())
+		throw UnilangException("Redundant ')', ']' or '}' found.");
+	Preprocess(res);
+	return res;
+}
+TermNode
+GlobalState::ReadParserResult(const SourcedByteParser& parse, Context& ctx)
+	const
+{
+	TermNode res{Allocator};
+	const auto& parse_result(parse.GetResult());
+
+	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
+		[&](const GParsedValue<SourcedByteParser>& val){
+		auto term(Unilang::AsTermNode(Allocator));
+		const auto id(YSLib::make_string_view(val.second));
+
+		if(!id.empty())
+			ParseLeafWithSourceInformation(term, id, ctx.CurrentSource,
+				val.first);
+		return term;
+	}) != parse_result.cend())
+		throw UnilangException("Redundant ')', ']' or '}' found.");
+	Preprocess(res);
+	return res;
+}
 
 } // namespace Unilang;
 

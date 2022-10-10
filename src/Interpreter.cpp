@@ -5,19 +5,15 @@
 #include <ostream> // for std::ostream;
 #include "Math.h" // for FPToString;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
-#include "Evaluation.h" // for ParseLeaf, ParseLeafWithSourceInformation,
-//	TraceBacktrace;
-#include "Exception.h" // for UnilangException;
+#include "Evaluation.h" // for TraceBacktrace;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Core_YException // for YSLib, YSLib::ExtractException,
 //	YSLib::Notice, YSLib::stringstream;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested;
-#include <algorithm> // for std::for_each;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <iostream> // for std::cout, std::endl, std::cin;
-#include "Syntax.h" // for ReduceSyntax;
 
 namespace Unilang
 {
@@ -188,7 +184,9 @@ OpenFile(const char* filename)
 
 
 Interpreter::Interpreter()
-{}
+{
+	Global.UseSourceLocation = UseSourceLocation;
+}
 
 void
 Interpreter::Evaluate(TermNode& term)
@@ -286,97 +284,7 @@ Interpreter::Perform(string_view unit)
 TermNode
 Interpreter::Read(string_view unit)
 {
-	LexicalAnalyzer lexer;
-
-	if(UseSourceLocation)
-	{
-		SourcedByteParser parse(lexer, Global.Allocator);
-
-		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
-		return ReadParserResult(parse);
-	}
-	else
-	{
-		ByteParser parse(lexer, Global.Allocator);
-
-		std::for_each(unit.begin(), unit.end(), ystdex::ref(parse));
-		return ReadParserResult(parse);
-	}
-}
-
-TermNode
-Interpreter::ReadFrom(std::streambuf& buf) const
-{
-	using s_it_t = std::istreambuf_iterator<char>;
-	LexicalAnalyzer lexer;
-
-	if(UseSourceLocation)
-	{
-		SourcedByteParser parse(lexer, Global.Allocator);
-
-		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
-		return ReadParserResult(parse);
-	}
-	else
-	{
-		ByteParser parse(lexer, Global.Allocator);
-
-		std::for_each(s_it_t(&buf), s_it_t(), ystdex::ref(parse));
-		return ReadParserResult(parse);
-	}
-
-}
-TermNode
-Interpreter::ReadFrom(std::istream& is) const
-{
-	if(is)
-	{
-		if(const auto p = is.rdbuf())
-			return ReadFrom(*p);
-		throw std::invalid_argument("Invalid stream buffer found.");
-	}
-	else
-		throw std::invalid_argument("Invalid stream found.");
-}
-
-TermNode
-Interpreter::ReadParserResult(const ByteParser& parse) const
-{
-	TermNode res{Global.Allocator};
-	const auto& parse_result(parse.GetResult());
-
-	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
-		[&](const GParsedValue<ByteParser>& str){
-		auto term(Unilang::AsTermNode(Global.Allocator));
-		const auto id(YSLib::make_string_view(str));
-
-		if(!id.empty())
-			ParseLeaf(term, id);
-		return term;
-	}) != parse_result.cend())
-		throw UnilangException("Redundant ')', ']' or '}' found.");
-	Global.Preprocess(res);
-	return res;
-}
-TermNode
-Interpreter::ReadParserResult(const SourcedByteParser& parse) const
-{
-	TermNode res{Global.Allocator};
-	const auto& parse_result(parse.GetResult());
-
-	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
-		[&](const GParsedValue<SourcedByteParser>& val){
-		auto term(Unilang::AsTermNode(Global.Allocator));
-		const auto id(YSLib::make_string_view(val.second));
-
-		if(!id.empty())
-			ParseLeafWithSourceInformation(term, id, Main.CurrentSource,
-				val.first);
-		return term;
-	}) != parse_result.cend())
-		throw UnilangException("Redundant ')', ']' or '}' found.");
-	Global.Preprocess(res);
-	return res;
+	return Global.Read(unit, Main);
 }
 
 void
@@ -406,7 +314,7 @@ Interpreter::RunScript(string filename)
 		Main.ShareCurrentSource("*STDIN*");
 		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
-			Term = ReadFrom(std::cin);
+			Term = Global.ReadFrom(std::cin, Main);
 			return ExecuteOnce(ctx);
 		}));
 	}
@@ -415,7 +323,8 @@ Interpreter::RunScript(string filename)
 		Main.ShareCurrentSource(filename);
 		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
 			PrepareExecution(ctx);
-			Term = ReadFrom(*OpenUnique(Main, std::move(filename)));
+			Term
+				= Global.ReadFrom(*OpenUnique(Main, std::move(filename)), Main);
 			return ExecuteOnce(ctx);
 		}));
 	}
