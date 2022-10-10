@@ -625,7 +625,6 @@ GlobalState::ReadParserResult(const ByteParser& parse, Context&) const
 		return term;
 	}) != parse_result.cend())
 		throw UnilangException("Redundant ')', ']' or '}' found.");
-	Preprocess(res);
 	return res;
 }
 TermNode
@@ -646,7 +645,6 @@ GlobalState::ReadParserResult(const SourcedByteParser& parse, Context& ctx)
 		return term;
 	}) != parse_result.cend())
 		throw UnilangException("Redundant ')', ']' or '}' found.");
-	Preprocess(res);
 	return res;
 }
 
