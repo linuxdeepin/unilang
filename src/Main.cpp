@@ -458,6 +458,7 @@ LoadModule_std_io(Interpreter& intp)
 		term = intp.Global.ReadFrom(*intp.OpenUnique(ctx, string(
 			Unilang::ResolveRegular<const string>(Unilang::Deref(
 			std::next(term.begin()))), term.get_allocator())), ctx);
+		intp.Global.Preprocess(term);
 		return ctx.ReduceOnce.Handler(term, ctx);
 	});
 	RegisterUnary<Strict, const string>(renv, "open-input-file",
@@ -1068,7 +1069,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.101"
+#define APP_VER "0.12.103"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
