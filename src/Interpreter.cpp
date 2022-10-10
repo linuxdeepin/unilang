@@ -191,12 +191,14 @@ Interpreter::Interpreter()
 void
 Interpreter::Evaluate(TermNode& term)
 {
+	Global.Preprocess(term);
 	Main.RewriteTermGuarded(term);
 }
 
 ReductionStatus
 Interpreter::ExecuteOnce(Context& ctx)
 {
+	Global.Preprocess(Term);
 	return ReduceOnce(Term, ctx);
 }
 
