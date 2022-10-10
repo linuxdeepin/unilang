@@ -179,10 +179,10 @@ void
 LoadModule_std_continuations(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Main.GetRecordRef());
+	auto& renv(intp.Main.GetRecordRef());
 
-	RegisterStrict(ctx, "call/1cc", Call1CC);
-	RegisterStrict(ctx, "continuation->applicative",
+	RegisterStrict(renv, "call/1cc", Call1CC);
+	RegisterStrict(renv, "continuation->applicative",
 		ContinuationToApplicative);
 	intp.Perform(R"Unilang(
 $defl! apply-continuation (&k &arg)
@@ -239,19 +239,19 @@ void
 LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Main.GetRecordRef());
+	auto& renv(intp.Main.GetRecordRef());
 
-	RegisterUnary(ctx, "string?", [](const TermNode& x) noexcept{
+	RegisterUnary(renv, "string?", [](const TermNode& x) noexcept{
 		return IsTypedRegular<string>(ReferenceTerm(x));
 	});
-	RegisterStrict(ctx, "++",
+	RegisterStrict(renv, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
 		string(), std::placeholders::_1));
-	RegisterUnary<Strict, const string>(ctx, "string-empty?",
+	RegisterUnary<Strict, const string>(renv, "string-empty?",
 		[](const string& str) noexcept{
 			return str.empty();
 		});
-	RegisterBinary(ctx, "string<-", [](TermNode& x, TermNode& y){
+	RegisterBinary(renv, "string<-", [](TermNode& x, TermNode& y){
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
@@ -272,9 +272,9 @@ LoadModule_std_strings(Interpreter& intp)
 		}, x);
 		return ValueToken::Unspecified;
 	});
-	RegisterBinary<Strict, const string, const string>(ctx, "string=?",
+	RegisterBinary<Strict, const string, const string>(renv, "string=?",
 		ystdex::equal_to<>());
-	RegisterStrict(ctx, "string-split", [](TermNode& term){
+	RegisterStrict(renv, "string-split", [](TermNode& term){
 		return CallBinaryAs<string, const string>(
 			[&](string& x, const string& y) -> ReductionStatus{
 			if(!x.empty())
@@ -301,11 +301,11 @@ LoadModule_std_strings(Interpreter& intp)
 			return ReductionStatus::Clean;
 		}, term);
 	});
-	RegisterBinary<Strict, string, string>(ctx, "string-contains?",
+	RegisterBinary<Strict, string, string>(renv, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
-	RegisterBinary<Strict, string, string>(ctx, "string-contains-ci?",
+	RegisterBinary<Strict, string, string>(renv, "string-contains-ci?",
 		[](string x, string y){
 		const auto to_lwr([](string& str) noexcept{
 			for(auto& c : str)
@@ -316,7 +316,7 @@ LoadModule_std_strings(Interpreter& intp)
 		to_lwr(y);
 		return x.find(y) != string::npos;
 	});
-	RegisterUnary(ctx, "string->symbol", [](TermNode& term){
+	RegisterUnary(renv, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			auto& s(AccessRegular<string>(nd, p_ref));
 
@@ -324,13 +324,13 @@ LoadModule_std_strings(Interpreter& intp)
 				: StringToSymbol(s);
 		}, term);
 	});
-	RegisterUnary<Strict, const TokenValue>(ctx, "symbol->string",
+	RegisterUnary<Strict, const TokenValue>(renv, "symbol->string",
 		SymbolToString);
-	RegisterUnary<Strict, const string>(ctx, "string->regex",
+	RegisterUnary<Strict, const string>(renv, "string->regex",
 		[](const string& str){
 		return std::regex(str);
 	});
-	RegisterStrict(ctx, "regex-match?", [](TermNode& term){
+	RegisterStrict(renv, "regex-match?", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(std::next(term.begin()));
@@ -340,7 +340,7 @@ LoadModule_std_strings(Interpreter& intp)
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "regex-replace", [](TermNode& term){
+	RegisterStrict(renv, "regex-replace", [](TermNode& term){
 		RetainN(term, 3);
 
 		auto i(term.begin());
@@ -358,73 +358,74 @@ void
 LoadModule_std_math(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Main.GetRecordRef());
+	auto& renv(intp.Main.GetRecordRef());
 
-	RegisterUnary(ctx, "number?",
+	RegisterUnary(renv, "number?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
-	RegisterUnary(ctx, "real?",
+	RegisterUnary(renv, "real?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
-	RegisterUnary(ctx, "rational?",
+	RegisterUnary(renv, "rational?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsRationalValue)));
-	RegisterUnary(ctx, "integer?",
+	RegisterUnary(renv, "integer?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
-	RegisterUnary(ctx, "exact-integer?",
+	RegisterUnary(renv, "exact-integer?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "exact?", IsExactValue);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "inexact?", IsInexactValue);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "finite?", IsFinite);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "infinite?", IsInfinite);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "nan?", IsNaN);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "=?",
+	RegisterUnary<Strict, const NumberLeaf>(renv, "exact?", IsExactValue);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "inexact?", IsInexactValue);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "finite?", IsFinite);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "infinite?", IsInfinite);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "nan?", IsNaN);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, "=?",
 		Equal);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<?", Less);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">?",
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, "<?", Less);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, ">?",
 		Greater);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, "<=?",
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, "<=?",
 		LessEqual);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(ctx, ">=?",
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, ">=?",
 		GreaterEqual);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "zero?", IsZero);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "positive?", IsPositive);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "negative?", IsNegative);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "odd?", IsOdd);
-	RegisterUnary<Strict, const NumberLeaf>(ctx, "even?", IsEven);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "max", Max);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "min", Min);
-	RegisterUnary<Strict, NumberNode>(ctx, "add1", Add1);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "+", Plus);
-	RegisterUnary<Strict, NumberNode>(ctx, "sub1", Sub1);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "-", Minus);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "*", Multiplies);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "/", Divides);
-	RegisterUnary<Strict, NumberNode>(ctx, "abs", Abs);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor/", FloorDivides);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor-quotient",
+	RegisterUnary<Strict, const NumberLeaf>(renv, "zero?", IsZero);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "positive?", IsPositive);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "negative?", IsNegative);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "odd?", IsOdd);
+	RegisterUnary<Strict, const NumberLeaf>(renv, "even?", IsEven);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "max", Max);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "min", Min);
+	RegisterUnary<Strict, NumberNode>(renv, "add1", Add1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "+", Plus);
+	RegisterUnary<Strict, NumberNode>(renv, "sub1", Sub1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "-", Minus);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "*", Multiplies);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "/", Divides);
+	RegisterUnary<Strict, NumberNode>(renv, "abs", Abs);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "floor/",
+		FloorDivides);
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "floor-quotient",
 		FloorQuotient);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "floor-remainder",
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "floor-remainder",
 		FloorRemainder);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "truncate/",
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "truncate/",
 		TruncateDivides);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "truncate-quotient",
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "truncate-quotient",
 		TruncateQuotient);
-	RegisterBinary<Strict, NumberNode, NumberNode>(ctx, "truncate-remainder",
+	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "truncate-remainder",
 		TruncateRemainder);
-	RegisterBinary<Strict, const int, const int>(ctx, "div",
+	RegisterBinary<Strict, const int, const int>(renv, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
 			return e1 / e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterBinary<Strict, const int, const int>(ctx, "mod",
+	RegisterBinary<Strict, const int, const int>(renv, "mod",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterUnary<Strict, const int&>(ctx, "itos", [](const int& x){
+	RegisterUnary<Strict, const int&>(renv, "itos", [](const int& x){
 		return string(YSLib::make_string_view(std::to_string(int(x))));
 	});
-	RegisterUnary<Strict, const string>(ctx, "stoi", [](const string& x){
+	RegisterUnary<Strict, const string>(renv, "stoi", [](const string& x){
 		return int(std::stoi(YSLib::to_std_string(x)));
 	});
 }
@@ -452,11 +453,11 @@ LoadModule_std_io(Interpreter& intp)
 	});
 	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
-		RefTCOAction(ctx).SaveTailSourceName(intp.Main.CurrentSource,
-			std::move(intp.Main.CurrentSource));
-		term = intp.ReadFrom(*intp.OpenUnique(intp.Main, string(
+		RefTCOAction(ctx).SaveTailSourceName(ctx.CurrentSource,
+			std::move(ctx.CurrentSource));
+		term = intp.Global.ReadFrom(*intp.OpenUnique(ctx, string(
 			Unilang::ResolveRegular<const string>(Unilang::Deref(
-			std::next(term.begin()))), term.get_allocator())));
+			std::next(term.begin()))), term.get_allocator())), ctx);
 		return ctx.ReduceOnce.Handler(term, ctx);
 	});
 	RegisterUnary<Strict, const string>(renv, "open-input-file",
@@ -506,9 +507,9 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& ctx(intp.Main.GetRecordRef());
+	auto& renv(intp.Main.GetRecordRef());
 
-	RegisterUnary<Strict, const string>(ctx, "env-get", [](const string& var){
+	RegisterUnary<Strict, const string>(renv, "env-get", [](const string& var){
 		string res(var.get_allocator());
 
 		YSLib::FetchEnvironmentVariable(res, var.c_str());
@@ -581,7 +582,8 @@ PreloadExternal(Interpreter& intp, const char* filename)
 {
 	try
 	{
-		auto term(intp.ReadFrom(*intp.OpenUnique(intp.Main, filename)));
+		auto& ctx(intp.Main);
+		auto term(intp.Global.ReadFrom(*intp.OpenUnique(ctx, filename), ctx));
 
 		intp.Evaluate(term);
 	}
@@ -598,11 +600,11 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	using namespace Forms;
 	using namespace std::placeholders;
 	auto& ctx(intp.Main);
-	auto& env(ctx.GetRecordRef());
+	auto& renv(ctx.GetRecordRef());
 
 	if(jit)
 		SetupJIT(ctx);
-	env.Bindings["ignore"].Value = ValueToken::Ignore;
+	renv.Bindings["ignore"].Value = ValueToken::Ignore;
 	RegisterStrict(ctx, "eq?", Eq);
 	RegisterStrict(ctx, "eql?", EqLeaf);
 	RegisterStrict(ctx, "eqv?", EqValue);
@@ -964,7 +966,7 @@ $defv! $import! (&e .&symbols) d
 	// NOTE: Qt support.
 	InitializeQt(intp, argc, argv);
 	// NOTE: Prevent the ground environment from modification.
-	env.Frozen = true;
+	renv.Frozen = true;
 	intp.SaveGround();
 	// NOTE: User environment initialization.
 	PreloadExternal(intp, "init.txt");
@@ -1066,7 +1068,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.99"
+#define APP_VER "0.12.101"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
