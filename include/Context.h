@@ -20,7 +20,7 @@
 #include <exception> // for std::exception_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
 #include "Lexical.h" // for LexicalAnalyzer;
-#include <ystdex/ref.hpp> // for ystdex::ref;
+#include <ystdex/ref.hpp> // for ystdex::ref, ystdex::unref;
 #include <algorithm> // for std::for_each;
 #include <streambuf> // for std::streambuf;
 #include <istream> // for std::istream;
@@ -754,7 +754,14 @@ public:
 	Prepare(Context& ctx, _tIn first, _tIn last, _fParse parse) const
 	{
 		std::for_each(first, last, parse);
-		return ReadParserResult(parse, ctx);
+
+		TermNode res{Allocator};
+		const auto& parse_result(ystdex::unref(parse).GetResult());
+
+		if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
+			LeafConverter{ctx}) != parse_result.cend())
+			throw UnilangException("Redundant ')', ']' or '}' found.");
+		return res;
 	}
 
 	YB_ATTR_nodiscard TermNode
@@ -764,11 +771,6 @@ public:
 	ReadFrom(std::streambuf&, Context&) const;
 	YB_ATTR_nodiscard TermNode
 	ReadFrom(std::istream&, Context&) const;
-
-	YB_ATTR_nodiscard TermNode
-	ReadParserResult(const ByteParser&, Context&) const;
-	YB_ATTR_nodiscard TermNode
-	ReadParserResult(const SourcedByteParser&, Context&) const;
 };
 
 } // namespace Unilang;
