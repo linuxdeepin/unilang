@@ -5,8 +5,8 @@
 
 #include "TermAccess.h" // for ValueObject, vector, string, pair, lref,
 //	TermNode, ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
-//	type_info, Unilang::allocate_shared, observer_ptr, EnvironmentReference,
-//	stack;
+//	string_view, type_info, Unilang::allocate_shared, observer_ptr,
+//	EnvironmentReference, stack;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
@@ -19,6 +19,8 @@
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <exception> // for std::exception_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
+#include <streambuf> // for std::streambuf;
+#include <istream> // for std::istream;
 
 namespace Unilang
 {
@@ -732,8 +734,22 @@ public:
 	SeparatorPass Preprocess{Allocator};
 	Tokenizer ConvertLeaf;
 	SourcedTokenizer ConvertLeafSourced;
+	bool UseSourceLocation = {};
 
 	GlobalState(TermNode::allocator_type = {});
+
+	YB_ATTR_nodiscard TermNode
+	Read(string_view, Context&);
+
+	YB_ATTR_nodiscard TermNode
+	ReadFrom(std::streambuf&, Context&) const;
+	YB_ATTR_nodiscard TermNode
+	ReadFrom(std::istream&, Context&) const;
+
+	YB_ATTR_nodiscard TermNode
+	ReadParserResult(const ByteParser&) const;
+	YB_ATTR_nodiscard TermNode
+	ReadParserResult(const SourcedByteParser&, Context&) const;
 };
 
 } // namespace Unilang;
