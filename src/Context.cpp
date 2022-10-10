@@ -8,8 +8,7 @@
 #include "TermNode.h" // for AssertValueTags, IsAtom;
 #include <exception> // for std::throw_with_nested;
 #include <ystdex/utility.hpp> // ystdex::exchange;
-#include "Evaluation.h" // for ReduceOnce, ParseLeaf,
-//	ParseLeafWithSourceInformation;
+#include "Evaluation.h" // for ReduceOnce;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include "TermAccess.h" // for Unilang::IsMovable;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
@@ -607,45 +606,6 @@ GlobalState::ReadFrom(std::istream& is, Context& ctx) const
 	}
 	else
 		throw std::invalid_argument("Invalid stream found.");
-}
-
-TermNode
-GlobalState::ReadParserResult(const ByteParser& parse, Context&) const
-{
-	TermNode res{Allocator};
-	const auto& parse_result(parse.GetResult());
-
-	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
-		[&](const GParsedValue<ByteParser>& str){
-		auto term(Unilang::AsTermNode(Allocator));
-		const auto id(YSLib::make_string_view(str));
-
-		if(!id.empty())
-			ParseLeaf(term, id);
-		return term;
-	}) != parse_result.cend())
-		throw UnilangException("Redundant ')', ']' or '}' found.");
-	return res;
-}
-TermNode
-GlobalState::ReadParserResult(const SourcedByteParser& parse, Context& ctx)
-	const
-{
-	TermNode res{Allocator};
-	const auto& parse_result(parse.GetResult());
-
-	if(ReduceSyntax(res, parse_result.cbegin(), parse_result.cend(),
-		[&](const GParsedValue<SourcedByteParser>& val){
-		auto term(Unilang::AsTermNode(Allocator));
-		const auto id(YSLib::make_string_view(val.second));
-
-		if(!id.empty())
-			ParseLeafWithSourceInformation(term, id, ctx.CurrentSource,
-				val.first);
-		return term;
-	}) != parse_result.cend())
-		throw UnilangException("Redundant ')', ']' or '}' found.");
-	return res;
 }
 
 } // namespace Unilang;
