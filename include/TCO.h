@@ -248,6 +248,14 @@ public:
 		return term_guard.func.func.TermRef;
 	}
 
+	void
+	AssertAttached() const noexcept
+	{
+		assert(!record_list.empty() && "No entry found in the record list");
+		assert(!std::get<ActiveEnvironmentPtr>(record_list.front())
+			&& "Missing the fresh frame in the record list.");
+	}
+
 	YB_ATTR_nodiscard lref<const ContextHandler>
 	Attach(const ContextHandler& h) const
 	{
@@ -285,6 +293,13 @@ public:
 
 	YB_ATTR_nodiscard ContextHandler
 	MoveFunction() const;
+
+	void
+	PopTopFrame() const noexcept
+	{
+		AssertAttached();
+		record_list.pop_front();
+	}
 
 	void
 	ReleaseOneShotGuard()
