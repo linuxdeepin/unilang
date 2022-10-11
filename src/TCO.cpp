@@ -190,17 +190,6 @@ TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 		env_guard = std::move(gd);
 }
 
-YB_ATTR_nodiscard ContextHandler
-TCOAction::MoveFunction() const
-{
-	assert(!record_list.empty() && !record_list.front().second
-		&& "Invalid state found.");
-	auto r(std::move(record_list.front().first));
-
-	record_list.pop_front();
-	return r;
-}
-
 void
 TCOAction::SetupLift() const
 {
