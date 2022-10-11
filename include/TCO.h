@@ -291,9 +291,6 @@ public:
 		return one_shot_guard->func;
 	}
 
-	YB_ATTR_nodiscard ContextHandler
-	MoveFunction() const;
-
 	void
 	PopTopFrame() const noexcept
 	{
