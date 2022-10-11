@@ -22,7 +22,8 @@
 #include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
-#include "TCO.h" // for EnsureTCOAction, Action, RelayDirect, TCOAction;
+#include "TCO.h" // for RefTCOAction, Action, RelayDirect, EnsureTCOAction,
+//	TCOAction;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond,
 //	ystdex::update_thunk;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
@@ -314,7 +315,7 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
 	_tParams&&... args)
 {
 	static_assert(sizeof...(args) < 2, "Unsupported owner arguments found.");
-	auto& act(EnsureTCOAction(ctx, term));
+	auto& act(RefTCOAction(ctx));
 
 	ctx.ClearCombiningTerm();
 	ctx.SetNextTermRef(term);
@@ -1420,13 +1421,19 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 		ClearCombiningTags(term);
 		if(const auto p_handler
 			= TryAccessLeafAtom<const ContextHandler>(p_ref_fm->get()))
+		{
+			yunused(EnsureTCOAction(ctx, term));
 			return CombinerReturnThunk(*p_handler, term, ctx);
+		}
 	}
 	else
 		term.Tags |= TermTags::Temporary;
 	if(const auto p_handler = TryAccessTerm<ContextHandler>(fm))
+	{
+		yunused(EnsureTCOAction(ctx, term));
 		return
 			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
+	}
 	assert(IsBranch(term));
 	return ResolveTerm(std::bind(ThrowCombiningFailure, std::ref(term),
 		std::ref(ctx), std::placeholders::_1, std::placeholders::_2), fm);
