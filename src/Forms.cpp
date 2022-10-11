@@ -255,10 +255,7 @@ private:
 		{
 			ctx.GetRecordRef().Parent = std::move(parent);
 			term.SetContent(std::move(Unilang::Deref(p_eval_struct)));
-
-			auto& act(RefTCOAction(ctx));
-
-			yunused(act.MoveFunction());
+			RefTCOAction(ctx).PopTopFrame();
 		}
 		else
 		{
