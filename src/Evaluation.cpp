@@ -24,7 +24,7 @@
 //	ThrowListTypeErrorForNonList;
 #include "TCO.h" // for RefTCOAction, Action, RelayDirect, EnsureTCOAction,
 //	TCOAction;
-#include <ystdex/functional.hpp> // for ystdex::retry_on_cond,
+#include <ystdex/functional.hpp> // for std::ref, ystdex::retry_on_cond,
 //	ystdex::update_thunk;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include <tuple> // for std::tuple, std::get;
@@ -309,18 +309,12 @@ public:
 };
 
 
-template<typename... _tParams>
 ReductionStatus
-CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx,
-	_tParams&&... args)
+CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx)
 {
-	static_assert(sizeof...(args) < 2, "Unsupported owner arguments found.");
-	auto& act(RefTCOAction(ctx));
-
 	ctx.ClearCombiningTerm();
 	ctx.SetNextTermRef(term);
-	return
-		RelaySwitched(ctx, Continuation(act.Attach(h, yforward(args)...), ctx));
+	return RelaySwitched(ctx, Continuation(std::ref(h), ctx));
 }
 
 YB_NORETURN ReductionStatus
@@ -1422,7 +1416,7 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 		if(const auto p_handler
 			= TryAccessLeafAtom<const ContextHandler>(p_ref_fm->get()))
 		{
-			yunused(EnsureTCOAction(ctx, term));
+			EnsureTCOAction(ctx, term).AddOperator(ctx.OperatorName);
 			return CombinerReturnThunk(*p_handler, term, ctx);
 		}
 	}
@@ -1432,7 +1426,8 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	{
 		yunused(EnsureTCOAction(ctx, term));
 		return
-			CombinerReturnThunk(*p_handler, term, ctx, std::move(*p_handler));
+			CombinerReturnThunk(EnsureTCOAction(ctx, term).Attach(
+				fm.Value).GetObject<ContextHandler>(), term, ctx);
 	}
 	assert(IsBranch(term));
 	return ResolveTerm(std::bind(ThrowCombiningFailure, std::ref(term),
