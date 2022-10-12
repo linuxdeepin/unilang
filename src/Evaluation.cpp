@@ -1489,15 +1489,6 @@ QuerySourceInformation(const ValueObject& vo)
 	}, val.try_get_object_ptr<SourceInfoMetadata>());
 }
 
-const ValueObject*
-QueryTailOperatorName(const Reducer& act) noexcept
-{
-	if(const auto p_act = act.target<TCOAction>())
-		if(p_act->OperatorName.type() == type_id<TokenValue>())
-			return &p_act->OperatorName;
-	return {};
-}
-
 string_view
 QueryTypeName(const type_info& ti)
 {
