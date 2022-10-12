@@ -118,10 +118,7 @@ RecordCompressor::CountStrong(const shared_ptr<Environment>& p) noexcept
 
 TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 	: req_lift_result(lift ? 1 : 0), record_list(ctx.get_allocator()),
-	env_guard(ctx), term_guard(ystdex::unique_guard(GuardFunction{term})),
-	OperatorName([&]() noexcept{
-		return std::move(ctx.OperatorName);
-	}())
+	env_guard(ctx), term_guard(ystdex::unique_guard(GuardFunction{term}))
 {}
 TCOAction::TCOAction(const TCOAction& a)
 	: req_lift_result(a.req_lift_result), env_guard(std::move(a.env_guard)),

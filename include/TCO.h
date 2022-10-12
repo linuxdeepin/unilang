@@ -214,11 +214,6 @@ private:
 	mutable EnvironmentGuard env_guard;
 	mutable decltype(ystdex::unique_guard(std::declval<GuardFunction>()))
 		term_guard;
-
-public:
-	mutable ValueObject OperatorName;
-
-private:
 	mutable ystdex::optional<ExtraInfo> opt_extra_info{};
 
 public:
