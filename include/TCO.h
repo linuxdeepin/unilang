@@ -242,6 +242,12 @@ private:
 	}
 
 public:
+	FrameRecordList&
+	GetFrameRecordList() const noexcept
+	{
+		return record_list;
+	}
+
 	TermNode&
 	GetTermRef() const noexcept
 	{
