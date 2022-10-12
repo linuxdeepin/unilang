@@ -23,7 +23,7 @@
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
 #include "TCO.h" // for RefTCOAction, Action, RelayDirect, EnsureTCOAction,
-//	TCOAction;
+//	TCOAction, ActiveCombiner;
 #include <ystdex/functional.hpp> // for std::ref, ystdex::retry_on_cond,
 //	ystdex::update_thunk;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
@@ -1533,26 +1533,43 @@ TraceBacktrace(const Context::ReducerSequence& backtrace, YSLib::Logger& trace)
 					}, act.target<Continuation>(), act.target_type()).name()
 #endif
 				);
-				const auto p_opn_vo(QueryTailOperatorName(act));
-				const auto p_opn_t(p_opn_vo ? p_opn_vo->AccessPtr<TokenValue>()
-					: nullptr);
-
-				if(const auto p_o = p_opn_t ? p_opn_t->data() : nullptr)
-				{
-					// XXX: Assume the source information is used.
-#if true
-					if(const auto p_si = QuerySourceInformation(*p_opn_vo))
-						trace.TraceFormat(Notice, "#[continuation: %s (%s) @"
-							" %s (line %zu, column %zu)]", p_o, p,
-							p_si->first ? p_si->first->c_str() : "<unknown>",
-							p_si->second.Line + 1, p_si->second.Column + 1);
-					else
-#endif
-						trace.TraceFormat(Notice, "#[continuation: %s (%s)]",
-							p_o, p);
-				}
-				else
+				const auto print_cont([&]{
 					trace.TraceFormat(Notice, "#[continuation (%s)]", p);
+				});
+				if(const auto p_act = act.target<TCOAction>())
+				{
+					for(const auto& r : p_act->GetFrameRecordList())
+					{
+						const auto& op(std::get<ActiveCombiner>(r));
+
+						if(IsTyped<TokenValue>(op))
+						{
+							const auto p_opn_t(op.AccessPtr<TokenValue>());
+
+							if(p_opn_t)
+							{
+								const auto p_o(p_opn_t->data());
+#	if true
+								if(const auto p_si = QuerySourceInformation(op))
+									trace.TraceFormat(Notice, "#[continuation:"
+										" %s (%s) @ %s (line %zu, column %zu)]",
+										p_o, p, p_si->first
+										? p_si->first->c_str() : "<unknown>",
+										p_si->second.Line + 1,
+										p_si->second.Column + 1);
+								else
+#	endif
+									trace.TraceFormat(Notice,
+										"#[continuation: %s (%s)]", p_o, p);
+							}
+							else
+								print_cont();
+						}
+						else
+							print_cont();
+					}
+				}
+				print_cont();
 			}
 		}, "guard unwinding for backtrace");
 	}
