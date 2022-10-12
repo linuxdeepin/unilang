@@ -469,9 +469,6 @@ QueryContinuationName(const Reducer&);
 YB_ATTR_nodiscard YB_PURE const SourceInformation*
 QuerySourceInformation(const ValueObject&);
 
-YB_ATTR_nodiscard const ValueObject*
-QueryTailOperatorName(const Reducer&) noexcept;
-
 YB_ATTR_nodiscard YB_PURE string_view
 QueryTypeName(const type_info&);
 
