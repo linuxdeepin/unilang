@@ -149,7 +149,7 @@ enum RecordFrameIndex : size_t
 	ActiveEnvironmentPtr
 };
 
-using FrameRecord = pair<ContextHandler, shared_ptr<Environment>>;
+using FrameRecord = pair<ValueObject, shared_ptr<Environment>>;
 
 
 class FrameRecordList : public yimpl(YSLib::forward_list)<FrameRecord>
@@ -249,6 +249,12 @@ public:
 	}
 
 	void
+	AddOperator(ValueObject& op) const
+	{
+		record_list.emplace_front(std::move(op), nullptr);
+	}
+
+	void
 	AssertAttached() const noexcept
 	{
 		assert(!record_list.empty() && "No entry found in the record list");
@@ -256,16 +262,11 @@ public:
 			&& "Missing the fresh frame in the record list.");
 	}
 
-	YB_ATTR_nodiscard lref<const ContextHandler>
-	Attach(const ContextHandler& h) const
+	YB_ATTR_nodiscard ValueObject&
+	Attach(ValueObject& op) const
 	{
-		return h;
-	}
-	YB_ATTR_nodiscard lref<const ContextHandler>
-	Attach(const ContextHandler&, ContextHandler&& h)
-	{
-		record_list.emplace_front(std::move(h), nullptr);
-		return record_list.front().first;
+		AddOperator(op);
+		return std::get<ActiveCombiner>(record_list.front());
 	}
 
 	void
