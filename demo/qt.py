@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import sys
 import random
-from PySide2 import QtCore, QtWidgets, QtGui
+from PySide2 import QtCore, QtWidgets
 
 class MyWidget(QtWidgets.QWidget):
     def __init__(self):
@@ -23,15 +23,6 @@ class MyWidget(QtWidgets.QWidget):
     @QtCore.Slot()
     def magic(self):
         self.text.setText(random.choice(self.hello))
-
-if __name__ == "__main__":
-    app = QtWidgets.QApplication([])
-
-    widget = MyWidget()
-    widget.resize(800, 600)
-    widget.show()
-
-    sys.exit(app.exec_())
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
