@@ -479,6 +479,8 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 See `demo/qt.py` for the Python implementation with the equivalent functionality.
 
+**NOTE** This script can be directly executed. Running this Python script depends on Python 3 and PySide2. The OS may provide related packages. Otherwise, it can be installed using [`pip`](https://pip.pypa.io): `pip3 install pyside2`.
+
 ### Quicksort demo
 
 ```
