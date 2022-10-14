@@ -321,16 +321,11 @@ YB_NORETURN ReductionStatus
 ThrowCombiningFailure(TermNode& term, const Context& ctx, const TermNode& fm,
 	bool has_ref)
 {
-	string name(term.get_allocator());
+	const auto p(ctx.TryGetTailOperatorName(term));
 
-	if(const auto p = ctx.TryGetTailOperatorName(term))
-	{
-		name = std::move(*p);
-		name += ": ";
-	}
-	name += TermToStringWithReferenceMark(fm, has_ref).c_str();
 	throw ListReductionFailure(ystdex::sfmt(
-		"No matching combiner '%s' for operand '%s'.", name.c_str(),
+		"No matching combiner '%s%s%s' for operand '%s'.", p ? p->c_str() : "",
+		p ? ": " : "", TermToStringWithReferenceMark(fm, has_ref).c_str(),
 		TermToStringWithReferenceMark(term, {}, 1).c_str()));
 }
 
