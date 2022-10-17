@@ -172,6 +172,8 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 			LiftOther(term, *term.rbegin());
 			return DynamicSlot(
 				std::bind([&](QObject*, void**, TermNode& tm) noexcept{
+				auto& orig_next(ctx.GetNextTermRef());
+
 				// XXX: Throwing exceptions from an event handler is not
 				//	supported by Qt.
 				YSLib::FilterExceptions([&]{
@@ -184,7 +186,6 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 						TermReference(tm, ctx.GetRecordPtr())));
 
 					Context::ReductionGuard gd(ctx);
-					auto& orig_next(ctx.GetNextTermRef());
 
 					ctx.SetNextTermRef(tm_v);
 					// NOTE: Trampolined. This cannot be asynchronous which
@@ -192,8 +193,8 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 					ctx.Rewrite([&](Context& c1){
 						return ReduceCombinedBranch(tm_v, c1);
 					});
-					ctx.SetNextTermRef(orig_next);
 				}, "slot event handler");
+				ctx.SetNextTermRef(orig_next);
 			}, _1, _2, std::move(term)));
 		});
 		return ReduceReturnUnspecified(term);
