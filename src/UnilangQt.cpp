@@ -24,6 +24,7 @@
 #	pragma GCC diagnostic pop
 #endif
 #include "Forms.h" // for Forms;
+#include <ystdex/bind.hpp> // for ystdex::bind1, std::placeholders;
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
 #include "Evaluation.h" // for ReduceCombinedBranch;
 
@@ -156,22 +157,22 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 		auto& receiver(
 			*Unilang::ResolveRegular<shared_ptr<DynamicQObject>>(*++i));
 		auto& sink(receiver.GetSinkRef());
+		auto& tm_func(*++i);
 
 		// NOTE: Typecheck.
-		yunused(ResolveRegular<ContextHandler>(*++i));
+		yunused(ResolveRegular<ContextHandler>(tm_func));
 		sink.ConnectDynamicSlot(sender, signal.c_str(), receiver, "slot()",
 			[&](const char* slot){
 			using namespace std;
-			using namespace placeholders;
+			using namespace std::placeholders;
 
 #ifndef NDEBUG
 			clog << "DEBUG: Created slot: " << slot << '.' << endl;
 #else
 			yunused(slot);
 #endif
-			LiftOther(term, *term.rbegin());
 			return DynamicSlot(
-				std::bind([&](QObject*, void**, TermNode& tm) noexcept{
+				ystdex::bind1([&](QObject*, void**, TermNode& tm) noexcept{
 				auto& orig_next(ctx.GetNextTermRef());
 
 				// XXX: Throwing exceptions from an event handler is not
@@ -195,7 +196,7 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 					});
 				}, "slot event handler");
 				ctx.SetNextTermRef(orig_next);
-			}, _1, _2, std::move(term)));
+			}, _2, std::move(tm_func)));
 		});
 		return ReduceReturnUnspecified(term);
 	});
