@@ -186,12 +186,28 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 					tm_v.Add(Unilang::AsTermNode(
 						TermReference(tm, ctx.GetRecordPtr())));
 
-					Context::ReductionGuard gd(ctx);
+#if true
+					Context nctx(ctx.Global);
+					// XXX: Always use DefaultReduceOnce for now.
 
-					ctx.SetNextTermRef(tm_v);
+					nctx.SwitchEnvironmentUnchecked(ctx.ShareRecord());
+#else
+					// XXX: For exposition only. Context::ReductionGuard is not
+					//	compatible because it would invalidate the iterator
+					//	saved by the context (Interpreter::PrepareExecution).
+					// TODO: Better change the 'Rewrite' call after continuation
+					//	barrier landed. Also avoided recreation of the context
+					//	object by some cache mechanism if it is impossible to
+					//	reuse simply.
+					Context::ReductionGuard gd(ctx);
+					auto& nctx(ctx);
+
+#endif
+					nctx.SetNextTermRef(tm_v);
 					// NOTE: Trampolined. This cannot be asynchronous which
-					//	interleaves with Qt's event loop.
-					ctx.Rewrite([&](Context& c1){
+					//	interleaves with Qt's event loop, as ctx is being
+					//	blocked by QApplication::exec on this loop.
+					nctx.Rewrite([&](Context& c1){
 						return ReduceCombinedBranch(tm_v, c1);
 					});
 				}, "slot event handler");
