@@ -152,18 +152,22 @@ TCOAction::CompressFrameList()
 {
 	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
 		bool removed = {};
+		decltype(record_list) spliced(record_list.get_allocator());
+		auto i(record_list.cbefore_begin());
+		const auto last(record_list.cend());
 
-		record_list.remove_if([&](const FrameRecord& r) noexcept -> bool{
-			const auto& p_frame_env_ref(std::get<ActiveEnvironmentPtr>(r));
+		while(std::next(i) != last)
+		{
+			const auto& p_env(std::get<ActiveEnvironmentPtr>(*std::next(i)));
 
-			if(p_frame_env_ref.use_count() != 1
-				|| Unilang::Deref(p_frame_env_ref).IsOrphan())
+			if(p_env.use_count() != 1 || Unilang::Deref(p_env).IsOrphan())
 			{
+				spliced.splice_after(spliced.cbefore_begin(), record_list, i);
 				removed = true;
-				return true;
 			}
-			return {};
-		});
+			else
+				++i;
+		}
 		return removed;
 	});
 }
