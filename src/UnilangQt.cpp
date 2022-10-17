@@ -137,17 +137,17 @@ DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
 
 
 void
-InitializeQtNative(Context& ctx, int& argc, char* argv[])
+InitializeQtNative(Context& rctx, int& argc, char* argv[])
 {
 	using namespace Forms;
 	using YSLib::make_shared;
 
-	RegisterStrict(ctx, "make-DynamicQObject", [](TermNode& term){
+	RegisterStrict(rctx, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<DynamicQObject>();
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "QObject-connect", [](TermNode& term, Context& c){
+	RegisterStrict(rctx, "QObject-connect", [](TermNode& term, Context& ctx){
 		RetainN(term, 4);
 
 		auto i(term.begin());
@@ -159,8 +159,8 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 
 		// NOTE: Typecheck.
 		yunused(ResolveRegular<ContextHandler>(*++i));
-		sink.ConnectDynamicSlot(sender, signal.c_str(), receiver,
-			"slot()", [&](const char* slot){
+		sink.ConnectDynamicSlot(sender, signal.c_str(), receiver, "slot()",
+			[&](const char* slot){
 			using namespace std;
 			using namespace placeholders;
 
@@ -181,39 +181,39 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 					TermNode tm_v(tm.get_allocator());
 
 					tm_v.Add(Unilang::AsTermNode(
-						TermReference(tm, c.GetRecordPtr())));
+						TermReference(tm, ctx.GetRecordPtr())));
 
-					Context::ReductionGuard gd(c);
-					auto& orig_next(c.GetNextTermRef());
+					Context::ReductionGuard gd(ctx);
+					auto& orig_next(ctx.GetNextTermRef());
 
-					c.SetNextTermRef(tm_v);
+					ctx.SetNextTermRef(tm_v);
 					// NOTE: Trampolined. This cannot be asynchronous which
 					//	interleaves with Qt's event loop.
-					c.Rewrite([&](Context& c1){
+					ctx.Rewrite([&](Context& c1){
 						return ReduceCombinedBranch(tm_v, c1);
 					});
-					c.SetNextTermRef(orig_next);
+					ctx.SetNextTermRef(orig_next);
 				}, "slot event handler");
 			}, _1, _2, std::move(term)));
 		});
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(ctx, "make-QApplication", [&, argv](TermNode& term){
+	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "QApplication-exec", [](TermNode& term){
+	RegisterStrict(rctx, "QApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = QApplication::exec();
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "make-QWidget", [](TermNode& term){
+	RegisterStrict(rctx, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QWidget>();
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "QWidget-resize", [](TermNode& term){
+	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
 
 		auto i(term.begin());
@@ -224,12 +224,12 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		wgt.resize(w, h);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterUnary<Strict, const shared_ptr<QWidget>>(ctx, "QWidget-show",
+	RegisterUnary<Strict, const shared_ptr<QWidget>>(rctx, "QWidget-show",
 		[](const shared_ptr<QWidget>& p_wgt){
 		p_wgt->show();
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(ctx, "QWidget-setLayout", [](TermNode& term){
+	RegisterStrict(rctx, "QWidget-setLayout", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -239,7 +239,7 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		wgt.setLayout(&layout);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(ctx, "make-QPushButton", [](TermNode& term){
+	RegisterStrict(rctx, "make-QPushButton", [](TermNode& term){
 		RetainN(term, 1);
 
 		auto i(term.begin());
@@ -248,8 +248,8 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 			Unilang::ResolveRegular<string>(*++i).c_str()));
 		return ReductionStatus::Clean;
 	});
-	ctx.GetRecordRef().Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
-	RegisterStrict(ctx, "make-QLabel", [](TermNode& term){
+	rctx.GetRecordRef().Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
+	RegisterStrict(rctx, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -261,7 +261,7 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		term.Value = shared_ptr<QWidget>(std::move(p_lbl));
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "QLabel-setText", [](TermNode& term){
+	RegisterStrict(rctx, "QLabel-setText", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -272,12 +272,12 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 			QString::fromStdString(YSLib::to_std_string(text)));
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(ctx, "make-QVBoxLayout", [](TermNode& term){
+	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(ctx, "QLayout-addWidget", [](TermNode& term){
+	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -295,10 +295,11 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 void
 InitializeQt(Interpreter& intp, int& argc, char* argv[])
 {
-	auto& ctx(intp.Main);
+	auto& rctx(intp.Main);
 
-	ctx.GetRecordRef().Bindings["UnilangQt.native__"].Value = GetModuleFor(ctx,
-		std::bind(InitializeQtNative, std::ref(ctx), std::ref(argc), argv));
+	rctx.GetRecordRef().Bindings["UnilangQt.native__"].Value
+		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(rctx),
+		std::ref(argc), argv));
 	intp.Perform(R"Unilang(
 		$def! UnilangQt $let ()
 		(
