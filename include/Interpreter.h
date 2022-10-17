@@ -54,11 +54,9 @@ public:
 	TermNode
 	Perform(string_view);
 
-private:
 	void
 	PrepareExecution(Context&);
 
-public:
 	static void
 	Print(const TermNode&);
 
