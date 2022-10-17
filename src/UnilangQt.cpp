@@ -138,17 +138,18 @@ DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
 
 
 void
-InitializeQtNative(Context& rctx, int& argc, char* argv[])
+InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 {
 	using namespace Forms;
 	using YSLib::make_shared;
+	auto& rctx(intp.Main);
 
 	RegisterStrict(rctx, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<DynamicQObject>();
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(rctx, "QObject-connect", [](TermNode& term, Context& ctx){
+	RegisterStrict(rctx, "QObject-connect", [&](TermNode& term, Context& ctx){
 		RetainN(term, 4);
 
 		auto i(term.begin());
@@ -208,6 +209,7 @@ InitializeQtNative(Context& rctx, int& argc, char* argv[])
 					//	interleaves with Qt's event loop, as ctx is being
 					//	blocked by QApplication::exec on this loop.
 					nctx.Rewrite([&](Context& c1){
+						intp.PrepareExecution(nctx);
 						return ReduceCombinedBranch(tm_v, c1);
 					});
 				}, "slot event handler");
@@ -316,7 +318,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	auto& rctx(intp.Main);
 
 	rctx.GetRecordRef().Bindings["UnilangQt.native__"].Value
-		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(rctx),
+		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(intp),
 		std::ref(argc), argv));
 	intp.Perform(R"Unilang(
 		$def! UnilangQt $let ()
