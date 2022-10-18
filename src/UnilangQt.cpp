@@ -332,6 +332,27 @@ InitializeQtNative(Context& ctx, int& argc, char* argv[])
 		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->showFullScreen();
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(ctx, "QQuickView_set-source", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& window(*Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i));
+
+		window.setSource(QUrl(Unilang::ResolveRegular<string>(*++i).c_str()));
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(ctx, "QQuickView_set-transparent", [](TermNode& term){
+		RetainN(term, 1);
+
+		auto i(term.begin());
+		auto& window(*Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i));
+		auto sf(window.format());
+
+		sf.setAlphaBufferSize(8);
+		window.setFormat(sf);
+		window.setColor(Qt::transparent);
+		return ReduceReturnUnspecified(term);
+	});
 }
 
 } // unnamed namespace;
@@ -356,7 +377,8 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 				Qt.AlignCenter
 				make-QLabel QLabel-setText
 				make-QVBoxLayout QLayout-addWidget
-				make-QQuickView QQuickView-show QQuickView-showFullScreen;
+				make-QQuickView QQuickView-show QQuickView-showFullScreen
+				QQuickView_set-source QQuickView_set-transparent;
 			$def! impl__ $provide!
 			(
 				QWidget

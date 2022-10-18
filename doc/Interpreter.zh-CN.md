@@ -1075,4 +1075,6 @@ using string = basic_string<char>;
 	* `QtQuick`
 		* `QQuickView`
 			* `QQuickView-showFullScreen`
+		* `QQuickView_set-source`
+		* `QQuickView_set-transparent`
 
