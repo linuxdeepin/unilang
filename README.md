@@ -473,11 +473,21 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 ### Qt Demo
 
+A Unilang prograrm using QtWidgets is provided.
+
 ```
 ./unilang demo/qt.txt
 ```
 
 See `demo/qt.py` for the Python implementation with the equivalent functionality.
+
+There is another demo using QtQuick as a minimalized version like the Qt official `qmlscene` tool:
+
+```
+./unilang demo/qml.txt
+```
+
+This demo loads the source `demo/hello.qml` relative to the current working directory. Stay the root directory of the repository should be OK.
 
 ### Quicksort demo
 
