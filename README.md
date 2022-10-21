@@ -473,13 +473,21 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 ### Qt Demo
 
+A Unilang prograrm using QtWidgets is provided.
+
 ```
 ./unilang demo/qt.txt
 ```
 
 See `demo/qt.py` for the Python implementation with the equivalent functionality.
 
-**NOTE** This script can be directly executed. Running this Python script depends on Python 3 and PySide2. The OS may provide related packages. Otherwise, it can be installed using [`pip`](https://pip.pypa.io): `pip3 install pyside2`.
+There is another demo using QtQuick as a minimalized version like the Qt official `qmlscene` tool:
+
+```
+./unilang demo/qml.txt
+```
+
+This demo loads the source `demo/hello.qml` relative to the current working directory. Stay the root directory of the repository should be OK.
 
 ### Quicksort demo
 
