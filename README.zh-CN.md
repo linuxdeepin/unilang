@@ -469,13 +469,21 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 ### Qt Demo
 
+　　示例中包含使用 QtWidgets 的程序。
+
 ```
 ./unilang demo/qt.txt
 ```
 
 　　等价的 Python 实现参考 `demo/qt.py` 。
 
-**注释** 这个 Python 脚本可直接执行。脚本的运行依赖 Python 3 和 Pyside2 。操作系统可能提供相关的包。否则，Pyside2 也可以通过 [`pip`](https://pip.pypa.io) 安装：`pip3 install pyside2` 。
+　　另一个使用 QtQuick 的示例类似 Qt 官方 `qmlscene` 工具的最小化版本：
+
+```
+./unilang demo/qml.txt
+```
+
+　　这个示例加载相对当前工作目录的源文件 `demo/hello.qml` 。当前工作目录可以是存储库的根目录。
 
 ### Quicksort demo
 
