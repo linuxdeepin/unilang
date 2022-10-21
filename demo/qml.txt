@@ -1,0 +1,13 @@
+﻿import UnilangQt QCoreApplication-setAttribute Qt.AA_EnableHighDpiScaling
+	make-QApplication make-QQuickView QQuickView_set-source
+	QQuickView_set-transparent QQuickView-show QApplication-exec;
+
+() newline;
+
+QCoreApplication-setAttribute Qt.AA_EnableHighDpiScaling;
+def app () make-QApplication;
+def window () make-QQuickView;
+QQuickView_set-transparent window;
+QQuickView_set-source window "demo/hello.qml";
+QQuickView-show window;
+() QApplication-exec;

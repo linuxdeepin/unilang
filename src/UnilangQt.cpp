@@ -3,6 +3,7 @@
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
 //	YSLib::make_shared, std::bind, std::ref;
+#include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
 #include <cassert> // for assert;
 #include <iostream> // for std::cerr, std::endl, std::clog;
 #ifdef __GNUC__
@@ -15,11 +16,15 @@
 #	endif
 #endif
 #include <QHash> // for QHash;
+#include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
+//	Qt::ApplicationAttribute, Qt::AlignmentFlag;
+#include <QCoreApplication> // for QCoreApplication;
 #include <QApplication> // for QApplication;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QString, QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
+#include <QQuickView> // for QQuickView;
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
 #endif
@@ -143,6 +148,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	using namespace Forms;
 	using YSLib::make_shared;
 	auto& rctx(intp.Main);
+	auto& renv(rctx.GetRecordRef());
 
 	RegisterStrict(rctx, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
@@ -218,6 +224,26 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		});
 		return ReduceReturnUnspecified(term);
 	});
+	renv.Bindings["Qt.AA_EnableHighDpiScaling"].Value
+		= Qt::AA_EnableHighDpiScaling;
+	renv.Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
+	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
+		const auto n(FetchArgumentN(term));
+
+		if(n == 1 || n == 2)
+		{
+			auto i(term.begin());
+			const auto attribute(Unilang::ResolveRegular<
+				Qt::ApplicationAttribute>(*++i));
+
+			QCoreApplication::setAttribute(attribute,
+				n == 1 || ResolveRegular<bool>(*++i));
+			return ReduceReturnUnspecified(term);
+		}
+		if(n < 1)
+			ThrowInsufficientTermsError(term, {}, 1);
+		throw ArityMismatch(2, n);
+	});
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
@@ -268,7 +294,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			Unilang::ResolveRegular<string>(*++i).c_str()));
 		return ReductionStatus::Clean;
 	});
-	rctx.GetRecordRef().Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
 	RegisterStrict(rctx, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
 
@@ -307,6 +332,48 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(rctx, "make-QQuickView", [](TermNode& term){
+		RetainN(term, 0);
+		term.Value = make_shared<QQuickView>();
+		return ReductionStatus::Clean;
+	});
+	RegisterStrict(rctx, "QQuickView-show", [](TermNode& term){
+		RetainN(term, 1);
+
+		auto i(term.begin());
+
+		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->show();
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(rctx, "QQuickView-showFullScreen", [](TermNode& term){
+		RetainN(term, 1);
+
+		auto i(term.begin());
+
+		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->showFullScreen();
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(rctx, "QQuickView_set-source", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& window(*Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i));
+
+		window.setSource(QUrl(Unilang::ResolveRegular<string>(*++i).c_str()));
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(rctx, "QQuickView_set-transparent", [](TermNode& term){
+		RetainN(term, 1);
+
+		auto i(term.begin());
+		auto& window(*Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i));
+		auto sf(window.format());
+
+		sf.setAlphaBufferSize(8);
+		window.setFormat(sf);
+		window.setColor(Qt::transparent);
+		return ReduceReturnUnspecified(term);
+	});
 }
 
 } // unnamed namespace;
@@ -323,10 +390,17 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	intp.Perform(R"Unilang(
 		$def! UnilangQt $let ()
 		(
-			$import! UnilangQt.native__ QObject-connect make-QApplication
-				QApplication-exec make-QWidget QWidget-resize
-				QWidget-show QWidget-setLayout make-QPushButton Qt.AlignCenter
-				make-QLabel QLabel-setText make-QVBoxLayout QLayout-addWidget;
+			$import! UnilangQt.native__ QObject-connect
+				Qt.AA_EnableHighDpiScaling
+				QCoreApplication-setAttribute
+				make-QApplication QApplication-exec
+				make-QWidget QWidget-resize QWidget-show QWidget-setLayout
+				make-QPushButton
+				Qt.AlignCenter
+				make-QLabel QLabel-setText
+				make-QVBoxLayout QLayout-addWidget
+				make-QQuickView QQuickView-show QQuickView-showFullScreen
+				QQuickView_set-source QQuickView_set-transparent;
 			$def! impl__ $provide!
 			(
 				QWidget
