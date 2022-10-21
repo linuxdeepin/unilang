@@ -24,7 +24,7 @@ $YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp \
 $YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
 	;;
 *)
-	EXTRA_OPT="-pthread \
+	EXTRA_OPT="-fPIC -pthread \
 $YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
 esac
 
