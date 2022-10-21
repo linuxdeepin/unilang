@@ -73,7 +73,7 @@ ThrowInsufficientTermsError(const TermNode& term, bool has_ref, size_t n_skip)
 {
 	throw ParameterMismatch(ystdex::sfmt(
 		"Insufficient subterms found in '%s' for the list parameter.",
-		TermToStringWithReferenceMark(term, has_ref).c_str()));
+		TermToStringWithReferenceMark(term, has_ref, n_skip).c_str()));
 }
 
 void
