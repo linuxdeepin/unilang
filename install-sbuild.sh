@@ -70,6 +70,8 @@ else
 	# NOTE: Old GCC does not support LTO well. Disable it globally here.
 	sed -i 's/-flto=jobserver//g' \
 "$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
+	sed -i 's/-flto=auto//g' \
+"$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
 	sed -i 's/-flto//g' \
 "$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
 	# NOTE: Use debug library to work around the bogus LTO information in the
