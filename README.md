@@ -271,12 +271,12 @@ The following commands illustrates how to prepare the build environment by packa
 ```
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5-base mingw-w64-x86_64-qt5-declarative
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
 ```
 
 See also the [environment configuration](#environment-configuration) below for some optional additional dependencies.
@@ -285,9 +285,10 @@ See also the [environment configuration](#environment-configuration) below for s
 
 * [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) is used.
 * `QT_NAMESPACE` is not supported.
-* Only headers and library files in the filesystem are used. There is no dependencies of other Qt files.
-* The compiler option `-I$PREFIX/include/QtWidgets` is used, where `$PREFIX` is the filesystem prefix of the header inclusion directory.
-* The linker option `-lQt5Widgets -lQt5Core` is used.
+* Only Qt files installed in the filesystem are used.
+* Dependencies shall be found by `pkg-config`, for following packages:
+	* `Qt5Widgets`
+	* `Qt5Quick`
 
 ## Updating the build environment
 
