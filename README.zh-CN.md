@@ -268,12 +268,12 @@
 ```
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5
+pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5-base mingw-w64-x86_64-qt5-declarative
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
 ```
 
 　　另见以下的[环境配置](#环境配置)安装更多可选的依赖。
@@ -282,9 +282,10 @@ sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5
 
 * 使用 [Itanium C++ ABI](https://itanium-cxx-abi.github.io/cxx-abi/abi.html) 。
 * 不支持 `QT_NAMESPACE` 。
-* 直接依赖头文件和库文件在文件系统中的布局，不使用其它文件。
-* 使用编译器选项 `-I$PREFIX/include/QtWidgets` ，其中 `$PREFIX` 是头文件目录的系统前缀。
-* 使用链接器选项 `-lQt5Widgets -lQt5Core` 。
+* 直接依赖文件系统中的安装的 Qt 文件。
+* 以下依赖项应当被 `pkg-config` 找到：
+	* `Qt5Widgets`
+	* `Qt5Quick`
 
 ## 构建环境更新
 
