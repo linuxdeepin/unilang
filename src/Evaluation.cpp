@@ -309,12 +309,28 @@ public:
 };
 
 
+struct LContinuation final
+{
+	lref<const ContextHandler> Handler;
+
+	LContinuation(const ContextHandler& h)
+		: Handler(h)
+	{}
+
+	ReductionStatus
+	operator()(Context& ctx) const
+	{
+		return Handler(ctx.GetNextTermRef(), ctx);
+	}
+};
+
+
 ReductionStatus
 CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx)
 {
 	ctx.ClearCombiningTerm();
 	ctx.SetNextTermRef(term);
-	return RelaySwitched(ctx, Continuation(std::ref(h), ctx));
+	return RelaySwitched(ctx, LContinuation(h));
 }
 
 YB_NORETURN ReductionStatus
@@ -382,6 +398,7 @@ ReduceChildrenOrderedAsync(TNIter first, TNIter last, Context& ctx)
 	return first != last ? ReduceChildrenOrderedAsyncUnchecked(first, last, ctx)
 		: ReductionStatus::Neutral;
 }
+
 
 struct EvalSequence final
 {
