@@ -207,11 +207,16 @@ WrapContextHandler(_func&& h, const _tAlloc& a)
 class FormContextHandler
 	: private ystdex::equality_comparable<FormContextHandler>
 {
+private:
+	using Caller = ReductionStatus(*)(const FormContextHandler&, TermNode&,
+		Context&);
+
 public:
 	ContextHandler Handler;
 
 private:
 	size_t wrapping;
+	mutable Caller call_n = {};
 
 public:
 	template<typename _func,
