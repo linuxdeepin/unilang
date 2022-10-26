@@ -1345,7 +1345,7 @@ FormContextHandler::CheckArguments(size_t n, const TermNode& term)
 bool
 FormContextHandler::Equals(const FormContextHandler& fch) const
 {
-	if(Wrapping == fch.Wrapping)
+	if(wrapping == fch.wrapping)
 	{
 		if(Handler == fch.Handler)
 			return true;

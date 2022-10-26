@@ -17,10 +17,10 @@
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/function.hpp> // for ystdex::make_function_type_t,
 //	ystdex::make_parameter_list_t, function;
+#include <cassert> // for assert;
+#include <utility> // for std::declval;
 #include "TermAccess.h" // for AssertCombiningTerm;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include <cassert> // for assert;
-#include <type_traits> // for std::is_constructibe;
 #include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
 #include <ystdex/functional.hpp> // for ystdex::expanded_caller;
 
@@ -209,19 +209,22 @@ class FormContextHandler
 {
 public:
 	ContextHandler Handler;
-	size_t Wrapping;
 
+private:
+	size_t wrapping;
+
+public:
 	template<typename _func,
 		typename = ystdex::exclude_self_t<FormContextHandler, _func>>
 	FormContextHandler(_func&& f, size_t n = 0)
 		: Handler(Unilang::WrapContextHandler<ContextHandler>(yforward(f))),
-		Wrapping(n)
+		wrapping(n)
 	{}
 	template<typename _func, class _tAlloc>
 	FormContextHandler(std::allocator_arg_t, const _tAlloc& a, _func&& f,
 		size_t n = 0)
 		: Handler(std::allocator_arg, a, Unilang::WrapContextHandler<
-		ContextHandler>(yforward(f), a)), Wrapping(n)
+		ContextHandler>(yforward(f), a)), wrapping(n)
 	{}
 	FormContextHandler(const FormContextHandler&) = default;
 	FormContextHandler(FormContextHandler&&) = default;
@@ -240,8 +243,14 @@ public:
 	ReductionStatus
 	operator()(TermNode& term, Context& ctx) const
 	{
-		CheckArguments(Wrapping, term);
-		return CallN(Wrapping, term, ctx);
+		CheckArguments(wrapping, term);
+		return CallN(wrapping, term, ctx);
+	}
+
+	YB_ATTR_nodiscard YB_PURE size_t
+	GetWrappingCount() const noexcept
+	{
+		return wrapping;
 	}
 
 private:
@@ -255,6 +264,14 @@ public:
 private:
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const FormContextHandler&) const;
+
+public:
+	void
+	Unwrap() noexcept
+	{
+		assert(wrapping != 0 && "An operative cannot be unwrapped.");
+		--wrapping;
+	}
 };
 
 template<typename... _tParams>
@@ -286,7 +303,8 @@ ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
 } // inline namespace Internals;
 
 
-enum WrappingKind : decltype(FormContextHandler::Wrapping)
+enum WrappingKind
+	: decltype(std::declval<FormContextHandler>().GetWrappingCount())
 {
 	Form = 0,
 	Strict = 1
