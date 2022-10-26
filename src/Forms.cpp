@@ -449,7 +449,7 @@ WrapOrRef(TermNode& term, _func f)
 {
 	return WrapUnwrap(term,
 		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
-		const auto n(fch.Wrapping + 1);
+		const auto n(fch.GetWrappingCount() + 1);
 
 		if(n != 0)
 			return _rWrap(term, p_ref, fch, n);
@@ -896,12 +896,12 @@ Unwrap(TermNode& term)
 {
 	return WrapUnwrap(term,
 		[&](FormContextHandler& fch, ResolvedTermReferencePtr p_ref){
-		if(fch.Wrapping != 0)
+		if(fch.GetWrappingCount() != 0)
 			return MakeValueOrMove(p_ref, [&]{
 				return ReduceForCombinerRef(term, Unilang::Deref(p_ref),
-					fch.Handler, fch.Wrapping - 1);
+					fch.Handler, fch.GetWrappingCount() - 1);
 			}, [&]{
-				--fch.Wrapping;
+				fch.Unwrap();
 				return WrapH(term, std::move(fch));
 			});
 		throw TypeError("Unwrapping failed on an operative argument.");
