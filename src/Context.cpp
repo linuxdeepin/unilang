@@ -12,6 +12,7 @@
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include "TermAccess.h" // for Unilang::IsMovable;
 #include "Forms.h" // for Forms::Sequence, ReduceBranchToList;
+#include "Evaluation.h" // for Strict;
 #include <ystdex/functor.hpp> // for ystdex::id;
 #include <algorithm> // for std::find_if;
 #include "Syntax.h" // for ReduceSyntax;
@@ -437,7 +438,7 @@ SeparatorPass::TransformationSpec::TransformationSpec(TokenValue delim,
 
 SeparatorPass::SeparatorPass(TermNode::allocator_type a)
 	: allocator(a), transformations({{";", ContextHandler(Forms::Sequence)},
-	{",", ContextHandler(FormContextHandler(ReduceBranchToList, 1))},
+	{",", ContextHandler(FormContextHandler(ReduceBranchToList, Strict))},
 	{[](const TermNode& nd) noexcept{
 		return HasValue<TokenValue>(nd, ":=");
 	}, [](const ValueObject&){
