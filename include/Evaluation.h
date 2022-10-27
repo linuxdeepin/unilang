@@ -7,7 +7,8 @@
 //	type_id, YSLib::Logger;
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
-//	YSLib::GHEvent, ContextHandler, std::allocator_arg_t, HasValue;
+//	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
+//	HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
@@ -19,6 +20,13 @@
 //	ystdex::make_parameter_list_t, function;
 #include <cassert> // for assert;
 #include <utility> // for std::declval;
+#include <ystdex/type_op.hpp> // for ystdex::is_instance_of;
+#include <ystdex/integral_constant.hpp> // for ystdex::nor_, ystdex::size_t_;
+#include <tuple> // for std::tuple, std::forward_as_tuple;
+#include <type_traits> // for std::is_same;
+#include <ystdex/variadic.hpp> // for ystdex::vseq::_a;
+#include <ystdex/meta.hpp> // for ystdex::enable_if_t, ystdex::is_same_param;
+#include <ystdex/apply.hpp> // for ystdex::apply;
 #include "TermAccess.h" // for AssertCombiningTerm;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
@@ -208,6 +216,15 @@ class FormContextHandler
 	: private ystdex::equality_comparable<FormContextHandler>
 {
 private:
+	struct PTag final
+	{};
+	template<typename _type>
+	using NotTag = ystdex::nor_<ystdex::is_instance_of<_type,
+		ystdex::vseq::_a<std::tuple>>, std::is_same<_type, PTag>,
+		std::is_same<_type, std::allocator_arg_t>>;
+	template<typename _tParam>
+	using MaybeFunc = ystdex::enable_if_t<NotTag<_tParam>::value
+		&& !ystdex::is_same_param<FormContextHandler, _tParam>::value>;
 	using Caller = ReductionStatus(*)(const FormContextHandler&, TermNode&,
 		Context&);
 
@@ -216,21 +233,56 @@ public:
 
 private:
 	size_t wrapping;
-	mutable Caller call_n = {};
+	mutable Caller call_n = DoCallN;
 
 public:
-	template<typename _func,
-		typename = ystdex::exclude_self_t<FormContextHandler, _func>>
-	FormContextHandler(_func&& f, size_t n = 0)
-		: Handler(Unilang::WrapContextHandler<ContextHandler>(yforward(f))),
-		wrapping(n)
+	template<typename _func, typename... _tParams,
+		yimpl(typename = MaybeFunc<_func>)>
+	inline
+	FormContextHandler(_func&& f, _tParams&&... args)
+		: FormContextHandler(
+		std::forward_as_tuple(yforward(f)), yforward(args)...)
 	{}
-	template<typename _func, class _tAlloc>
+	template<typename _func, class _tAlloc, typename... _tParams>
+	inline
 	FormContextHandler(std::allocator_arg_t, const _tAlloc& a, _func&& f,
-		size_t n = 0)
-		: Handler(std::allocator_arg, a, Unilang::WrapContextHandler<
-		ContextHandler>(yforward(f), a)), wrapping(n)
+		_tParams&&... args)
+		: FormContextHandler(std::forward_as_tuple(std::allocator_arg, a,
+		yforward(f)), yforward(args)...)
 	{}
+
+private:
+	template<typename... _tFuncParams>
+	inline
+	FormContextHandler(std::tuple<_tFuncParams...> func_args)
+		: Handler(InitWrap(func_args)), wrapping(0), call_n(DoCall0)
+	{}
+	template<typename... _tFuncParams>
+	inline
+	FormContextHandler(std::tuple<_tFuncParams...> func_args,
+		ystdex::size_t_<0>)
+		: Handler(InitWrap(func_args)), wrapping(0), call_n(DoCall0)
+	{}
+	template<typename... _tFuncParams>
+	inline
+	FormContextHandler(std::tuple<_tFuncParams...> func_args,
+		ystdex::size_t_<1>)
+		: Handler(InitWrap(func_args)), wrapping(1), call_n(DoCall1)
+	{}
+	template<typename... _tFuncParams, size_t _vN,
+		yimpl(typename = ystdex::enable_if_t<(_vN > 1)>)>
+	inline
+	FormContextHandler(std::tuple<_tFuncParams...> func_args,
+		ystdex::size_t_<_vN>)
+		: Handler(InitWrap(func_args)), wrapping(_vN), call_n(DoCallN)
+	{}
+	template<typename... _tFuncParams>
+	inline
+	FormContextHandler(std::tuple<_tFuncParams...> func_args, size_t n)
+		: Handler(InitWrap(func_args)), wrapping(n), call_n(InitCall(n))
+	{}
+
+public:
 	FormContextHandler(const FormContextHandler&) = default;
 	FormContextHandler(FormContextHandler&&) = default;
 
@@ -267,8 +319,40 @@ public:
 	CheckArguments(size_t, const TermNode&);
 
 private:
+	static ReductionStatus
+	DoCall0(const FormContextHandler&, TermNode&, Context&);
+
+	static ReductionStatus
+	DoCall1(const FormContextHandler&, TermNode&, Context&);
+
+	static ReductionStatus
+	DoCallN(const FormContextHandler&, TermNode&, Context&);
+
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const FormContextHandler&) const;
+
+	YB_ATTR_nodiscard YB_ATTR_returns_nonnull YB_PURE constexpr static
+		PDefH(Caller, InitCall, size_t n) noexcept
+	{
+		return n == 0 ? DoCall0 : (n == 1 ? DoCall1 : DoCallN);
+	}
+
+	template<typename... _tParams>
+	YB_ATTR_nodiscard static inline auto
+	InitHandler(_tParams&&... args) -> decltype(Unilang::WrapContextHandler<
+		ContextHandler>(yforward(args)...))
+	{
+		return Unilang::WrapContextHandler<ContextHandler>(yforward(args)...);
+	}
+
+	template<typename... _tFuncParams>
+	YB_ATTR_nodiscard static inline auto
+	InitWrap(std::tuple<_tFuncParams...>& func_args) -> decltype(ystdex::apply(
+		InitHandler<_tFuncParams...>, std::move(func_args)))
+	{
+		return
+			ystdex::apply(InitHandler<_tFuncParams...>, std::move(func_args));
+	}
 
 public:
 	void
@@ -276,6 +360,7 @@ public:
 	{
 		assert(wrapping != 0 && "An operative cannot be unwrapped.");
 		--wrapping;
+		call_n = InitCall(wrapping);
 	}
 };
 

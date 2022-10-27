@@ -1342,6 +1342,30 @@ FormContextHandler::CheckArguments(size_t n, const TermNode& term)
 		AssertCombiningTerm(term);
 }
 
+ReductionStatus
+FormContextHandler::DoCall0(const FormContextHandler& fch, TermNode& term,
+	Context& ctx)
+{
+	assert(fch.wrapping == 0 && "Unexpected wrapping count found.");
+	return fch.CallN(0, term, ctx);
+}
+
+ReductionStatus
+FormContextHandler::DoCall1(const FormContextHandler& fch, TermNode& term,
+	Context& ctx)
+{
+	assert(fch.wrapping == 1 && "Unexpected wrapping count found.");
+	return fch.CallN(1, term, ctx);
+}
+
+ReductionStatus
+FormContextHandler::DoCallN(const FormContextHandler& fch, TermNode& term,
+	Context& ctx)
+{
+	assert(fch.wrapping > 1 && "Unexpected wrapping count found.");
+	return fch.CallN(fch.wrapping, term, ctx);
+}
+
 bool
 FormContextHandler::Equals(const FormContextHandler& fch) const
 {
