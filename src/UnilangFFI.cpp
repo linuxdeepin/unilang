@@ -23,6 +23,7 @@
 #include <ffi.h> // for ::ffi_type;
 #include "Forms.h" // for ContextHandler, RetainN, RegisterUnary,
 //	RegisterStrict;
+#include "Evaluation.h" // for Strict;
 
 namespace Unilang
 {
@@ -529,7 +530,7 @@ InitializeFFI(Interpreter& intp)
 			}
 			else
 				throw InvalidSyntax("Invalid function application found.");
-		}, 1));
+		}, Strict));
 		return ReductionStatus::Clean;
 	});
 	RegisterStrict(ctx, "ffi-make-callback", [](TermNode& term, Context& c){
