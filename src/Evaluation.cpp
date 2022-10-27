@@ -22,8 +22,9 @@
 #include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
-#include "TCO.h" // for RefTCOAction, Action, RelayDirect, EnsureTCOAction,
-//	TCOAction, ActiveCombiner;
+#include "TCO.h" // for RefTCOAction, Action, RelayDirect,
+//	Unilang::RelayCurrentOrDirect, AssertNextTerm, EnsureTCOAction, TCOAction,
+//	ActiveCombiner;
 #include <ystdex/functional.hpp> // for std::ref, ystdex::retry_on_cond,
 //	ystdex::update_thunk;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
@@ -397,6 +398,15 @@ ReduceChildrenOrderedAsync(TNIter first, TNIter last, Context& ctx)
 {
 	return first != last ? ReduceChildrenOrderedAsyncUnchecked(first, last, ctx)
 		: ReductionStatus::Neutral;
+}
+
+ReductionStatus
+ReduceCallArguments(TermNode& term, Context& ctx)
+{
+	assert(!term.empty() && "Invalid term found.");
+	ReduceChildrenOrderedAsyncUnchecked(std::next(term.begin()), term.end(),
+		ctx);
+	return ReductionStatus::Partial;
 }
 
 
@@ -1353,7 +1363,8 @@ FormContextHandler::DoCall0(const FormContextHandler& fch, TermNode& term,
 	Context& ctx)
 {
 	assert(fch.wrapping == 0 && "Unexpected wrapping count found.");
-	return fch.CallN(0, term, ctx);
+	AssertNextTerm(ctx, term);
+	return fch.CallHandler(term, ctx);
 }
 
 ReductionStatus
@@ -1361,7 +1372,13 @@ FormContextHandler::DoCall1(const FormContextHandler& fch, TermNode& term,
 	Context& ctx)
 {
 	assert(fch.wrapping == 1 && "Unexpected wrapping count found.");
-	return fch.CallN(1, term, ctx);
+	AssertNextTerm(ctx, term);
+	return term.size() <= 1 ? fch.CallHandler(term, ctx)
+		: Unilang::RelayCurrentNext(ctx, term, ReduceCallArguments,
+		NameTypedReducerHandler([&](Context& c){
+		c.SetNextTermRef(term);
+		return fch.CallHandler(term, c);
+	}, "eval-combine-operator"));
 }
 
 ReductionStatus
