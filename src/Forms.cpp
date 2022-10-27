@@ -12,8 +12,7 @@
 //	ListTypeError;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
-//	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler,
-//	NameTypedContextHandler;
+//	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
 #include "Lexical.h" // for IsUnilangSymbol;
 #include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
@@ -887,7 +886,7 @@ WrapRef(TermNode& term)
 	return WrapOrRef<WrapRefN>(term,
 		[&](ContextHandler& h, ResolvedTermReferencePtr p_ref){
 		return p_ref ? ReduceForCombinerRef(term, *p_ref, h, 1)
-			: WrapH(term, FormContextHandler(std::move(std::move(h)), 1));
+			: WrapH(term, FormContextHandler(std::move(std::move(h)), Strict));
 	});
 }
 
