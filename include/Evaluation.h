@@ -310,6 +310,9 @@ public:
 		return wrapping;
 	}
 
+	ReductionStatus
+	CallHandler(TermNode&, Context&) const;
+
 private:
 	ReductionStatus
 	CallN(size_t, TermNode&, Context&) const;

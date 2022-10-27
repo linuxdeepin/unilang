@@ -1319,10 +1319,16 @@ ParseLeafWithSourceInformation(TermNode& term, string_view id,
 
 
 ReductionStatus
+FormContextHandler::CallHandler(TermNode& term, Context& ctx) const
+{
+	return Unilang::RelayCurrentOrDirect(ctx, std::ref(Handler), term);
+}
+
+ReductionStatus
 FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 {
 	if(n == 0 || term.size() <= 1)
-		return Unilang::RelayCurrentOrDirect(ctx, std::ref(Handler), term);
+		return FormContextHandler::CallHandler(term, ctx);
 	return Unilang::RelayCurrentNext(ctx, term, [](TermNode& t, Context& c){
 		assert(!t.empty() && "Invalid term found.");
 		ReduceChildrenOrderedAsyncUnchecked(std::next(t.begin()), t.end(), c);
