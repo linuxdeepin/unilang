@@ -87,21 +87,21 @@ void
 ThrowListTypeErrorForInvalidType(const char* name, const TermNode& term,
 	bool has_ref, size_t n_skip)
 {
-	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got"
-		" '%s'.", name, TermToStringWithReferenceMark(term, has_ref).c_str()));
+	throw ListTypeError(ystdex::sfmt("Expected a value of type '%s', got '%s'.",
+		name, TermToStringWithReferenceMark(term, has_ref, n_skip).c_str()));
 }
 void
 ThrowListTypeErrorForInvalidType(const type_info& ti,
 	const TermNode& term, bool has_ref, size_t n_skip)
 {
-	ThrowListTypeErrorForInvalidType(ti.name(), term, has_ref);
+	ThrowListTypeErrorForInvalidType(ti.name(), term, has_ref, n_skip);
 }
 
 void
 ThrowListTypeErrorForNonList(const TermNode& term, bool has_ref, size_t n_skip)
 {
 	throw ListTypeError(ystdex::sfmt("Expected a list, got '%s'.",
-		TermToStringWithReferenceMark(term, has_ref).c_str()));
+		TermToStringWithReferenceMark(term, has_ref, n_skip).c_str()));
 }
 
 void
