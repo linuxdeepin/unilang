@@ -1,6 +1,7 @@
 ﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "JIT.h"
+#if !UNILANG_NO_LLVM
 #if __GNUG__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
@@ -14,6 +15,7 @@
 //	llvm::InitializeNativeTargetAsmParser;
 #if __GNUG__
 #	pragma GCC diagnostic pop
+#endif
 #endif
 
 namespace Unilang
@@ -36,9 +38,11 @@ public:
 
 Driver::Driver()
 {
+#if !UNILANG_NO_LLVM
 	llvm::InitializeNativeTarget();
 	llvm::InitializeNativeTargetAsmPrinter();
 	llvm::InitializeNativeTargetAsmParser();
+#endif
 	InitializeModuleAndPassManager();
 }
 
