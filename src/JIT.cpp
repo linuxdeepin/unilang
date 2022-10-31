@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2021 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "JIT.h"
 #if __GNUG__
@@ -68,7 +68,7 @@ SetupJIT(Context& ctx)
 }
 
 void
-llvm_main()
+JITMain()
 {
 	Driver d;
 

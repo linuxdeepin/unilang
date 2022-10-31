@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2021 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_JIT_h_
 #define INC_Unilang_JIT_h_ 1
@@ -34,7 +34,7 @@ void
 SetupJIT(Context&);
 
 void
-llvm_main();
+JITMain();
 
 } // namespace Unilang;
 

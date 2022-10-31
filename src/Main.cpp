@@ -1069,7 +1069,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.103"
+#define APP_VER "0.12.137"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -1138,7 +1138,8 @@ main(int argc, char* argv[])
 				Interpreter intp{};
 
 				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
-				llvm_main();
+				if(Unilang_UseJIT)
+					JITMain();
 				for(const auto& str : eval_strs)
 					intp.RunLine(str);
 				intp.RunScript(std::move(src));
@@ -1164,7 +1165,8 @@ main(int argc, char* argv[])
 				<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]")
 				<< " ..." << endl;
 			LoadFunctions(intp, Unilang_UseJIT, argc, argv);
-			llvm_main();
+			if(Unilang_UseJIT)
+				JITMain();
 			cout << "Initialization finished." << endl;
 			cout << "Type \"exit\" to exit." << endl << endl;
 			intp.Run();
