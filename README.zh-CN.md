@@ -276,6 +276,8 @@ yay -S llvm70 # Or some other AUR frontend command.
 sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
 ```
 
+　　若系统不提供 LLVM 7 包，可能需要自行构建。本项目中，环境变量 `USE_LLVM_PREFIX` 指定自定义的 LLVM 的安装路径前缀，被脚本按需使用。
+
 　　另见以下的[环境配置](#环境配置)安装更多可选的依赖。
 
 ### Qt 环境要求和假设

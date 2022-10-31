@@ -279,6 +279,8 @@ yay -S llvm70 # Or some other AUR frontend command.
 sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
 ```
 
+If there is no LLVM 7 provided by the system, you may need to build it by yourself. In this project, the environment variable `USE_LLVM_PREFIX` specifies the custom path prefix of the LLVM installation, and it will be used by the scripts when needed.
+
 See also the [environment configuration](#environment-configuration) below for some optional additional dependencies.
 
 ### Qt environment requirements and assumptions
