@@ -8,8 +8,8 @@ set -e
 
 test_llvm7_prefix()
 {
-	for pfx in "/usr/lib/llvm-7" "/opt/llvm70" "/opt/llvm70" "/usr/local" \
-		"/usr"; do
+	for pfx in "$USE_LLVM_PREFIX" '/usr/lib/llvm-7' '/opt/llvm70' \
+		'/opt/llvm70' '/usr/local' '/usr'; do
 		if [[ -x "$pfx/bin/llvm-config" ]]; then
 			if [[ $("$pfx/bin/llvm-config" --version) =~ 7\..+ ]]; then
 				LLVM_PREFIX="$("$pfx/bin/llvm-config" --prefix)"
@@ -25,6 +25,7 @@ if [[ -d "$LLVM_PREFIX" ]]; then
 	echo 'Found LLVM 7 prefix:' "$LLVM_PREFIX"
 else
 	echo 'ERROR: Failed to find LLVM 7.'
+	echo 'Please specify the installation prefix in $USE_LLVM_PREFIX.'
 	exit 1
 fi
 echo 'LLVM version:' "$("$LLVM_BINDIR/llvm-config" --version)"
