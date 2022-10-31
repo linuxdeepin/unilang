@@ -261,7 +261,7 @@ The following dependencies are optional:
 The binary form of the following dependencies are also used:
 
 * libffi
-* LLVM 7
+* LLVM 7 (optional)
 	* `llvm-config`
 * Qt 5
 * `pkg-config`
@@ -278,6 +278,10 @@ yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
 sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
 ```
+
+LLVM is optional. Use non-empty environment variable `UNILANG_NO_LLVM` to avoid using of LLVM in building the interpreter. LLVM-based JIT is then disabled.
+
+**NOTE** There may be different version of LLVM provided by the system, which would clash with LLVM 7 on loading. Currently mixing different version of LLVM is not supported. Thus, `UNILANG_NO_LLVM` is needed in such case.
 
 If there is no LLVM 7 provided by the system, you may need to build it by yourself. In this project, the environment variable `USE_LLVM_PREFIX` specifies the custom path prefix of the LLVM installation, and it will be used by the scripts when needed.
 
