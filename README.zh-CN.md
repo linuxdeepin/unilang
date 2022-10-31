@@ -258,7 +258,7 @@
 　　构建使用外部二进制依赖和相关工具：
 
 * libffi
-* LLVM 7
+* LLVM 7（可选）
 	* `llvm-config`
 * Qt 5
 * `pkg-config`
@@ -275,6 +275,10 @@ yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
 sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
 ```
+
+　　LLVM 是可选的。使用非空的环境变量 `UNILANG_NO_LLVM` 指定构建解释器时不使用 LLVM 。基于 LLVM 的 JIT 实现会被禁用。
+
+**注释** 系统可能提供的不同版本的 LLVM ，被动态加载时可能会和 LLVM 7 冲突。当前不支持混用不同版本的 LLVM 。这种情形需要指定 `UNILANG_NO_LLVM` 。
 
 　　若系统不提供 LLVM 7 包，可能需要自行构建。本项目中，环境变量 `USE_LLVM_PREFIX` 指定自定义的 LLVM 的安装路径前缀，被脚本按需使用。
 
