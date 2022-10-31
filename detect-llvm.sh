@@ -6,6 +6,8 @@ set -e
 
 # XXX: Currently we stick to LLVM 7.
 
+if [[ ! "$UNILANG_NO_LLVM" ]]; then
+
 test_llvm7_prefix()
 {
 	for pfx in "$USE_LLVM_PREFIX" '/usr/lib/llvm-7' '/opt/llvm70' \
@@ -40,4 +42,13 @@ fi
 # NOTE: Loading local symbol in LLVM IR requires '--export-dynamic'.
 LIBS_EXTRA="$("$LLVM_BINDIR/llvm-config" --ldflags) \
 $("$LLVM_BINDIR/llvm-config" --libs) -lffi -Wl,--export-dynamic"
+
+else
+
+echo 'LLVM support is disabled.'
+CXXFLAGS_EXTRA='-DUNILANG_NO_LLVM=1'
+# XXX: Some other dependencies are still needed.
+LIBS_EXTRA='-lffi'
+
+fi
 
