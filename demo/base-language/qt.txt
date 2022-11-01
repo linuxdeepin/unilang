@@ -1,6 +1,5 @@
 ﻿$import! std.classes make-class make-object $access;
-$import! UnilangQt QWidget
-	make-QPushButton make-QLabel make-QPushButton make-QLabel Qt.AlignCenter
+$import! UnilangQt QWidget make-QPushButton make-QLabel Qt.AlignCenter
 	make-QVBoxLayout QLayout-addWidget QObject-connect QLabel-setText
 	make-QApplication QApplication-exec;
 
