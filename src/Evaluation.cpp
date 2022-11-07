@@ -326,6 +326,13 @@ struct GLContinuation final
 	}
 };
 
+template<typename _func>
+YB_ATTR_nodiscard YB_PURE inline GLContinuation<_func>
+MakeGLContinuation(_func f) noexcept(noexcept(std::declval<_func>()))
+{
+	return GLContinuation<_func>(f);
+}
+
 
 ReductionStatus
 CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx)
@@ -388,10 +395,10 @@ ReduceChildrenOrderedAsyncUnchecked(TNIter first, TNIter last, Context& ctx)
 
 	auto& term(*first++);
 
-	return ReduceSubsequent(term, ctx, Continuation(NameTypedContextHandler(
-		[first, last](TermNode&, Context& c){
+	return first != last ? ReduceSubsequent(term, ctx, NameTypedReducerHandler(
+		MakeGLContinuation([first, last](TermNode&, Context& c){
 		return ReduceChildrenOrderedAsync(first, last, c);
-	}, "eval-argument-list"), ctx));
+	}), "eval-argument-list")) : ReduceOnce(term, ctx);
 }
 
 inline ReductionStatus
@@ -1340,11 +1347,8 @@ FormContextHandler::CallN(size_t n, TermNode& term, Context& ctx) const
 {
 	if(n == 0 || term.size() <= 1)
 		return FormContextHandler::CallHandler(term, ctx);
-	return Unilang::RelayCurrentNext(ctx, term, [](TermNode& t, Context& c){
-		assert(!t.empty() && "Invalid term found.");
-		ReduceChildrenOrderedAsyncUnchecked(std::next(t.begin()), t.end(), c);
-		return ReductionStatus::Partial;
-	}, NameTypedReducerHandler([&, n](Context& c){
+	return Unilang::RelayCurrentNext(ctx, term, ReduceCallArguments,
+		NameTypedReducerHandler([&, n](Context& c){
 		c.SetNextTermRef(term);
 		return CallN(n - 1, term, c);
 	}, "eval-combine-operator"));
