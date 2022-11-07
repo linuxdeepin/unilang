@@ -22,11 +22,11 @@
 #include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
-#include "TCO.h" // for RefTCOAction, Action, RelayDirect,
-//	Unilang::RelayCurrentOrDirect, AssertNextTerm, EnsureTCOAction, TCOAction,
-//	ActiveCombiner;
+#include <utility> // for std::declval;
 #include <ystdex/functional.hpp> // for std::ref, ystdex::retry_on_cond,
 //	ystdex::update_thunk;
+#include "TCO.h" // for Action, RelayDirect, Unilang::RelayCurrentOrDirect,
+//	AssertNextTerm, EnsureTCOAction, TCOAction, ActiveCombiner;
 #include <ystdex/type_traits.hpp> // for ystdex::false_, ystdex::true_;
 #include <tuple> // for std::tuple, std::get;
 #include <iterator> // for std::prev;
@@ -310,11 +310,12 @@ public:
 };
 
 
-struct LContinuation final
+template<typename _func = lref<const ContextHandler>>
+struct GLContinuation final
 {
-	lref<const ContextHandler> Handler;
+	_func Handler;
 
-	LContinuation(const ContextHandler& h)
+	GLContinuation(_func h) noexcept(noexcept(std::declval<_func>()))
 		: Handler(h)
 	{}
 
@@ -331,7 +332,7 @@ CombinerReturnThunk(const ContextHandler& h, TermNode& term, Context& ctx)
 {
 	ctx.ClearCombiningTerm();
 	ctx.SetNextTermRef(term);
-	return RelaySwitched(ctx, LContinuation(h));
+	return RelaySwitched(ctx, GLContinuation<>(h));
 }
 
 YB_NORETURN ReductionStatus
@@ -1529,7 +1530,7 @@ AddTypeNameTableEntry(const type_info& ti, string_view sv)
 string_view
 QueryContinuationName(const Reducer& act)
 {
-	if(IsTyped<LContinuation>(act))
+	if(IsTyped<GLContinuation<>>(act))
 		return QueryTypeName(type_id<ContextHandler>());
 	if(const auto p_cont = act.target<Continuation>())
 		return QueryTypeName(p_cont->Handler.target_type());
