@@ -255,7 +255,6 @@ VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
 {
 private:
-	string eformal{};
 	shared_ptr<TermNode> p_formals;
 	mutable ValueObject parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
@@ -264,20 +263,24 @@ private:
 public:
 	bool NoLifting = {};
 
+private:
+	string eformal{};
+
+public:
 	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
 		ValueObject&& vo, TermNode& term, bool nl)
-		: eformal(std::move(ename)), p_formals((CheckParameterTree(Deref(p_fm)),
-		std::move(p_fm))), parent(std::move(vo)),
-		p_eval_struct((AssertValueTags(term), ShareMoveTerm(
-		ystdex::exchange(term, Unilang::AsTermNode(term.get_allocator()))))),
-		call(eformal.empty() ? CallStatic : CallDynamic), NoLifting(nl)
+		: p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
+		parent(std::move(vo)), p_eval_struct((AssertValueTags(term),
+		ShareMoveTerm(ystdex::exchange(term,
+		Unilang::AsTermNode(term.get_allocator()))))), call(ename.empty()
+		? CallStatic : CallDynamic), NoLifting(nl), eformal(std::move(ename))
 	{}
 
 	friend bool
 	operator==(const VauHandler& x, const VauHandler& y)
 	{
-		return x.eformal == y.eformal && x.p_formals == y.p_formals
-			&& x.parent == y.parent && x.NoLifting == y.NoLifting;
+		return x.p_formals == y.p_formals && x.parent == y.parent
+			&& x.NoLifting == y.NoLifting && x.eformal == y.eformal;
 	}
 
 	ReductionStatus
