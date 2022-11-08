@@ -66,7 +66,7 @@ PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)
 {
 	return IsTyped<TermReference>(term) ? term : Unilang::AsTermNode(
 		term.get_allocator(), TermReference(p_env->MakeTermTags(term), term,
-		Unilang::Nonnull(p_env)));
+		Unilang::Nonnull(p_env), Unilang::Deref(p_env).GetAnchorPtr()));
 }
 
 
