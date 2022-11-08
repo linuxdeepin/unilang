@@ -167,6 +167,38 @@ CreateEnvironment(TermNode& term)
 }
 
 
+YB_ATTR_nodiscard YB_PURE ValueObject
+MakeParent(ValueObject&& vo)
+{
+	Environment::CheckParent(vo);
+	return std::move(vo);
+}
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+MakeParentSingle(TermNode::allocator_type a,
+	pair<shared_ptr<Environment>, bool> pr)
+{
+	auto& p_env(pr.first);
+
+	Environment::EnsureValid(p_env);
+	if(pr.second)
+		return ValueObject(std::allocator_arg, a,
+			in_place_type<shared_ptr<Environment>>, std::move(p_env));
+	return ValueObject(std::allocator_arg, a,
+		in_place_type<EnvironmentReference>, std::move(p_env));
+}
+
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+MakeParentSingleNonOwning(TermNode::allocator_type a,
+	const shared_ptr<Environment>& p_env)
+{
+	Environment::EnsureValid(p_env);
+	return ValueObject(std::allocator_arg, a,
+		in_place_type<EnvironmentReference>, p_env);
+}
+
+
 class VauHandler final : private ystdex::equality_comparable<VauHandler>
 {
 private:
@@ -263,38 +295,6 @@ private:
 		}
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
-
-public:
-	YB_ATTR_nodiscard YB_PURE static ValueObject
-	MakeParent(ValueObject&& vo)
-	{
-		Environment::CheckParent(vo);
-		return std::move(vo);
-	}
-
-	YB_ATTR_nodiscard YB_PURE static ValueObject
-	MakeParentSingle(TermNode::allocator_type a,
-		pair<shared_ptr<Environment>, bool> pr)
-	{
-		auto& p_env(pr.first);
-
-		Environment::EnsureValid(p_env);
-		if(pr.second)
-			return ValueObject(std::allocator_arg, a,
-				in_place_type<shared_ptr<Environment>>, std::move(p_env));
-		return ValueObject(std::allocator_arg, a,
-			in_place_type<EnvironmentReference>, std::move(p_env));
-	}
-
-
-	YB_ATTR_nodiscard YB_PURE static ValueObject
-	MakeParentSingleNonOwning(TermNode::allocator_type a,
-		const shared_ptr<Environment>& p_env)
-	{
-		Environment::EnsureValid(p_env);
-		return ValueObject(std::allocator_arg, a,
-			in_place_type<EnvironmentReference>, p_env);
-	}
 };
 
 
@@ -337,9 +337,8 @@ VauImpl(TermNode& term, Context& ctx, bool no_lift)
 {
 	CheckVariadicArity(term, 1);
 	return ReduceCreateFunction(term, [&]{
-		return MakeVau(term, no_lift, term.begin(),
-			VauHandler::MakeParentSingleNonOwning(term.get_allocator(),
-			ctx.GetRecordPtr()));
+		return MakeVau(term, no_lift, term.begin(), MakeParentSingleNonOwning(
+			term.get_allocator(), ctx.GetRecordPtr()));
 	}, Form);
 }
 
@@ -361,13 +360,13 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 				return MakeVau(term, no_lift, i, [&]() -> ValueObject{
 					if(IsList(nd))
-						return VauHandler::MakeParent(MakeEnvironmentParent(
-							nd.begin(), nd.end(), nd.get_allocator(),
+						return MakeParent(MakeEnvironmentParent(nd.begin(),
+							nd.end(), nd.get_allocator(),
 							!Unilang::IsMovable(p_ref)));
 					if(IsLeaf(nd))
-						return VauHandler::MakeParentSingle(
-							term.get_allocator(), ResolveEnvironment(
-							nd.Value, Unilang::IsMovable(p_ref)));
+						return MakeParentSingle(term.get_allocator(),
+							ResolveEnvironment(nd.Value,
+							Unilang::IsMovable(p_ref)));
 					ThrowInvalidEnvironmentType(nd, p_ref);
 				}());
 			}, tm);
