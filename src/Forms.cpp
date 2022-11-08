@@ -167,6 +167,35 @@ CreateEnvironment(TermNode& term)
 }
 
 
+inline void
+AssignParent(ValueObject& parent, const ValueObject& vo)
+{
+	parent = vo;
+}
+inline void
+AssignParent(ValueObject& parent, ValueObject&& vo)
+{
+	parent = std::move(vo);
+}
+inline void
+AssignParent(ValueObject& parent, TermNode::allocator_type a,
+	EnvironmentReference&& r_env)
+{
+	AssignParent(parent, ValueObject(std::allocator_arg, a, std::move(r_env)));
+}
+inline void
+AssignParent(ValueObject& parent, TermNode& term, EnvironmentReference&& r_env)
+{
+	AssignParent(parent, term.get_allocator(), std::move(r_env));
+}
+template<typename... _tParams>
+inline void
+AssignParent(Context& ctx, _tParams&&... args)
+{
+	AssignParent(ctx.GetRecordRef().Parent, yforward(args)...);
+}
+
+
 YB_ATTR_nodiscard YB_PURE ValueObject
 MakeParent(ValueObject&& vo)
 {
@@ -196,6 +225,30 @@ MakeParentSingleNonOwning(TermNode::allocator_type a,
 	Environment::EnsureValid(p_env);
 	return ValueObject(std::allocator_arg, a,
 		in_place_type<EnvironmentReference>, p_env);
+}
+
+void
+VauBind(Context& ctx, const TermNode& formals, TermNode& term)
+{
+	BindParameterWellFormed(ctx.GetRecordPtr(), formals, term);
+}
+
+void
+VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
+	TermNode& eval_struct, bool move)
+{
+	AssertNextTerm(ctx, term);
+	if(move)
+	{
+		AssignParent(ctx, std::move(parent));
+		term.SetContent(std::move(eval_struct));
+		RefTCOAction(ctx).PopTopFrame();
+	}
+	else
+	{
+		AssignParent(ctx, parent);
+		term.SetContent(eval_struct);
+	}
 }
 
 
@@ -275,24 +328,11 @@ private:
 			move = p_eval_struct.use_count() == 1;
 		}
 		RemoveHead(term);
-		BindParameterWellFormed(ctx.GetRecordPtr(), Unilang::Deref(p_formals),
-			term);
-		ctx.GetRecordRef().Parent = parent;
-		AssertNextTerm(ctx, term);
+		VauBind(ctx, Unilang::Deref(p_formals), term);
 
 		const bool no_lift(NoLifting);
 
-		if(move)
-		{
-			ctx.GetRecordRef().Parent = std::move(parent);
-			term.SetContent(std::move(Unilang::Deref(p_eval_struct)));
-			RefTCOAction(ctx).PopTopFrame();
-		}
-		else
-		{
-			ctx.GetRecordRef().Parent = parent;
-			term.SetContent(Unilang::Deref(p_eval_struct));
-		}
+		VauPrepareCall(ctx, term, parent, Unilang::Deref(p_eval_struct), move);
 		return RelayForCall(ctx, term, std::move(gd), no_lift);
 	}
 };
