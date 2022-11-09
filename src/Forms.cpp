@@ -252,35 +252,37 @@ VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
 }
 
 
-class VauHandler final : private ystdex::equality_comparable<VauHandler>
+class VauHandler : private ystdex::equality_comparable<VauHandler>
 {
 private:
 	shared_ptr<TermNode> p_formals;
+	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
 	mutable ValueObject parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
-	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
 
 public:
 	bool NoLifting = {};
 
-private:
-	string eformal{};
+protected:
+	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo, TermNode& term,
+		bool nl, ReductionStatus(&c)(const VauHandler&, TermNode&, Context&))
+		: p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
+		call(c), parent(std::move(vo)), p_eval_struct((AssertValueTags(term),
+		ShareMoveTerm(ystdex::exchange(term,
+		Unilang::AsTermNode(term.get_allocator()))))), NoLifting(nl)
+	{}
 
 public:
-	VauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
-		ValueObject&& vo, TermNode& term, bool nl)
-		: p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
-		parent(std::move(vo)), p_eval_struct((AssertValueTags(term),
-		ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator()))))), call(ename.empty()
-		? CallStatic : CallDynamic), NoLifting(nl), eformal(std::move(ename))
+	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo, TermNode& term,
+		bool nl)
+		: VauHandler(std::move(p_fm), std::move(vo), term, nl, CallStatic)
 	{}
 
 	friend bool
 	operator==(const VauHandler& x, const VauHandler& y)
 	{
 		return x.p_formals == y.p_formals && x.parent == y.parent
-			&& x.NoLifting == y.NoLifting && x.eformal == y.eformal;
+			&& x.NoLifting == y.NoLifting;
 	}
 
 	ReductionStatus
@@ -293,23 +295,6 @@ public:
 	}
 
 private:
-	void
-	BindEnvironment(Context& ctx, ValueObject&& vo) const
-	{
-		assert(!eformal.empty());
-		ctx.GetRecordRef().AddValue(eformal, std::move(vo));
-	}
-
-	static ReductionStatus
-	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
-	{
-		auto r_env(ctx.WeakenRecord());
-		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
-
-		vau.BindEnvironment(ctx, std::move(r_env));
-		return vau.DoCall(term, ctx, gd);
-	}
-
 	static ReductionStatus
 	CallStatic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
@@ -318,6 +303,7 @@ private:
 		return vau.DoCall(term, ctx, gd);
 	}
 
+public:
 	ReductionStatus
 	DoCall(TermNode& term, Context& ctx, EnvironmentGuard& gd) const
 	{
@@ -341,6 +327,42 @@ private:
 };
 
 
+class DynamicVauHandler final
+	: private VauHandler, private ystdex::equality_comparable<DynamicVauHandler>
+{
+private:
+	string eformal{};
+
+public:
+	DynamicVauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
+		ValueObject&& vo, TermNode& term, bool nl)
+		: VauHandler(std::move(p_fm), std::move(vo), term, nl, CallDynamic),
+		eformal(std::move(ename))
+	{}
+
+	YB_ATTR_nodiscard friend bool
+	operator==(const DynamicVauHandler& x, const DynamicVauHandler& y)
+	{
+		return static_cast<const VauHandler&>(x)
+			== static_cast<const VauHandler&>(y) && x.eformal == y.eformal;
+	}
+
+	using VauHandler::operator();
+
+private:
+	static ReductionStatus
+	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
+	{
+		auto r_env(ctx.WeakenRecord());
+		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
+
+		ctx.GetRecordRef().AddValue(static_cast<const DynamicVauHandler&>(
+			vau).eformal, std::move(r_env));
+		return vau.DoCall(term, ctx, gd);
+	}
+};
+
+
 template<typename _func>
 inline auto
 CheckFunctionCreation(_func f) -> decltype(f())
@@ -355,7 +377,7 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 }
 
-YB_ATTR_nodiscard VauHandler
+YB_ATTR_nodiscard DynamicVauHandler
 MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 {
 	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
@@ -363,8 +385,8 @@ MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 
 	term.erase(term.begin(), ++i);
 	ClearCombiningTags(term);
-	return VauHandler(std::move(eformal), std::move(formals), std::move(vo),
-		term, no_lift);
+	return DynamicVauHandler(std::move(eformal), std::move(formals),
+		std::move(vo), term, no_lift);
 }
 
 template<typename _func>
