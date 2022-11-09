@@ -357,7 +357,8 @@ private:
 		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
 
 		ctx.GetRecordRef().AddValue(static_cast<const DynamicVauHandler&>(
-			vau).eformal, std::move(r_env));
+			vau).eformal, std::allocator_arg, ctx.get_allocator(),
+			std::move(r_env));
 		return vau.DoCall(term, ctx, gd);
 	}
 };
