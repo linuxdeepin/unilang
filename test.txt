@@ -31,6 +31,8 @@ info "function calls";
 	$defv! $g fm #ignore eval (list* - fm) (() get-current-environment);
 	$expect (- 0 1) g 2 3;
 	$expect (- 0 1) $g 3 4;
+	subinfo "empty name of dynamic environments;" " fixed since V0.12.145";
+	() ($vau () '' '');
 	subinfo "combiner rvalue calls";
 	$expect () ($lambda (x) forward! x) ();
 	$expect () ($lambda (x) ($lambda (y) idv y) x) ();
