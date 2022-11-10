@@ -1,12 +1,12 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
-//	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, Unilang::IsMovable,
-//	ystdex::sfmt, Unilang::Deref, ClearCombiningTags, AssertValueTags,
-//	IsBranchedList, IsList, IsLeaf, FormContextHandler, ReferenceLeaf, IsAtom,
-//	ystdex::ref_eq, ReferenceTerm, Forms::CallResolvedUnary, LiftTerm,
-//	ThrowListTypeErrorForNonList, ThrowValueCategoryError,
-//	Unilang::EmplaceCallResultOrReturn;
+//	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
+//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, Unilang::Deref,
+//	AssertValueTags, GuardFreshEnvironment, IsList, IsLeaf, FormContextHandler,
+//	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
+//	Forms::CallResolvedUnary, LiftTerm, ThrowListTypeErrorForNonList,
+//	ThrowValueCategoryError, Unilang::EmplaceCallResultOrReturn;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
 #include <exception> // for std::throw_with_nested;
@@ -302,7 +302,7 @@ private:
 	static ReductionStatus
 	CallStatic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
-		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
+		auto gd(GuardFreshEnvironment(ctx));
 
 		return vau.DoCall(term, ctx, gd);
 	}
@@ -359,7 +359,7 @@ private:
 	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
 	{
 		auto r_env(ctx.WeakenRecord());
-		EnvironmentGuard gd(ctx, Unilang::SwitchToFreshEnvironment(ctx));
+		auto gd(GuardFreshEnvironment(ctx));
 
 		ctx.GetRecordRef().AddValue(static_cast<const DynamicVauHandler&>(
 			vau).eformal, std::allocator_arg, ctx.get_allocator(),
