@@ -8,7 +8,7 @@
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
-//	HasValue;
+//	Unilang::SwitchToFreshEnvironment, HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
@@ -480,6 +480,15 @@ RetainN(const TermNode& term, size_t m = 1)
 
 
 using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
+
+
+template<typename... _tParams>
+YB_ATTR_nodiscard inline EnvironmentGuard
+GuardFreshEnvironment(Context& ctx, _tParams&&... args)
+{
+	return EnvironmentGuard(ctx, Unilang::SwitchToFreshEnvironment(ctx,
+		yforward(args)...));
+}
 
 
 ReductionStatus
