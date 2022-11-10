@@ -7,16 +7,15 @@
 //	ystdex::ref_eq, ReferenceTerm, Forms::CallResolvedUnary, LiftTerm,
 //	ThrowListTypeErrorForNonList, ThrowValueCategoryError,
 //	Unilang::EmplaceCallResultOrReturn;
-#include <exception> // for std::throw_with_nested;
 #include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
 //	ListTypeError;
+#include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
 //	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
-#include "Lexical.h" // for IsUnilangSymbol;
-#include "TCO.h" // for ReduceSubsequent, Action;
+#include "TermNode.h" // for TNIter, Unilang::AsTermNode, CountPrefix, TNCIter;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
-#include "TermNode.h" // for CountPrefix, TNCIter;
+#include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
@@ -264,18 +263,23 @@ public:
 	bool NoLifting = {};
 
 protected:
-	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo, TermNode& term,
-		bool nl, ReductionStatus(&c)(const VauHandler&, TermNode&, Context&))
+	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
+		shared_ptr<TermNode>&& p_es, bool nl,
+		ReductionStatus(&c)(const VauHandler&, TermNode&, Context&))
 		: p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
-		call(c), parent(std::move(vo)), p_eval_struct((AssertValueTags(term),
-		ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator()))))), NoLifting(nl)
-	{}
+		call(c), parent(std::move(vo)), p_eval_struct(std::move(p_es)),
+		NoLifting(nl)
+	{
+		assert(p_eval_struct.use_count() == 1
+			&& "Unexpected shared evaluation structure found.");
+		AssertValueTags(Unilang::Deref(p_eval_struct)); 
+	}
 
 public:
-	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo, TermNode& term,
-		bool nl)
-		: VauHandler(std::move(p_fm), std::move(vo), term, nl, CallStatic)
+	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
+		shared_ptr<TermNode>&& p_es, bool nl)
+		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
+		CallStatic)
 	{}
 
 	friend bool
@@ -334,9 +338,10 @@ private:
 	string eformal{};
 
 public:
-	DynamicVauHandler(string&& ename, shared_ptr<TermNode>&& p_fm,
-		ValueObject&& vo, TermNode& term, bool nl)
-		: VauHandler(std::move(p_fm), std::move(vo), term, nl, CallDynamic),
+	DynamicVauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
+		shared_ptr<TermNode>&& p_es, bool nl, string&& ename)
+		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
+		CallDynamic),
 		eformal(std::move(ename))
 	{}
 
@@ -378,16 +383,23 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 }
 
+YB_ATTR_nodiscard shared_ptr<TermNode>
+MakeCombinerEvalStruct(TermNode& term, TNIter i)
+{
+	term.erase(term.begin(), i);
+	ClearCombiningTags(term);
+	return ShareMoveTerm(ystdex::exchange(term,
+		Unilang::AsTermNode(term.get_allocator())));
+}
+
 YB_ATTR_nodiscard DynamicVauHandler
 MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 {
 	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
 	auto eformal(CheckEnvironmentFormal(Unilang::Deref(++i)));
 
-	term.erase(term.begin(), ++i);
-	ClearCombiningTags(term);
-	return DynamicVauHandler(std::move(eformal), std::move(formals),
-		std::move(vo), term, no_lift);
+	return DynamicVauHandler(std::move(formals), std::move(vo),
+		MakeCombinerEvalStruct(term, ++i), no_lift, std::move(eformal));
 }
 
 template<typename _func>
