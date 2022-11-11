@@ -1519,6 +1519,14 @@ BindParameterWellFormed(const shared_ptr<Environment>& p_env, const TermNode& t,
 	BindParameterImpl<NoParameterCheck>(p_env, t, o);
 }
 
+void
+BindSymbol(const shared_ptr<Environment>& p_env, const TokenValue& n,
+	TermNode& o)
+{
+	AssertValueTags(o);
+	DefaultBinder(Unilang::Deref(p_env))(n, o, TermTags::Temporary, p_env);
+}
+
 
 bool
 AddTypeNameTableEntry(const type_info& ti, string_view sv)
