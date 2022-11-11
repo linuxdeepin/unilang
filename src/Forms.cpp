@@ -3,7 +3,7 @@
 #include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
 //	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
 //	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, Unilang::Deref,
-//	AssertValueTags, GuardFreshEnvironment, IsList, IsLeaf, FormContextHandler,
+//	GuardFreshEnvironment, AssertValueTags, IsList, IsLeaf, FormContextHandler,
 //	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
 //	Forms::CallResolvedUnary, LiftTerm, ThrowListTypeErrorForNonList,
 //	ThrowValueCategoryError, Unilang::EmplaceCallResultOrReturn;
@@ -253,9 +253,26 @@ VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
 
 class VauHandler : private ystdex::equality_comparable<VauHandler>
 {
+protected:
+	using GuardCall = EnvironmentGuard(const VauHandler&, TermNode&, Context&);
+	using GuardDispatch = void(Context&, const TermNode&, TermNode&);
+
 private:
+	template<GuardDispatch& _rDispatch>
+	struct GuardStatic final
+	{
+		static EnvironmentGuard
+		Call(const VauHandler& vau, TermNode& term, Context& ctx)
+		{
+			auto gd(GuardFreshEnvironment(ctx));
+
+			_rDispatch(ctx, vau.GetFormalsRef(), term);
+			return gd;
+		}
+	};
+
 	shared_ptr<TermNode> p_formals;
-	ReductionStatus(&call)(const VauHandler&, TermNode&, Context&);
+	GuardCall& guard_call;
 	mutable ValueObject parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
 
@@ -264,11 +281,9 @@ public:
 
 protected:
 	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
-		shared_ptr<TermNode>&& p_es, bool nl,
-		ReductionStatus(&c)(const VauHandler&, TermNode&, Context&))
-		: p_formals((CheckParameterTree(Deref(p_fm)), std::move(p_fm))),
-		call(c), parent(std::move(vo)), p_eval_struct(std::move(p_es)),
-		NoLifting(nl)
+		shared_ptr<TermNode>&& p_es, bool nl, GuardCall& gd_call)
+		: p_formals(std::move(p_fm)), guard_call(gd_call),
+		parent(std::move(vo)), p_eval_struct(std::move(p_es)), NoLifting(nl)
 	{
 		assert(p_eval_struct.use_count() == 1
 			&& "Unexpected shared evaluation structure found.");
@@ -279,7 +294,7 @@ public:
 	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
 		shared_ptr<TermNode>&& p_es, bool nl)
 		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
-		CallStatic)
+		InitCall<GuardStatic>(p_fm))
 	{}
 
 	friend bool
@@ -294,39 +309,38 @@ public:
 	{
 		Retain(term);
 		if(p_eval_struct)
-			return call(*this, term, ctx);
+		{
+			bool move = {};
+
+			if(bool(term.Tags & TermTags::Temporary))
+			{
+				ClearCombiningTags(term);
+				move = p_eval_struct.use_count() == 1;
+			}
+			RemoveHead(term);
+
+			auto gd(guard_call(*this, term, ctx));
+			const bool no_lift(NoLifting);
+
+			VauPrepareCall(ctx, term, parent, *p_eval_struct, move);
+			return RelayForCall(ctx, term, std::move(gd), no_lift);
+		}
 		throw UnilangException("Invalid handler of call found.");
 	}
 
-private:
-	static ReductionStatus
-	CallStatic(const VauHandler& vau, TermNode& term, Context& ctx)
+	YB_ATTR_nodiscard YB_PURE TermNode&
+	GetFormalsRef() const noexcept
 	{
-		auto gd(GuardFreshEnvironment(ctx));
-
-		return vau.DoCall(term, ctx, gd);
+		return Unilang::Deref(p_formals);
 	}
 
-public:
-	ReductionStatus
-	DoCall(TermNode& term, Context& ctx, EnvironmentGuard& gd) const
+protected:
+	template<template<GuardDispatch&> class _func>
+	YB_ATTR_nodiscard YB_PURE static GuardCall&
+	InitCall(shared_ptr<TermNode>& p_fm)
 	{
-		assert(p_eval_struct);
-
-		bool move = {};
-
-		if(bool(term.Tags & TermTags::Temporary))
-		{
-			ClearCombiningTags(term);
-			move = p_eval_struct.use_count() == 1;
-		}
-		RemoveHead(term);
-		VauBind(ctx, Unilang::Deref(p_formals), term);
-
-		const bool no_lift(NoLifting);
-
-		VauPrepareCall(ctx, term, parent, Unilang::Deref(p_eval_struct), move);
-		return RelayForCall(ctx, term, std::move(gd), no_lift);
+		CheckParameterTree(Unilang::Deref(p_fm));
+		return _func<VauBind>::Call;
 	}
 };
 
@@ -335,13 +349,30 @@ class DynamicVauHandler final
 	: private VauHandler, private ystdex::equality_comparable<DynamicVauHandler>
 {
 private:
+	template<GuardDispatch& _rDispatch>
+	struct GuardDynamic final
+	{
+		static EnvironmentGuard
+		Call(const VauHandler& vau, TermNode& term, Context& ctx)
+		{
+			auto r_env(ctx.WeakenRecord());
+			auto gd(GuardFreshEnvironment(ctx));
+
+			ctx.GetRecordRef().AddValue(static_cast<const DynamicVauHandler&>(
+				vau).eformal, std::allocator_arg, ctx.get_allocator(),
+				std::move(r_env));
+			_rDispatch(ctx, vau.GetFormalsRef(), term);
+			return gd;
+		}
+	};
+
 	string eformal{};
 
 public:
 	DynamicVauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
 		shared_ptr<TermNode>&& p_es, bool nl, string&& ename)
 		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
-		CallDynamic),
+		InitCall<GuardDynamic>(p_fm)),
 		eformal(std::move(ename))
 	{}
 
@@ -353,19 +384,6 @@ public:
 	}
 
 	using VauHandler::operator();
-
-private:
-	static ReductionStatus
-	CallDynamic(const VauHandler& vau, TermNode& term, Context& ctx)
-	{
-		auto r_env(ctx.WeakenRecord());
-		auto gd(GuardFreshEnvironment(ctx));
-
-		ctx.GetRecordRef().AddValue(static_cast<const DynamicVauHandler&>(
-			vau).eformal, std::allocator_arg, ctx.get_allocator(),
-			std::move(r_env));
-		return vau.DoCall(term, ctx, gd);
-	}
 };
 
 
