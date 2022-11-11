@@ -521,6 +521,9 @@ void
 BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
 	TermNode&);
 
+void
+BindSymbol(const shared_ptr<Environment>&, const TokenValue&, TermNode&);
+
 
 YB_ATTR_nodiscard bool
 AddTypeNameTableEntry(const type_info&, string_view);
