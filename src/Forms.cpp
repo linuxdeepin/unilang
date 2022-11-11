@@ -289,6 +289,29 @@ VauBindList(Context& ctx, const TermNode& formals, TermNode& term)
 }
 
 void
+VauBindOne(Context& ctx, const TermNode& formals, TermNode& term)
+{
+	assert(IsList(formals) && formals.size() == 1 && IsSymbolFormal(
+		AccessFirstSubterm(formals)) && IsNonTrailingSymbol(
+		AccessFirstSubterm(formals)) && "Invalid formals found.");
+	AssertValueTags(term);
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		if(IsList(nd))
+		{
+			const auto n_o(term.size());
+
+			if(n_o == 1)
+				BindSymbol(ctx.GetRecordPtr(), AccessFirstSubterm(formals).Value
+					.GetObject<TokenValue>(), AccessFirstSubterm(nd));
+			else
+				throw ArityMismatch(1, n_o);
+		}
+		else
+			ThrowListTypeErrorForNonList(nd, p_ref);
+	}, term);
+}
+
+void
 VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
 	TermNode& eval_struct, bool move)
 {
@@ -399,6 +422,13 @@ protected:
 
 		if(IsList(formals))
 		{
+			if(formals.size() == 1)
+			{
+				auto& sub(AccessFirstSubterm(formals));
+
+				if(IsSymbolFormal(sub) && IsNonTrailingSymbol(sub))
+					return _func<VauBindOne>::Call;
+			}
 			if(IsOptimizableFormalList(formals))
 				return _func<VauBindList>::Call;
 		}
