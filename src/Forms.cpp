@@ -1,19 +1,22 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
-#include "Forms.h" // for TryAccessReferencedTerm, ThrowTypeErrorForInvalidType,
+#include "Forms.h" // for TryAccessReferencedTerm, type_id, TokenValue,
 //	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
-//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, Unilang::Deref,
-//	GuardFreshEnvironment, AssertValueTags, IsList, IsLeaf, FormContextHandler,
-//	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
-//	Forms::CallResolvedUnary, LiftTerm, ThrowListTypeErrorForNonList,
-//	ThrowValueCategoryError, Unilang::EmplaceCallResultOrReturn;
-#include "Exception.h" // for InvalidSyntax, TypeError, UnilangException,
-//	ListTypeError;
+//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, TryAccessLeaf, assert,
+//	IsList, Unilang::Deref, GuardFreshEnvironment, AssertValueTags, IsLeaf,
+//	FormContextHandler, ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
+//	Forms::CallResolvedUnary, LiftTerm, Unilang::EmplaceCallResultOrReturn;
+#include "Exception.h" // for InvalidSyntax, ThrowTypeErrorForInvalidType,
+//	TypeError, ArityMismatch, ThrowListTypeErrorForNonList, UnilangException,
+//	ThrowValueCategoryError;
 #include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
 //	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
-#include "TermNode.h" // for TNIter, Unilang::AsTermNode, CountPrefix, TNCIter;
+#include "TermNode.h" // for TNIter, IsTypedRegular, Unilang::AsTermNode,
+//	CountPrefix, TNCIter;
+#include <ystdex/algorithm.hpp> // for ystdex::fast_all_of;
+#include <ystdex/range.hpp> // for ystdex::cbegin, ystdex::cend;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
 #include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
@@ -195,6 +198,30 @@ AssignParent(Context& ctx, _tParams&&... args)
 }
 
 
+YB_ATTR_nodiscard YB_PURE bool
+IsSymbolFormal(const TermNode& term) noexcept
+{
+	return IsTypedRegular<TokenValue>(term);
+}
+
+YB_ATTR_nodiscard YB_PURE bool
+IsNonTrailingSymbol(const TermNode& term) noexcept
+{
+	assert(IsSymbolFormal(term) && "Invalid term found.");
+	if(const auto p = TryAccessLeaf<TokenValue>(term))
+		return p->empty() || p->front() != '.';
+	return {};
+}
+
+YB_ATTR_nodiscard YB_PURE bool
+IsOptimizableFormalList(const TermNode& formals) noexcept
+{
+	assert(IsList(formals) && "Invalid term found.");
+	return ystdex::fast_all_of(ystdex::cbegin(formals), ystdex::cend(formals),
+		IsSymbolFormal)
+		&& (formals.empty() || IsNonTrailingSymbol(*formals.rbegin()));
+}
+
 YB_ATTR_nodiscard YB_PURE ValueObject
 MakeParent(ValueObject&& vo)
 {
@@ -230,6 +257,35 @@ void
 VauBind(Context& ctx, const TermNode& formals, TermNode& term)
 {
 	BindParameterWellFormed(ctx.GetRecordPtr(), formals, term);
+}
+
+void
+VauBindList(Context& ctx, const TermNode& formals, TermNode& term)
+{
+	assert(IsOptimizableFormalList(formals) && "Invalid formals found.");
+	AssertValueTags(term);
+	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+		if(IsList(nd))
+		{
+			const auto n_p(formals.size()), n_o(nd.size());
+
+			if(n_p == n_o)
+			{
+				const auto& p_env(ctx.GetRecordPtr());
+				auto i(term.begin());
+
+				for(const auto& tm_n : formals)
+				{
+					BindSymbol(p_env, tm_n.Value.GetObject<TokenValue>(), *i);
+					++i;
+				}
+			}
+			else
+				throw ArityMismatch(n_p, n_o);
+		}
+		else
+			ThrowListTypeErrorForNonList(nd, p_ref);
+	}, term);
 }
 
 void
@@ -339,7 +395,14 @@ protected:
 	YB_ATTR_nodiscard YB_PURE static GuardCall&
 	InitCall(shared_ptr<TermNode>& p_fm)
 	{
-		CheckParameterTree(Unilang::Deref(p_fm));
+		auto& formals(Unilang::Deref(p_fm));
+
+		if(IsList(formals))
+		{
+			if(IsOptimizableFormalList(formals))
+				return _func<VauBindList>::Call;
+		}
+		CheckParameterTree(formals);
 		return _func<VauBind>::Call;
 	}
 };
