@@ -174,7 +174,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<DynamicQObject>();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QObject-connect", [&](TermNode& term, Context& ctx){
 		RetainN(term, 4);
@@ -297,17 +296,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = QApplication::exec();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QWidget>();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
@@ -342,7 +338,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		term.Value = shared_ptr<QWidget>(make_shared<QPushButton>(
 			Unilang::ResolveRegular<string>(*++i).c_str()));
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
@@ -354,7 +349,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		p_lbl->setAlignment(align);
 		term.Value = shared_ptr<QWidget>(std::move(p_lbl));
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QLabel-setText", [](TermNode& term){
 		RetainN(term, 2);
@@ -369,7 +363,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
@@ -384,7 +377,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QQuickView", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QQuickView>();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QQuickView-show", [](TermNode& term){
 		RetainN(term, 1);
