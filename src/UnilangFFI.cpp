@@ -476,8 +476,11 @@ InitializeFFI(Interpreter& intp)
 		if(IsList(s_param_types_term))
 		{
 			vector<string> s_param_types(term.get_allocator());
-
+			
 			s_param_types.reserve(s_param_types_term.size());
+			for(const auto& t : s_param_types_term)
+				s_param_types.push_back(Unilang::ResolveRegular<const string>(t));
+
 			term.Value = std::allocate_shared<CallInterface>(
 				term.get_allocator(), abi, s_ret_type, s_param_types);
 			return ReductionStatus::Clean;
@@ -512,7 +515,9 @@ InitializeFFI(Interpreter& intp)
 				void* rptr(
 					ystdex::aligned_store_cast<unsigned char*>(p_buf.get()));
 				size_t offset(cif.ret_codec.libffi_type.size);
-
+				
+				auto i_tm(tm.begin());
+				
 				for(size_t idx(0); idx < n_params; ++idx)
 				{
 					auto& codec(cif.param_codecs[idx]);
@@ -521,7 +526,7 @@ InitializeFFI(Interpreter& intp)
 					offset = align_offset(offset, t.alignment);
 					p_param_ptrs[idx] = ystdex::aligned_store_cast<
 						unsigned char*>(p_buf.get()) + offset;
-					cif.param_codecs[idx].encode(tm, p_param_ptrs[idx]);
+					cif.param_codecs[idx].encode(*++i_tm, p_param_ptrs[idx]);
 					offset += t.size;
 				}
 				assert(offset == buffer_size);
