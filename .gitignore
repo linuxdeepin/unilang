@@ -4,3 +4,5 @@
 build/*
 unilang*
 
+.vscode/settings.json
+.vscode/launch.json
