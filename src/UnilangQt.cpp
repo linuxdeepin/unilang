@@ -267,6 +267,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		QCoreApplication::setApplicationName(MakeQString(str));
 		return ValueToken::Unspecified;
 	});
+	RegisterUnary<Strict, const string>(rctx,
+		"QCoreApplication-setApplicationVersion", [](const string& str){
+		QCoreApplication::setApplicationVersion(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
