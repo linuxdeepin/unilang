@@ -141,6 +141,19 @@ DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
 	return -1;
 }
 
+YB_ATTR_nodiscard YB_PURE string
+MakeString(string::allocator_type a, const QString& qs)
+{
+	const auto& s(qs.toStdString());
+
+	return string({s.cbegin(), s.cend()}, a);
+}
+YB_ATTR_nodiscard YB_PURE inline string
+MakeString(const TermNode& term, const QString& qs)
+{
+	return MakeString(term.get_allocator(), qs);
+}
+
 
 void
 InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
@@ -227,6 +240,10 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	renv.Bindings["Qt.AA_EnableHighDpiScaling"].Value
 		= Qt::AA_EnableHighDpiScaling;
 	renv.Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
+	RegisterStrict(rctx, "QCoreApplication-applicationName", [](TermNode& term){
+		RetainN(term, 0);
+		term.SetValue(MakeString(term, QCoreApplication::applicationName()));
+	});
 	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
