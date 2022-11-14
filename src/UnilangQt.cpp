@@ -244,6 +244,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 0);
 		term.SetValue(MakeString(term, QCoreApplication::applicationName()));
 	});
+	RegisterStrict(rctx, "QCoreApplication-organizationName",
+		[](TermNode& term){
+		RetainN(term, 0);
+		term.SetValue(MakeString(term, QCoreApplication::organizationName()));
+	});
 	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
