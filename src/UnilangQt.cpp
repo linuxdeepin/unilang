@@ -289,6 +289,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			ThrowInsufficientTermsError(term, {}, 1);
 		throw ArityMismatch(2, n);
 	});
+	RegisterUnary<Strict, const string>(rctx,
+		"QCoreApplication-setOrganizationName", [](const string& str){
+		QCoreApplication::setOrganizationName(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
