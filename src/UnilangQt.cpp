@@ -16,13 +16,15 @@
 #	endif
 #endif
 #include <QHash> // for QHash;
+#include <QString> // for QString;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
 //	Qt::ApplicationAttribute, Qt::AlignmentFlag;
 #include <QCoreApplication> // for QCoreApplication;
 #include <QApplication> // for QApplication;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
-#include <QLabel> // for QString, QLabel;
+#include <QLabel> // for QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
 #include <QQuickView> // for QQuickView;
 #ifdef __GNUC__
@@ -141,6 +143,12 @@ DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
 	return -1;
 }
 
+YB_ATTR_nodiscard YB_PURE QString
+MakeQString(const string& s)
+{
+	return QString::fromStdString(YSLib::to_std_string(s));
+}
+
 YB_ATTR_nodiscard YB_PURE string
 MakeString(string::allocator_type a, const QString& qs)
 {
@@ -254,6 +262,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 0);
 		term.SetValue(QCoreApplication::instance());
 	});
+	RegisterUnary<Strict, const string>(rctx,
+		"QCoreApplication-setApplicationName", [](const string& str){
+		QCoreApplication::setApplicationName(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
@@ -340,8 +353,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto& wgt(ResolveQWidget(*++i));
 		const auto& text(Unilang::ResolveRegular<string>(*++i));
 
-		dynamic_cast<QLabel&>(wgt).setText(
-			QString::fromStdString(YSLib::to_std_string(text)));
+		dynamic_cast<QLabel&>(wgt).setText(MakeQString(text));
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
