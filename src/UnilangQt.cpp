@@ -297,6 +297,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
 	});
+	RegisterStrict(rctx, "QApplication-aboutQt", [](TermNode& term){
+		RetainN(term, 0);
+		QApplication::aboutQt();
+		return ReduceReturnUnspecified(term);
+	});
 	RegisterStrict(rctx, "QApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = QApplication::exec();
