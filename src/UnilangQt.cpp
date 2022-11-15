@@ -21,6 +21,7 @@
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
 //	Qt::ApplicationAttribute, Qt::AlignmentFlag;
 #include <QCoreApplication> // for QCoreApplication;
+#include <QGuiApplication> // for QGuiApplication;
 #include <QApplication> // for QApplication;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
@@ -292,6 +293,12 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		"QCoreApplication-setOrganizationName", [](const string& str){
 		QCoreApplication::setOrganizationName(MakeQString(str));
 		return ValueToken::Unspecified;
+	});
+	RegisterStrict(rctx, "QGuiApplication-restoreOverrideCursor",
+		[](TermNode& term){
+		RetainN(term, 0);
+		QGuiApplication::restoreOverrideCursor();
+		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
