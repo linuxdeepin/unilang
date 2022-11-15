@@ -15,6 +15,7 @@
 #		pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 #	endif
 #endif
+#include <QtGlobal> // for QT_VERSION, QT_VERSION_CHECK;
 #include <QHash> // for QHash;
 #include <QString> // for QString;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
@@ -23,6 +24,7 @@
 #include <QCoreApplication> // for QCoreApplication;
 #include <QGuiApplication> // for QGuiApplication;
 #include <QApplication> // for QApplication;
+#include <QCursor> // for QCursor;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QLabel;
@@ -300,6 +302,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		QGuiApplication::restoreOverrideCursor();
 		return ReduceReturnUnspecified(term);
 	});
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) \
+	&& QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	RegisterUnary<Strict, const bool>(rctx,
+		"QGuiApplication-setFallbackSessionManagementEnabled", [](bool enabled){
+		QGuiApplication::setFallbackSessionManagementEnabled(enabled);
+		return ValueToken::Unspecified;
+	});
+#endif
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
