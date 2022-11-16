@@ -300,6 +300,10 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 0);
 		term.Value = make_shared<QGuiApplication>(argc, argv);
 	});
+	RegisterStrict(rctx, "QGuiApplication-exec", [](TermNode& term){
+		RetainN(term, 0);
+		term.Value = QGuiApplication::exec();
+	});
 	RegisterStrict(rctx, "QGuiApplication-restoreOverrideCursor",
 		[](TermNode& term){
 		RetainN(term, 0);
