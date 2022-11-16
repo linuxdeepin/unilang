@@ -296,6 +296,10 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		QCoreApplication::setOrganizationName(MakeQString(str));
 		return ValueToken::Unspecified;
 	});
+	RegisterStrict(rctx, "make-QGuiApplication", [&, argv](TermNode& term){
+		RetainN(term, 0);
+		term.Value = make_shared<QGuiApplication>(argc, argv);
+	});
 	RegisterStrict(rctx, "QGuiApplication-restoreOverrideCursor",
 		[](TermNode& term){
 		RetainN(term, 0);
