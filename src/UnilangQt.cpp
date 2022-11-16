@@ -310,6 +310,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		return ValueToken::Unspecified;
 	});
 #endif
+	RegisterUnary<Strict, const QCursor>(rctx,
+		"QGuiApplication-setOverrideCursor", [](const QCursor& cursor){
+		QGuiApplication::setOverrideCursor(cursor);
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
