@@ -476,6 +476,7 @@ InitializeFFI(Interpreter& intp)
 		if(IsList(s_param_types_term))
 		{
 			vector<string> s_param_types(term.get_allocator());
+			
 			s_param_types.reserve(s_param_types_term.size());
 			for(const auto& t : s_param_types_term)
 				s_param_types.push_back(Unilang::ResolveRegular<const string>(t));
