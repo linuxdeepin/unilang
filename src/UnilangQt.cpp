@@ -350,6 +350,13 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		wgt.addAction(Unilang::ResolveRegular<QAction*>(*++i));
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(rctx, "QWidget-close", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveQWidget(*++i).close();
+	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
 
