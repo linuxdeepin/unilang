@@ -25,6 +25,7 @@
 #include <QGuiApplication> // for QGuiApplication;
 #include <QApplication> // for QApplication;
 #include <QCursor> // for QCursor;
+#include <QAction> // for QAction;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QLabel;
@@ -339,6 +340,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QWidget>();
+	});
+	RegisterStrict(rctx, "QWidget-addAction", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		wgt.addAction(Unilang::ResolveRegular<QAction*>(*++i));
+		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
