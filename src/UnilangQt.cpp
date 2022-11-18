@@ -3,6 +3,8 @@
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
 //	YSLib::make_shared, std::bind, std::ref;
+#include "TermAccess.h" // for Unilang::ResolveTerm, Unilang::CheckRegular,
+//	Access, Unilang::ResolveRegular;
 #include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
 #include <cassert> // for assert;
 #include <iostream> // for std::cerr, std::endl, std::clog;
@@ -66,6 +68,20 @@ YB_PURE QWidget&
 ResolveQWidget(TermNode& term)
 {
 	const auto& p_wgt(Unilang::ResolveRegular<shared_ptr<QWidget>>(term));
+
+	assert(p_wgt.get());
+	return *p_wgt;
+}
+YB_PURE const QWidget&
+ResolveConstQWidget(TermNode& term)
+{
+	const auto& p_wgt(Unilang::ResolveTerm(
+		[&](TermNode& nd, bool has_ref) -> shared_ptr<const QWidget>{
+		Unilang::CheckRegular<shared_ptr<QWidget>>(term, has_ref);
+		if(const auto p = TryAccessLeafAtom<shared_ptr<QWidget>>(term))
+			return *p;
+		return Access<shared_ptr<const QWidget>>(nd);
+	}, term));
 
 	assert(p_wgt.get());
 	return *p_wgt;
@@ -356,6 +372,13 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto i(term.begin());
 
 		term.Value = ResolveQWidget(*++i).close();
+	});
+	RegisterStrict(rctx, "QWidget-devType", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveConstQWidget(*++i).devType();
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
