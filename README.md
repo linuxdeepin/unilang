@@ -268,7 +268,7 @@ The binary form of the following dependencies are also used:
 
 The following commands illustrates how to prepare the build environment by package managers:
 
-```
+```sh
 # Some dependencies may have been preinstalled.
 # MSYS2
 pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5-base mingw-w64-x86_64-qt5-declarative
@@ -300,19 +300,19 @@ See also the [environment configuration](#environment-configuration) below for s
 
 Before the build, run the following command to ensure the external source dependencies are setup properly:
 
-```
+```sh
 git submodule update --init
 ```
 
 If there exists the submodule update, and the script `install-sbuild.sh` is already executed previously, it is necessary to cleanup the intermediate file to make sure the script work properly again, by the command:
 
-```
+```sh
 rm -f 3rdparty/.patched
 ```
 
 Alternatively, the follwing `git` command can make the cleanup:
 
-```
+```sh
 git clean -f -X 3rdparty
 ```
 
@@ -320,13 +320,13 @@ git clean -f -X 3rdparty
 
 Run the script `build.sh` to build directly and the output executable file will be put into the current working directory:
 
-```
+```sh
 ./build.sh
 ```
 
 This uses `g++` by default. The environment variable `CXX` can override the default, as:
 
-```
+```sh
 env CXX=clang++ ./build.sh
 ```
 
@@ -356,7 +356,7 @@ For Linux targets, first it is required to keep the external dependencies specif
 
 For example, by package managers:
 
-```
+```sh
 # Arch Linux
 sudo pacman -S freetype2 --needed
 # Debian/Ubuntu/Deepin
@@ -371,7 +371,7 @@ For automatic update of binary dependencies and patching the source in the scrip
 
 For example, by package managers:
 
-```
+```sh
 # MSYS2
 # XXX: Do not use mingw-w64-x86_64-sed to ensure the EOL characters as-is.
 pacman -S --needed mingw-w64-x86_64-wget p7zip sed
@@ -397,7 +397,7 @@ The following environment variables controls the behavior of the script:
 
 Using of the installed binary tools and dynamic libraries requires the configurations of paths, as:
 
-```
+```sh
 # Configure PATH.
 export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 # Configure LD_LIBRARY_PATH (reqiured for Linux with non-default search path).
@@ -412,7 +412,7 @@ After the configuration of the build environment, run the script `sbuild.sh` to 
 
 This method support parallel builds and different configurations compared to the direct building script, as:
 
-```
+```sh
 ./sbuild.sh release-static -xj,$(nproc)
 ```
 
@@ -432,19 +432,19 @@ Running the direct building script links against static libraries. This is rough
 
 The interpreter executable file using of the dynamic library configuration relies on the correspoinding dynamic library files at runtime. It is necessary to ensure these libraries files can be found by the system (which should be prepared by the steps of the above build environment configuration), as:
 
-```
+```sh
 # MinGW32
 export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 ```
 
-```
+```sh
 # Linux
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
 If LLVM is installed to non-default location by means other than the system package manager, it may need also to configure for LLVM, as:
 
-```
+```sh
 # Linux
 export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 ```
@@ -474,7 +474,7 @@ Optionally, the environment variables are handled by the interpreter:
 
 Except the option `-e`, with the external `echo` command, the interpreter can support non-interactive input, such as:
 
-```
+```sh
 echo 'display "Hello world."; () newline' | ./unilang
 ```
 
@@ -482,7 +482,7 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 A Unilang prograrm using QtWidgets is provided.
 
-```
+```sh
 ./unilang demo/qt.txt
 ```
 
@@ -490,7 +490,7 @@ See `demo/qt.py` for the Python implementation with the equivalent functionality
 
 There is another demo using QtQuick as a minimalized version like the Qt official `qmlscene` tool:
 
-```
+```sh
 ./unilang demo/qml.txt
 ```
 
@@ -498,7 +498,7 @@ This demo loads the source `demo/hello.qml` relative to the current working dire
 
 ### Quicksort demo
 
-```
+```sh
 ./unilang demo/quicksort.txt
 ```
 
@@ -515,8 +515,8 @@ The script supports following environment variables:
 
 The built executables built using`sbuild.sh` are not in the current working directory. This can be called by the test script as the following command:
 
-```
-UNILANG=build/.debug/unilang.exe ./test.sh
+```sh
+env UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
 # Supported language features
