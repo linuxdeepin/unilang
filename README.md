@@ -519,6 +519,22 @@ The built executables built using`sbuild.sh` are not in the current working dire
 env UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
+## Running the valgrind script
+
+The file `valgrind.sh` calls the interpreter via `valgrind` for testing purpose.
+
+The script uses [Callgrind](https://valgrind.org/docs/manual/cl-manual.html) to collect performance data by default. The data can be viewed using `kcachegrind`.
+
+Use environment variables to specify the command used to invoke the interpreter and to control the options, like:
+
+```sh
+env UNILANG=build/.release-l/unilang.exe OUTPUT=build/.release-l/callgrind.out LOGOPT=--log-file=build/.release-l/callgrind.log ./valgrind.sh -e ''
+```
+
+Variables may have default values if not explicitly specified. The command above is actually eqivalent to the direct call to `./test-valgrind.sh -e ''` without specifying any environment variables explicitly.
+
+See the source code of the script for other supported variables and the default values of the variables.
+
 # Supported language features
 
 See the examples [introduction of Unilang (zh-CN)](doc/Introduction.zh-CN.md) (not all of them are yet supported) the [feature list document (zh-CN)](doc/Features.zh-CN.md) for features.
