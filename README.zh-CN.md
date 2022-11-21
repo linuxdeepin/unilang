@@ -515,6 +515,22 @@ echo 'display "Hello world."; () newline' | ./unilang
 env UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
+## 运行 valgrind 脚本
+
+　　文件 `valgrind.sh` 通过 `valgrind` 调用解释器，用于测试。
+
+　　脚本默认使用 [Callgrind](https://valgrind.org/docs/manual/cl-manual.html) 收集性能数据。可使用 `kcachegrind` 查看数据。
+
+　　使用环境变量指定被调用的解释器的命令和控制具体调用的选项，如：
+
+```sh
+env UNILANG=build/.release-l/unilang.exe OUTPUT=build/.release-l/callgrind.out LOGOPT=--log-file=build/.release-l/callgrind.log ./valgrind.sh -e ''
+```
+
+　　若没有显式指定，变量可具有默认值。上述命令实际上等价直接调用 `./test-valgrind.sh -e ''` 而不显式指定任何环境变量。
+
+　　其它被支持的变量和变量的默认值参见脚本源代码。
+
 # 支持的语言特性
 
 　　语言特性可参照[《Unilang 介绍》](doc/Introduction.zh-CN.md)中的例子（尚未完全支持）和[特性清单](doc/Features.zh-CN.md)。
