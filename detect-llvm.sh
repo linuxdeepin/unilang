@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
 # Requires: LLVM 7.0 installed in some known location.
 # Usage: ./detect-llvm.sh, or sourced.
 # shellcheck disable=2016
