@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Requires: LLVM 7.0 installed in some known location.
 # Usage: ./detect-llvm.sh, or sourced.
+# shellcheck disable=2016
 
 set -e
 
