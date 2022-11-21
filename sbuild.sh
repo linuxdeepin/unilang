@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 # Requires: YSLib sysroot >= b904, having bin in $PATH.
 # Usage: sbuild.sh CONF [SHBOPT_BASE ...].
 # See https://frankhb.github.io/YSLib-book/Tools/Scripts.zh-CN.html.
