@@ -49,6 +49,7 @@ else
 echo 'LLVM support is disabled.'
 CXXFLAGS_EXTRA='-DUNILANG_NO_LLVM=1'
 # XXX: Some other dependencies are still needed.
+# shellcheck disable=2034
 LIBS_EXTRA='-lffi'
 
 fi
