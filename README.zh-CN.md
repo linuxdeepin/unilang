@@ -265,7 +265,7 @@
 
 　　安装构建环境依赖的包管理器命令行举例：
 
-```
+```sh
 # Some dependencies may have been preinstalled.
 # MSYS2
 pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5-base mingw-w64-x86_64-qt5-declarative
@@ -297,19 +297,19 @@ sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5
 
 　　构建之前，在版本库根目录运行以下命令确保外部依赖项：
 
-```
+```sh
 git submodule update --init
 ```
 
 　　若实际发生更新，且之前执行过 `install-sbuild.sh` 脚本，需清理补丁标记文件以确保再次执行这个脚本时能继续正确地处理源代码：
 
-```
+```sh
 rm -f 3rdparty/.patched
 ```
 
 　　使用以下 `git` 命令也能清理文件：
 
-```
+```sh
 git clean -f -X 3rdparty
 ```
 
@@ -317,12 +317,12 @@ git clean -f -X 3rdparty
 
 　　运行脚本 `build.sh` 直接构建，在当前工作目录输出可执行文件：
 
-```
+```sh
 ./build.sh
 ```
 　　默认使用 `g++` 。环境变量 `CXX` 可指定要使用的其它替代，如：
 
-```
+```sh
 env CXX=clang++ ./build.sh
 ```
 
@@ -352,7 +352,7 @@ env CXX=clang++ ./build.sh
 
 　　例如，使用包管理器：
 
-```
+```sh
 # Arch Linux
 sudo pacman -S freetype2 --needed
 # Debian/Ubuntu/Deepin
@@ -367,7 +367,7 @@ sudo apt install libfreetype6-dev
 
 　　例如，使用包管理器：
 
-```
+```sh
 # MSYS2
 # XXX: Do not use mingw-w64-x86_64-sed to ensure the EOL characters as-is.
 pacman -S --needed mingw-w64-x86_64-wget p7zip sed
@@ -393,7 +393,7 @@ sudo apt install wget p7zip-full sed
 
 　　使用安装的二进制工具和动态库需配置路径，如下：
 
-```
+```sh
 # Configure PATH.
 export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 # Configure LD_LIBRARY_PATH (reqiured for Linux with non-default search path).
@@ -408,7 +408,7 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 　　和直接构建脚本相比，支持并行构建，且支持不同的配置，如：
 
-```
+```sh
 ./sbuild.sh release-static -xj,$(nproc)
 ```
 
@@ -428,19 +428,19 @@ export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 
 　　使用上述动态库配置构建的解释器可执行文件在运行时依赖对应的动态库文件。此时，需确保对应的库文件能被系统搜索到（以下运行环境配置已在前述的开发环境配置中包含），如：
 
-```
+```sh
 # MinGW32
 export PATH=$(realpath "$SHBuild_SysRoot/usr/bin"):$PATH
 ```
 
-```
+```sh
 # Linux
 export LD_LIBRARY_PATH=$(realpath "$SHBuild_SysRoot/usr/lib"):$LD_LIBRARY_PATH
 ```
 
 　　若使用系统包管理器以外的方式安装 LLVM 运行时库到非默认位置，类似添加 LLVM 的路径，如：
 
-```
+```sh
 # Linux
 export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 ```
@@ -470,7 +470,7 @@ export LD_LIBRARY_PATH=/opt/llvm70/lib:$LD_LIBRARY_PATH
 
 　　除使用选项 `-e` ，配合外部的 `echo` 命令，也可支持非交互式输入，如：
 
-```
+```sh
 echo 'display "Hello world."; () newline' | ./unilang
 ```
 
@@ -478,7 +478,7 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 　　示例中包含使用 QtWidgets 的程序。
 
-```
+```sh
 ./unilang demo/qt.txt
 ```
 
@@ -486,7 +486,7 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 　　另一个使用 QtQuick 的示例类似 Qt 官方 `qmlscene` 工具的最小化版本：
 
-```
+```sh
 ./unilang demo/qml.txt
 ```
 
@@ -494,7 +494,7 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 ### Quicksort demo
 
-```
+```sh
 ./unilang demo/quicksort.txt
 ```
 
@@ -511,8 +511,8 @@ echo 'display "Hello world."; () newline' | ./unilang
 
 　　使用 `sbuild.sh` 构建的可执行文件不在当前目录。可使用类似以下的 `bash` 命令调用：
 
-```
-UNILANG=build/.debug/unilang.exe ./test.sh
+```sh
+env UNILANG=build/.debug/unilang.exe ./test.sh
 ```
 
 # 支持的语言特性
