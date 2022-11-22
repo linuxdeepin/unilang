@@ -1057,15 +1057,40 @@ using string = basic_string<char>;
 
 * Qt 绑定 API `UnilangQt` ：
 	* `QtCore`
-		* `Qt.AA_EnableHighDpiScaling`
-		* `QCoreApplication`
-			* `QCoreApplication-setAttribute`
-		* `QApplication`
-			* `QApplication-exec`
+		* `make-DynamicQObject`
 		* `QObject-connect`
 			* 信号连接可直接调用。
+		* `Qt.AA_EnableHighDpiScaling`
+		* `Qt.AlignCenter`
+		* `QCoreApplication`
+			* `QCoreApplication-applicationName`
+			* `QCoreApplication-organizationName`
+			* `QCoreApplication-instance`
+				* **注释** 不直接使用动态库符号 `QCoreApplication::self` 。
+			* `QCoreApplication-setApplicationName`
+			* `QCoreApplication-setApplicationVersion`
+			* `QCoreApplication-setAttribute`
+			* `QCoreApplication-setOrganizationName`
+	* `QtGui`
+		* `QGuiApplication`
+			* `make-QGuiApplication`
+			* `QGuiApplication-exec`
+			* `QGuiApplication-restoreOverrideCursor`
+			* `QGuiApplication-setFallbackSessionManagementEnabled`
 	* `QtWidgets`
+		* `QApplication`
+			* `make-QApplication`
+			* `QApplication-aboutQt`
+			* `QApplication-desktop`
+			* `QApplication-exec`
 		* `QWidget`
+			* `make-QWidget`
+			* `QWidget-close`
+			* `QWidget-devType`
+			* `QWidget-resize`
+			* 以下非 `public` 的 `QWidget` 成员跳过实现：
+				*`actionEvent`
+				*`changeEvent`
 		* `QPushButton`
 		* `QLabel`
 		* `QVBoxLayout`
