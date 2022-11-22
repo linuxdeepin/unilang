@@ -3,6 +3,8 @@
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
 //	YSLib::make_shared, std::bind, std::ref;
+#include "TermAccess.h" // for Unilang::ResolveTerm, Unilang::CheckRegular,
+//	Access, Unilang::ResolveRegular;
 #include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
 #include <cassert> // for assert;
 #include <iostream> // for std::cerr, std::endl, std::clog;
@@ -15,14 +17,20 @@
 #		pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 #	endif
 #endif
+#include <QtGlobal> // for QT_VERSION, QT_VERSION_CHECK;
 #include <QHash> // for QHash;
+#include <QString> // for QString;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
 //	Qt::ApplicationAttribute, Qt::AlignmentFlag;
 #include <QCoreApplication> // for QCoreApplication;
+#include <QGuiApplication> // for QGuiApplication;
 #include <QApplication> // for QApplication;
+#include <QCursor> // for QCursor;
+#include <QAction> // for QAction;
 #include <QWidget> // for QWidget;
 #include <QPushButton> // for QPushButton;
-#include <QLabel> // for QString, QLabel;
+#include <QLabel> // for QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
 #include <QQuickView> // for QQuickView;
 #ifdef __GNUC__
@@ -60,6 +68,20 @@ YB_PURE QWidget&
 ResolveQWidget(TermNode& term)
 {
 	const auto& p_wgt(Unilang::ResolveRegular<shared_ptr<QWidget>>(term));
+
+	assert(p_wgt.get());
+	return *p_wgt;
+}
+YB_PURE const QWidget&
+ResolveConstQWidget(TermNode& term)
+{
+	const auto& p_wgt(Unilang::ResolveTerm(
+		[&](TermNode& nd, bool has_ref) -> shared_ptr<const QWidget>{
+		Unilang::CheckRegular<shared_ptr<QWidget>>(term, has_ref);
+		if(const auto p = TryAccessLeafAtom<shared_ptr<QWidget>>(term))
+			return *p;
+		return Access<shared_ptr<const QWidget>>(nd);
+	}, term));
 
 	assert(p_wgt.get());
 	return *p_wgt;
@@ -141,6 +163,25 @@ DynamicQObject::qt_metacall(QMetaObject::Call c, int id, void** arguments)
 	return -1;
 }
 
+YB_ATTR_nodiscard YB_PURE QString
+MakeQString(const string& s)
+{
+	return QString::fromStdString(YSLib::to_std_string(s));
+}
+
+YB_ATTR_nodiscard YB_PURE string
+MakeString(string::allocator_type a, const QString& qs)
+{
+	const auto& s(qs.toStdString());
+
+	return string({s.cbegin(), s.cend()}, a);
+}
+YB_ATTR_nodiscard YB_PURE inline string
+MakeString(const TermNode& term, const QString& qs)
+{
+	return MakeString(term.get_allocator(), qs);
+}
+
 
 void
 InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
@@ -153,7 +194,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<DynamicQObject>();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QObject-connect", [&](TermNode& term, Context& ctx){
 		RetainN(term, 4);
@@ -227,6 +267,30 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	renv.Bindings["Qt.AA_EnableHighDpiScaling"].Value
 		= Qt::AA_EnableHighDpiScaling;
 	renv.Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
+	RegisterStrict(rctx, "QCoreApplication-applicationName", [](TermNode& term){
+		RetainN(term, 0);
+		term.SetValue(MakeString(term, QCoreApplication::applicationName()));
+	});
+	RegisterStrict(rctx, "QCoreApplication-organizationName",
+		[](TermNode& term){
+		RetainN(term, 0);
+		term.SetValue(MakeString(term, QCoreApplication::organizationName()));
+	});
+	RegisterStrict(rctx, "QCoreApplication-instance",
+		[](TermNode& term){
+		RetainN(term, 0);
+		term.SetValue(QCoreApplication::instance());
+	});
+	RegisterUnary<Strict, const string>(rctx,
+		"QCoreApplication-setApplicationName", [](const string& str){
+		QCoreApplication::setApplicationName(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
+	RegisterUnary<Strict, const string>(rctx,
+		"QCoreApplication-setApplicationVersion", [](const string& str){
+		QCoreApplication::setApplicationVersion(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
@@ -244,20 +308,77 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			ThrowInsufficientTermsError(term, {}, 1);
 		throw ArityMismatch(2, n);
 	});
+	RegisterUnary<Strict, const string>(rctx,
+		"QCoreApplication-setOrganizationName", [](const string& str){
+		QCoreApplication::setOrganizationName(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
+	RegisterStrict(rctx, "make-QGuiApplication", [&, argv](TermNode& term){
+		RetainN(term, 0);
+		term.Value = make_shared<QGuiApplication>(argc, argv);
+	});
+	RegisterStrict(rctx, "QGuiApplication-exec", [](TermNode& term){
+		RetainN(term, 0);
+		term.Value = QGuiApplication::exec();
+	});
+	RegisterStrict(rctx, "QGuiApplication-restoreOverrideCursor",
+		[](TermNode& term){
+		RetainN(term, 0);
+		QGuiApplication::restoreOverrideCursor();
+		return ReduceReturnUnspecified(term);
+	});
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0) \
+	&& QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+	RegisterUnary<Strict, const bool>(rctx,
+		"QGuiApplication-setFallbackSessionManagementEnabled", [](bool enabled){
+		QGuiApplication::setFallbackSessionManagementEnabled(enabled);
+		return ValueToken::Unspecified;
+	});
+#endif
+	RegisterUnary<Strict, const QCursor>(rctx,
+		"QGuiApplication-setOverrideCursor", [](const QCursor& cursor){
+		QGuiApplication::setOverrideCursor(cursor);
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
-		return ReductionStatus::Clean;
+	});
+	RegisterStrict(rctx, "QApplication-aboutQt", [](TermNode& term){
+		RetainN(term, 0);
+		QApplication::aboutQt();
+		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = QApplication::exec();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QWidget>();
-		return ReductionStatus::Clean;
+	});
+	RegisterStrict(rctx, "QWidget-addAction", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		wgt.addAction(Unilang::ResolveRegular<QAction*>(*++i));
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(rctx, "QWidget-close", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveQWidget(*++i).close();
+	});
+	RegisterStrict(rctx, "QWidget-devType", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveConstQWidget(*++i).devType();
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
@@ -292,7 +413,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		term.Value = shared_ptr<QWidget>(make_shared<QPushButton>(
 			Unilang::ResolveRegular<string>(*++i).c_str()));
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
@@ -304,7 +424,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		p_lbl->setAlignment(align);
 		term.Value = shared_ptr<QWidget>(std::move(p_lbl));
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QLabel-setText", [](TermNode& term){
 		RetainN(term, 2);
@@ -313,14 +432,12 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto& wgt(ResolveQWidget(*++i));
 		const auto& text(Unilang::ResolveRegular<string>(*++i));
 
-		dynamic_cast<QLabel&>(wgt).setText(
-			QString::fromStdString(YSLib::to_std_string(text)));
+		dynamic_cast<QLabel&>(wgt).setText(MakeQString(text));
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
@@ -335,7 +452,6 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QQuickView", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QQuickView>();
-		return ReductionStatus::Clean;
 	});
 	RegisterStrict(rctx, "QQuickView-show", [](TermNode& term){
 		RetainN(term, 1);
