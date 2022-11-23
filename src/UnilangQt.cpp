@@ -67,7 +67,7 @@ GetModuleFor(Context& ctx, _fCallable&& f)
 YB_PURE QWidget&
 ResolveQWidget(TermNode& term)
 {
-	const auto& p_wgt(Unilang::ResolveRegular<shared_ptr<QWidget>>(term));
+	const auto& p_wgt(Unilang::ResolveRegular<const shared_ptr<QWidget>>(term));
 
 	assert(p_wgt.get());
 	return *p_wgt;
@@ -146,7 +146,7 @@ public:
 	qt_metacall(QMetaObject::Call, int, void**) override;
 
 	Sink&
-	GetSinkRef()
+	GetSinkRef() noexcept
 	{
 		return sink;
 	}
@@ -200,14 +200,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& sender(ResolveQWidget(*++i));
-		const auto& signal(Unilang::ResolveRegular<string>(*++i));
+		const auto& signal(Unilang::ResolveRegular<const string>(*++i));
 		auto& receiver(
 			*Unilang::ResolveRegular<shared_ptr<DynamicQObject>>(*++i));
 		auto& sink(receiver.GetSinkRef());
 		auto& tm_func(*++i);
 
 		// NOTE: Typecheck.
-		yunused(ResolveRegular<ContextHandler>(tm_func));
+		yunused(Unilang::ResolveRegular<const ContextHandler>(tm_func));
 		sink.ConnectDynamicSlot(sender, signal.c_str(), receiver, "slot()",
 			[&](const char* slot){
 			using namespace std;
@@ -298,10 +298,10 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		{
 			auto i(term.begin());
 			const auto attribute(Unilang::ResolveRegular<
-				Qt::ApplicationAttribute>(*++i));
+				const Qt::ApplicationAttribute>(*++i));
 
 			QCoreApplication::setAttribute(attribute,
-				n == 1 || ResolveRegular<bool>(*++i));
+				n == 1 || Unilang::ResolveRegular<const bool>(*++i));
 			return ReduceReturnUnspecified(term);
 		}
 		if(n < 1)
@@ -363,7 +363,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto i(term.begin());
 		auto& wgt(ResolveQWidget(*++i));
 
-		wgt.addAction(Unilang::ResolveRegular<QAction*>(*++i));
+		wgt.addAction(Unilang::ResolveRegular<QAction* const>(*++i));
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QWidget-close", [](TermNode& term){
@@ -401,8 +401,8 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& wgt(ResolveQWidget(*++i));
-		const int& w(Unilang::ResolveRegular<int>(*++i));
-		const int& h(Unilang::ResolveRegular<int>(*++i));
+		const int& w(Unilang::ResolveRegular<const int>(*++i));
+		const int& h(Unilang::ResolveRegular<const int>(*++i));
 
 		wgt.resize(w, h);
 		return ReduceReturnUnspecified(term);
@@ -417,7 +417,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& wgt(ResolveQWidget(*++i));
-		auto& layout(*Unilang::ResolveRegular<shared_ptr<QLayout>>(*++i));
+		auto& layout(*Unilang::ResolveRegular<const shared_ptr<QLayout>>(*++i));
 
 		wgt.setLayout(&layout);
 		return ReduceReturnUnspecified(term);
@@ -428,14 +428,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto i(term.begin());
 
 		term.Value = shared_ptr<QWidget>(make_shared<QPushButton>(
-			Unilang::ResolveRegular<string>(*++i).c_str()));
+			Unilang::ResolveRegular<const string>(*++i).c_str()));
 	});
 	RegisterStrict(rctx, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
-		const auto& text(Unilang::ResolveRegular<string>(*++i));
-		const auto& align(Unilang::ResolveRegular<Qt::AlignmentFlag>(*++i));
+		const auto& text(Unilang::ResolveRegular<const string>(*++i));
+		const auto& align(
+			Unilang::ResolveRegular<const Qt::AlignmentFlag>(*++i));
 		auto p_lbl(make_shared<QLabel>(QString(text.c_str())));
 
 		p_lbl->setAlignment(align);
@@ -446,7 +447,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 		auto& wgt(ResolveQWidget(*++i));
-		const auto& text(Unilang::ResolveRegular<string>(*++i));
+		const auto& text(Unilang::ResolveRegular<const string>(*++i));
 
 		dynamic_cast<QLabel&>(wgt).setText(MakeQString(text));
 		return ReduceReturnUnspecified(term);
@@ -459,7 +460,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 2);
 
 		auto i(term.begin());
-		auto& layout(*Unilang::ResolveRegular<shared_ptr<QLayout>>(*++i));
+		auto& layout(*Unilang::ResolveRegular<const shared_ptr<QLayout>>(*++i));
 		auto& wgt(ResolveQWidget(*++i));
 
 		layout.addWidget(&wgt);
@@ -474,7 +475,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 
-		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->show();
+		Unilang::ResolveRegular<const shared_ptr<QQuickView>>(*++i)->show();
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QQuickView-showFullScreen", [](TermNode& term){
@@ -482,23 +483,27 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 
-		Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i)->showFullScreen();
+		Unilang::ResolveRegular<
+			const shared_ptr<QQuickView>>(*++i)->showFullScreen();
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QQuickView_set-source", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
-		auto& window(*Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i));
+		auto& window(
+			*Unilang::ResolveRegular<const shared_ptr<QQuickView>>(*++i));
 
-		window.setSource(QUrl(Unilang::ResolveRegular<string>(*++i).c_str()));
+		window.setSource(
+			QUrl(Unilang::ResolveRegular<const string>(*++i).c_str()));
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QQuickView_set-transparent", [](TermNode& term){
 		RetainN(term, 1);
 
 		auto i(term.begin());
-		auto& window(*Unilang::ResolveRegular<shared_ptr<QQuickView>>(*++i));
+		auto& window(
+			*Unilang::ResolveRegular<const shared_ptr<QQuickView>>(*++i));
 		auto sf(window.format());
 
 		sf.setAlphaBufferSize(8);
