@@ -387,6 +387,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		term.Value = ResolveConstQWidget(*++i).hasHeightForWidth();
 	});
+	RegisterStrict(rctx, "QWidget-heightForWidth", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveConstQWidget(*++i));
+
+		term.Value
+			= wgt.heightForWidth(Unilang::ResolveRegular<const int>(*++i));
+	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
 
