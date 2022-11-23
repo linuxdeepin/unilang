@@ -22,7 +22,7 @@
 #include <QString> // for QString;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
-//	Qt::ApplicationAttribute, Qt::AlignmentFlag;
+//	Qt::ApplicationAttribute, Qt::InputMethodQuery, Qt::AlignmentFlag;
 #include <QCoreApplication> // for QCoreApplication;
 #include <QGuiApplication> // for QGuiApplication;
 #include <QApplication> // for QApplication;
@@ -199,6 +199,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		RetainN(term, 4);
 
 		auto i(term.begin());
+		// TODO: Extend to real QObject.
 		auto& sender(ResolveQWidget(*++i));
 		const auto& signal(Unilang::ResolveRegular<const string>(*++i));
 		auto& receiver(
@@ -395,6 +396,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		term.Value
 			= wgt.heightForWidth(Unilang::ResolveRegular<const int>(*++i));
+	});
+	RegisterStrict(rctx, "QWidget-inputMethodQuery", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveConstQWidget(*++i));
+
+		term.Value = wgt.inputMethodQuery(
+			Unilang::ResolveRegular<const Qt::InputMethodQuery>(*++i));
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
