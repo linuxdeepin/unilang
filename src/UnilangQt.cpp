@@ -430,6 +430,13 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		wgt.move(Unilang::ResolveRegular<const QPoint>(*++i));
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(rctx, "QWidget-paintEngine", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveConstQWidget(*++i).paintEngine();
+	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
 
