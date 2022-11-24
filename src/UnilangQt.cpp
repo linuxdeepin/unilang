@@ -29,6 +29,7 @@
 #include <QCursor> // for QCursor;
 #include <QAction> // for QAction;
 #include <QWidget> // for QWidget;
+#include <QPoint> // for QPoint;
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
@@ -412,6 +413,22 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).minimumSizeHint();
+	});
+	RegisterStrict(rctx, "QWidget-minimumSizeHint", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveConstQWidget(*++i).minimumSizeHint();
+	});
+	RegisterStrict(rctx, "QWidget-move", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		wgt.move(Unilang::ResolveRegular<const QPoint>(*++i));
+		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
