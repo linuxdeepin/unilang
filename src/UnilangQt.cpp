@@ -406,6 +406,13 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = wgt.inputMethodQuery(
 			Unilang::ResolveRegular<const Qt::InputMethodQuery>(*++i));
 	});
+	RegisterStrict(rctx, "QWidget-minimumSizeHint", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveConstQWidget(*++i).minimumSizeHint();
+	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
 		RetainN(term, 3);
 
