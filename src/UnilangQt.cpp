@@ -30,6 +30,7 @@
 #include <QAction> // for QAction;
 #include <QWidget> // for QWidget;
 #include <QPoint> // for QPoint;
+#include <QSize> // for QSize;
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
@@ -431,15 +432,25 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = ResolveConstQWidget(*++i).paintEngine();
 	});
 	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
-		RetainN(term, 3);
+		const auto n(FetchArgumentN(term));
 
-		auto i(term.begin());
-		auto& wgt(ResolveQWidget(*++i));
-		const int& w(Unilang::ResolveRegular<const int>(*++i));
-		const int& h(Unilang::ResolveRegular<const int>(*++i));
+		if(n == 2 || n == 3)
+		{
+			auto i(term.begin());
+			auto& wgt(ResolveQWidget(*++i));
+			if(n == 2)
+				wgt.resize(Unilang::ResolveRegular<const QSize>(*++i));
+			else
+			{
+				const int& w(Unilang::ResolveRegular<const int>(*++i));
 
-		wgt.resize(w, h);
-		return ReduceReturnUnspecified(term);
+				wgt.resize(w, Unilang::ResolveRegular<const int>(*++i));
+			}
+			return ReduceReturnUnspecified(term);
+		}
+		if(n < 2)
+			ThrowInsufficientTermsError(term, {}, 2);
+		throw ArityMismatch(3, n);
 	});
 	RegisterUnary<Strict, const shared_ptr<QWidget>>(rctx, "QWidget-show",
 		[](const shared_ptr<QWidget>& p_wgt){
