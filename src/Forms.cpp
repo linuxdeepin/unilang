@@ -74,7 +74,7 @@ CheckEnvironmentFormal(const TermNode& term)
 	catch(...)
 	{
 		std::throw_with_nested(InvalidSyntax("Failed checking for"
-			" environment formal parameter (expected a symbol)."));
+			" environment formal parameter (expected a symbol or #ignore)."));
 	}
 }
 
