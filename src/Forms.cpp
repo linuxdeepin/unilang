@@ -95,12 +95,6 @@ MakeValueOrMove(ResolvedTermReferencePtr p_ref, _fCopy cp, _fMove mv)
 	return Unilang::IsMovable(p_ref) ? mv() : cp();
 }
 
-YB_ATTR_nodiscard YB_PURE inline InvalidSyntax
-MakeFunctionAbstractionError() noexcept
-{
-	return InvalidSyntax("Invalid syntax found in function abstraction.");
-}
-
 EnvironmentReference
 FetchTailEnvironmentReference(const TermReference& ref, Context& ctx)
 {
@@ -490,7 +484,8 @@ CheckFunctionCreation(_func f) -> decltype(f())
 	}
 	catch(...)
 	{
-		std::throw_with_nested(MakeFunctionAbstractionError());
+		std::throw_with_nested(
+			InvalidSyntax("Invalid syntax found in function abstraction."));
 	}
 }
 
