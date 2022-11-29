@@ -513,8 +513,10 @@ ReduceCreateFunction(TermNode& term, _func f)
 	return ReductionStatus::Clean;
 }
 
+template<typename... _tParams>
 YB_ATTR_nodiscard ReductionStatus
-ReduceVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
+ReduceVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo,
+	_tParams&&... args)
 {
 	return ReduceCreateFunction(term, [&]() -> ContextHandler{
 		auto formals(ShareMoveTerm(Unilang::Deref(++i)));
@@ -524,22 +526,25 @@ ReduceVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
 		if(eformal)
 			return Unilang::MakeForm(term, DynamicVauHandler(
 				std::move(formals), std::move(vo), std::move(p_es), no_lift,
-				std::move(*eformal)));
+				std::move(*eformal)), yforward(args)...);
 		return Unilang::MakeForm(term, VauHandler(std::move(formals),
-			std::move(vo), std::move(p_es), no_lift));
+			std::move(vo), std::move(p_es), no_lift), yforward(args)...);
 	});
 }
 
+template<size_t _vWrapping>
 ReductionStatus
-VauImpl(TermNode& term, Context& ctx, bool no_lift)
+LambdaVau(TermNode& term, Context& ctx, bool no_lift)
 {
 	CheckVariadicArity(term, 1);
 	return ReduceVau(term, no_lift, term.begin(),
-		MakeParentSingleNonOwning(term.get_allocator(), ctx.GetRecordPtr()));
+		MakeParentSingleNonOwning(term.get_allocator(), ctx.GetRecordPtr()),
+		ystdex::size_t_<_vWrapping>());
 }
 
+template<size_t _vWrapping>
 ReductionStatus
-VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
+LambdaVauWithEnvironment(TermNode& term, Context& ctx, bool no_lift)
 {
 	CheckVariadicArity(term, 2);
 
@@ -561,8 +566,20 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 				return MakeParentSingle(nd.get_allocator(),
 					ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref)));
 			ThrowInvalidEnvironmentType(nd, p_ref);
-		}, tm));
+		}, tm), ystdex::size_t_<_vWrapping>());
 	}, "eval-vau-parent"));
+}
+
+ReductionStatus
+VauImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	return LambdaVau<Form>(term, ctx, no_lift);
+}
+
+ReductionStatus
+VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	return LambdaVauWithEnvironment<Form>(term, ctx, no_lift);
 }
 
 YB_NORETURN ReductionStatus
@@ -881,9 +898,8 @@ ReductionStatus
 Decapsulate::operator()(TermNode& term, Context& ctx) const
 {
 	RetainN(term);
-
-	return Unilang::ResolveTerm(
-		[&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+	return
+		Unilang::ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		const auto& enc(AccessRegular<const Encapsulation>(nd, p_ref));
 
 		if(enc.Get() == Get())
