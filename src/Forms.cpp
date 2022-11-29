@@ -9,6 +9,7 @@
 #include "Exception.h" // for InvalidSyntax, ThrowTypeErrorForInvalidType,
 //	TypeError, ArityMismatch, ThrowListTypeErrorForNonList, UnilangException,
 //	ThrowValueCategoryError;
+#include <ystdex/optional.h> // for ystdex::optional;
 #include <exception> // for std::throw_with_nested;
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
@@ -58,17 +59,23 @@ ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
 }
 
-YB_ATTR_nodiscard YB_PURE string
-CheckEnvironmentFormal(const TermNode& term)
+YB_ATTR_nodiscard YB_PURE ystdex::optional<string>
+ExtractEnvironmentFormal(const TermNode& term)
 {
 	try
 	{
-		return ResolveTerm([&](const TermNode& nd, bool has_ref) -> string{
+		return
+			ResolveTerm([&](const TermNode& nd, ResolvedTermReferencePtr p_ref)
+			-> ystdex::optional<string>{
 			if(const auto p = TermToNamePtr(nd))
+			{
+				if(Unilang::IsMovable(p_ref))
+					return string(std::move(*p));
 				return string(*p, term.get_allocator());
+			}
 			else if(!IsIgnore(nd))
-				ThrowFormalParameterTypeError(nd, has_ref);
-			return string(term.get_allocator());
+				ThrowFormalParameterTypeError(nd, p_ref);
+			return {};
 		}, term);
 	}
 	catch(...)
@@ -498,32 +505,37 @@ MakeCombinerEvalStruct(TermNode& term, TNIter i)
 		Unilang::AsTermNode(term.get_allocator())));
 }
 
-YB_ATTR_nodiscard DynamicVauHandler
-MakeVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
-{
-	auto formals(ShareMoveTerm(Unilang::Deref(++i)));
-	auto eformal(CheckEnvironmentFormal(Unilang::Deref(++i)));
-
-	return DynamicVauHandler(std::move(formals), std::move(vo),
-		MakeCombinerEvalStruct(term, ++i), no_lift, std::move(eformal));
-}
-
 template<typename _func>
 inline ReductionStatus
-ReduceCreateFunction(TermNode& term, _func f, size_t wrap)
+ReduceCreateFunction(TermNode& term, _func f)
 {
-	term.Value = Unilang::MakeForm(term, CheckFunctionCreation(f), wrap);
+	term.Value = CheckFunctionCreation(f);
 	return ReductionStatus::Clean;
+}
+
+YB_ATTR_nodiscard ReductionStatus
+ReduceVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo)
+{
+	return ReduceCreateFunction(term, [&]() -> ContextHandler{
+		auto formals(ShareMoveTerm(Unilang::Deref(++i)));
+		auto eformal(ExtractEnvironmentFormal(Unilang::Deref(++i)));
+		auto p_es(MakeCombinerEvalStruct(term, ++i));
+
+		if(eformal)
+			return Unilang::MakeForm(term, DynamicVauHandler(
+				std::move(formals), std::move(vo), std::move(p_es), no_lift,
+				std::move(*eformal)));
+		return Unilang::MakeForm(term, VauHandler(std::move(formals),
+			std::move(vo), std::move(p_es), no_lift));
+	});
 }
 
 ReductionStatus
 VauImpl(TermNode& term, Context& ctx, bool no_lift)
 {
 	CheckVariadicArity(term, 1);
-	return ReduceCreateFunction(term, [&]{
-		return MakeVau(term, no_lift, term.begin(), MakeParentSingleNonOwning(
-			term.get_allocator(), ctx.GetRecordPtr()));
-	}, Form);
+	return ReduceVau(term, no_lift, term.begin(),
+		MakeParentSingleNonOwning(term.get_allocator(), ctx.GetRecordPtr()));
 }
 
 ReductionStatus
@@ -539,25 +551,19 @@ VauWithEnvironmentImpl(TermNode& term, Context& ctx, bool no_lift)
 	}, tm);
 	EnsureValueTags(tm.Tags);
 	return ReduceSubsequent(tm, ctx, NameTypedReducerHandler([&, i, no_lift]{
-		return ReduceCreateFunction(term, [&]{
-			return
-				ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-				return MakeVau(term, no_lift, i, [&]() -> ValueObject{
-					if(IsList(nd))
-						return MakeParent(MakeEnvironmentParent(nd.begin(),
-							nd.end(), nd.get_allocator(),
-							!Unilang::IsMovable(p_ref)));
-					if(IsLeaf(nd))
-						return MakeParentSingle(term.get_allocator(),
-							ResolveEnvironment(nd.Value,
-							Unilang::IsMovable(p_ref)));
-					ThrowInvalidEnvironmentType(nd, p_ref);
-				}());
-			}, tm);
-		}, Form);
+		return ReduceVau(term, no_lift, i, ResolveTerm([](TermNode& nd,
+			ResolvedTermReferencePtr p_ref) -> ValueObject{
+			if(IsList(nd))
+				return MakeParent(MakeEnvironmentParent(
+					nd.begin(), nd.end(), nd.get_allocator(),
+					!Unilang::IsMovable(p_ref)));
+			if(IsLeaf(nd))
+				return MakeParentSingle(nd.get_allocator(),
+					ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref)));
+			ThrowInvalidEnvironmentType(nd, p_ref);
+		}, tm));
 	}, "eval-vau-parent"));
 }
-
 
 YB_NORETURN ReductionStatus
 ThrowForUnwrappingFailure(const ContextHandler& h)
