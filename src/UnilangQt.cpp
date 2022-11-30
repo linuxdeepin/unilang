@@ -19,6 +19,7 @@
 #endif
 #include <QtGlobal> // for QT_VERSION, QT_VERSION_CHECK;
 #include <QHash> // for QHash;
+#include <QByteArray> // for QByteArray;
 #include <QString> // for QString;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
@@ -468,6 +469,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		[](const shared_ptr<QWidget>& p_wgt){
 		p_wgt->show();
 		return ValueToken::Unspecified;
+	});
+	RegisterStrict(rctx, "QWidget-restoreGeometry", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		term.Value = wgt.restoreGeometry(
+			Unilang::ResolveRegular<const QByteArray>(*++i));
 	});
 	RegisterStrict(rctx, "QWidget-setLayout", [](TermNode& term){
 		RetainN(term, 2);
