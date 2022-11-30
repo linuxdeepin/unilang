@@ -479,6 +479,13 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = wgt.restoreGeometry(
 			Unilang::ResolveRegular<const QByteArray>(*++i));
 	});
+	RegisterStrict(rctx, "QWidget-saveGeometry", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = ResolveConstQWidget(*++i).saveGeometry();
+	});
 	RegisterStrict(rctx, "QWidget-setLayout", [](TermNode& term){
 		RetainN(term, 2);
 
