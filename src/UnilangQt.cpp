@@ -416,13 +416,25 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = ResolveConstQWidget(*++i).minimumSizeHint();
 	});
 	RegisterStrict(rctx, "QWidget-move", [](TermNode& term){
-		RetainN(term, 2);
+		const auto n(FetchArgumentN(term));
 
-		auto i(term.begin());
-		auto& wgt(ResolveQWidget(*++i));
+		if(n == 2 || n == 3)
+		{
+			auto i(term.begin());
+			auto& wgt(ResolveQWidget(*++i));
+			if(n == 2)
+				wgt.move(Unilang::ResolveRegular<const QPoint>(*++i));
+			else
+			{
+				const int& x(Unilang::ResolveRegular<const int>(*++i));
 
-		wgt.move(Unilang::ResolveRegular<const QPoint>(*++i));
-		return ReduceReturnUnspecified(term);
+				wgt.move(x, Unilang::ResolveRegular<const int>(*++i));
+			}
+			return ReduceReturnUnspecified(term);
+		}
+		if(n < 2)
+			ThrowInsufficientTermsError(term, {}, 2);
+		throw ArityMismatch(3, n);
 	});
 	RegisterStrict(rctx, "QWidget-paintEngine", [](TermNode& term){
 		RetainN(term);
