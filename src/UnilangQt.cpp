@@ -496,6 +496,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		wgt.setLayout(&layout);
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(rctx, "QWidget-setVisible", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		wgt.setVisible(Unilang::ResolveRegular<const bool>(*++i));
+		return ReduceReturnUnspecified(term);
+	});
 	RegisterStrict(rctx, "make-QPushButton", [](TermNode& term){
 		RetainN(term, 1);
 
