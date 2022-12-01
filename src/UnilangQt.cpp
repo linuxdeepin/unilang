@@ -465,6 +465,12 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			ThrowInsufficientTermsError(term, {}, 2);
 		throw ArityMismatch(3, n);
 	});
+	RegisterBinary<Strict, const shared_ptr<QWidget>, const string>(rctx,
+		"QWidget-setWindowFilePath",
+		[](const shared_ptr<QWidget>& p_wgt, const string& str){
+		p_wgt->setWindowFilePath(MakeQString(str));
+		return ValueToken::Unspecified;
+	});
 	RegisterUnary<Strict, const shared_ptr<QWidget>>(rctx, "QWidget-show",
 		[](const shared_ptr<QWidget>& p_wgt){
 		p_wgt->show();
