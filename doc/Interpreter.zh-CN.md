@@ -1086,11 +1086,52 @@ using string = basic_string<char>;
 		* `QWidget`
 			* `make-QWidget`
 			* `QWidget-close`
-			* `QWidget-devType`
 			* `QWidget-resize`
+			* `QWidget-hasHeightForWidth`
+			* `QWidget-heightForWidth`
+			* `QWidget-inputMethodQuery`
+			* `QWidget-minimumSizeHint`
+			* `QWidget-move`
+			* `QWidget-paintEngine`
+			* `QWidget-restoreGeometry`
+			* `QWidget-saveGeometry`
+			* `QWidget-setLayout`
+			* `QWidget-setVisible`
+			* `QWidget-setWindowFilePath`
+			* `QWidget-show`
+			* `QWidget-sizeHint`
+			* 以下内部的 `QWidget` 成员跳过实现：
+				* `devType`
+				* `redirected`
 			* 以下非 `public` 的 `QWidget` 成员跳过实现：
-				*`actionEvent`
-				*`changeEvent`
+				* `actionEvent`
+				* `changeEvent`
+				* `dragEnterEvent`
+				* `dragLeaveEvent`
+				* `dragMoveEvent`
+				* `dropEvent`
+				* `enterEvent`
+				* `focusInEvent`
+				* `focusNextPrevChild`
+				* `focusOutEvent`
+				* `hideEvent`
+				* `initPainter`
+				* `inputMethodEvent`
+				* `keyPressEvent`
+				* `keyReleaseEvent`
+				* `leaveEvent`
+				* `metric`
+				* `mouseDoubleClickEvent`
+				* `mouseMoveEvent`
+				* `mousePressEvent`
+				* `mouseReleaseEvent`
+				* `moveEvent`
+				* `nativeEvent`
+				* `paintEvent`
+				* `resizeEvent`
+				* `showEvent`
+				* `tabletEvent`
+				* `wheelEvent`
 		* `QPushButton`
 		* `QLabel`
 		* `QVBoxLayout`
@@ -1102,4 +1143,23 @@ using string = basic_string<char>;
 			* `QQuickView-showFullScreen`
 		* `QQuickView_set-source`
 		* `QQuickView_set-transparent`
+* Qt API 类型映射（用于传递参数或值）：
+	* 宿主类型同对象类型：
+		* 任意没有在以下另行指定的非类类型的平凡类型
+		* `QPaint`
+		* `QVariant`
+		* `QCursor`
+		* `QPoint`
+		* `QSize`
+		* `QUrl`
+	* 宿主类型是不同的对象类型：
+		* `QString` 映射为 `string`
+	* 宿主类型是 `shared_ptr` 实例：
+		* `QApplication`
+		* `QGuiApplication`
+		* `QLayout`
+		* `QPushButton`
+		* `QQuickView`
+	* 宿主类型是可能带 `const` 的 `shared_ptr` 实例：
+		* `QWidget`
 
