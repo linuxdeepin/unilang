@@ -11,15 +11,6 @@
 namespace Unilang
 {
 
-#ifndef Unilang_CheckTermReferenceIndirection
-#	ifndef NDEBUG
-#		define Unilang_CheckTermReferenceIndirection true
-#else
-#		define Unilang_CheckTermReferenceIndirection false
-#	endif
-#endif
-
-
 // NOTE: The host type of symbol.
 // XXX: The destructor is not virtual.
 class TokenValue final : public string
@@ -33,7 +24,7 @@ public:
 		: base(b)
 	{}
 	TokenValue(base&& b)
-	: base(std::move(b))
+		: base(std::move(b))
 	{}
 	TokenValue(const TokenValue&) = default;
 	TokenValue(TokenValue&&) = default;
@@ -44,17 +35,57 @@ public:
 	operator=(TokenValue&&) = default;
 };
 
-YB_ATTR_nodiscard YB_PURE string
-TermToString(const TermNode&, size_t = 0);
 
-YB_ATTR_nodiscard YB_PURE string
-TermToStringWithReferenceMark(const TermNode&, bool, size_t = 0);
+using AnchorPtr = shared_ptr<const void>;
 
-YB_ATTR_nodiscard YB_PURE inline observer_ptr<const TokenValue>
-TermToNamePtr(const TermNode&);
+static_assert(ystdex::is_nothrow_copy_constructible<AnchorPtr>(),
+	"Invalid type found.");
+static_assert(ystdex::is_nothrow_copy_assignable<AnchorPtr>(),
+	"Invalid type found.");
+static_assert(ystdex::is_nothrow_move_assignable<AnchorPtr>(),
+	"Invalid type found.");
+static_assert(ystdex::is_nothrow_move_constructible<AnchorPtr>(),
+	"Invalid type found.");
 
-YB_ATTR_nodiscard YB_PURE TermTags
-TermToTags(TermNode&);
+
+inline void
+ClearCombiningTags(TermNode& term) noexcept
+{
+	EnsureValueTags(term.Tags);
+	AssertValueTags(term);
+}
+
+YB_ATTR_nodiscard YB_PURE inline bool
+IsCombiningTerm(const TermNode& term) noexcept
+{
+	return IsPair(term);
+}
+
+inline void
+AssertCombiningTerm(const TermNode& term) noexcept
+{
+	yunused(term);
+	assert(IsCombiningTerm(term) && "Invalid term found for combined term.");
+	assert(!(IsList(term) && HasStickySubterm(term))
+		&& "Invalid representation found.");
+}
+
+template<typename _type, class _tTerm>
+void
+CheckRegular(_tTerm& term, bool has_ref)
+{
+	if(IsBranch(term))
+		ThrowListTypeErrorForInvalidType(type_id<_type>(), term, has_ref);
+}
+
+template<typename _type, class _tTerm>
+YB_ATTR_nodiscard YB_PURE inline auto
+AccessRegular(_tTerm& term, bool has_ref)
+	-> decltype(Access<_type>(term))
+{
+	Unilang::CheckRegular<_type>(term, has_ref);
+	return Access<_type>(term);
+}
 
 using YSLib::TryAccessValue;
 
@@ -97,16 +128,32 @@ TryAccessTerm(const TermNode& term)
 	return IsLeaf(term) ? TryAccessLeaf<_type>(term) : nullptr;
 }
 
+YB_ATTR_nodiscard YB_PURE string
+TermToString(const TermNode&, size_t = 0);
+
+YB_ATTR_nodiscard YB_PURE string
+TermToStringWithReferenceMark(const TermNode&, bool, size_t = 0);
+
 YB_ATTR_nodiscard YB_PURE inline observer_ptr<const TokenValue>
 TermToNamePtr(const TermNode& term)
 {
 	return TryAccessTerm<TokenValue>(term);
 }
 
+YB_ATTR_nodiscard YB_PURE TermTags
+TermToTags(TermNode&);
+
+
+#ifndef Unilang_CheckTermReferenceIndirection
+#	ifndef NDEBUG
+#		define Unilang_CheckTermReferenceIndirection true
+#else
+#		define Unilang_CheckTermReferenceIndirection false
+#	endif
+#endif
+
 
 class Environment;
-
-using AnchorPtr = shared_ptr<const void>;
 
 
 class EnvironmentReference final
@@ -368,27 +415,6 @@ IsBoundLValueTerm(const TermNode&);
 YB_ATTR_nodiscard YB_PURE bool
 IsUncollapsedTerm(const TermNode&);
 
-inline void
-ClearCombiningTags(TermNode& term) noexcept
-{
-	EnsureValueTags(term.Tags);
-	AssertValueTags(term);
-}
-
-YB_ATTR_nodiscard YB_PURE inline bool
-IsCombiningTerm(const TermNode& term) noexcept
-{
-	return IsPair(term);
-}
-
-inline void
-AssertCombiningTerm(const TermNode& term) noexcept
-{
-	yunused(term);
-	assert(IsCombiningTerm(term) && "Invalid term found for combined term.");
-	assert(!(IsList(term) && HasStickySubterm(term))
-		&& "Invalid representation found.");
-}
 
 template<typename _func, class _tTerm>
 inline auto
@@ -424,23 +450,6 @@ ResolveTerm(_func do_resolve, _tTerm&& term)
 {
 	return Unilang::ResolveBy(std::move(do_resolve), yforward(term),
 		TryAccessLeafAtom<const TermReference>(term));
-}
-
-template<typename _type, class _tTerm>
-void
-CheckRegular(_tTerm& term, bool has_ref)
-{
-	if(IsBranch(term))
-		ThrowListTypeErrorForInvalidType(type_id<_type>(), term, has_ref);
-}
-
-template<typename _type, class _tTerm>
-YB_ATTR_nodiscard YB_PURE inline auto
-AccessRegular(_tTerm& term, bool has_ref)
-	-> decltype(Access<_type>(term))
-{
-	Unilang::CheckRegular<_type>(term, has_ref);
-	return Access<_type>(term);
 }
 
 template<typename _type, class _tTerm>
