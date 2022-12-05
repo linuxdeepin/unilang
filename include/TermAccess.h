@@ -203,19 +203,19 @@ public:
 };
 
 
-class EnvironmentReference final
-	: private ystdex::equality_comparable<EnvironmentReference>
+class EnvironmentReference final : private EnvironmentBase,
+	private ystdex::equality_comparable<EnvironmentReference>
 {
 private:
 	weak_ptr<Environment> p_weak{};
-	AnchorPtr p_anchor{};
 
 public:
 	EnvironmentReference() = default;
 	EnvironmentReference(const shared_ptr<Environment>&) noexcept;
 	template<typename _tParam1, typename _tParam2>
 	EnvironmentReference(_tParam1&& arg1, _tParam2&& arg2) noexcept
-		: p_weak(yforward(arg1)), p_anchor(yforward(arg2))
+		: EnvironmentBase(yforward(arg2)),
+		p_weak(yforward(arg1))
 	{}
 	EnvironmentReference(const EnvironmentReference&) = default;
 	EnvironmentReference(EnvironmentReference&&) = default;
@@ -232,11 +232,7 @@ public:
 		return x.p_weak.lock() == y.p_weak.lock();
 	}
 
-	YB_ATTR_nodiscard YB_PURE const AnchorPtr&
-	GetAnchorPtr() const noexcept
-	{
-		return p_anchor;
-	}
+	using EnvironmentBase::GetAnchorPtr;
 
 	YB_ATTR_nodiscard YB_PURE const weak_ptr<Environment>&
 	GetPtr() const noexcept
