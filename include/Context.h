@@ -3,10 +3,10 @@
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
-#include "TermAccess.h" // for ValueObject, vector, string, pair, lref,
-//	TermNode, ystdex::less, map, AnchorPtr, pmr, yforward, Unilang::Deref,
-//	string_view, type_info, Unilang::allocate_shared, observer_ptr,
-//	EnvironmentReference, stack;
+#include "TermAccess.h" // for vector, ValueObject, EnvironmentBase, map,
+//	string, TermNode, ystdex::less, pair, shared_ptr, Environment, AnchorPtr,
+//	pmr, yforward, Unilang::Deref, string_view, type_info, lref,
+//	Unilang::allocate_shared, observer_ptr, EnvironmentReference, stack;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
@@ -40,7 +40,8 @@ namespace Unilang
 using EnvironmentList = vector<ValueObject>;
 
 
-class Environment final : private ystdex::equality_comparable<Environment>
+class Environment final : private EnvironmentBase,
+	private ystdex::equality_comparable<Environment>
 {
 public:
 	using BindingMap = map<string, TermNode, ystdex::less<>>;
@@ -52,29 +53,30 @@ public:
 	ValueObject Parent{};
 	bool Frozen = {};
 
-private:
-	AnchorPtr p_anchor{InitAnchor()};
-
-public:
 	Environment(allocator_type a)
-		: Bindings(a)
+		: EnvironmentBase(InitAnchor(a)),
+		Bindings(a)
 	{}
 	Environment(pmr::memory_resource& rsrc)
 		: Environment(allocator_type(&rsrc))
 	{}
 	explicit
 	Environment(const BindingMap& m)
-		: Bindings(m)
+		: EnvironmentBase(InitAnchor(m.get_allocator())),
+		Bindings(m)
 	{}
 	explicit
 	Environment(BindingMap&& m)
-		: Bindings(std::move(m))
+		: EnvironmentBase(InitAnchor(m.get_allocator())),
+		Bindings(std::move(m))
 	{}
 	Environment(const ValueObject& vo, allocator_type a)
-		: Bindings(a), Parent((CheckParent(vo), vo))
+		: EnvironmentBase(InitAnchor(a)),
+		Bindings(a), Parent((CheckParent(vo), vo))
 	{}
 	Environment(ValueObject&& vo, allocator_type a)
-		: Bindings(a), Parent((CheckParent(vo), std::move(vo)))
+		: EnvironmentBase(InitAnchor(a)),
+		Bindings(a), Parent((CheckParent(vo), std::move(vo)))
 	{}
 	Environment(pmr::memory_resource& rsrc, const ValueObject& vo)
 		: Environment(vo, allocator_type(&rsrc))
@@ -83,7 +85,8 @@ public:
 		: Environment(std::move(vo), allocator_type(&rsrc))
 	{}
 	Environment(const Environment& e)
-		: Bindings(e.Bindings), Parent(e.Parent)
+		: EnvironmentBase(InitAnchor(e.Bindings.get_allocator())),
+		Bindings(e.Bindings), Parent(e.Parent)
 	{}
 	Environment(Environment&&) = default;
 
@@ -96,24 +99,11 @@ public:
 		return &x == &y;
 	}
 
-	YB_ATTR_nodiscard YB_PURE
-	bool
-	IsOrphan() const noexcept
-	{
-		return p_anchor.use_count() == 1;
-	}
+	using EnvironmentBase::IsOrphan;
 
-	YB_ATTR_nodiscard YB_PURE size_t
-	GetAnchorCount() const noexcept
-	{
-		return size_t(p_anchor.use_count());
-	}
+	using EnvironmentBase::GetAnchorCount;
 
-	YB_ATTR_nodiscard YB_PURE const AnchorPtr&
-	GetAnchorPtr() const noexcept
-	{
-		return p_anchor;
-	}
+	using EnvironmentBase::GetAnchorPtr;
 
 	template<typename _tKey, typename... _tParams>
 	inline ystdex::enable_if_inconvertible_t<_tKey&&,
@@ -150,7 +140,7 @@ public:
 
 private:
 	YB_ATTR_nodiscard YB_PURE AnchorPtr
-	InitAnchor() const;
+	InitAnchor(allocator_type a) const;
 
 public:
 	YB_ATTR_nodiscard YB_PURE NameResolution::first_type
