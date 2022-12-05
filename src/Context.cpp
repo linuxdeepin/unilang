@@ -111,9 +111,9 @@ Environment::EnsureValid(const shared_ptr<Environment>& p_env)
 }
 
 AnchorPtr
-Environment::InitAnchor() const
+Environment::InitAnchor(allocator_type a) const
 {
-	return Unilang::allocate_shared<AnchorData>(Bindings.get_allocator());
+	return Unilang::allocate_shared<AnchorData>(a);
 }
 
 Environment::NameResolution::first_type
