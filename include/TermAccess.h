@@ -156,6 +156,53 @@ TermToTags(TermNode&);
 class Environment;
 
 
+class EnvironmentBase
+{
+private:
+	AnchorPtr p_anchor{};
+
+public:
+	EnvironmentBase() = default;
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<EnvironmentBase, _tParams...>)>
+	inline
+	EnvironmentBase(_tParams&&... args) noexcept
+		: p_anchor(yforward(args)...)
+	{}
+	EnvironmentBase(const EnvironmentBase&) = default;
+	EnvironmentBase(EnvironmentBase&&) = default;
+
+	EnvironmentBase&
+	operator=(const EnvironmentBase&) = default;
+	EnvironmentBase&
+	operator=(EnvironmentBase&&) = default;
+
+	friend void
+	swap(EnvironmentBase& x, EnvironmentBase& y) noexcept
+	{
+		swap(x.p_anchor, y.p_anchor);
+	}
+
+	YB_ATTR_nodiscard YB_PURE bool
+	IsOrphan() const noexcept
+	{
+		return p_anchor.use_count() == 1;
+	}
+
+	YB_ATTR_nodiscard YB_PURE size_t
+	GetAnchorCount() const noexcept
+	{
+		return size_t(p_anchor.use_count());
+	}
+
+	YB_ATTR_nodiscard YB_PURE const AnchorPtr&
+	GetAnchorPtr() const noexcept
+	{
+		return p_anchor;
+	}
+};
+
+
 class EnvironmentReference final
 	: private ystdex::equality_comparable<EnvironmentReference>
 {
