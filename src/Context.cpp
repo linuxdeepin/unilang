@@ -1,7 +1,7 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
-#include "Context.h" // for string_view, Unilang::allocate_shared, lref,
-//	YSLib::make_string_view;
+#include "Context.h" // for string_view, observer_ptr, Unilang::allocate_shared,
+//	lref, YSLib::make_string_view;
 #include <cassert> // for assert;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
@@ -89,9 +89,30 @@ RedirectEnvironmentList(EnvironmentList::const_iterator first,
 } // unnamed namespace;
 
 void
-Environment::CheckParent(const ValueObject&)
+Environment::CheckParent(const ValueObject& vo)
 {
-	// TODO: Check parent type.
+	const auto& ti(vo.type());
+
+	if(IsTyped<EnvironmentList>(ti))
+	{
+		for(const auto& env : vo.GetObject<EnvironmentList>())
+			CheckParent(env);
+	}
+	else if(YB_UNLIKELY(!IsTyped<observer_ptr<const Environment>>(ti)
+		&& !IsTyped<EnvironmentReference>(ti)
+		&& !IsTyped<shared_ptr<Environment>>(ti)))
+		ThrowForInvalidType(ti);
+#if Unilang_CheckParentEnvironment
+	if(IsTyped<observer_ptr<const Environment>>(ti))
+	{
+		if(YB_UNLIKELY(!vo.GetObject<observer_ptr<const Environment>>()))
+			throw std::invalid_argument("Invalid environment found.");
+	}
+	else if(IsTyped<EnvironmentReference>(ti))
+		EnsureValid(vo.GetObject<EnvironmentReference>().Lock());
+	else if(IsTyped<shared_ptr<Environment>>(ti))
+		EnsureValid(vo.GetObject<shared_ptr<Environment>>());
+#endif
 }
 
 void
