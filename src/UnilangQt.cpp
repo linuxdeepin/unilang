@@ -570,6 +570,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<QMainWindow&>(
 			ResolveQWidget(*++i)).createPopupMenu();
 	});
+	RegisterStrict(rctx, "QMainWindow-menuBar", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = dynamic_cast<const QMainWindow&>(
+			ResolveConstQWidget(*++i)).menuBar();
+	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
