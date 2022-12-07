@@ -562,6 +562,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<QMainWindow&>(wgt).addToolBar(
 			MakeQString(Unilang::ResolveRegular<const string>(*++i)));
 	});
+	RegisterStrict(rctx, "QMainWindow-createPopupMenu", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = dynamic_cast<QMainWindow&>(
+			ResolveQWidget(*++i)).createPopupMenu();
+	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
