@@ -23,7 +23,8 @@
 #include <QString> // for QString;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
-//	Qt::ApplicationAttribute, Qt::InputMethodQuery, Qt::AlignmentFlag;
+//	Qt::ApplicationAttribute, Qt::InputMethodQuery, Qt::AlignmentFlag,
+//	Qt::WindowFlags;
 #include <QCoreApplication> // for QCoreApplication;
 #include <QGuiApplication> // for QGuiApplication;
 #include <QApplication> // for QApplication;
@@ -552,6 +553,21 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
+	});
+	RegisterStrict(rctx, "make-QMainWindow", [](TermNode& term){
+		const auto n(FetchArgumentN(term));
+
+		if(n < 2)
+		{
+			auto i(term.begin());
+			const auto p_wgt(n == 0 ? nullptr
+				: Unilang::ResolveRegular<QWidget* const>(*++i));
+
+			term.Value = shared_ptr<QWidget>(make_shared<QMainWindow>(p_wgt,
+				n == 2 ? Unilang::ResolveRegular<const Qt::WindowFlags>(*++i)
+				: Qt::WindowFlags()));
+		}
+		throw ArityMismatch(2, n);
 	});
 	RegisterStrict(rctx, "QMainWindow-addToolBar", [](TermNode& term){
 		RetainN(term, 2);
