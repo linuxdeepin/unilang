@@ -35,6 +35,7 @@
 #include <QPushButton> // for QPushButton;
 #include <QLabel> // for QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
+#include <QMainWindow> // for QMainWindow;
 #include <QQuickView> // for QQuickView;
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
@@ -551,6 +552,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
+	});
+	RegisterStrict(rctx, "QMainWindow-addToolBar", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		term.Value = dynamic_cast<QMainWindow&>(wgt).addToolBar(
+			MakeQString(Unilang::ResolveRegular<const string>(*++i)));
 	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
