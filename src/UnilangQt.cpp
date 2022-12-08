@@ -603,6 +603,12 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		dynamic_cast<QMainWindow&>(wgt).setCentralWidget(&ResolveQWidget(*++i));
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterBinary<Strict, const shared_ptr<QWidget>, const bool>(rctx,
+		"QMainWindow-setUnifiedTitleAndToolBarOnMac",
+		[](const shared_ptr<QWidget>& p_wgt, bool set){
+		dynamic_cast<QMainWindow&>(*p_wgt).setUnifiedTitleAndToolBarOnMac(set);
+		return ValueToken::Unspecified;
+	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
