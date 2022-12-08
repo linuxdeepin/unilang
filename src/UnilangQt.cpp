@@ -37,6 +37,7 @@
 #include <QLabel> // for QLabel;
 #include <QBoxLayout> // for QLayout, QVBoxLayout;
 #include <QMainWindow> // for QMainWindow;
+#include <QQmlApplicationEngine> // for QQmlApplicationEngine;
 #include <QQuickView> // for QQuickView;
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
@@ -83,9 +84,9 @@ ResolveConstQWidget(TermNode& term)
 	const auto& p_wgt(Unilang::ResolveTerm(
 		[&](TermNode& nd, bool has_ref) -> shared_ptr<const QWidget>{
 		Unilang::CheckRegular<shared_ptr<QWidget>>(nd, has_ref);
-		if(const auto p = TryAccessLeafAtom<shared_ptr<QWidget>>(term))
+		if(const auto p = TryAccessLeafAtom<const shared_ptr<QWidget>>(term))
 			return *p;
-		return Access<shared_ptr<const QWidget>>(nd);
+		return Access<const shared_ptr<const QWidget>>(nd);
 	}, term));
 
 	assert(p_wgt.get());
@@ -625,6 +626,22 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		auto& wgt(ResolveQWidget(*++i));
 
 		layout.addWidget(&wgt);
+		return ReduceReturnUnspecified(term);
+	});
+	RegisterStrict(rctx, "QQmlApplicationEngine-load", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& engine(*Unilang::ResolveRegular<
+			const shared_ptr<QQmlApplicationEngine>>(*++i));
+
+		Unilang::ResolveTerm([&](const TermNode& nd, bool has_ref){
+			Unilang::CheckRegular<QUrl>(nd, has_ref);
+			if(const auto p = TryAccessLeafAtom<const QUrl>(term))
+				engine.load(*p);
+			else
+				engine.load(MakeQString(Access<const string>(nd)));
+		}, *++i);
 		return ReduceReturnUnspecified(term);
 	});
 	RegisterStrict(rctx, "make-QQuickView", [](TermNode& term){
