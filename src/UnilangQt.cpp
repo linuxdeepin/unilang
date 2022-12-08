@@ -609,6 +609,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		dynamic_cast<QMainWindow&>(*p_wgt).setUnifiedTitleAndToolBarOnMac(set);
 		return ValueToken::Unspecified;
 	});
+	RegisterStrict(rctx, "QMainWindow-statusBar", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = dynamic_cast<const QMainWindow&>(
+			ResolveConstQWidget(*++i)).statusBar();
+	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
