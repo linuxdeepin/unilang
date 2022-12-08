@@ -82,7 +82,7 @@ ResolveConstQWidget(TermNode& term)
 {
 	const auto& p_wgt(Unilang::ResolveTerm(
 		[&](TermNode& nd, bool has_ref) -> shared_ptr<const QWidget>{
-		Unilang::CheckRegular<shared_ptr<QWidget>>(term, has_ref);
+		Unilang::CheckRegular<shared_ptr<QWidget>>(nd, has_ref);
 		if(const auto p = TryAccessLeafAtom<shared_ptr<QWidget>>(term))
 			return *p;
 		return Access<shared_ptr<const QWidget>>(nd);
