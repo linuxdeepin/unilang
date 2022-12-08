@@ -594,6 +594,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<const QMainWindow&>(
 			ResolveConstQWidget(*++i)).menuBar();
 	});
+	RegisterStrict(rctx, "QMainWindow-setCentralWidget", [](TermNode& term){
+		RetainN(term, 2);
+
+		auto i(term.begin());
+		auto& wgt(ResolveQWidget(*++i));
+
+		dynamic_cast<QMainWindow&>(wgt).setCentralWidget(&ResolveQWidget(*++i));
+		return ReduceReturnUnspecified(term);
+	});
 	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
