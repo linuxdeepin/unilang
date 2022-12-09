@@ -652,6 +652,16 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		}, *++i);
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(rctx, "QQmlApplicationEngine-rootObjects",
+		[](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		// XXX: Support 'const QQmlApplicationEngine'?
+		term.Value = Unilang::ResolveRegular<
+			const shared_ptr<QQmlApplicationEngine>>(*++i)->rootObjects();
+	});	
 	RegisterStrict(rctx, "make-QQuickView", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QQuickView>();
