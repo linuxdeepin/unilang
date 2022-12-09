@@ -1056,6 +1056,10 @@ using string = basic_string<char>;
 　　包含以下在 Demo 中需要使用的非公开特性：
 
 * Qt 绑定 API `UnilangQt` ：
+	* 以下内部的成员跳过实现：
+		* `qt_metacall`
+		* `qt_netacast`
+		* `staticMetaObject`
 	* `QtCore`
 		* `make-DynamicQObject`
 		* `QObject-connect`
@@ -1100,10 +1104,10 @@ using string = basic_string<char>;
 			* `QWidget-setWindowFilePath`
 			* `QWidget-show`
 			* `QWidget-sizeHint`
-			* 以下内部的 `QWidget` 成员跳过实现：
+			* 以下内部的成员跳过实现：
 				* `devType`
 				* `redirected`
-			* 以下非 `public` 的 `QWidget` 成员跳过实现：
+			* 以下非 `public` 的成员跳过实现：
 				* `actionEvent`
 				* `changeEvent`
 				* `dragEnterEvent`
@@ -1134,10 +1138,21 @@ using string = basic_string<char>;
 				* `wheelEvent`
 		* `QPushButton`
 		* `QLabel`
+			* `make-QLabel`
 		* `QVBoxLayout`
-		* `QApplication`
-		* `Qt.Alignment`
+			* `make-QVBoxLayout`
+		* `QMainWindow`
+			* `make-QMainWindow`
+			* `QMainWindow-addToolBar <string>`
+			* `QMainWindow-createPopupMenu`
+			* `QMainWindow-menuBar`
+			* 以下非 `public` 的成员跳过实现：
+				* `contextMenuEvent`
+				* `event`
 		* `QLayout-addWidget`
+	* `QtQml`
+		* `QQmlApplicationEngine`
+			* 
 	* `QtQuick`
 		* `QQuickView`
 			* `QQuickView-showFullScreen`
@@ -1145,7 +1160,8 @@ using string = basic_string<char>;
 		* `QQuickView_set-transparent`
 * Qt API 类型映射（用于传递参数或值）：
 	* 宿主类型同对象类型：
-		* 任意没有在以下另行指定的非类类型的平凡类型
+		* 任意没有在以下另行指定的类类型以外的平凡对象类型
+		* `QList` 的实例
 		* `QPaint`
 		* `QVariant`
 		* `QCursor`
@@ -1155,11 +1171,15 @@ using string = basic_string<char>;
 	* 宿主类型是不同的对象类型：
 		* `QString` 映射为 `string`
 	* 宿主类型是 `shared_ptr` 实例：
+		* `QLayout`
+	* 作为 `*this` 时，宿主类型是 `shared_ptr` 实例：
 		* `QApplication`
 		* `QGuiApplication`
-		* `QLayout`
-		* `QPushButton`
+		* `QWidget` 及其派生类（使用 `shared_ptr<QWidget>` 或 `shared_ptr<const QWidget>`）
+			* `QLabel`
+			* `QPushButton`
+			* `QMainWindow`
+		* `QQmlApplicationEngine`
+			* `QQmlApplicationEngine-load`
 		* `QQuickView`
-	* 宿主类型是可能带 `const` 的 `shared_ptr` 实例：
-		* `QWidget`
 
