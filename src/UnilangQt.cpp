@@ -628,6 +628,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
+	RegisterStrict(rctx, "make-QQmlApplicationEngine", [](TermNode& term){
+		RetainN(term);
+
+		auto i(term.begin());
+
+		term.Value = make_shared<QQmlApplicationEngine>(
+			Unilang::ResolveRegular<QObject* const>(*++i));
+	});	
 	RegisterStrict(rctx, "QQmlApplicationEngine-load", [](TermNode& term){
 		RetainN(term, 2);
 
