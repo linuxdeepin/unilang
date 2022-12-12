@@ -116,6 +116,25 @@ public:
 
 	using EnvironmentBase::GetAnchorPtr;
 
+	YB_ATTR_nodiscard YB_PURE const BindingMap&
+	GetMap() const noexcept
+	{
+		return Bindings;
+	}
+	YB_ATTR_nodiscard YB_PURE BindingMap&
+	GetMapCheckedRef();
+	YB_ATTR_nodiscard YB_PURE BindingMap&
+	GetMapRef() noexcept
+	{
+		assert(!IsFrozen() && "Frozen environment found.");
+		return Bindings;
+	}
+	YB_ATTR_nodiscard YB_PURE BindingMap&
+	GetMapUncheckedRef() noexcept
+	{
+		return Bindings;
+	}
+
 	template<typename _tKey, typename... _tParams>
 	inline ystdex::enable_if_inconvertible_t<_tKey&&,
 		BindingMap::const_iterator, bool>
