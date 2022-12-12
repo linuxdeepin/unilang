@@ -9,7 +9,8 @@
 //	YSLib::shared_ptr, YSLib::weak_ptr, YSLib::string_view, YSLib::pmr,
 //	YSLib::basic_string, YSLib::string, YSLib::forward-list, YSLib::list,
 //	YSLib::map, YSLib::set, YSLib::vector, YSLib::deque, YSLib::stack,
-//	YSLib::ostringstream, YSLib::sfmt, YSLib::Deref, YSLib::Nonnull;
+//	YSLib::ostringstream, YSLib::sfmt, YSLib::make_observer,
+//	YSLib::observer_ptr, YSLib::Deref, YSLib::Nonnull;
 #include YFM_YSLib_Core_YFunc // for YSLib::function;
 #include <ystdex/memory.hpp> // for YSLib::share_move;
 #include YFM_YSLib_Core_YObject // for YSLib::type_id, YSLib::type_index,
@@ -59,6 +60,7 @@ using YSLib::type_id;
 using YSLib::type_index;
 using YSLib::type_info;
 
+using YSLib::make_observer;
 using YSLib::observer_ptr;
 
 namespace any_ops = YSLib::any_ops;
