@@ -3,10 +3,11 @@
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
-#include "TermAccess.h" // for vector, ValueObject, EnvironmentBase, map,
-//	string, TermNode, ystdex::less, pair, shared_ptr, Environment, AnchorPtr,
-//	pmr, yforward, Unilang::Deref, string_view, type_info, lref,
-//	Unilang::allocate_shared, observer_ptr, EnvironmentReference, stack;
+#include "TermAccess.h" // for vector, ValueObject, map, string, TermNode,
+//	pair, shared_ptr, EnvironmentBase, AnchorPtr, pmr, yforward, Unilang::Deref,
+//	string_view, type_info, lref, Unilang::allocate_shared, observer_ptr,
+//	EnvironmentReference, stack;
+#include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
@@ -39,14 +40,14 @@ namespace Unilang
 
 using EnvironmentList = vector<ValueObject>;
 
+using BindingMap = map<string, TermNode, ystdex::less<>>;
+
+using NameResolution = pair<BindingMap::mapped_type*, shared_ptr<Environment>>;
 
 class Environment final : private EnvironmentBase,
 	private ystdex::equality_comparable<Environment>
 {
 public:
-	using BindingMap = map<string, TermNode, ystdex::less<>>;
-	using NameResolution
-		= pair<BindingMap::mapped_type*, shared_ptr<Environment>>;
 	using allocator_type = BindingMap::allocator_type;
 
 	mutable BindingMap Bindings;
@@ -349,7 +350,7 @@ public:
 		return !current.empty();
 	}
 
-	YB_ATTR_nodiscard Environment::BindingMap&
+	YB_ATTR_nodiscard BindingMap&
 	GetBindingsRef() const noexcept
 	{
 		return p_record->Bindings;
@@ -428,7 +429,7 @@ public:
 	ReductionStatus
 	RewriteTermGuarded(TermNode&);
 
-	YB_ATTR_nodiscard Environment::NameResolution
+	YB_ATTR_nodiscard NameResolution
 	Resolve(shared_ptr<Environment>, string_view) const;
 
 	void
@@ -583,7 +584,7 @@ SwitchToFreshEnvironment(Context& ctx, _tParams&&... args)
 
 template<typename _type, typename... _tParams>
 inline bool
-EmplaceLeaf(Environment::BindingMap& m, string_view name, _tParams&&... args)
+EmplaceLeaf(BindingMap& m, string_view name, _tParams&&... args)
 {
 	assert(name.data());
 
@@ -614,7 +615,7 @@ EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
 }
 
-YB_ATTR_nodiscard inline Environment::NameResolution
+YB_ATTR_nodiscard inline NameResolution
 ResolveName(const Context& ctx, string_view id)
 {
 	assert(id.data());
