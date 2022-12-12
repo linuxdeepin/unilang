@@ -4,8 +4,8 @@
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for vector, ValueObject, map, string, TermNode,
-//	pair, shared_ptr, EnvironmentBase, AnchorPtr, pmr, yforward, Unilang::Deref,
-//	string_view, type_info, lref, Unilang::allocate_shared, observer_ptr,
+//	pair, observer_ptr, shared_ptr, EnvironmentBase, AnchorPtr, pmr, yforward,
+//	Unilang::Deref, string_view, type_info, lref, Unilang::allocate_shared,
 //	EnvironmentReference, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -42,7 +42,8 @@ using EnvironmentList = vector<ValueObject>;
 
 using BindingMap = map<string, TermNode, ystdex::less<>>;
 
-using NameResolution = pair<BindingMap::mapped_type*, shared_ptr<Environment>>;
+using NameResolution
+	= pair<observer_ptr<BindingMap::mapped_type>, shared_ptr<Environment>>;
 
 class Environment final : private EnvironmentBase,
 	private ystdex::equality_comparable<Environment>
