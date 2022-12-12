@@ -3,7 +3,7 @@
 #include "Context.h" // for string_view, Unilang::allocate_shared,
 //	make_observer, lref, YSLib::make_string_view;
 #include <cassert> // for assert;
-#include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
+#include "Exception.h" // for TypeError, BadIdentifier, UnilangException,
 //	ListTypeError;
 #include "TermNode.h" // for AssertValueTags, IsAtom;
 #include <exception> // for std::throw_with_nested;
@@ -87,6 +87,14 @@ RedirectEnvironmentList(EnvironmentList::const_iterator first,
 }
 
 } // unnamed namespace;
+
+BindingMap&
+Environment::GetMapCheckedRef()
+{
+	if(!IsFrozen())
+		return GetMapRef();
+	throw TypeError("Frozen environment found.");
+}
 
 void
 Environment::CheckParent(const ValueObject& vo)
