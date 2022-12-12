@@ -798,7 +798,7 @@ AsForm(TermNode::allocator_type a, _tParams&&... args)
 void
 CheckFrozenEnvironment(const shared_ptr<Environment>& p_env)
 {
-	if(YB_UNLIKELY(Unilang::Deref(p_env).Frozen))
+	if(YB_UNLIKELY(Unilang::Deref(p_env).IsFrozen()))
 		throw TypeError("Cannot define variables in a frozen environment.");
 }
 

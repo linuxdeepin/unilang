@@ -368,7 +368,7 @@ MoveResolved(const Context& ctx, string_view id)
 
 	if(const auto p = pr.first)
 	{
-		if(Unilang::Deref(pr.second).Frozen)
+		if(Unilang::Deref(pr.second).IsFrozen())
 			return *p;
 		return std::move(*p);
 	}

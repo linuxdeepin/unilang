@@ -53,8 +53,11 @@ public:
 
 	mutable BindingMap Bindings;
 	ValueObject Parent{};
-	bool Frozen = {};
 
+private:
+	bool frozen = {};
+
+public:
 	Environment(allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
 		Bindings(a)
@@ -101,6 +104,12 @@ public:
 		return &x == &y;
 	}
 
+	YB_ATTR_nodiscard YB_PURE bool
+	IsFrozen() const noexcept
+	{
+		return frozen;
+	}
+
 	using EnvironmentBase::IsOrphan;
 
 	using EnvironmentBase::GetAnchorCount;
@@ -140,6 +149,12 @@ public:
 	static Environment&
 	EnsureValid(const shared_ptr<Environment>&);
 
+	void
+	Freeze() noexcept
+	{
+		frozen = true;
+	}
+
 private:
 	YB_ATTR_nodiscard YB_PURE AnchorPtr
 	InitAnchor(allocator_type a) const;
@@ -151,11 +166,17 @@ public:
 	YB_ATTR_nodiscard YB_PURE TermTags
 	MakeTermTags(const TermNode& term) const noexcept
 	{
-		return Frozen ? term.Tags | TermTags::Nonmodifying : term.Tags;
+		return frozen ? term.Tags | TermTags::Nonmodifying : term.Tags;
 	}
 
 	YB_NORETURN static void
 	ThrowForInvalidType(const type_info&);
+
+	void
+	Unfreeze() noexcept
+	{
+		frozen = {};
+	}
 };
 
 

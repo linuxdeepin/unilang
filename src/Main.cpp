@@ -68,7 +68,7 @@ GetModuleFor(Context& ctx, _fCallable&& f)
 		ValueObject(ctx.WeakenRecord())));
 
 	ystdex::invoke(f);
-	ctx.GetRecordRef().Frozen = true;
+	ctx.GetRecordRef().Freeze();
 	return ctx.ShareRecord();
 }
 
@@ -967,7 +967,7 @@ $defv! $import! (&e .&symbols) d
 	// NOTE: Qt support.
 	InitializeQt(intp, argc, argv);
 	// NOTE: Prevent the ground environment from modification.
-	renv.Frozen = true;
+	renv.Freeze();
 	intp.SaveGround();
 	// NOTE: User environment initialization.
 	PreloadExternal(intp, "init.txt");
@@ -1069,7 +1069,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.137"
+#define APP_VER "0.12.210"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
