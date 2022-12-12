@@ -1,7 +1,7 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
-#include "Context.h" // for string_view, observer_ptr, Unilang::allocate_shared,
-//	lref, YSLib::make_string_view;
+#include "Context.h" // for string_view, Unilang::allocate_shared,
+//	make_observer, lref, YSLib::make_string_view;
 #include <cassert> // for assert;
 #include "Exception.h" // for BadIdentifier, TypeError, UnilangException,
 //	ListTypeError;
@@ -144,7 +144,7 @@ Environment::LookupName(string_view id) const
 
 	const auto i(Bindings.find(id));
 
-	return i != Bindings.cend() ? &i->second : nullptr;
+	return make_observer(i != Bindings.cend() ? &i->second : nullptr);
 }
 
 void
