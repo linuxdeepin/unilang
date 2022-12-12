@@ -137,7 +137,7 @@ Environment::InitAnchor(allocator_type a) const
 	return Unilang::allocate_shared<AnchorData>(a);
 }
 
-Environment::NameResolution::first_type
+NameResolution::first_type
 Environment::LookupName(string_view id) const
 {
 	assert(id.data());
@@ -199,7 +199,7 @@ Context::DefaultHandleException(std::exception_ptr p)
 	}
 }
 
-Environment::NameResolution
+NameResolution
 Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 {
 	assert(bool(p_env));
@@ -207,7 +207,7 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 	Redirector cont;
 	// NOTE: Blocked. Use ISO C++14 deduced lambda return type (cf. CWG 975)
 	//	compatible to G++ attribute.
-	Environment::NameResolution::first_type p_obj;
+	NameResolution::first_type p_obj;
 
 	do
 	{
