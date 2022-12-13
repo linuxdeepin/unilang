@@ -196,12 +196,13 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	using YSLib::make_shared;
 	auto& rctx(intp.Main);
 	auto& renv(rctx.GetRecordRef());
+	auto& m(renv.GetMapRef());
 
-	RegisterStrict(rctx, "make-DynamicQObject", [](TermNode& term){
+	RegisterStrict(m, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<DynamicQObject>();
 	});
-	RegisterStrict(rctx, "QObject-connect", [&](TermNode& term, Context& ctx){
+	RegisterStrict(m, "QObject-connect", [&](TermNode& term, Context& ctx){
 		RetainN(term, 4);
 
 		auto i(term.begin());
@@ -271,19 +272,18 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		});
 		return ReduceReturnUnspecified(term);
 	});
-	renv.Bindings["Qt.AA_EnableHighDpiScaling"].Value
-		= Qt::AA_EnableHighDpiScaling;
-	renv.Bindings["Qt.AlignCenter"].Value = Qt::AlignCenter;
-	RegisterStrict(rctx, "QCoreApplication-applicationName", [](TermNode& term){
+	m["Qt.AA_EnableHighDpiScaling"].Value = Qt::AA_EnableHighDpiScaling;
+	m["Qt.AlignCenter"].Value = Qt::AlignCenter;
+	RegisterStrict(m, "QCoreApplication-applicationName", [](TermNode& term){
 		RetainN(term, 0);
 		term.SetValue(MakeString(term, QCoreApplication::applicationName()));
 	});
-	RegisterStrict(rctx, "QCoreApplication-organizationName",
+	RegisterStrict(m, "QCoreApplication-organizationName",
 		[](TermNode& term){
 		RetainN(term, 0);
 		term.SetValue(MakeString(term, QCoreApplication::organizationName()));
 	});
-	RegisterStrict(rctx, "QCoreApplication-instance",
+	RegisterStrict(m, "QCoreApplication-instance",
 		[](TermNode& term){
 		RetainN(term, 0);
 		term.SetValue(QCoreApplication::instance());
@@ -298,7 +298,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		QCoreApplication::setApplicationVersion(MakeQString(str));
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(rctx, "QCoreApplication-setAttribute", [](TermNode& term){
+	RegisterStrict(m, "QCoreApplication-setAttribute", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
 		if(n == 1 || n == 2)
@@ -320,15 +320,15 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		QCoreApplication::setOrganizationName(MakeQString(str));
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(rctx, "make-QGuiApplication", [&, argv](TermNode& term){
+	RegisterStrict(m, "make-QGuiApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QGuiApplication>(argc, argv);
 	});
-	RegisterStrict(rctx, "QGuiApplication-exec", [](TermNode& term){
+	RegisterStrict(m, "QGuiApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = QGuiApplication::exec();
 	});
-	RegisterStrict(rctx, "QGuiApplication-restoreOverrideCursor",
+	RegisterStrict(m, "QGuiApplication-restoreOverrideCursor",
 		[](TermNode& term){
 		RetainN(term, 0);
 		QGuiApplication::restoreOverrideCursor();
@@ -347,24 +347,24 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		QGuiApplication::setOverrideCursor(cursor);
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(rctx, "make-QApplication", [&, argv](TermNode& term){
+	RegisterStrict(m, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QApplication>(argc, argv);
 	});
-	RegisterStrict(rctx, "QApplication-aboutQt", [](TermNode& term){
+	RegisterStrict(m, "QApplication-aboutQt", [](TermNode& term){
 		RetainN(term, 0);
 		QApplication::aboutQt();
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QApplication-exec", [](TermNode& term){
+	RegisterStrict(m, "QApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = QApplication::exec();
 	});
-	RegisterStrict(rctx, "make-QWidget", [](TermNode& term){
+	RegisterStrict(m, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QWidget>();
 	});
-	RegisterStrict(rctx, "QWidget-addAction", [](TermNode& term){
+	RegisterStrict(m, "QWidget-addAction", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -373,21 +373,21 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		wgt.addAction(Unilang::ResolveRegular<QAction* const>(*++i));
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QWidget-close", [](TermNode& term){
+	RegisterStrict(m, "QWidget-close", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveQWidget(*++i).close();
 	});
-	RegisterStrict(rctx, "QWidget-hasHeightForWidth", [](TermNode& term){
+	RegisterStrict(m, "QWidget-hasHeightForWidth", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).hasHeightForWidth();
 	});
-	RegisterStrict(rctx, "QWidget-heightForWidth", [](TermNode& term){
+	RegisterStrict(m, "QWidget-heightForWidth", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -396,7 +396,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value
 			= wgt.heightForWidth(Unilang::ResolveRegular<const int>(*++i));
 	});
-	RegisterStrict(rctx, "QWidget-inputMethodQuery", [](TermNode& term){
+	RegisterStrict(m, "QWidget-inputMethodQuery", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -405,21 +405,21 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = wgt.inputMethodQuery(
 			Unilang::ResolveRegular<const Qt::InputMethodQuery>(*++i));
 	});
-	RegisterStrict(rctx, "QWidget-minimumSizeHint", [](TermNode& term){
+	RegisterStrict(m, "QWidget-minimumSizeHint", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).minimumSizeHint();
 	});
-	RegisterStrict(rctx, "QWidget-minimumSizeHint", [](TermNode& term){
+	RegisterStrict(m, "QWidget-minimumSizeHint", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).minimumSizeHint();
 	});
-	RegisterStrict(rctx, "QWidget-move", [](TermNode& term){
+	RegisterStrict(m, "QWidget-move", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
 		if(n == 2 || n == 3)
@@ -440,14 +440,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			ThrowInsufficientTermsError(term, {}, 2);
 		throw ArityMismatch(3, n);
 	});
-	RegisterStrict(rctx, "QWidget-paintEngine", [](TermNode& term){
+	RegisterStrict(m, "QWidget-paintEngine", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).paintEngine();
 	});
-	RegisterStrict(rctx, "QWidget-resize", [](TermNode& term){
+	RegisterStrict(m, "QWidget-resize", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
 		if(n == 2 || n == 3)
@@ -479,7 +479,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		p_wgt->show();
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(rctx, "QWidget-restoreGeometry", [](TermNode& term){
+	RegisterStrict(m, "QWidget-restoreGeometry", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -488,14 +488,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = wgt.restoreGeometry(
 			Unilang::ResolveRegular<const QByteArray>(*++i));
 	});
-	RegisterStrict(rctx, "QWidget-saveGeometry", [](TermNode& term){
+	RegisterStrict(m, "QWidget-saveGeometry", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).saveGeometry();
 	});
-	RegisterStrict(rctx, "QWidget-setLayout", [](TermNode& term){
+	RegisterStrict(m, "QWidget-setLayout", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -505,7 +505,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		wgt.setLayout(&layout);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QWidget-setVisible", [](TermNode& term){
+	RegisterStrict(m, "QWidget-setVisible", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -514,14 +514,14 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		wgt.setVisible(Unilang::ResolveRegular<const bool>(*++i));
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QWidget-sizeHint", [](TermNode& term){
+	RegisterStrict(m, "QWidget-sizeHint", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
 
 		term.Value = ResolveConstQWidget(*++i).paintEngine();
 	});
-	RegisterStrict(rctx, "make-QPushButton", [](TermNode& term){
+	RegisterStrict(m, "make-QPushButton", [](TermNode& term){
 		RetainN(term, 1);
 
 		auto i(term.begin());
@@ -529,7 +529,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = shared_ptr<QWidget>(make_shared<QPushButton>(
 			Unilang::ResolveRegular<const string>(*++i).c_str()));
 	});
-	RegisterStrict(rctx, "make-QLabel", [](TermNode& term){
+	RegisterStrict(m, "make-QLabel", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -541,7 +541,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		p_lbl->setAlignment(align);
 		term.Value = shared_ptr<QWidget>(std::move(p_lbl));
 	});
-	RegisterStrict(rctx, "QLabel-setText", [](TermNode& term){
+	RegisterStrict(m, "QLabel-setText", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -551,11 +551,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		dynamic_cast<QLabel&>(wgt).setText(MakeQString(text));
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "make-QVBoxLayout", [](TermNode& term){
+	RegisterStrict(m, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
 	});
-	RegisterStrict(rctx, "make-QMainWindow", [](TermNode& term){
+	RegisterStrict(m, "make-QMainWindow", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
 
 		if(n < 2)
@@ -570,7 +570,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		}
 		throw ArityMismatch(2, n);
 	});
-	RegisterStrict(rctx, "QMainWindow-addToolBar", [](TermNode& term){
+	RegisterStrict(m, "QMainWindow-addToolBar", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -579,7 +579,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<QMainWindow&>(wgt).addToolBar(
 			MakeQString(Unilang::ResolveRegular<const string>(*++i)));
 	});
-	RegisterStrict(rctx, "QMainWindow-createPopupMenu", [](TermNode& term){
+	RegisterStrict(m, "QMainWindow-createPopupMenu", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
@@ -587,7 +587,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<QMainWindow&>(
 			ResolveQWidget(*++i)).createPopupMenu();
 	});
-	RegisterStrict(rctx, "QMainWindow-menuBar", [](TermNode& term){
+	RegisterStrict(m, "QMainWindow-menuBar", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
@@ -595,7 +595,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<const QMainWindow&>(
 			ResolveConstQWidget(*++i)).menuBar();
 	});
-	RegisterStrict(rctx, "QMainWindow-setCentralWidget", [](TermNode& term){
+	RegisterStrict(m, "QMainWindow-setCentralWidget", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -610,7 +610,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		dynamic_cast<QMainWindow&>(*p_wgt).setUnifiedTitleAndToolBarOnMac(set);
 		return ValueToken::Unspecified;
 	});
-	RegisterStrict(rctx, "QMainWindow-statusBar", [](TermNode& term){
+	RegisterStrict(m, "QMainWindow-statusBar", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
@@ -618,7 +618,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = dynamic_cast<const QMainWindow&>(
 			ResolveConstQWidget(*++i)).statusBar();
 	});
-	RegisterStrict(rctx, "QLayout-addWidget", [](TermNode& term){
+	RegisterStrict(m, "QLayout-addWidget", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -628,7 +628,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		layout.addWidget(&wgt);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "make-QQmlApplicationEngine", [](TermNode& term){
+	RegisterStrict(m, "make-QQmlApplicationEngine", [](TermNode& term){
 		RetainN(term);
 
 		auto i(term.begin());
@@ -636,7 +636,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = make_shared<QQmlApplicationEngine>(
 			Unilang::ResolveRegular<QObject* const>(*++i));
 	});	
-	RegisterStrict(rctx, "QQmlApplicationEngine-load", [](TermNode& term){
+	RegisterStrict(m, "QQmlApplicationEngine-load", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -652,7 +652,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		}, *++i);
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QQmlApplicationEngine-rootObjects",
+	RegisterStrict(m, "QQmlApplicationEngine-rootObjects",
 		[](TermNode& term){
 		RetainN(term);
 
@@ -662,11 +662,11 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		term.Value = Unilang::ResolveRegular<
 			const shared_ptr<QQmlApplicationEngine>>(*++i)->rootObjects();
 	});	
-	RegisterStrict(rctx, "make-QQuickView", [](TermNode& term){
+	RegisterStrict(m, "make-QQuickView", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = make_shared<QQuickView>();
 	});
-	RegisterStrict(rctx, "QQuickView-show", [](TermNode& term){
+	RegisterStrict(m, "QQuickView-show", [](TermNode& term){
 		RetainN(term, 1);
 
 		auto i(term.begin());
@@ -674,7 +674,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		Unilang::ResolveRegular<const shared_ptr<QQuickView>>(*++i)->show();
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QQuickView-showFullScreen", [](TermNode& term){
+	RegisterStrict(m, "QQuickView-showFullScreen", [](TermNode& term){
 		RetainN(term, 1);
 
 		auto i(term.begin());
@@ -683,7 +683,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			const shared_ptr<QQuickView>>(*++i)->showFullScreen();
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QQuickView_set-source", [](TermNode& term){
+	RegisterStrict(m, "QQuickView_set-source", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(term.begin());
@@ -694,7 +694,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			QUrl(Unilang::ResolveRegular<const string>(*++i).c_str()));
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterStrict(rctx, "QQuickView_set-transparent", [](TermNode& term){
+	RegisterStrict(m, "QQuickView_set-transparent", [](TermNode& term){
 		RetainN(term, 1);
 
 		auto i(term.begin());
@@ -717,7 +717,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 {
 	auto& rctx(intp.Main);
 
-	rctx.GetRecordRef().Bindings["UnilangQt.native__"].Value
+	rctx.GetRecordRef().GetMapRef()["UnilangQt.native__"].Value
 		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(intp),
 		std::ref(argc), argv));
 	intp.Perform(R"Unilang(

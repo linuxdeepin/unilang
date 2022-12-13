@@ -179,10 +179,10 @@ void
 LoadModule_std_continuations(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Main.GetRecordRef());
+	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
-	RegisterStrict(renv, "call/1cc", Call1CC);
-	RegisterStrict(renv, "continuation->applicative",
+	RegisterStrict(m, "call/1cc", Call1CC);
+	RegisterStrict(m, "continuation->applicative",
 		ContinuationToApplicative);
 	intp.Perform(R"Unilang(
 $defl! apply-continuation (&k &arg)
@@ -239,19 +239,19 @@ void
 LoadModule_std_strings(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Main.GetRecordRef());
+	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
-	RegisterUnary(renv, "string?", [](const TermNode& x) noexcept{
+	RegisterUnary(m, "string?", [](const TermNode& x) noexcept{
 		return IsTypedRegular<string>(ReferenceTerm(x));
 	});
-	RegisterStrict(renv, "++",
+	RegisterStrict(m, "++",
 		std::bind(CallBinaryFold<string, ystdex::plus<>>, ystdex::plus<>(),
 		string(), std::placeholders::_1));
-	RegisterUnary<Strict, const string>(renv, "string-empty?",
+	RegisterUnary<Strict, const string>(m, "string-empty?",
 		[](const string& str) noexcept{
 			return str.empty();
 		});
-	RegisterBinary(renv, "string<-", [](TermNode& x, TermNode& y){
+	RegisterBinary(m, "string<-", [](TermNode& x, TermNode& y){
 		ResolveTerm([&](TermNode& nd_x, ResolvedTermReferencePtr p_ref_x){
 			if(!p_ref_x || p_ref_x->IsModifiable())
 			{
@@ -272,9 +272,9 @@ LoadModule_std_strings(Interpreter& intp)
 		}, x);
 		return ValueToken::Unspecified;
 	});
-	RegisterBinary<Strict, const string, const string>(renv, "string=?",
+	RegisterBinary<Strict, const string, const string>(m, "string=?",
 		ystdex::equal_to<>());
-	RegisterStrict(renv, "string-split", [](TermNode& term){
+	RegisterStrict(m, "string-split", [](TermNode& term){
 		return CallBinaryAs<string, const string>(
 			[&](string& x, const string& y) -> ReductionStatus{
 			if(!x.empty())
@@ -301,11 +301,11 @@ LoadModule_std_strings(Interpreter& intp)
 			return ReductionStatus::Clean;
 		}, term);
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains?",
+	RegisterBinary<Strict, string, string>(m, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
-	RegisterBinary<Strict, string, string>(renv, "string-contains-ci?",
+	RegisterBinary<Strict, string, string>(m, "string-contains-ci?",
 		[](string x, string y){
 		const auto to_lwr([](string& str) noexcept{
 			for(auto& c : str)
@@ -316,7 +316,7 @@ LoadModule_std_strings(Interpreter& intp)
 		to_lwr(y);
 		return x.find(y) != string::npos;
 	});
-	RegisterUnary(renv, "string->symbol", [](TermNode& term){
+	RegisterUnary(m, "string->symbol", [](TermNode& term){
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			auto& s(AccessRegular<string>(nd, p_ref));
 
@@ -324,13 +324,13 @@ LoadModule_std_strings(Interpreter& intp)
 				: StringToSymbol(s);
 		}, term);
 	});
-	RegisterUnary<Strict, const TokenValue>(renv, "symbol->string",
+	RegisterUnary<Strict, const TokenValue>(m, "symbol->string",
 		SymbolToString);
-	RegisterUnary<Strict, const string>(renv, "string->regex",
+	RegisterUnary<Strict, const string>(m, "string->regex",
 		[](const string& str){
 		return std::regex(str);
 	});
-	RegisterStrict(renv, "regex-match?", [](TermNode& term){
+	RegisterStrict(m, "regex-match?", [](TermNode& term){
 		RetainN(term, 2);
 
 		auto i(std::next(term.begin()));
@@ -340,7 +340,7 @@ LoadModule_std_strings(Interpreter& intp)
 		term.Value = std::regex_match(str, r);
 		return ReductionStatus::Clean;
 	});
-	RegisterStrict(renv, "regex-replace", [](TermNode& term){
+	RegisterStrict(m, "regex-replace", [](TermNode& term){
 		RetainN(term, 3);
 
 		auto i(term.begin());
@@ -358,74 +358,74 @@ void
 LoadModule_std_math(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Main.GetRecordRef());
+	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
-	RegisterUnary(renv, "number?",
+	RegisterUnary(m, "number?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
-	RegisterUnary(renv, "real?",
+	RegisterUnary(m, "real?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsNumberValue)));
-	RegisterUnary(renv, "rational?",
+	RegisterUnary(m, "rational?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsRationalValue)));
-	RegisterUnary(renv, "integer?",
+	RegisterUnary(m, "integer?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsIntegerValue)));
-	RegisterUnary(renv, "exact-integer?",
+	RegisterUnary(m, "exact-integer?",
 		ComposeReferencedTermOp(ystdex::bind1(LeafPred(), IsExactValue)));
-	RegisterUnary<Strict, const NumberLeaf>(renv, "exact?", IsExactValue);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "inexact?", IsInexactValue);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "finite?", IsFinite);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "infinite?", IsInfinite);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "nan?", IsNaN);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, "=?",
+	RegisterUnary<Strict, const NumberLeaf>(m, "exact?", IsExactValue);
+	RegisterUnary<Strict, const NumberLeaf>(m, "inexact?", IsInexactValue);
+	RegisterUnary<Strict, const NumberLeaf>(m, "finite?", IsFinite);
+	RegisterUnary<Strict, const NumberLeaf>(m, "infinite?", IsInfinite);
+	RegisterUnary<Strict, const NumberLeaf>(m, "nan?", IsNaN);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(m, "=?",
 		Equal);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, "<?", Less);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, ">?",
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(m, "<?", Less);
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(m, ">?",
 		Greater);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, "<=?",
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(m, "<=?",
 		LessEqual);
-	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(renv, ">=?",
+	RegisterBinary<Strict, const NumberLeaf, const NumberLeaf>(m, ">=?",
 		GreaterEqual);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "zero?", IsZero);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "positive?", IsPositive);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "negative?", IsNegative);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "odd?", IsOdd);
-	RegisterUnary<Strict, const NumberLeaf>(renv, "even?", IsEven);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "max", Max);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "min", Min);
-	RegisterUnary<Strict, NumberNode>(renv, "add1", Add1);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "+", Plus);
-	RegisterUnary<Strict, NumberNode>(renv, "sub1", Sub1);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "-", Minus);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "*", Multiplies);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "/", Divides);
-	RegisterUnary<Strict, NumberNode>(renv, "abs", Abs);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "floor/",
+	RegisterUnary<Strict, const NumberLeaf>(m, "zero?", IsZero);
+	RegisterUnary<Strict, const NumberLeaf>(m, "positive?", IsPositive);
+	RegisterUnary<Strict, const NumberLeaf>(m, "negative?", IsNegative);
+	RegisterUnary<Strict, const NumberLeaf>(m, "odd?", IsOdd);
+	RegisterUnary<Strict, const NumberLeaf>(m, "even?", IsEven);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "max", Max);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "min", Min);
+	RegisterUnary<Strict, NumberNode>(m, "add1", Add1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "+", Plus);
+	RegisterUnary<Strict, NumberNode>(m, "sub1", Sub1);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "-", Minus);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "*", Multiplies);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "/", Divides);
+	RegisterUnary<Strict, NumberNode>(m, "abs", Abs);
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "floor/",
 		FloorDivides);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "floor-quotient",
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "floor-quotient",
 		FloorQuotient);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "floor-remainder",
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "floor-remainder",
 		FloorRemainder);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "truncate/",
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "truncate/",
 		TruncateDivides);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "truncate-quotient",
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "truncate-quotient",
 		TruncateQuotient);
-	RegisterBinary<Strict, NumberNode, NumberNode>(renv, "truncate-remainder",
+	RegisterBinary<Strict, NumberNode, NumberNode>(m, "truncate-remainder",
 		TruncateRemainder);
-	RegisterBinary<Strict, const int, const int>(renv, "div",
+	RegisterBinary<Strict, const int, const int>(m, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
 			return e1 / e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterBinary<Strict, const int, const int>(renv, "mod",
+	RegisterBinary<Strict, const int, const int>(m, "mod",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
 			return e1 % e2;
 		throw std::domain_error("Runtime error: divided by zero.");
 	});
-	RegisterUnary<Strict, const int&>(renv, "itos", [](const int& x){
+	RegisterUnary<Strict, const int&>(m, "itos", [](const int& x){
 		return string(YSLib::make_string_view(std::to_string(int(x))));
 	});
-	RegisterUnary<Strict, const string>(renv, "stoi", [](const string& x){
+	RegisterUnary<Strict, const string>(m, "stoi", [](const string& x){
 		return int(std::stoi(YSLib::to_std_string(x)));
 	});
 }
@@ -440,18 +440,18 @@ LoadModule_std_io(Interpreter& intp)
 	using namespace Forms;
 	using YSLib::ifstream;
 	using YSLib::istringstream;
-	auto& renv(intp.Main.GetRecordRef());
+	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
-	RegisterStrict(renv, "newline", [&](TermNode& term){
+	RegisterStrict(m, "newline", [&](TermNode& term){
 		RetainN(term, 0);
 		std::cout << std::endl;
 		return ReduceReturnUnspecified(term);
 	});
-	RegisterUnary<Strict, const string>(renv, "readable-file?",
+	RegisterUnary<Strict, const string>(m, "readable-file?",
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
 	});
-	RegisterStrict(renv, "load", [&](TermNode& term, Context& ctx){
+	RegisterStrict(m, "load", [&](TermNode& term, Context& ctx){
 		RetainN(term);
 		RefTCOAction(ctx).SaveTailSourceName(ctx.CurrentSource,
 			std::move(ctx.CurrentSource));
@@ -461,7 +461,7 @@ LoadModule_std_io(Interpreter& intp)
 		intp.Global.Preprocess(term);
 		return ctx.ReduceOnce.Handler(term, ctx);
 	});
-	RegisterUnary<Strict, const string>(renv, "open-input-file",
+	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
 		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
 			return ValueObject(std::allocator_arg, path.get_allocator(),
@@ -470,7 +470,7 @@ LoadModule_std_io(Interpreter& intp)
 		throw UnilangException(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
 	});
-	RegisterUnary<Strict, const string>(renv, "open-input-string",
+	RegisterUnary<Strict, const string>(m, "open-input-string",
 		[](const string& str){
 		if(istringstream iss{str})
 			return ValueObject(std::allocator_arg, str.get_allocator(),
@@ -479,7 +479,7 @@ LoadModule_std_io(Interpreter& intp)
 		throw UnilangException(
 			ystdex::sfmt("Failed opening string '%s'.", str.c_str()));
 	});
-	RegisterStrict(renv, "read-line", [](TermNode& term){
+	RegisterStrict(m, "read-line", [](TermNode& term){
 		RetainN(term, 0);
 
 		string line(term.get_allocator());
@@ -487,15 +487,15 @@ LoadModule_std_io(Interpreter& intp)
 		std::getline(std::cin, line);
 		term.SetValue(line);
 	});
-	RegisterUnary(renv, "write", [&](TermNode& term){
+	RegisterUnary(m, "write", [&](TermNode& term){
 		WriteTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary(renv, "display", [&](TermNode& term){
+	RegisterUnary(m, "display", [&](TermNode& term){
 		DisplayTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
-	RegisterUnary<Strict, const string>(renv, "put", [&](const string& str){
+	RegisterUnary<Strict, const string>(m, "put", [&](const string& str){
 		YSLib::IO::StreamPut(std::cout, str.c_str());
 		return ValueToken::Unspecified;
 	});
@@ -508,9 +508,9 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
-	auto& renv(intp.Main.GetRecordRef());
+	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
-	RegisterUnary<Strict, const string>(renv, "env-get", [](const string& var){
+	RegisterUnary<Strict, const string>(m, "env-get", [](const string& var){
 		string res(var.get_allocator());
 
 		YSLib::FetchEnvironmentVariable(res, var.c_str());
@@ -602,86 +602,87 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	using namespace std::placeholders;
 	auto& ctx(intp.Main);
 	auto& renv(ctx.GetRecordRef());
+	auto& m(renv.GetMapRef());
 
 	if(jit)
 		SetupJIT(ctx);
-	renv.Bindings["ignore"].Value = ValueToken::Ignore;
-	RegisterStrict(ctx, "eq?", Eq);
-	RegisterStrict(ctx, "eql?", EqLeaf);
-	RegisterStrict(ctx, "eqv?", EqValue);
-	RegisterForm(ctx, "$if", If);
-	RegisterUnary(ctx, "null?", ComposeReferencedTermOp(IsEmpty));
-	RegisterUnary(ctx, "branch?", ComposeReferencedTermOp(IsBranch));
-	RegisterUnary(ctx, "pair?", ComposeReferencedTermOp(IsPair));
-	RegisterUnary(ctx, "list?", ComposeReferencedTermOp(IsList));
-	RegisterUnary(ctx, "reference?", IsReferenceTerm);
-	RegisterUnary(ctx, "unique?", IsUniqueTerm);
-	RegisterUnary(ctx, "modifiable?", IsModifiableTerm);
-	RegisterUnary(ctx, "bound-lvalue?", IsBoundLValueTerm);
-	RegisterUnary(ctx, "uncollapsed?", IsUncollapsedTerm);
-	RegisterStrict(ctx, "as-const",
+	m["ignore"].Value = ValueToken::Ignore;
+	RegisterStrict(m, "eq?", Eq);
+	RegisterStrict(m, "eql?", EqLeaf);
+	RegisterStrict(m, "eqv?", EqValue);
+	RegisterForm(m, "$if", If);
+	RegisterUnary(m, "null?", ComposeReferencedTermOp(IsEmpty));
+	RegisterUnary(m, "branch?", ComposeReferencedTermOp(IsBranch));
+	RegisterUnary(m, "pair?", ComposeReferencedTermOp(IsPair));
+	RegisterUnary(m, "list?", ComposeReferencedTermOp(IsList));
+	RegisterUnary(m, "reference?", IsReferenceTerm);
+	RegisterUnary(m, "unique?", IsUniqueTerm);
+	RegisterUnary(m, "modifiable?", IsModifiableTerm);
+	RegisterUnary(m, "bound-lvalue?", IsBoundLValueTerm);
+	RegisterUnary(m, "uncollapsed?", IsUncollapsedTerm);
+	RegisterStrict(m, "as-const",
 		ystdex::bind1(Qualify, TermTags::Nonmodifying));
-	RegisterStrict(ctx, "expire",
+	RegisterStrict(m, "expire",
 		ystdex::bind1(Qualify, TermTags::Unique));
-	RegisterStrict(ctx, "move!",
+	RegisterStrict(m, "move!",
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
-	RegisterBinary(ctx, "assign@!", [](TermNode& x, TermNode& y){
+	RegisterBinary(m, "assign@!", [](TermNode& x, TermNode& y){
 		return DoAssign(ystdex::bind1(static_cast<void(&)(TermNode&,
 			TermNode&)>(LiftOther), std::ref(y)), x);
 	});
-	RegisterStrict(ctx, "cons", Cons);
-	RegisterStrict(ctx, "cons%", ConsRef);
-	RegisterUnary<Strict, const TokenValue>(ctx, "desigil", [](TokenValue s){
+	RegisterStrict(m, "cons", Cons);
+	RegisterStrict(m, "cons%", ConsRef);
+	RegisterUnary<Strict, const TokenValue>(m, "desigil", [](TokenValue s){
 		return TokenValue(!s.empty() && (s.front() == '&' || s.front() == '%')
 			? s.substr(1) : std::move(s));
 	});
-	RegisterStrict(ctx, "eval", Eval);
-	RegisterStrict(ctx, "eval%", EvalRef);
-	RegisterUnary<Strict, const string>(ctx, "bound?",
+	RegisterStrict(m, "eval", Eval);
+	RegisterStrict(m, "eval%", EvalRef);
+	RegisterUnary<Strict, const string>(m, "bound?",
 		[](const string& id, Context& c){
 		return bool(ResolveName(c, id).first);
 	});
-	RegisterForm(ctx, "$resolve-identifier",
+	RegisterForm(m, "$resolve-identifier",
 		std::bind(DoResolve, std::ref(ResolveIdentifier), _1, _2));
-	RegisterUnary<Strict, const EnvironmentReference>(ctx, "lock-environment",
+	RegisterUnary<Strict, const EnvironmentReference>(m, "lock-environment",
 		[](const EnvironmentReference& wenv) noexcept{
 		return wenv.Lock();
 	});
-	RegisterForm(ctx, "$move-resolved!",
+	RegisterForm(m, "$move-resolved!",
 		std::bind(DoResolve, std::ref(MoveResolvedValue), _1, _2));
-	RegisterStrict(ctx, "make-environment", MakeEnvironment);
-	RegisterUnary<Strict, const shared_ptr<Environment>>(ctx,
+	RegisterStrict(m, "make-environment", MakeEnvironment);
+	RegisterUnary<Strict, const shared_ptr<Environment>>(m,
 		"weaken-environment", [](const shared_ptr<Environment>& p_env) noexcept{
 		return EnvironmentReference(p_env);
 	});
-	RegisterForm(ctx, "$def!", Define);
-	RegisterForm(ctx, "$vau/e", VauWithEnvironment);
-	RegisterForm(ctx, "$vau/e%", VauWithEnvironmentRef);
-	RegisterStrict(ctx, "wrap", Wrap);
-	RegisterStrict(ctx, "wrap%", WrapRef);
-	RegisterStrict(ctx, "unwrap", Unwrap);
-	RegisterUnary<Strict, const string>(ctx, "raise-error",
+	RegisterForm(m, "$def!", Define);
+	RegisterForm(m, "$vau/e", VauWithEnvironment);
+	RegisterForm(m, "$vau/e%", VauWithEnvironmentRef);
+	RegisterStrict(m, "wrap", Wrap);
+	RegisterStrict(m, "wrap%", WrapRef);
+	RegisterStrict(m, "unwrap", Unwrap);
+	RegisterUnary<Strict, const string>(m, "raise-error",
 		[] (const string& str){
 		throw UnilangException(str.c_str());
 	});
-	RegisterUnary<Strict, const string>(ctx, "raise-invalid-syntax-error",
+	RegisterUnary<Strict, const string>(m, "raise-invalid-syntax-error",
 		[](const string& str){
 		throw InvalidSyntax(str.c_str());
 	});
-	RegisterStrict(ctx, "check-list-reference", CheckListReference);
-	RegisterStrict(ctx, "check-pair-reference", CheckPairReference);
-	RegisterStrict(ctx, "make-encapsulation-type", MakeEncapsulationType);
-	RegisterStrict(ctx, "get-current-environment", GetCurrentEnvironment);
-	RegisterForm(ctx, "$vau", Vau);
-	RegisterForm(ctx, "$vau%", VauRef);
+	RegisterStrict(m, "check-list-reference", CheckListReference);
+	RegisterStrict(m, "check-pair-reference", CheckPairReference);
+	RegisterStrict(m, "make-encapsulation-type", MakeEncapsulationType);
+	RegisterStrict(m, "get-current-environment", GetCurrentEnvironment);
+	RegisterForm(m, "$vau", Vau);
+	RegisterForm(m, "$vau%", VauRef);
 	intp.Perform(R"Unilang(
 $def! lock-current-environment (wrap ($vau () d lock-environment d));
 $def! $quote $vau% (x) #ignore $move-resolved! x;
 $def! id wrap ($vau% (%x) #ignore $move-resolved! x);
 $def! idv wrap $quote;
 	)Unilang");
-	RegisterStrict(ctx, "list", ReduceBranchToListValue);
-	RegisterStrict(ctx, "list%", ReduceBranchToList);
+	RegisterStrict(m, "list", ReduceBranchToListValue);
+	RegisterStrict(m, "list%", ReduceBranchToList);
 	intp.Perform(R"Unilang(
 $def! $lvalue-identifier? $vau (&s) d
 	eval (list bound-lvalue? (list $resolve-identifier s)) d;
@@ -716,7 +717,7 @@ $def! $lambda/e% $vau (&p &formals .&body) d
 	wrap (eval (cons $vau/e%
 		(cons p (cons% (forward! formals) (cons% #ignore (forward! body))))) d);
 	)Unilang");
-	RegisterForm(ctx, "$sequence", Sequence);
+	RegisterForm(m, "$sequence", Sequence);
 	intp.Perform(R"Unilang(
 $def! collapse $lambda% (%x)
 	$if (uncollapsed? x) (($if ($lvalue-identifier? x) ($lambda% (%x) x) id)
@@ -925,7 +926,7 @@ $defv! $import! (&e .&symbols) d
 		(symbols->imports symbols)) (eval e d);
 	)Unilang");
 	// NOTE: Supplementary functions.
-	RegisterStrict(ctx, "random.choice", [&](TermNode& term){
+	RegisterStrict(m, "random.choice", [&](TermNode& term){
 		RetainN(term);
 		return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 			if(IsBranchedList(nd))
@@ -942,7 +943,7 @@ $defv! $import! (&e .&symbols) d
 			ThrowInsufficientTermsError(nd, p_ref);
 		}, *std::next(term.begin()));
 	});
-	RegisterUnary<Strict, const int>(ctx, "sys.exit", [&](int status){
+	RegisterUnary<Strict, const int>(m, "sys.exit", [&](int status){
 		std::exit(status);
 	});
 
@@ -1069,7 +1070,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.210"
+#define APP_VER "0.12.212"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
