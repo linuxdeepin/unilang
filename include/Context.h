@@ -391,11 +391,6 @@ public:
 		return !current.empty();
 	}
 
-	YB_ATTR_nodiscard BindingMap&
-	GetBindingsRef() const noexcept
-	{
-		return p_record->Bindings;
-	}
 	TermNode*
 	GetCombiningTermPtr() const noexcept
 	{
@@ -600,14 +595,14 @@ template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(Context& ctx, _tParams&&... args)
 {
-	return Unilang::AllocateEnvironment(ctx.GetBindingsRef().get_allocator(),
-		yforward(args)...);
+	return Unilang::AllocateEnvironment(
+		ctx.GetRecordRef().GetMap().get_allocator(), yforward(args)...);
 }
 template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(TermNode& term, Context& ctx, _tParams&&... args)
 {
-	const auto a(ctx.GetBindingsRef().get_allocator());
+	const auto a(ctx.GetRecordRef().GetMap().get_allocator());
 
 	static_cast<void>(term);
 	Unilang::AssertMatchedAllocators(a, term);
@@ -647,13 +642,15 @@ template<typename _type, typename... _tParams>
 inline bool
 EmplaceLeaf(Environment& env, string_view name, _tParams&&... args)
 {
-	return Unilang::EmplaceLeaf<_type>(env.Bindings, name, yforward(args)...);
+	return Unilang::EmplaceLeaf<_type>(env.GetMapCheckedRef(), name,
+		yforward(args)...);
 }
 template<typename _type, typename... _tParams>
 inline bool
 EmplaceLeaf(Context& ctx, string_view name, _tParams&&... args)
 {
-	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name, yforward(args)...);
+	return Unilang::EmplaceLeaf<_type>(ctx.GetRecordRef(), name,
+		yforward(args)...);
 }
 
 YB_ATTR_nodiscard inline NameResolution

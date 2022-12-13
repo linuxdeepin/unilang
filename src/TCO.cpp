@@ -10,7 +10,7 @@ namespace Unilang
 {
 
 RecordCompressor::RecordCompressor(const shared_ptr<Environment>& p_root)
-	: RecordCompressor(p_root, p_root->Bindings.get_allocator())
+	: RecordCompressor(p_root, p_root->GetMap().get_allocator())
 {}
 RecordCompressor::RecordCompressor(const shared_ptr<Environment>& p_root,
 	Environment::allocator_type a)
