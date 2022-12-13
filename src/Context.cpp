@@ -150,9 +150,9 @@ Environment::LookupName(string_view id) const
 {
 	assert(id.data());
 
-	const auto i(Bindings.find(id));
+	const auto i(bindings.find(id));
 
-	return make_observer(i != Bindings.cend() ? &i->second : nullptr);
+	return make_observer(i != bindings.cend() ? &i->second : nullptr);
 }
 
 void

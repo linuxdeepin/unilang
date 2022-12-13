@@ -51,7 +51,10 @@ class Environment final : private EnvironmentBase,
 public:
 	using allocator_type = BindingMap::allocator_type;
 
-	mutable BindingMap Bindings;
+private:
+	mutable BindingMap bindings;
+
+public:
 	ValueObject Parent{};
 
 private:
@@ -60,7 +63,7 @@ private:
 public:
 	Environment(allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		Bindings(a)
+		bindings(a)
 	{}
 	Environment(pmr::memory_resource& rsrc)
 		: Environment(allocator_type(&rsrc))
@@ -68,20 +71,20 @@ public:
 	explicit
 	Environment(const BindingMap& m)
 		: EnvironmentBase(InitAnchor(m.get_allocator())),
-		Bindings(m)
+		bindings(m)
 	{}
 	explicit
 	Environment(BindingMap&& m)
 		: EnvironmentBase(InitAnchor(m.get_allocator())),
-		Bindings(std::move(m))
+		bindings(std::move(m))
 	{}
 	Environment(const ValueObject& vo, allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		Bindings(a), Parent((CheckParent(vo), vo))
+		bindings(a), Parent((CheckParent(vo), vo))
 	{}
 	Environment(ValueObject&& vo, allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		Bindings(a), Parent((CheckParent(vo), std::move(vo)))
+		bindings(a), Parent((CheckParent(vo), std::move(vo)))
 	{}
 	Environment(pmr::memory_resource& rsrc, const ValueObject& vo)
 		: Environment(vo, allocator_type(&rsrc))
@@ -90,8 +93,8 @@ public:
 		: Environment(std::move(vo), allocator_type(&rsrc))
 	{}
 	Environment(const Environment& e)
-		: EnvironmentBase(InitAnchor(e.Bindings.get_allocator())),
-		Bindings(e.Bindings), Parent(e.Parent)
+		: EnvironmentBase(InitAnchor(e.bindings.get_allocator())),
+		bindings(e.bindings), Parent(e.Parent)
 	{}
 	Environment(Environment&&) = default;
 
@@ -119,7 +122,7 @@ public:
 	YB_ATTR_nodiscard YB_PURE const BindingMap&
 	GetMap() const noexcept
 	{
-		return Bindings;
+		return bindings;
 	}
 	YB_ATTR_nodiscard YB_PURE BindingMap&
 	GetMapCheckedRef();
@@ -127,12 +130,12 @@ public:
 	GetMapRef() noexcept
 	{
 		assert(!IsFrozen() && "Frozen environment found.");
-		return Bindings;
+		return bindings;
 	}
 	YB_ATTR_nodiscard YB_PURE BindingMap&
 	GetMapUncheckedRef() noexcept
 	{
-		return Bindings;
+		return bindings;
 	}
 
 	template<typename _tKey, typename... _tParams>
@@ -140,14 +143,14 @@ public:
 		BindingMap::const_iterator, bool>
 	AddValue(_tKey&& k, _tParams&&... args)
 	{
-		return ystdex::try_emplace(Bindings, yforward(k), NoContainer,
+		return ystdex::try_emplace(bindings, yforward(k), NoContainer,
 			yforward(args)...).second;
 	}
 	template<typename _tKey, typename... _tParams>
 	inline bool
 	AddValue(BindingMap::const_iterator hint, _tKey&& k, _tParams&&... args)
 	{
-		return ystdex::try_emplace_hint(Bindings, hint, yforward(k),
+		return ystdex::try_emplace_hint(bindings, hint, yforward(k),
 			NoContainer, yforward(args)...).second;
 	}
 
@@ -155,7 +158,7 @@ public:
 	TermNode&
 	Bind(_tKey&& k, _tNode&& tm)
 	{
-		return Unilang::Deref(ystdex::insert_or_assign(Bindings, yforward(k),
+		return Unilang::Deref(ystdex::insert_or_assign(bindings, yforward(k),
 			yforward(tm)).first).second;
 	}
 
