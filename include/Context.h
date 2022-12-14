@@ -6,7 +6,7 @@
 #include "TermAccess.h" // for vector, ValueObject, map, string, TermNode,
 //	pair, observer_ptr, shared_ptr, EnvironmentBase, AnchorPtr, pmr, yforward,
 //	Unilang::Deref, string_view, type_info, lref, Unilang::allocate_shared,
-//	EnvironmentReference, stack;
+//	EnvironmentReference, Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
@@ -626,20 +626,8 @@ inline bool
 EmplaceLeaf(BindingMap& m, string_view name, _tParams&&... args)
 {
 	assert(name.data());
-
-	const auto i(m.find(name));
-
-	if(i == m.end())
-	{
-		m[string(name)].Value = _type(yforward(args)...);
-		return true;
-	}
-
-	auto& nd(i->second);
-
-	nd.Value = _type(yforward(args)...);
-	nd.ClearContainer();
-	return {};
+	return ystdex::insert_or_assign(m, name, Unilang::AsTermNode(
+		m.get_allocator(), in_place_type<_type>, yforward(args)...)).second;
 }
 template<typename _type, typename... _tParams>
 inline bool
