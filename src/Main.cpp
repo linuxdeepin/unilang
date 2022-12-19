@@ -992,9 +992,12 @@ const struct Option
 		: prefix(pfx), option_arg(opt_arg), option_details(il)
 	{}
 } OptionsTable[]{
-	{"-h, --help", "", {"Print this message."}},
+	{"-h, --help", "", {"Print this message and exit, without entering"
+		" execution modes."}},
 	{"-e", " [STRING]", {"Evaluate a string if the following argument exists."
 		" This option can occur more than once and combined with SRCPATH.\n"
+		"\tAny instance of this option implies the interpreter running in"
+		" scripting mode.\n"
 		"\tEach instance of this option (with its optional argument) will be"
 		" evaluated in order before evaluate the script specified by SRCPATH"
 		" (if any)."}}
@@ -1022,10 +1025,11 @@ PrintHelpMessage(const string& prog)
 		"  or:  \"%s\" [OPTIONS ... [-- [[SRCPATH] ARGS...]]]\n"
 		"\tThis program is an interpreter of Unilang.\n"
 		"\tThere are two execution modes, scripting mode and interactive mode,"
-		" exclusively. In scripting mode, a script file specified in the"
-		" command line arguments is run. Otherwise, the program runs in the"
-		" interactive mode and the REPL (read-eval-print loop) is entered,"
-		" see below for details.\n"
+		" exclusively. In both modes, the interpreter is initialized before"
+		" further execution of the code. In scripting mode, a script file"
+		" specified by the command line argument SRCPATH (if any) is run."
+		" Otherwise, the program runs in the interactive mode and the REPL"
+		" (read-eval-print loop) is entered, see below for details.\n"
 		"\tThere are no checks on the values. Any behaviors depending"
 		" on the locale-specific values are unspecified.\n"
 		"\tCurrently accepted environment variable are:\n\n",
@@ -1070,7 +1074,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.212"
+#define APP_VER "0.12.215"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
