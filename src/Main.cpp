@@ -1076,7 +1076,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.217"
+#define APP_VER "0.12.218"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -1090,6 +1090,23 @@ RunEvalStrings(Interpreter& intp, vector<string>& eval_strs, int argc,
 		JITMain();
 	for(const auto& str : eval_strs)
 		intp.RunLine(str);
+}
+
+void
+RunInteractive(int& argc, char* argv[])
+{
+	using namespace std;
+	Interpreter intp{};
+
+	cout << title << endl << "Initializing the interpreter "
+		<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]") << " ..."
+		<< endl;
+	LoadFunctions(intp, Unilang_UseJIT, argc, argv);
+	if(Unilang_UseJIT)
+		JITMain();
+	cout << "Initialization finished." << endl;
+	cout << "Type \"exit\" to exit." << endl << endl;
+	intp.Run();
 }
 
 } // unnamed namespace;
@@ -1164,24 +1181,15 @@ main(int argc, char* argv[])
 
 				RunEvalStrings(intp, eval_strs, argc, argv);
 			}
+			else
+				RunInteractive(argc, argv);
 		}
 		else if(xargc == 1)
 		{
 			using namespace std;
 
 			Unilang::Deref(YSLib::LockCommandArguments()).Reset(argc, argv);
-
-			Interpreter intp{};
-
-			cout << title << endl << "Initializing the interpreter "
-				<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]")
-				<< " ..." << endl;
-			LoadFunctions(intp, Unilang_UseJIT, argc, argv);
-			if(Unilang_UseJIT)
-				JITMain();
-			cout << "Initialization finished." << endl;
-			cout << "Type \"exit\" to exit." << endl << endl;
-			intp.Run();
+			RunInteractive(argc, argv);
 		}
 	}, yfsig, YSLib::Alert) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
