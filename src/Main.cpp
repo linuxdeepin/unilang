@@ -595,6 +595,9 @@ PreloadExternal(Interpreter& intp, const char* filename)
 	}
 }
 
+#define Unilang_Default_Init_File "init.txt"
+const char* init_file = Unilang_Default_Init_File;
+
 void
 LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 {
@@ -971,7 +974,8 @@ $defv! $import! (&e .&symbols) d
 	renv.Freeze();
 	intp.SaveGround();
 	// NOTE: User environment initialization.
-	PreloadExternal(intp, "init.txt");
+	if(init_file)
+		PreloadExternal(intp, init_file);
 }
 
 template<class _tString>
@@ -1000,7 +1004,11 @@ const struct Option
 		" scripting mode.\n"
 		"\tEach instance of this option (with its optional argument) will be"
 		" evaluated in order before evaluate the script specified by SRCPATH"
-		" (if any)."}}
+		" (if any)."}},
+	{"-q, --no-init-file", "", {"Disable loading the init file. Otherwise, a"
+		" file named \"" Unilang_Default_Init_File "\" is loaded at the end"
+		" of the initialization and before further evaluations. Currently this"
+		" is effective for both execution modes."}}
 };
 
 const std::array<const char*, 3> DeEnvs[]{
@@ -1076,7 +1084,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.218"
+#define APP_VER "0.12.219"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
@@ -1149,6 +1157,11 @@ main(int argc, char* argv[])
 					else if(arg == "-e")
 					{
 						requires_eval = true;
+						continue;
+					}
+					else if(arg == "-q" || arg == "--no-init-file")
+					{
+						init_file = {};
 						continue;
 					}
 				}
