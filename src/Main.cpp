@@ -1076,10 +1076,21 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.216"
+#define APP_VER "0.12.217"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
+
+void
+RunEvalStrings(Interpreter& intp, vector<string>& eval_strs, int argc,
+	char* argv[])
+{
+	LoadFunctions(intp, Unilang_UseJIT, argc, argv);
+	if(Unilang_UseJIT)
+		JITMain();
+	for(const auto& str : eval_strs)
+		intp.RunLine(str);
+}
 
 } // unnamed namespace;
 
@@ -1144,20 +1155,14 @@ main(int argc, char* argv[])
 
 				Interpreter intp{};
 
-				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
-				if(Unilang_UseJIT)
-					JITMain();
-				for(const auto& str : eval_strs)
-					intp.RunLine(str);
+				RunEvalStrings(intp, eval_strs, argc, argv);
 				intp.RunScript(std::move(src));
 			}
 			else if(!eval_strs.empty())
 			{
 				Interpreter intp{};
 
-				LoadFunctions(intp, Unilang_UseJIT, argc, argv);
-				for(const auto& str : eval_strs)
-					intp.RunLine(str);
+				RunEvalStrings(intp, eval_strs, argc, argv);
 			}
 		}
 		else if(xargc == 1)
