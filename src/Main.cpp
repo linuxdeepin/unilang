@@ -1084,13 +1084,14 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.219"
+#define APP_VER "0.12.220"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
 
+// XXX: Reference to 'argc' is required for Qt initialization.
 void
-RunEvalStrings(Interpreter& intp, vector<string>& eval_strs, int argc,
+RunEvalStrings(Interpreter& intp, vector<string>& eval_strs, int& argc,
 	char* argv[])
 {
 	LoadFunctions(intp, Unilang_UseJIT, argc, argv);
