@@ -278,13 +278,13 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 ReductionStatus
 Context::RewriteGuarded(TermNode&, Reducer reduce)
 {
-	// XXX: The term is not used.
-	const auto unwind(ystdex::make_guard([this]() noexcept{
+	const auto i(GetCurrent().cbegin());
+	const auto unwind(ystdex::make_guard([i, this]() noexcept{
 		TailAction = nullptr;
-		UnwindCurrent();
+		UnwindCurrentUntil(i);
 	}));
 
-	return Rewrite(std::move(reduce));
+	return RewriteUntil(std::move(reduce), i);
 }
 
 ReductionStatus
