@@ -276,18 +276,6 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 }
 
 ReductionStatus
-Context::Rewrite(Reducer reduce)
-{
-	SetupCurrent(std::move(reduce));
-	// NOTE: Rewrite until no actions remain.
-	do
-	{
-		ApplyTail();
-	}while(IsAlive());
-	return LastStatus;
-}
-
-ReductionStatus
 Context::RewriteGuarded(TermNode&, Reducer reduce)
 {
 	// XXX: The term is not used.
@@ -297,6 +285,17 @@ Context::RewriteGuarded(TermNode&, Reducer reduce)
 	}));
 
 	return Rewrite(std::move(reduce));
+}
+
+ReductionStatus
+Context::RewriteLoop()
+{
+	// NOTE: Rewrite until no actions remain.
+	do
+	{
+		ApplyTail();
+	}while(IsAlive());
+	return LastStatus;
 }
 
 ReductionStatus
