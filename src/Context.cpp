@@ -1,7 +1,7 @@
 ﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
 
 #include "Context.h" // for string_view, Unilang::allocate_shared,
-//	make_observer, lref, YSLib::make_string_view;
+//	make_observer, lref, ystdex::retry_on_cond, YSLib::make_string_view;
 #include <cassert> // for assert;
 #include "Exception.h" // for TypeError, BadIdentifier, UnilangException,
 //	ListTypeError;
@@ -296,6 +296,17 @@ Context::RewriteLoop()
 		ApplyTail();
 	}while(IsAlive());
 	return LastStatus;
+}
+
+ReductionStatus
+Context::RewriteLoopUntil(ReducerSequence::const_iterator i)
+{
+	assert(IsAliveBefore(i) && "No action to reduce.");
+	// NOTE: Rewrite until no actions before the parameter pointed to remain.
+	return ystdex::retry_on_cond(
+		std::bind(&Context::IsAliveBefore, this, i), [&]{
+		return ApplyTail();
+	});
 }
 
 ReductionStatus

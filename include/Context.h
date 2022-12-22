@@ -393,6 +393,11 @@ public:
 	{
 		return !current.empty();
 	}
+	YB_ATTR_nodiscard YB_PURE bool
+	IsAliveBefore(ReducerSequence::const_iterator i) const noexcept
+	{
+		return current.cbegin() != i;
+	}
 
 	TermNode*
 	GetCombiningTermPtr() const noexcept
@@ -470,10 +475,21 @@ public:
 	RewriteLoop();
 
 	ReductionStatus
+	RewriteLoopUntil(ReducerSequence::const_iterator);
+
+	ReductionStatus
 	RewriteTerm(TermNode&);
 
 	ReductionStatus
 	RewriteTermGuarded(TermNode&);
+
+	ReductionStatus
+	RewriteUntil(Reducer reduce, ReducerSequence::const_iterator i)
+	{
+		assert(!IsAliveBefore(i) && "Unexpected continuation barrier found.");
+		SetupFront(std::move(reduce));
+		return RewriteLoopUntil(i);
+	}
 
 	YB_ATTR_nodiscard NameResolution
 	Resolve(shared_ptr<Environment>, string_view) const;
