@@ -457,10 +457,17 @@ public:
 	DefaultReduceOnce(TermNode&, Context&);
 
 	ReductionStatus
-	Rewrite(Reducer);
+	Rewrite(Reducer reduce)
+	{
+		SetupCurrent(std::move(reduce));
+		return RewriteLoop();
+	}
 
 	ReductionStatus
 	RewriteGuarded(TermNode&, Reducer);
+
+	ReductionStatus
+	RewriteLoop();
 
 	ReductionStatus
 	RewriteTerm(TermNode&);
