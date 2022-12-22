@@ -309,6 +309,13 @@ public:
 		operator=(ReducerSequence&&) = default;
 
 		void
+		UnwindUntil(const_iterator i) noexcept
+		{
+			while(cbegin() != i)
+				pop_front();
+		}
+
+		void
 		clear() noexcept
 		{
 			while(!empty())
@@ -555,6 +562,12 @@ public:
 
 	void
 	UnwindCurrent() noexcept;
+
+	void
+	UnwindCurrentUntil(ReducerSequence::const_iterator i) noexcept
+	{
+		current.UnwindUntil(i);
+	}
 
 	YB_ATTR_nodiscard YB_PURE EnvironmentReference
 	WeakenRecord() const noexcept;
