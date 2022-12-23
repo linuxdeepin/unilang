@@ -11,7 +11,8 @@
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1,
 //	std::ref, std::placeholder;
 #include <tuple> // for std::tuple, std::get;
-#include <ystdex/scope_guard.hpp> // for ystdex::guard, ystdex::unique_guard;
+#include <ystdex/scope_guard.hpp> // for ystdex::guard,
+//	ystdex::make_unique_guard;
 #include <ystdex/optional.h> // for ystdex::optional;
 #include <cassert> // for assert;
 
@@ -212,7 +213,7 @@ private:
 	mutable size_t req_lift_result = 0;
 	mutable FrameRecordList record_list;
 	mutable EnvironmentGuard env_guard;
-	mutable decltype(ystdex::unique_guard(std::declval<GuardFunction>()))
+	mutable decltype(ystdex::make_unique_guard(std::declval<GuardFunction>()))
 		term_guard;
 	mutable ystdex::optional<ExtraInfo> opt_extra_info{};
 

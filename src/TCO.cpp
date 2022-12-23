@@ -2,7 +2,8 @@
 
 #include "TCO.h" // for Unilang::Nonnull, std::get, Unilang::Deref, IsTyped;
 #include <cassert> // for assert;
-#include <ystdex/scope_guard.hpp> // for ystdex::dismiss;
+#include <ystdex/scope_guard.hpp> // for ystdex::make_unique_guard,
+//	ystdex::dismiss;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
 #include "Exception.h" // for UnilangException;
 
@@ -118,7 +119,7 @@ RecordCompressor::CountStrong(const shared_ptr<Environment>& p) noexcept
 
 TCOAction::TCOAction(Context& ctx, TermNode& term, bool lift)
 	: req_lift_result(lift ? 1 : 0), record_list(ctx.get_allocator()),
-	env_guard(ctx), term_guard(ystdex::unique_guard(GuardFunction{term}))
+	env_guard(ctx), term_guard(ystdex::make_unique_guard(GuardFunction{term}))
 {}
 TCOAction::TCOAction(const TCOAction& a)
 	: req_lift_result(a.req_lift_result), env_guard(std::move(a.env_guard)),
