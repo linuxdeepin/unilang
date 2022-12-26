@@ -7,10 +7,12 @@
 //	std::allocator_arg_t, YSLib::IsTyped, yunused;
 #include <YModules.h>
 #include YFM_YBaseMacro // for DefBitmaskEnum;
-#include <ystdex/operators.hpp> // for ystdex::equality_comparable;
-#include <ystdex/type_traits.hpp> // for std::is_constructible,
-//	ystdex::enable_if_t, std::is_assignable, std::is_nothrow_assignable,
+#include <ystdex/type_traits.hpp> // for ystdex::enable_if_t,
+//	std::is_constructible, std::is_assignable, std::is_nothrow_assignable,
 //	std::is_convertible, ystdex::decay_t, ystdex::false_, ystdex::not_;
+#include <ystdex/container.hpp> // for ystdex::has_mem_key_type,
+//	ystdex::try_emplace_hint;
+#include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <cassert> // for assert;
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <algorithm> // for std::find_if;
@@ -79,6 +81,44 @@ EnsureValueTags(TermTags& tags) noexcept
 
 
 constexpr const struct NoContainerTag{} NoContainer{};
+
+
+template<class _tSeqCon, typename... _tParams>
+inline auto
+AddValueTo(_tSeqCon& con, _tParams&&... args)
+	-> ystdex::enable_if_t<yimpl(!ystdex::has_mem_key_type<_tSeqCon>::value),
+	decltype(con.emplace_back(NoContainer, yforward(args)...))>
+{
+	return con.emplace_back(NoContainer, yforward(args)...);
+}
+template<class _tSeqCon, typename... _tParams>
+inline auto
+AddValueTo(typename _tSeqCon::const_iterator position, _tSeqCon& con,
+	_tParams&&... args)
+	-> ystdex::enable_if_t<yimpl(!ystdex::has_mem_key_type<_tSeqCon>::value),
+	decltype(con.emplace(position, NoContainer, yforward(args)...))>
+{
+	return con.emplace(position, NoContainer, yforward(args)...);
+}
+template<class _tAssocCon, typename _tKey, typename... _tParams>
+inline auto
+AddValueTo(_tAssocCon& con, _tKey&& k, _tParams&&... args)
+	-> ystdex::enable_if_t<yimpl(ystdex::has_mem_key_type<_tAssocCon>::value),
+	decltype(ystdex::try_emplace(con, k, NoContainer,
+	yforward(args)...).second)>
+{
+	return ystdex::try_emplace(con, k, NoContainer, yforward(args)...).second;
+}
+template<class _tAssocCon, typename _tKey, typename... _tParams>
+inline auto
+AddValueTo(typename _tAssocCon::const_iterator hint, _tAssocCon& con, _tKey&& k,
+	_tParams&&... args) -> ystdex::enable_if_t<yimpl(ystdex::has_mem_key_type<
+	_tAssocCon>::value), decltype(ystdex::try_emplace_hint(con, hint, k,
+	NoContainer, yforward(args)...).second)>
+{
+	return ystdex::try_emplace_hint(con, hint, k, NoContainer,
+		yforward(args)...).second;
+}
 
 
 class TermNode final : private ystdex::equality_comparable<TermNode>
