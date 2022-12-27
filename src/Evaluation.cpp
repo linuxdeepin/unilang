@@ -652,44 +652,31 @@ public:
 		const bool temp(bool(o_tags & TermTags::Temporary));
 		const auto bind_subpair_val_fwd(
 			[&](TermNode& src, TNIter j, TermTags tags) -> TermNode&{
-			TermNode t(src.get_allocator());
-			auto& tcon(t.GetContainerRef());
+			assert((sigil == char() || sigil == '%') && "Invalid sigil found.");
 
-			BindSubpairSubterms(tcon, src, j, tags);
+			auto t(CreateForBindSubpairPrefix(src, j, tags));
+
 			if(src.Value)
-				BindSubpairCopySubterms(t, src, j);
-			else
-				assert(j == src.end() && "Invalid representation found.");
-			return mv(std::move(tcon), std::move(t.Value));
+				BindSubpairCopySuffix(t, src, j);
+			return mv(std::move(t.GetContainerRef()), std::move(t.Value));
 		});
-		const auto bind_subpair([&](TermTags tags){
+		const auto bind_subpair_ref_at([&](TermTags tags){
+			assert((sigil == '&' || sigil == '@') && "Invalid sigil found.");
+
 			const auto a(o.get_allocator());
-			TermNode t(a);
+			auto t(CreateForBindSubpairPrefix(o, first, tags));
 			auto& tcon(t.GetContainerRef());
 
-			BindSubpairSubterms(tcon, o, first, tags);
 			if(o.Value)
-			{
-				if(sigil == '%' || sigil == char())
-					BindSubpairCopySubterms(t, o, first);
-				else
-					LiftTermRef(t.Value, o.Value);
-			}
-			else
-				assert(first == o.end() && "Invalid representation found.");
-			if(sigil != '&' && sigil != '@')
-				MarkTemporaryTerm(mv(std::move(tcon), std::move(t.Value)),
-					sigil);
-			else
-			{
-				auto p_sub(Unilang::AllocateSharedTerm(a, std::move(t)));
-				auto& sub(Unilang::Deref(p_sub));
+				LiftTermRef(t.Value, o.Value);
 
-				tcon.clear();
-				tcon.push_back(MakeSubobjectReferent(a, std::move(p_sub)));
-				mv(std::move(tcon), ValueObject(std::allocator_arg, a,
-					in_place_type<TermReference>, tags, sub, Referenced));
-			}
+			auto p_sub(Unilang::AllocateSharedTerm(a, std::move(t)));
+			auto& sub(Unilang::Deref(p_sub));
+
+			tcon.clear();
+			tcon.push_back(MakeSubobjectReferent(a, std::move(p_sub)));
+			mv(std::move(tcon), ValueObject(std::allocator_arg, a,
+				in_place_type<TermReference>, tags, sub, Referenced));
 		});
 
 		if(sigil != '@')
@@ -733,12 +720,13 @@ public:
 					sigil);
 			}
 			else if(sigil == '&')
-				bind_subpair(GetLValueTagsOf(o.Tags | o_tags));
+				bind_subpair_ref_at(GetLValueTagsOf(o.Tags | o_tags));
 			else
-				bind_subpair(o_tags);
+				MarkTemporaryTerm(bind_subpair_val_fwd(o, first, o_tags),
+					sigil);
 		}
 		else if(!temp)
-			bind_subpair(o_tags & TermTags::Nonmodifying);
+			bind_subpair_ref_at(o_tags & TermTags::Nonmodifying);
 		else
 			throw
 				InvalidReference("Invalid operand found on binding sigil '@'.");
@@ -746,7 +734,7 @@ public:
 
 private:
 	static void
-	BindSubpairCopySubterms(TermNode& t, TermNode& o, TNIter& j)
+	BindSubpairCopySuffix(TermNode& t, TermNode& o, TNIter& j)
 	{
 		while(j != o.end())
 			t.emplace(*j++);
@@ -754,7 +742,7 @@ private:
 	}
 
 	void
-	BindSubpairSubterms(TermNode::Container& tcon, TermNode& o, TNIter& j,
+	BindSubpairPrefix(TermNode::Container& tcon, TermNode& o, TNIter& j,
 		TermTags tags) const
 	{
 		assert(!bool(tags & TermTags::Temporary)
@@ -769,7 +757,23 @@ private:
 			});
 	}
 
-	static TermNode::Container
+	YB_ATTR_nodiscard TermNode
+	CreateForBindSubpairPrefix(TermNode& o, TNIter first, TermTags tags) const
+	{
+		assert(!bool(tags & TermTags::Temporary)
+			&& "Unexpected temporary tag found.");
+
+		const auto a(o.get_allocator());
+		TermNode t(a);
+		auto& tcon(t.GetContainerRef());
+
+		BindSubpairPrefix(tcon, o, first, tags);
+		if(!o.Value)
+			assert(first == o.end() && "Invalid representation found.");
+		return t;
+	}
+
+	YB_ATTR_nodiscard static TermNode::Container
 	MoveSuffix(TermNode& o, TNIter j)
 	{
 		TermNode::Container tcon(o.get_allocator());
