@@ -155,10 +155,10 @@ public:
 	}
 
 	template<typename _tKey, class _tNode>
-	TermNode&
-	Bind(_tKey&& k, _tNode&& tm)
+	static TermNode&
+	Bind(BindingMap& m, _tKey&& k, _tNode&& tm)
 	{
-		return Unilang::Deref(ystdex::insert_or_assign(bindings, yforward(k),
+		return Unilang::Deref(ystdex::insert_or_assign(m, yforward(k),
 			yforward(tm)).first).second;
 	}
 
