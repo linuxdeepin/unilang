@@ -1172,26 +1172,13 @@ ExtractSigil(string_view& id)
 }
 
 
-void
-BindRawSymbol(const EnvironmentReference& r_env, string_view id,
-	TermNode& o, TermTags o_tags, Environment& env, char sigil)
-{
-	BindParameterObject(r_env, sigil)(sigil == '&', o_tags, o,
-		[&](const TermNode& tm){
-		CopyTermTags(env.Bind(id, tm), tm);
-	}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-		return env.Bind(id, TermNode(std::move(c), std::move(vo)));
-	});
-}
-
-
 struct DefaultBinder final
 {
-	lref<Environment> EnvRef;
+	lref<BindingMap> MapRef;
 
 	inline
-	DefaultBinder(Environment& env)
-		: EnvRef(env)
+	DefaultBinder(BindingMap& m) noexcept
+		: MapRef(m)
 	{}
 
 	void
@@ -1204,15 +1191,11 @@ struct DefaultBinder final
 			const char sigil(ExtractSigil(id));
 
 			if(!id.empty())
-			{
-				auto& env(EnvRef.get());
-
-				BindParameterObject(r_env, sigil)(sigil == '&', o_tags, o_nd,
-					first,
+				Bind(r_env, sigil, id, o_tags, o_nd, first,
 					[&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-					return env.Bind(id, TermNode(std::move(c), std::move(vo)));
+					return Environment::Bind(MapRef, id,
+						TermNode(std::move(c), std::move(vo)));
 				});
-			}
 		}
 	}
 	void
@@ -1221,7 +1204,20 @@ struct DefaultBinder final
 	{
 		const char sigil(ExtractSigil(id));
 
-		BindRawSymbol(r_env, id, o, o_tags, EnvRef, sigil);
+		Bind(r_env, sigil, id, o_tags, o, [&](const TermNode& tm){
+			CopyTermTags(Environment::Bind(MapRef, id, tm), tm);
+		}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
+			return Environment::Bind(MapRef, id,
+				TermNode(std::move(c), std::move(vo)));
+		});
+	}
+
+	template<typename... _tParams>
+	static void
+	Bind(const EnvironmentReference& r_env, char sigil, string_view& id,
+		_tParams&&... args)
+	{
+		BindParameterObject(r_env, sigil)(sigil == '&', yforward(args)...);
 	}
 };
 
@@ -1231,10 +1227,9 @@ void
 BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)
 {
-	auto& env(Unilang::Deref(p_env));
-
 	AssertValueTags(o);
-	MakeParameterMatcher<_tTraits>(t.get_allocator(), DefaultBinder(env))(t, o,
+	MakeParameterMatcher<_tTraits>(t.get_allocator(),
+		DefaultBinder(Unilang::Deref(p_env).GetMapCheckedRef()))(t, o,
 		TermTags::Temporary, p_env);
 }
 
@@ -1528,7 +1523,8 @@ BindSymbol(const shared_ptr<Environment>& p_env, const TokenValue& n,
 	TermNode& o)
 {
 	AssertValueTags(o);
-	DefaultBinder(Unilang::Deref(p_env))(n, o, TermTags::Temporary, p_env);
+	DefaultBinder(Unilang::Deref(p_env).GetMapCheckedRef())(n, o,
+		TermTags::Temporary, p_env);
 }
 
 
