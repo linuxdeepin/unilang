@@ -72,12 +72,29 @@ GetModuleFor(Context& ctx, _fCallable&& f)
 	return ctx.ShareRecord();
 }
 
-template<typename _fCallable>
+template<typename _fCallable, typename... _tParams>
 inline void
-LoadModuleChecked(Context& ctx, string_view module_name, _fCallable&& f)
+LoadModuleChecked(BindingMap& m, Context& ctx, string_view module_name,
+	_fCallable&& f, _tParams&&... args)
 {
-	ctx.GetRecordRef().DefineChecked(module_name,
-		Unilang::GetModuleFor(ctx, yforward(f)));
+	Environment::DefineChecked(m, module_name,
+		Unilang::GetModuleFor(ctx, yforward(f), yforward(args)...));
+}
+template<typename _fCallable, typename... _tParams>
+inline void
+LoadModuleChecked(Environment& env, Context& ctx, string_view module_name,
+	_fCallable&& f, _tParams&&... args)
+{
+	Unilang::LoadModuleChecked(env.GetMapCheckedRef(), ctx, module_name,
+		yforward(f), yforward(args)...);
+}
+template<typename _fCallable, typename... _tParams>
+inline void
+LoadModuleChecked(Context& ctx, string_view module_name, _fCallable&& f,
+	_tParams&&... args)
+{
+	Unilang::LoadModuleChecked(ctx.GetRecordRef(), ctx, module_name,
+		yforward(f), yforward(args)...);
 }
 
 YB_ATTR_nodiscard ReductionStatus
@@ -1084,7 +1101,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.220"
+#define APP_VER "0.12.227"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

@@ -5,7 +5,7 @@
 #include <cassert> // for assert;
 #include "Exception.h" // for TypeError, BadIdentifier, UnilangException,
 //	ListTypeError;
-#include "TermNode.h" // for AssertValueTags, IsAtom;
+#include "TermNode.h" // for Unilang::AddValueTo, AssertValueTags, IsAtom;
 #include <exception> // for std::throw_with_nested;
 #include <ystdex/utility.hpp> // ystdex::exchange;
 #include "Evaluation.h" // for ReduceOnce;
@@ -124,10 +124,10 @@ Environment::CheckParent(const ValueObject& vo)
 }
 
 void
-Environment::DefineChecked(string_view id, ValueObject&& vo)
+Environment::DefineChecked(BindingMap& m, string_view id, ValueObject&& vo)
 {
 	assert(id.data());
-	if(!AddValue(id, std::move(vo)))
+	if(!Unilang::AddValueTo(m, id, std::move(vo)))
 		throw BadIdentifier(id, 2);
 }
 

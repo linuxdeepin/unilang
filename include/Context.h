@@ -165,8 +165,8 @@ public:
 	static void
 	CheckParent(const ValueObject&);
 
-	void
-	DefineChecked(string_view, ValueObject&&);
+	static void
+	DefineChecked(BindingMap&, string_view, ValueObject&&);
 
 	static Environment&
 	EnsureValid(const shared_ptr<Environment>&);
