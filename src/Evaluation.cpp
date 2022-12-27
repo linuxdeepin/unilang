@@ -573,19 +573,23 @@ MarkTemporaryTerm(TermNode& term, char sigil) noexcept
 		term.Tags |= TermTags::Temporary;
 }
 
-class BindParameterObject
+class BindParameterObject final
 {
 public:
 	lref<const EnvironmentReference> Referenced;
 
-	BindParameterObject(const EnvironmentReference& r_env)
-		: Referenced(r_env)
+private:
+	char sigil;
+
+public:
+	BindParameterObject(const EnvironmentReference& r_env, char s) noexcept
+		: Referenced(r_env), sigil(s)
 	{}
 
 	template<typename _fCopy, typename _fMove>
 	void
-	operator()(char sigil, bool ref_temp, TermTags o_tags, TermNode& o,
-		_fCopy cp, _fMove mv) const
+	operator()(bool ref_temp, TermTags o_tags, TermNode& o, _fCopy cp,
+		_fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 
@@ -642,8 +646,8 @@ public:
 	}
 	template<typename _fMove>
 	void
-	operator()(char sigil, bool ref_temp, TermTags o_tags, TermNode& o,
-		TNIter first, _fMove mv) const
+	operator()(bool ref_temp, TermTags o_tags, TermNode& o, TNIter first,
+		_fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 		const auto bind_subpair([&](TermTags tags){
@@ -651,7 +655,7 @@ public:
 			TermNode t(a);
 			auto& tcon(t.GetContainerRef());
 
-			BindSubpairSubterms(sigil, tcon, o, first, tags);
+			BindSubpairSubterms(tcon, o, first, tags);
 			if(o.Value)
 			{
 				if(sigil == '%' || sigil == char())
@@ -707,7 +711,7 @@ public:
 						TermNode t(a);
 						auto& tcon(t.GetContainerRef());
 
-						BindSubpairSubterms(sigil, tcon, src, j,
+						BindSubpairSubterms(tcon, src, j,
 							GetLValueTagsOf(o_tags & ~TermTags::Unique));
 						if(src.Value)
 							BindSubpairCopySubterms(t, src, j);
@@ -750,13 +754,13 @@ private:
 	}
 
 	void
-	BindSubpairSubterms(char sigil, TermNode::Container& tcon, TermNode& o,
-		TNIter& j, TermTags tags) const
+	BindSubpairSubterms(TermNode::Container& tcon, TermNode& o, TNIter& j,
+		TermTags tags) const
 	{
 		assert(!bool(tags & TermTags::Temporary)
 			&& "Unexpected temporary tag found.");
 		for(; j != o.end() && !IsSticky(j->Tags); ++j)
-			(*this)(sigil, {}, tags, Unilang::Deref(j), [&](const TermNode& tm){
+			(*this)({}, tags, Unilang::Deref(j), [&](const TermNode& tm){
 				CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value),
 					tm);
 			}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
@@ -1172,7 +1176,7 @@ void
 BindRawSymbol(const EnvironmentReference& r_env, string_view id,
 	TermNode& o, TermTags o_tags, Environment& env, char sigil)
 {
-	BindParameterObject{r_env}(sigil, sigil == '&', o_tags, o,
+	BindParameterObject(r_env, sigil)(sigil == '&', o_tags, o,
 		[&](const TermNode& tm){
 		CopyTermTags(env.Bind(id, tm), tm);
 	}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
@@ -1203,7 +1207,7 @@ struct DefaultBinder final
 			{
 				auto& env(EnvRef.get());
 
-				BindParameterObject{r_env}(sigil, sigil == '&', o_tags, o_nd,
+				BindParameterObject(r_env, sigil)(sigil == '&', o_tags, o_nd,
 					first,
 					[&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
 					return env.Bind(id, TermNode(std::move(c), std::move(vo)));
