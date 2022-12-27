@@ -650,6 +650,18 @@ public:
 		_fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
+		const auto bind_subpair_val_fwd(
+			[&](TermNode& src, TNIter j, TermTags tags) -> TermNode&{
+			TermNode t(src.get_allocator());
+			auto& tcon(t.GetContainerRef());
+
+			BindSubpairSubterms(tcon, src, j, tags);
+			if(src.Value)
+				BindSubpairCopySubterms(t, src, j);
+			else
+				assert(j == src.end() && "Invalid representation found.");
+			return mv(std::move(tcon), std::move(t.Value));
+		});
 		const auto bind_subpair([&](TermTags tags){
 			const auto a(o.get_allocator());
 			TermNode t(a);
@@ -706,21 +718,8 @@ public:
 					auto& src(p->get());
 
 					if(!p->IsMovable())
-					{
-						auto j(src.begin());
-						TermNode t(a);
-						auto& tcon(t.GetContainerRef());
-
-						BindSubpairSubterms(tcon, src, j,
-							GetLValueTagsOf(o_tags & ~TermTags::Unique));
-						if(src.Value)
-							BindSubpairCopySubterms(t, src, j);
-						else
-							assert(j == src.end()
-								&& "Invalid representation found.");
-						CopyTermTags(mv(std::move(tcon), std::move(t.Value)),
-							src);
-					}
+						CopyTermTags(bind_subpair_val_fwd(src, src.begin(),
+							GetLValueTagsOf(o_tags & ~TermTags::Unique)), src);
 					else
 						mv(MoveSuffix(o, first), std::move(src.Value));
 				}
@@ -733,9 +732,10 @@ public:
 				MarkTemporaryTerm(mv(MoveSuffix(o, first), std::move(o.Value)),
 					sigil);
 			}
+			else if(sigil == '&')
+				bind_subpair(GetLValueTagsOf(o.Tags | o_tags));
 			else
-				bind_subpair(
-					sigil == '&' ? GetLValueTagsOf(o.Tags | o_tags) : o_tags);
+				bind_subpair(o_tags);
 		}
 		else if(!temp)
 			bind_subpair(o_tags & TermTags::Nonmodifying);
