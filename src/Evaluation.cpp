@@ -748,13 +748,58 @@ private:
 		assert(!bool(tags & TermTags::Temporary)
 			&& "Unexpected temporary tag found.");
 		for(; j != o.end() && !IsSticky(j->Tags); ++j)
-			(*this)({}, tags, Unilang::Deref(j), [&](const TermNode& tm){
-				CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value),
-					tm);
-			}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-				tcon.emplace_back(std::move(c), std::move(vo));
-				return tcon.back();
-			});
+			BindSubpairSubterm(tcon, tags, Unilang::Deref(j));
+	}
+
+	void
+	BindSubpairSubterm(TermNode::Container& tcon, TermTags o_tags, TermNode& o)
+		const
+	{
+		assert(!bool(o_tags & TermTags::Temporary)
+			&& "Unexpected temporary tag found.");
+
+		const auto cp([&](const TermNode& tm){
+			CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
+		});
+		const auto
+			mv([&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
+			tcon.emplace_back(std::move(c), std::move(vo));
+			return tcon.back();
+		});
+
+		if(sigil != '@')
+		{
+			const auto a(o.get_allocator());
+
+			if(const auto p = TryAccessLeafAtom<TermReference>(o))
+			{
+				if(sigil != char())
+					mv(TermNode::Container(o.GetContainer(), a),
+						ValueObject(in_place_type<TermReference>,
+						PropagateTo(p->GetTags(), o_tags), *p));
+				else
+				{
+					auto& src(p->get());
+
+					if(!p->IsMovable())
+						cp(src);
+					else
+						mv(std::move(src.GetContainerRef()),
+							std::move(src.Value));
+				}
+			}
+			else if(sigil == '&')
+				mv(TermNode::Container(a), ValueObject(std::allocator_arg, a,
+					in_place_type<TermReference>,
+					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
+			else
+				cp(o);
+		}
+		else
+			mv(TermNode::Container(o.get_allocator()),
+				ValueObject(std::allocator_arg, o.get_allocator(),
+				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
+				o, Referenced));
 	}
 
 	YB_ATTR_nodiscard TermNode
