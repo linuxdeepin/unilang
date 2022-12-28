@@ -588,8 +588,7 @@ public:
 
 	template<typename _fCopy, typename _fMove>
 	void
-	operator()(bool ref_temp, TermTags o_tags, TermNode& o, _fCopy cp,
-		_fMove mv) const
+	operator()(TermTags o_tags, TermNode& o, _fCopy cp, _fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 
@@ -602,7 +601,7 @@ public:
 			{
 				if(sigil != char())
 				{
-					const auto ref_tags(PropagateTo(ref_temp
+					const auto ref_tags(PropagateTo(sigil == '&'
 						? BindReferenceTags(*p) : p->GetTags(), o_tags));
 
 					if(can_modify && temp)
@@ -646,8 +645,7 @@ public:
 	}
 	template<typename _fMove>
 	void
-	operator()(bool ref_temp, TermTags o_tags, TermNode& o, TNIter first,
-		_fMove mv) const
+	operator()(TermTags o_tags, TermNode& o, TNIter first, _fMove mv) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 		const auto bind_subpair_val_fwd(
@@ -688,7 +686,7 @@ public:
 			{
 				if(sigil != char())
 				{
-					const auto ref_tags(PropagateTo(ref_temp
+					const auto ref_tags(PropagateTo(sigil == '&'
 						? BindReferenceTags(*p) : p->GetTags(), o_tags));
 
 					if(can_modify && temp)
@@ -1266,7 +1264,7 @@ struct DefaultBinder final
 	Bind(const EnvironmentReference& r_env, char sigil, string_view& id,
 		_tParams&&... args)
 	{
-		BindParameterObject(r_env, sigil)(sigil == '&', yforward(args)...);
+		BindParameterObject(r_env, sigil)(yforward(args)...);
 	}
 };
 
