@@ -573,6 +573,40 @@ MarkTemporaryTerm(TermNode& term, char sigil) noexcept
 		term.Tags |= TermTags::Temporary;
 }
 
+struct BindAdd final
+{
+	BindingMap& m;
+	string_view& id;
+
+	void
+	operator()(const TermNode& tm) const
+	{
+		CopyTermTags(Environment::Bind(m, id, tm), tm);
+	}
+	TermNode&
+	operator()(TermNode::Container&& c, ValueObject&& vo) const
+	{
+		return Environment::Bind(m, id, TermNode(std::move(c), std::move(vo)));
+	}
+};
+
+struct BindInsert final
+{
+	TermNode::Container& tcon;
+
+	void
+	operator()(const TermNode& tm) const
+	{
+		CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
+	}
+	TermNode&
+	operator()(TermNode::Container&& c, ValueObject&& vo) const
+	{
+		tcon.emplace_back(std::move(c), std::move(vo));
+		return tcon.back();
+	}
+};
+
 class BindParameterObject final
 {
 public:
@@ -586,9 +620,9 @@ public:
 		: Referenced(r_env), sigil(s)
 	{}
 
-	template<typename _fCopy, typename _fMove>
+	template<typename _fInit>
 	void
-	operator()(TermTags o_tags, TermNode& o, _fCopy cp, _fMove mv) const
+	operator()(TermTags o_tags, TermNode& o, _fInit init) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 
@@ -605,11 +639,11 @@ public:
 						? BindReferenceTags(*p) : p->GetTags(), o_tags));
 
 					if(can_modify && temp)
-						mv(std::move(o.GetContainerRef()),
+						init(std::move(o.GetContainerRef()),
 							ValueObject(in_place_type<TermReference>, ref_tags,
 							std::move(*p)));
 					else
-						mv(TermNode::Container(o.GetContainer(), a),
+						init(TermNode::Container(o.GetContainer(), a),
 							ValueObject(in_place_type<TermReference>, ref_tags,
 							*p));
 				}
@@ -618,24 +652,24 @@ public:
 					auto& src(p->get());
 
 					if(!p->IsMovable())
-						cp(src);
+						init(src);
 					else
-						mv(std::move(src.GetContainerRef()),
+						init(std::move(src.GetContainerRef()),
 							std::move(src.Value));
 				}
 			}
 			else if((can_modify || sigil == '%') && temp)
-				MarkTemporaryTerm(mv(std::move(o.GetContainerRef()),
+				MarkTemporaryTerm(init(std::move(o.GetContainerRef()),
 					std::move(o.Value)), sigil);
 			else if(sigil == '&')
-				mv(TermNode::Container(a), ValueObject(std::allocator_arg, a,
+				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
 					in_place_type<TermReference>,
 					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
 			else
-				cp(o);
+				init(o);
 		}
 		else if(!temp)
-			mv(TermNode::Container(o.get_allocator()),
+			init(TermNode::Container(o.get_allocator()),
 				ValueObject(std::allocator_arg, o.get_allocator(),
 				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
 				o, Referenced));
@@ -643,9 +677,9 @@ public:
 			throw
 				InvalidReference("Invalid operand found on binding sigil '@'.");
 	}
-	template<typename _fMove>
+	template<typename _fInit>
 	void
-	operator()(TermTags o_tags, TermNode& o, TNIter first, _fMove mv) const
+	operator()(TermTags o_tags, TermNode& o, TNIter first, _fInit init) const
 	{
 		const bool temp(bool(o_tags & TermTags::Temporary));
 		const auto bind_subpair_val_fwd(
@@ -656,24 +690,24 @@ public:
 
 			if(src.Value)
 				BindSubpairCopySuffix(t, src, j);
-			return mv(std::move(t.GetContainerRef()), std::move(t.Value));
+			return init(std::move(t.GetContainerRef()), std::move(t.Value));
 		});
 		const auto bind_subpair_ref_at([&](TermTags tags){
 			assert((sigil == '&' || sigil == '@') && "Invalid sigil found.");
 
 			const auto a(o.get_allocator());
 			auto t(CreateForBindSubpairPrefix(o, first, tags));
-			auto& tcon(t.GetContainerRef());
 
 			if(o.Value)
 				LiftTermRef(t.Value, o.Value);
 
 			auto p_sub(Unilang::AllocateSharedTerm(a, std::move(t)));
-			auto& sub(Unilang::Deref(p_sub));
+			auto& sub(*p_sub);
+			auto& tcon(t.GetContainerRef());
 
 			tcon.clear();
 			tcon.push_back(MakeSubobjectReferent(a, std::move(p_sub)));
-			mv(std::move(tcon), ValueObject(std::allocator_arg, a,
+			init(std::move(tcon), ValueObject(std::allocator_arg, a,
 				in_place_type<TermReference>, tags, sub, Referenced));
 		});
 
@@ -690,11 +724,11 @@ public:
 						? BindReferenceTags(*p) : p->GetTags(), o_tags));
 
 					if(can_modify && temp)
-						mv(MoveSuffix(o, first),
+						init(MoveSuffix(o, first),
 							ValueObject(std::allocator_arg, a, in_place_type<
 							TermReference>, ref_tags, std::move(*p)));
 					else
-						mv(TermNode::Container(first, o.end(),
+						init(TermNode::Container(first, o.end(),
 							o.get_allocator()), ValueObject(std::allocator_arg,
 							a, in_place_type<TermReference>, ref_tags, *p));
 				}
@@ -706,7 +740,7 @@ public:
 						CopyTermTags(bind_subpair_val_fwd(src, src.begin(),
 							GetLValueTagsOf(o_tags & ~TermTags::Unique)), src);
 					else
-						mv(MoveSuffix(o, first), std::move(src.Value));
+						init(MoveSuffix(o, first), std::move(src.Value));
 				}
 			}
 			else if((can_modify || sigil == '%')
@@ -714,8 +748,8 @@ public:
 			{
 				if(sigil == char())
 					LiftPrefixToReturn(o, first);
-				MarkTemporaryTerm(mv(MoveSuffix(o, first), std::move(o.Value)),
-					sigil);
+				MarkTemporaryTerm(init(MoveSuffix(o, first),
+					std::move(o.Value)), sigil);
 			}
 			else if(sigil == '&')
 				bind_subpair_ref_at(GetLValueTagsOf(o.Tags | o_tags));
@@ -756,14 +790,7 @@ private:
 		assert(!bool(o_tags & TermTags::Temporary)
 			&& "Unexpected temporary tag found.");
 
-		const auto cp([&](const TermNode& tm){
-			CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
-		});
-		const auto
-			mv([&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-			tcon.emplace_back(std::move(c), std::move(vo));
-			return tcon.back();
-		});
+		const BindInsert init{tcon};
 
 		if(sigil != '@')
 		{
@@ -772,7 +799,7 @@ private:
 			if(const auto p = TryAccessLeafAtom<TermReference>(o))
 			{
 				if(sigil != char())
-					mv(TermNode::Container(o.GetContainer(), a),
+					init(TermNode::Container(o.GetContainer(), a),
 						ValueObject(in_place_type<TermReference>,
 						PropagateTo(p->GetTags(), o_tags), *p));
 				else
@@ -780,21 +807,21 @@ private:
 					auto& src(p->get());
 
 					if(!p->IsMovable())
-						cp(src);
+						init(src);
 					else
-						mv(std::move(src.GetContainerRef()),
+						init(std::move(src.GetContainerRef()),
 							std::move(src.Value));
 				}
 			}
 			else if(sigil == '&')
-				mv(TermNode::Container(a), ValueObject(std::allocator_arg, a,
+				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
 					in_place_type<TermReference>,
 					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
 			else
-				cp(o);
+				init(o);
 		}
 		else
-			mv(TermNode::Container(o.get_allocator()),
+			init(TermNode::Container(o.get_allocator()),
 				ValueObject(std::allocator_arg, o.get_allocator(),
 				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
 				o, Referenced));
@@ -1238,33 +1265,23 @@ struct DefaultBinder final
 			const char sigil(ExtractSigil(id));
 
 			if(!id.empty())
-				Bind(r_env, sigil, id, o_tags, o_nd, first,
-					[&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-					return Environment::Bind(MapRef, id,
-						TermNode(std::move(c), std::move(vo)));
-				});
+				Bind(r_env, sigil, id, o_tags, o_nd, first);
 		}
 	}
 	void
 	operator()(string_view id, TermNode& o, TermTags o_tags,
 		const EnvironmentReference& r_env) const
 	{
-		const char sigil(ExtractSigil(id));
-
-		Bind(r_env, sigil, id, o_tags, o, [&](const TermNode& tm){
-			CopyTermTags(Environment::Bind(MapRef, id, tm), tm);
-		}, [&](TermNode::Container&& c, ValueObject&& vo) -> TermNode&{
-			return Environment::Bind(MapRef, id,
-				TermNode(std::move(c), std::move(vo)));
-		});
+		Bind(r_env, ExtractSigil(id), id, o_tags, o);
 	}
 
 	template<typename... _tParams>
-	static void
+	void
 	Bind(const EnvironmentReference& r_env, char sigil, string_view& id,
-		_tParams&&... args)
+		_tParams&&... args) const
 	{
-		BindParameterObject(r_env, sigil)(yforward(args)...);
+		BindParameterObject(r_env, sigil)(yforward(args)...,
+			BindAdd{MapRef, id});
 	}
 };
 
