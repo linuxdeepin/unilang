@@ -566,13 +566,6 @@ MakeParameterValueMatcher(_fBindValue bind_value)
 	return GParameterValueMatcher<_fBindValue>(std::move(bind_value));
 }
 
-void
-MarkTemporaryTerm(TermNode& term, char sigil) noexcept
-{
-	if(sigil != char())
-		term.Tags |= TermTags::Temporary;
-}
-
 struct BindAdd final
 {
 	BindingMap& m;
@@ -660,7 +653,7 @@ public:
 			}
 			else if((can_modify || sigil == '%') && temp)
 				MarkTemporaryTerm(init(std::move(o.GetContainerRef()),
-					std::move(o.Value)), sigil);
+					std::move(o.Value)));
 			else if(sigil == '&')
 				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
 					in_place_type<TermReference>,
@@ -749,13 +742,12 @@ public:
 				if(sigil == char())
 					LiftPrefixToReturn(o, first);
 				MarkTemporaryTerm(init(MoveSuffix(o, first),
-					std::move(o.Value)), sigil);
+					std::move(o.Value)));
 			}
 			else if(sigil == '&')
 				bind_subpair_ref_at(GetLValueTagsOf(o.Tags | o_tags));
 			else
-				MarkTemporaryTerm(bind_subpair_val_fwd(o, first, o_tags),
-					sigil);
+				MarkTemporaryTerm(bind_subpair_val_fwd(o, first, o_tags));
 		}
 		else if(!temp)
 			bind_subpair_ref_at(o_tags & TermTags::Nonmodifying);
@@ -841,6 +833,13 @@ private:
 		if(!o.Value)
 			assert(first == o.end() && "Invalid representation found.");
 		return t;
+	}
+
+	void
+	MarkTemporaryTerm(TermNode& term) const noexcept
+	{
+		if(sigil != char())
+			term.Tags |= TermTags::Temporary;
 	}
 
 	YB_ATTR_nodiscard static TermNode::Container
