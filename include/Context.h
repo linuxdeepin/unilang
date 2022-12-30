@@ -707,8 +707,8 @@ struct EnvironmentSwitcher
 	lref<Context> ContextRef;
 	mutable shared_ptr<Environment> SavedPtr;
 
-	EnvironmentSwitcher(Context& ctx,
-		shared_ptr<Environment>&& p_saved = {})
+	EnvironmentSwitcher(Context& ctx, shared_ptr<Environment>&& p_saved = {})
+		noexcept
 		: ContextRef(ctx), SavedPtr(std::move(p_saved))
 	{}
 	EnvironmentSwitcher(EnvironmentSwitcher&&) = default;
