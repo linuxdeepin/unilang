@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
@@ -545,10 +545,10 @@ public:
 	}
 
 	shared_ptr<Environment>
-	SwitchEnvironment(const shared_ptr<Environment>&);
+	SwitchEnvironment(shared_ptr<Environment>);
 
 	shared_ptr<Environment>
-	SwitchEnvironmentUnchecked(const shared_ptr<Environment>&) noexcept;
+	SwitchEnvironmentUnchecked(shared_ptr<Environment>) noexcept;
 
 	YB_ATTR_nodiscard observer_ptr<TokenValue>
 	TryGetTailOperatorName(TermNode& term) const noexcept
