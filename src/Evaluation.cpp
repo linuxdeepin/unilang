@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Evaluation.h" // for Unilang::allocate_shared,
 //	Unilang::AsTermNodeTagged, TermTags, ystdex::equality_comparable, AnchorPtr,
@@ -1587,6 +1587,12 @@ BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	BindParameterImpl<ParameterCheck>(p_env, t, o);
 }
 
+void
+BindParameterWellFormed(BindingMap& m, const TermNode& t, TermNode& o,
+	const EnvironmentReference& r_env)
+{
+	BindParameterImpl<NoParameterCheck>(m, t, o, r_env);
+}
 void
 BindParameterWellFormed(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)

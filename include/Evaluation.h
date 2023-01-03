@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
@@ -520,6 +520,9 @@ BindParameter(BindingMap&, const TermNode&, TermNode&,
 void
 BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
 
+void
+BindParameterWellFormed(BindingMap&, const TermNode&, TermNode&,
+	const EnvironmentReference&);
 void
 BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
 	TermNode&);
