@@ -528,6 +528,9 @@ BindParameterWellFormed(const shared_ptr<Environment>&, const TermNode&,
 	TermNode&);
 
 void
+BindSymbol(BindingMap&, const TokenValue&, TermNode&,
+	const EnvironmentReference&);
+void
 BindSymbol(const shared_ptr<Environment>&, const TokenValue&, TermNode&);
 
 

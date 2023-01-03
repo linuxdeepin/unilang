@@ -1601,12 +1601,20 @@ BindParameterWellFormed(const shared_ptr<Environment>& p_env, const TermNode& t,
 }
 
 void
+BindSymbol(BindingMap& m, const TokenValue& n, TermNode& o,
+	const EnvironmentReference& r_env)
+{
+	AssertValueTags(o);
+	DefaultBinder{m}(n, o, TermTags::Temporary, r_env);
+}
+void
 BindSymbol(const shared_ptr<Environment>& p_env, const TokenValue& n,
 	TermNode& o)
 {
-	AssertValueTags(o);
-	DefaultBinder(Unilang::Deref(p_env).GetMapCheckedRef())(n, o,
-		TermTags::Temporary, p_env);
+	auto& env(Unilang::Deref(p_env));
+
+	BindSymbol(env.GetMapCheckedRef(), n, o,
+		EnvironmentReference(p_env, env.GetAnchorPtr()));
 }
 
 
