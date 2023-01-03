@@ -515,6 +515,9 @@ void
 CheckParameterTree(const TermNode&);
 
 void
+BindParameter(BindingMap&, const TermNode&, TermNode&,
+	const EnvironmentReference&);
+void
 BindParameter(const shared_ptr<Environment>&, const TermNode&, TermNode&);
 
 void
