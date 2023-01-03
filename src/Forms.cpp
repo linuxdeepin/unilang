@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for TryAccessReferencedTerm, type_id, TokenValue,
 //	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
@@ -795,19 +795,25 @@ AsForm(TermNode::allocator_type a, _tParams&&... args)
 }
 
 
-void
-CheckFrozenEnvironment(const shared_ptr<Environment>& p_env)
+YB_ATTR_nodiscard YB_PURE BindingMap&
+FetchDefineMapRef(const shared_ptr<Environment>& p_env)
 {
-	if(YB_UNLIKELY(Unilang::Deref(p_env).IsFrozen()))
-		throw TypeError("Cannot define variables in a frozen environment.");
+	try
+	{
+		return Unilang::Deref(p_env).GetMapCheckedRef();
+	}
+	catch(...)
+	{
+		std::throw_with_nested(
+			TypeError("Cannot define variables in a frozen environment."));
+	}
 }
 
 void
 CheckBindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)
 {
-	CheckFrozenEnvironment(p_env);
-	BindParameter(p_env, t, o);
+	BindParameter(FetchDefineMapRef(p_env), t, o, p_env);
 }
 
 
