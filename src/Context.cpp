@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Context.h" // for string_view, Unilang::allocate_shared,
 //	make_observer, lref, ystdex::retry_on_cond, YSLib::make_string_view;
@@ -333,7 +333,7 @@ Context::ShareRecord() const noexcept
 }
 
 shared_ptr<Environment>
-Context::SwitchEnvironment(const shared_ptr<Environment>& p_env)
+Context::SwitchEnvironment(shared_ptr<Environment> p_env)
 {
 	if(p_env)
 		return SwitchEnvironmentUnchecked(p_env);
@@ -341,11 +341,10 @@ Context::SwitchEnvironment(const shared_ptr<Environment>& p_env)
 }
 
 shared_ptr<Environment>
-Context::SwitchEnvironmentUnchecked(const shared_ptr<Environment>& p_env)
-	noexcept
+Context::SwitchEnvironmentUnchecked(shared_ptr<Environment> p_env) noexcept
 {
 	assert(p_env);
-	return ystdex::exchange(p_record, p_env);
+	return ystdex::exchange(p_record, std::move(p_env));
 }
 
 bool
