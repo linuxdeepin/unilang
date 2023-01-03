@@ -1286,14 +1286,21 @@ struct DefaultBinder final
 
 
 template<class _tTraits>
-void
+inline void
+BindParameterImpl(BindingMap& m, const TermNode& t, TermNode& o,
+	const EnvironmentReference& r_env)
+{
+	AssertValueTags(o);
+	MakeParameterMatcher<_tTraits>(t.get_allocator(), DefaultBinder(m))(t, o,
+		TermTags::Temporary, r_env);
+}
+template<class _tTraits>
+inline void
 BindParameterImpl(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)
 {
-	AssertValueTags(o);
-	MakeParameterMatcher<_tTraits>(t.get_allocator(),
-		DefaultBinder(Unilang::Deref(p_env).GetMapCheckedRef()))(t, o,
-		TermTags::Temporary, p_env);
+	BindParameterImpl<_tTraits>(Unilang::Deref(p_env).GetMapCheckedRef(), t, o,
+		p_env);
 }
 
 
@@ -1567,6 +1574,12 @@ CheckParameterTree(const TermNode& term)
 	MakeParameterValueMatcher([&](const TokenValue&) noexcept{})(term);
 }
 
+void
+BindParameter(BindingMap& m, const TermNode& t, TermNode& o,
+	const EnvironmentReference& r_env)
+{
+	BindParameterImpl<ParameterCheck>(m, t, o, r_env);
+}
 void
 BindParameter(const shared_ptr<Environment>& p_env, const TermNode& t,
 	TermNode& o)
