@@ -334,20 +334,19 @@ VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
 class VauHandler : private ystdex::equality_comparable<VauHandler>
 {
 protected:
-	using GuardCall = EnvironmentGuard(const VauHandler&, TermNode&, Context&);
+	using GuardCall
+		= void(const VauHandler&, EnvironmentGuard&, TermNode&, Context&);
 	using GuardDispatch = void(Context&, const TermNode&, TermNode&);
 
 private:
 	template<GuardDispatch& _rDispatch>
 	struct GuardStatic final
 	{
-		static EnvironmentGuard
-		Call(const VauHandler& vau, TermNode& term, Context& ctx)
+		static void
+		Call(const VauHandler& vau, EnvironmentGuard&, TermNode& term,
+			Context& ctx)
 		{
-			auto gd(GuardFreshEnvironment(ctx));
-
 			_rDispatch(ctx, vau.GetFormalsRef(), term);
-			return gd;
 		}
 	};
 
@@ -399,7 +398,10 @@ public:
 			}
 			RemoveHead(term);
 
-			auto gd(guard_call(*this, term, ctx));
+			auto gd(GuardFreshEnvironment(ctx));
+
+			guard_call(*this, gd, term, ctx);
+
 			const bool no_lift(NoLifting);
 
 			VauPrepareCall(ctx, term, parent, *p_eval_struct, move);
@@ -446,17 +448,14 @@ private:
 	template<GuardDispatch& _rDispatch>
 	struct GuardDynamic final
 	{
-		static EnvironmentGuard
-		Call(const VauHandler& vau, TermNode& term, Context& ctx)
+		static void
+		Call(const VauHandler& vau, EnvironmentGuard& gd, TermNode& term,
+			Context& ctx)
 		{
-			auto r_env(ctx.WeakenRecord());
-			auto gd(GuardFreshEnvironment(ctx));
-
 			ctx.GetRecordRef().AddValue(static_cast<const DynamicVauHandler&>(
 				vau).eformal, std::allocator_arg, ctx.get_allocator(),
-				std::move(r_env));
+				EnvironmentReference(gd.func.SavedPtr));
 			_rDispatch(ctx, vau.GetFormalsRef(), term);
-			return gd;
 		}
 	};
 
@@ -466,8 +465,7 @@ public:
 	DynamicVauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
 		shared_ptr<TermNode>&& p_es, bool nl, string&& ename)
 		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
-		InitCall<GuardDynamic>(p_fm)),
-		eformal(std::move(ename))
+		InitCall<GuardDynamic>(p_fm)), eformal(std::move(ename))
 	{}
 
 	YB_ATTR_nodiscard friend bool
@@ -501,8 +499,8 @@ MakeCombinerEvalStruct(TermNode& term, TNIter i)
 {
 	term.erase(term.begin(), i);
 	ClearCombiningTags(term);
-	return ShareMoveTerm(ystdex::exchange(term,
-		Unilang::AsTermNode(term.get_allocator())));
+	return ShareMoveTerm(
+		ystdex::exchange(term, Unilang::AsTermNode(term.get_allocator())));
 }
 
 template<typename _func>
