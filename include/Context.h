@@ -699,6 +699,11 @@ YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(TermNode&);
 
 YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentReferent(const TermNode&, bool);
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentReferent(TermNode&, ResolvedTermReferencePtr);
+
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironmentValue(const ValueObject&);
 YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironmentValue(ValueObject&, bool);
