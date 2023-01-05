@@ -694,13 +694,14 @@ YB_ATTR_nodiscard TermNode
 ResolveIdentifier(const Context&, string_view);
 
 YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
-ResolveEnvironment(const ValueObject&);
-YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
-ResolveEnvironment(ValueObject&, bool);
-YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode&);
 YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(TermNode&);
+
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentValue(const ValueObject&);
+YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentValue(ValueObject&, bool);
 
 struct EnvironmentSwitcher
 {

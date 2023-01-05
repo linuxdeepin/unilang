@@ -403,29 +403,11 @@ ResolveIdentifier(const Context& ctx, string_view id)
 }
 
 pair<shared_ptr<Environment>, bool>
-ResolveEnvironment(const ValueObject& vo)
-{
-	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
-		return {p->Lock(), {}};
-	if(const auto p = vo.AccessPtr<const shared_ptr<Environment>>())
-		return {*p, true};
-	Environment::ThrowForInvalidType(vo.type());
-}
-pair<shared_ptr<Environment>, bool>
-ResolveEnvironment(ValueObject& vo, bool move)
-{
-	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
-		return {p->Lock(), {}};
-	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-		return {move ? std::move(*p) : *p, true};
-	Environment::ThrowForInvalidType(vo.type());
-}
-pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode& term)
 {
 	return ResolveTerm([&](const TermNode& nd, bool has_ref){
 		if(IsAtom(nd))
-			return ResolveEnvironment(nd.Value);
+			return ResolveEnvironmentValue(nd.Value);
 		throw ListTypeError(
 			ystdex::sfmt("Invalid environment formed from list '%s' found.",
 			TermToStringWithReferenceMark(nd, has_ref).c_str()));
@@ -436,11 +418,30 @@ ResolveEnvironment(TermNode& term)
 {
 	return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		if(IsAtom(nd))
-			return ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref));
+			return ResolveEnvironmentValue(nd.Value, Unilang::IsMovable(p_ref));
 		throw ListTypeError(
 			ystdex::sfmt("Invalid environment formed from list '%s' found.",
 			TermToStringWithReferenceMark(nd, p_ref).c_str()));
 	}, term);
+}
+
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentValue(const ValueObject& vo)
+{
+	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
+		return {p->Lock(), {}};
+	if(const auto p = vo.AccessPtr<const shared_ptr<Environment>>())
+		return {*p, true};
+	Environment::ThrowForInvalidType(vo.type());
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentValue(ValueObject& vo, bool move)
+{
+	if(const auto p = vo.AccessPtr<const EnvironmentReference>())
+		return {p->Lock(), {}};
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return {move ? std::move(*p) : *p, true};
+	Environment::ThrowForInvalidType(vo.type());
 }
 
 
