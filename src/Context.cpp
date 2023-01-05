@@ -5,6 +5,7 @@
 #include <cassert> // for assert;
 #include "Exception.h" // for TypeError, BadIdentifier, UnilangException,
 //	ListTypeError;
+#include <ystdex/string.hpp> // for ystdex::sfmt;
 #include "TermNode.h" // for Unilang::AddValueTo, AssertValueTags, IsAtom;
 #include <exception> // for std::throw_with_nested;
 #include <ystdex/utility.hpp> // ystdex::exchange;
@@ -84,6 +85,13 @@ RedirectEnvironmentList(EnvironmentList::const_iterator first,
 		return &*first;
 	}
 	return {};
+}
+
+YB_NORETURN void
+ThrowResolveEnvironmentFailure(const TermNode& term, bool has_ref)
+{
+	throw ListTypeError(ystdex::sfmt("Invalid environment formed from list '%s'"
+		" found.", TermToStringWithReferenceMark(term, has_ref).c_str()));
 }
 
 } // unnamed namespace;
@@ -405,24 +413,30 @@ ResolveIdentifier(const Context& ctx, string_view id)
 pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(const TermNode& term)
 {
-	return ResolveTerm([&](const TermNode& nd, bool has_ref){
-		if(IsAtom(nd))
-			return ResolveEnvironmentValue(nd.Value);
-		throw ListTypeError(
-			ystdex::sfmt("Invalid environment formed from list '%s' found.",
-			TermToStringWithReferenceMark(nd, has_ref).c_str()));
-	}, term);
+	return ResolveTerm(static_cast<pair<shared_ptr<Environment>, bool>(&)(
+		const TermNode&, bool)>(ResolveEnvironmentReferent), term);
 }
 pair<shared_ptr<Environment>, bool>
 ResolveEnvironment(TermNode& term)
 {
-	return ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		if(IsAtom(nd))
-			return ResolveEnvironmentValue(nd.Value, Unilang::IsMovable(p_ref));
-		throw ListTypeError(
-			ystdex::sfmt("Invalid environment formed from list '%s' found.",
-			TermToStringWithReferenceMark(nd, p_ref).c_str()));
-	}, term);
+	return ResolveTerm(static_cast<pair<shared_ptr<Environment>, bool>(&)(
+		TermNode&, ResolvedTermReferencePtr)>(ResolveEnvironmentReferent),
+		term);
+}
+
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentReferent(const TermNode& nd, bool has_ref)
+{
+	if(IsAtom(nd))
+		return ResolveEnvironmentValue(nd.Value);
+	ThrowResolveEnvironmentFailure(nd, has_ref);
+}
+pair<shared_ptr<Environment>, bool>
+ResolveEnvironmentReferent(TermNode& nd, ResolvedTermReferencePtr p_ref)
+{
+	if(IsAtom(nd))
+		return ResolveEnvironmentValue(nd.Value, Unilang::IsMovable(p_ref));
+	ThrowResolveEnvironmentFailure(nd, p_ref);
 }
 
 pair<shared_ptr<Environment>, bool>
