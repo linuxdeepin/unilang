@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Unilang_h_
 #define INC_Unilang_Unilang_h_ 1
@@ -7,10 +7,10 @@
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::byte, YSLib::size_t,
 //	YSLib::lref, YSLib::pair, YSLib::allocate_shared, YSLib::make_shared,
 //	YSLib::shared_ptr, YSLib::weak_ptr, YSLib::string_view, YSLib::pmr,
-//	YSLib::basic_string, YSLib::string, YSLib::forward-list, YSLib::list,
-//	YSLib::map, YSLib::set, YSLib::vector, YSLib::deque, YSLib::stack,
-//	YSLib::ostringstream, YSLib::sfmt, YSLib::make_observer,
-//	YSLib::observer_ptr, YSLib::Deref, YSLib::Nonnull;
+//	YSLib::default_allocator, YSLib::basic_string, YSLib::string,
+//	YSLib::forward-list, YSLib::list, YSLib::map, YSLib::set, YSLib::vector,
+//	YSLib::deque, YSLib::stack, YSLib::ostringstream, YSLib::sfmt,
+//	YSLib::make_observer, YSLib::observer_ptr, YSLib::Deref, YSLib::Nonnull;
 #include YFM_YSLib_Core_YFunc // for YSLib::function;
 #include <ystdex/memory.hpp> // for YSLib::share_move;
 #include YFM_YSLib_Core_YObject // for YSLib::type_id, YSLib::type_index,
@@ -40,6 +40,7 @@ using YSLib::weak_ptr;
 using YSLib::string_view;
 
 namespace pmr = YSLib::pmr;
+using YSLib::default_allocator;
 
 using YSLib::basic_string;
 using YSLib::string;

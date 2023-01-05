@@ -1,7 +1,7 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for Interpreter, ValueObject, string_view,
-//	string, YSLib::PolymorphicAllocatorHolder, YSLib::default_allocator,
+//	string, YSLib::PolymorphicAllocatorHolder, default_allocator,
 //	YSLib::ifstream, YSLib::istringstream;
 #include <cstdlib> // for std::getenv;
 #include "Context.h" // for Context, EnvironmentSwitcher,
@@ -448,8 +448,8 @@ LoadModule_std_math(Interpreter& intp)
 }
 
 template<typename _tStream>
-using PortHolder = YSLib::PolymorphicAllocatorHolder<std::ios_base, _tStream,
-	YSLib::default_allocator<byte>>;
+using GPortHolder = YSLib::PolymorphicAllocatorHolder<std::ios_base, _tStream,
+	default_allocator<byte>>;
 
 void
 LoadModule_std_io(Interpreter& intp)
@@ -482,7 +482,7 @@ LoadModule_std_io(Interpreter& intp)
 		[](const string& path){
 		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
 			return ValueObject(std::allocator_arg, path.get_allocator(),
-				any_ops::use_holder, in_place_type<PortHolder<ifstream>>,
+				any_ops::use_holder, in_place_type<GPortHolder<ifstream>>,
 				std::move(ifs));
 		throw UnilangException(
 			ystdex::sfmt("Failed opening file '%s'.", path.c_str()));
@@ -491,7 +491,7 @@ LoadModule_std_io(Interpreter& intp)
 		[](const string& str){
 		if(istringstream iss{str})
 			return ValueObject(std::allocator_arg, str.get_allocator(),
-				any_ops::use_holder, in_place_type<PortHolder<istringstream>>,
+				any_ops::use_holder, in_place_type<GPortHolder<istringstream>>,
 				std::move(iss));
 		throw UnilangException(
 			ystdex::sfmt("Failed opening string '%s'.", str.c_str()));
@@ -1101,7 +1101,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.227"
+#define APP_VER "0.12.244"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
