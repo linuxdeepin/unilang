@@ -14,6 +14,7 @@
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
 //	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
+#include "Context.h" // for ResolveEnvironment, ResolveEnvironmentValue;
 #include "TermNode.h" // for TNIter, IsTypedRegular, Unilang::AsTermNode,
 //	CountPrefix, TNCIter;
 #include <ystdex/algorithm.hpp> // for ystdex::fast_all_of;
@@ -562,7 +563,8 @@ LambdaVauWithEnvironment(TermNode& term, Context& ctx, bool no_lift)
 					!Unilang::IsMovable(p_ref)));
 			if(IsLeaf(nd))
 				return MakeParentSingle(nd.get_allocator(),
-					ResolveEnvironment(nd.Value, Unilang::IsMovable(p_ref)));
+					ResolveEnvironmentValue(nd.Value,
+					Unilang::IsMovable(p_ref)));
 			ThrowInvalidEnvironmentType(nd, p_ref);
 		}, tm), ystdex::size_t_<_vWrapping>());
 	}, "eval-vau-parent"));
