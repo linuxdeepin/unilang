@@ -140,24 +140,25 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 
 
 YB_ATTR_nodiscard ValueObject
-MakeEnvironmentParent(TNIter first, TNIter last,
-	const TermNode::allocator_type& a, bool nonmodifying)
+MakeEnvironmentParentList(TNIter first, TNIter last, TermNode::allocator_type a,
+	bool move)
 {
 	const auto tr([&](TNIter iter){
 		return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
-			if(const auto p = TryAccessLeafAtom<const TermReference>(*i))
+			if(const auto p
+				= TryAccessLeafAtom<const TermReference>(Unilang::Deref(i)))
 			{
-				if(nonmodifying || !p->IsMovable())
-					return p->get().Value;
-				return std::move(p->get().Value);
+				if(move && p->IsMovable())
+					return std::move(p->get().Value);
+				return p->get().Value;
 			}
-			return std::move(i->Value);
+			if(move)
+				return std::move(i->Value);
+			return i->Value;
 		});
 	});
-	ValueObject parent;
 
-	parent.emplace<EnvironmentList>(tr(first), tr(last), a);
-	return parent;
+	return ValueObject(EnvironmentList(tr(first), tr(last), a));
 }
 
 YB_ATTR_nodiscard shared_ptr<Environment>
@@ -166,7 +167,7 @@ CreateEnvironment(TermNode& term)
 	const auto a(term.get_allocator());
 
 	return !term.empty() ? Unilang::AllocateEnvironment(a,
-		MakeEnvironmentParent(term.begin(), term.end(), a, {}))
+		MakeEnvironmentParentList(term.begin(), term.end(), a, true))
 		: Unilang::AllocateEnvironment(a);
 }
 
@@ -558,9 +559,9 @@ LambdaVauWithEnvironment(TermNode& term, Context& ctx, bool no_lift)
 		return ReduceVau(term, no_lift, i, ResolveTerm([](TermNode& nd,
 			ResolvedTermReferencePtr p_ref) -> ValueObject{
 			if(IsList(nd))
-				return MakeParent(MakeEnvironmentParent(
+				return MakeParent(MakeEnvironmentParentList(
 					nd.begin(), nd.end(), nd.get_allocator(),
-					!Unilang::IsMovable(p_ref)));
+					Unilang::IsMovable(p_ref)));
 			if(IsLeaf(nd))
 				return MakeParentSingle(nd.get_allocator(),
 					ResolveEnvironmentValue(nd.Value,
