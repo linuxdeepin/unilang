@@ -1,10 +1,11 @@
-﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "TCO.h" // for Unilang::Nonnull, std::get, Unilang::Deref, IsTyped;
 #include <cassert> // for assert;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_unique_guard,
 //	ystdex::dismiss;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
+#include "Context.h" // for Unilang::AssignParent;
 #include "Exception.h" // for UnilangException;
 
 namespace Unilang
@@ -89,7 +90,7 @@ RecordCompressor::Compress()
 			{
 				if(!ystdex::exists(Universe, ystdex::ref(dst)))
 					return true;
-				parent = dst.Parent;
+				Unilang::AssignParent(parent, dst.Parent);
 				collected = true;
 			}
 			return {};
