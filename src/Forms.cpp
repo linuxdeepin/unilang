@@ -14,7 +14,8 @@
 #include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
 //	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
-#include "Context.h" // for ResolveEnvironment, ResolveEnvironmentValue;
+#include "Context.h" // for ResolveEnvironment, ResolveEnvironmentValue,
+//	Unilang::AssignParent;
 #include "TermNode.h" // for TNIter, IsTypedRegular, Unilang::AsTermNode,
 //	CountPrefix, TNCIter;
 #include <ystdex/algorithm.hpp> // for ystdex::fast_all_of;
@@ -172,35 +173,6 @@ CreateEnvironment(TermNode& term)
 }
 
 
-inline void
-AssignParent(ValueObject& parent, const ValueObject& vo)
-{
-	parent = vo;
-}
-inline void
-AssignParent(ValueObject& parent, ValueObject&& vo)
-{
-	parent = std::move(vo);
-}
-inline void
-AssignParent(ValueObject& parent, TermNode::allocator_type a,
-	EnvironmentReference&& r_env)
-{
-	AssignParent(parent, ValueObject(std::allocator_arg, a, std::move(r_env)));
-}
-inline void
-AssignParent(ValueObject& parent, TermNode& term, EnvironmentReference&& r_env)
-{
-	AssignParent(parent, term.get_allocator(), std::move(r_env));
-}
-template<typename... _tParams>
-inline void
-AssignParent(Context& ctx, _tParams&&... args)
-{
-	AssignParent(ctx.GetRecordRef().Parent, yforward(args)...);
-}
-
-
 YB_ATTR_nodiscard YB_PURE bool
 IsSymbolFormal(const TermNode& term) noexcept
 {
@@ -321,13 +293,13 @@ VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
 	AssertNextTerm(ctx, term);
 	if(move)
 	{
-		AssignParent(ctx, std::move(parent));
+		Unilang::AssignParent(ctx, std::move(parent));
 		term.SetContent(std::move(eval_struct));
 		RefTCOAction(ctx).PopTopFrame();
 	}
 	else
 	{
-		AssignParent(ctx, parent);
+		Unilang::AssignParent(ctx, parent);
 		term.SetContent(eval_struct);
 	}
 }

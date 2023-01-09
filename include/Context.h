@@ -708,6 +708,37 @@ ResolveEnvironmentValue(const ValueObject&);
 YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironmentValue(ValueObject&, bool);
 
+
+inline void
+AssignParent(ValueObject& parent, const ValueObject& vo)
+{
+	parent = vo;
+}
+inline void
+AssignParent(ValueObject& parent, ValueObject&& vo)
+{
+	parent = std::move(vo);
+}
+inline void
+AssignParent(ValueObject& parent, TermNode::allocator_type a,
+	EnvironmentReference&& r_env)
+{
+	Unilang::AssignParent(parent, ValueObject(std::allocator_arg, a,
+		std::move(r_env)));
+}
+inline void
+AssignParent(ValueObject& parent, TermNode& term, EnvironmentReference&& r_env)
+{
+	Unilang::AssignParent(parent, term.get_allocator(), std::move(r_env));
+}
+template<typename... _tParams>
+inline void
+AssignParent(Context& ctx, _tParams&&... args)
+{
+	Unilang::AssignParent(ctx.GetRecordRef().Parent, yforward(args)...);
+}
+
+
 struct EnvironmentSwitcher
 {
 	lref<Context> ContextRef;
