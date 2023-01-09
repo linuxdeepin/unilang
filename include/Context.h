@@ -719,17 +719,18 @@ AssignParent(ValueObject& parent, ValueObject&& vo)
 {
 	parent = std::move(vo);
 }
+template<typename... _tParams>
 inline void
 AssignParent(ValueObject& parent, TermNode::allocator_type a,
-	EnvironmentReference&& r_env)
+	_tParams&&... args)
 {
-	Unilang::AssignParent(parent, ValueObject(std::allocator_arg, a,
-		std::move(r_env)));
+	parent.assign(std::allocator_arg, a, yforward(args)...);
 }
+template<typename... _tParams>
 inline void
-AssignParent(ValueObject& parent, TermNode& term, EnvironmentReference&& r_env)
+AssignParent(ValueObject& parent, TermNode& term, _tParams&&... args)
 {
-	Unilang::AssignParent(parent, term.get_allocator(), std::move(r_env));
+	Unilang::AssignParent(parent, term.get_allocator(), yforward(args)...);
 }
 template<typename... _tParams>
 inline void
