@@ -6,7 +6,8 @@
 #include "TermAccess.h" // for vector, ValueObject, map, string, TermNode,
 //	pair, observer_ptr, shared_ptr, EnvironmentBase, AnchorPtr, pmr, yforward,
 //	Unilang::Deref, string_view, type_info, lref, Unilang::allocate_shared,
-//	EnvironmentReference, Unilang::AsTermNode, stack;
+//	EnvironmentReference, Unilang::AssertMatchedAllocators, Unilang::AsTermNode,
+//	stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
@@ -594,32 +595,16 @@ Continuation::operator()(Context& ctx) const
 
 
 YB_NONNULL(3) inline void
-AssertMatchedAllocators(const TermNode::allocator_type& a,
-	const TermNode::Container& con,
-	const char* msg = "Allocators mismatch to the term container.") noexcept
-{
-	// XXX: The message is current ignored.
-	yunused(a), yunused(con), yunused(msg);
-	assert(a == con.get_allocator());
-}
-YB_NONNULL(3) inline void
-AssertMatchedAllocators(const TermNode::allocator_type& a, const TermNode& nd,
-	const char* msg = "Allocators mismatch to the term node.") noexcept
-{
-	AssertMatchedAllocators(a, nd.GetContainer(), msg);
-}
-YB_NONNULL(3) inline void
 AssertMatchedAllocators(const Context& ctx, const TermNode::Container& con,
 	const char* msg
-	= "Allocators mismatch between the term container and the context.")
+	= "Allocators for the context and the term node container mismatch.")
 	noexcept
 {
 	Unilang::AssertMatchedAllocators(ctx.get_allocator(), con, msg);
 }
 YB_NONNULL(3) inline void
-AssertMatchedAllocators(const Context& ctx, const TermNode& nd,
-	const char* msg
-	= "Allocators mismatch between the term node and the context.") noexcept
+AssertMatchedAllocators(const Context& ctx, const TermNode& nd, const char* msg
+	= "Allocators for the context and the term node mismatch.") noexcept
 {
 	Unilang::AssertMatchedAllocators(ctx.get_allocator(), nd, msg);
 }

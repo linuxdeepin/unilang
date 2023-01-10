@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermNode_h_
 #define INC_Unilang_TermNode_h_ 1
@@ -692,6 +692,35 @@ AssertBranchedList(const TermNode& nd) noexcept
 {
 	yunused(nd);
 	assert(IsBranchedList(nd) && "Invalid term found.");
+}
+
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const TermNode::allocator_type& a,
+	const TermNode::Container& con,
+	const char* msg = "Allocators mismatch to the term container.") noexcept
+{
+	// XXX: The message is current ignored.
+	yunused(a), yunused(con), yunused(msg);
+	assert(a == con.get_allocator());
+}
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const TermNode::Container& x, const TermNode::Container&
+	y, const char* msg = "Allocators for term containers mismatch.") noexcept
+{
+	Unilang::AssertMatchedAllocators(x.get_allocator(), y, msg);
+}
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const TermNode::allocator_type& a, const TermNode& nd,
+	const char* msg = "Allocators mismatch to the term node.") noexcept
+{
+	AssertMatchedAllocators(a, nd.GetContainer(), msg);
+}
+YB_NONNULL(3) inline void
+AssertMatchedAllocators(const TermNode& x, const TermNode& y,
+	const char* msg = "Allocators for terms mismatch.") noexcept
+{
+	yunused(x), yunused(y), yunused(msg);
+	Unilang::AssertMatchedAllocators(x.GetContainer(), y.GetContainer());
 }
 
 inline void
