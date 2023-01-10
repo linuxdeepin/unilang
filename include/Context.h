@@ -609,6 +609,23 @@ AssertMatchedAllocators(const Context& ctx, const TermNode& nd, const char* msg
 	Unilang::AssertMatchedAllocators(ctx.get_allocator(), nd, msg);
 }
 
+
+YB_ATTR_nodiscard YB_PURE inline Environment::allocator_type
+ToBindingsAllocator(const BindingMap& m) noexcept
+{
+	return m.get_allocator();
+}
+YB_ATTR_nodiscard YB_PURE inline Environment::allocator_type
+ToBindingsAllocator(const Environment& env) noexcept
+{
+	return Unilang::ToBindingsAllocator(env.GetMap());
+}
+YB_ATTR_nodiscard YB_PURE inline Environment::allocator_type
+ToBindingsAllocator(const Context& ctx) noexcept
+{
+	return Unilang::ToBindingsAllocator(ctx.GetRecordRef());
+}
+
 template<typename... _tParams>
 inline shared_ptr<Environment>
 AllocateEnvironment(const Environment::allocator_type& a, _tParams&&... args)
