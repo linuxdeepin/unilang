@@ -8,7 +8,7 @@
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
-//	Unilang::SwitchToFreshEnvironment, HasValue;
+//	Unilang::EmplaceLeaf, Unilang::SwitchToFreshEnvironment, HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
@@ -382,6 +382,24 @@ MakeForm(const TermNode& term, _tParams&&... args)
 }
 
 
+template<class _tTarget>
+YB_ATTR_always_inline inline void
+RegisterFormHandler(_tTarget& target, string_view name, FormContextHandler fm)
+{
+	Unilang::EmplaceLeaf<ContextHandler>(target, name,
+		std::allocator_arg, ToBindingsAllocator(target), std::move(fm));
+}
+template<class _tTarget, typename... _tParams, yimpl(typename
+	= ystdex::exclude_self_params_t<FormContextHandler, _tParams...>)>
+YB_ATTR_always_inline inline void
+RegisterFormHandler(_tTarget& target, string_view name, _tParams&&... args)
+{
+	Unilang::EmplaceLeaf<ContextHandler>(target, name,
+		std::allocator_arg, ToBindingsAllocator(target),
+		FormContextHandler(yforward(args)...));
+}
+
+
 inline namespace Internals
 {
 
@@ -404,27 +422,18 @@ enum WrappingKind
 };
 
 
-template<size_t _vWrapping = Strict, class _tTarget, typename... _tParams>
-inline void
-RegisterHandler(_tTarget& target, string_view name, _tParams&&... args)
-{
-	Unilang::EmplaceLeaf<ContextHandler>(target, name,
-		FormContextHandler(yforward(args)..., _vWrapping));
-}
-
 template<class _tTarget, typename... _tParams>
 inline void
 RegisterForm(_tTarget& target, string_view name, _tParams&&... args)
 {
-	Unilang::RegisterHandler<Form>(target, name,
-		yforward(args)...);
+	Unilang::RegisterFormHandler(target, name, yforward(args)..., Form);
 }
 
 template<class _tTarget, typename... _tParams>
 inline void
 RegisterStrict(_tTarget& target, string_view name, _tParams&&... args)
 {
-	Unilang::RegisterHandler<>(target, name, yforward(args)...);
+	Unilang::RegisterFormHandler(target, name, yforward(args)..., Strict);
 }
 
 

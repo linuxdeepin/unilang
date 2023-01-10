@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Forms_h_
 #define INC_Unilang_Forms_h_ 1
@@ -6,9 +6,7 @@
 #include "Evaluation.h" // for ReductionStatus, TermNode, ReferenceTerm,
 //	YSLib::EmplaceCallResult, yforward, Unilang::Deref,
 //	Unilang::EmplaceCallResultOrReturn, AccessTypedValue, Strict,
-//	Unilang::RegisterHandler, Context;
-#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
-#include <cassert> // for assert;
+//	Unilang::RegisterFormHandler, Context;
 #include <ystdex/functional.hpp> // for ystdex::expand_proxy,
 //	ystdex::invoke_nonvoid, ystdex::make_expanded, ystdex::bind1,
 //	std::placeholders::_2, std::ref;
@@ -20,6 +18,7 @@
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/examiner.hpp> // for ystdex::examiners;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
+#include <ystdex/integral_constant.hpp> // for ystdex::size_t_;
 
 namespace Unilang
 {
@@ -398,32 +397,32 @@ template<size_t _vWrapping = Strict, typename _func, class _tTarget>
 inline void
 RegisterUnary(_tTarget& target, string_view name, _func f)
 {
-	Unilang::RegisterHandler<_vWrapping>(target, name,
-		UnaryExpansion<_func>(std::move(f)));
+	Unilang::RegisterFormHandler(target, name,
+		UnaryExpansion<_func>(std::move(f)), ystdex::size_t_<_vWrapping>());
 }
 template<size_t _vWrapping = Strict, typename _type, typename _func,
 	class _tTarget>
 inline void
 RegisterUnary(_tTarget& target, string_view name, _func f)
 {
-	Unilang::RegisterHandler<_vWrapping>(target, name,
-		UnaryAsExpansion<_type, _func>(std::move(f)));
+	Unilang::RegisterFormHandler(target, name, UnaryAsExpansion<_type, _func>(
+		std::move(f)), ystdex::size_t_<_vWrapping>());
 }
 
 template<size_t _vWrapping = Strict, typename _func, class _tTarget>
 inline void
 RegisterBinary(_tTarget& target, string_view name, _func f)
 {
-	Unilang::RegisterHandler<_vWrapping>(target, name,
-		BinaryExpansion<_func>(std::move(f)));
+	Unilang::RegisterFormHandler(target, name,
+		BinaryExpansion<_func>(std::move(f)), ystdex::size_t_<_vWrapping>());
 }
 template<size_t _vWrapping = Strict, typename _type, typename _type2,
 	typename _func, class _tTarget>
 inline void
 RegisterBinary(_tTarget& target, string_view name, _func f)
 {
-	Unilang::RegisterHandler<_vWrapping>(target, name,
-		BinaryAsExpansion<_type, _type2, _func>(std::move(f)));
+	Unilang::RegisterFormHandler(target, name, BinaryAsExpansion<_type, _type2,
+		_func>(std::move(f)), ystdex::size_t_<_vWrapping>());
 }
 
 
