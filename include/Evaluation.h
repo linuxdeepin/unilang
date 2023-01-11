@@ -3,8 +3,8 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "TermNode.h" // for TermNode, ValueObject, string_view, shared_ptr,
-//	type_id, YSLib::Logger;
+#include "TermNode.h" // for TermNode, string_view, shared_ptr, in_place_type,
+//	type_id, ValueObject, YSLib::Logger;
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
@@ -29,8 +29,9 @@
 #include <ystdex/apply.hpp> // for ystdex::apply;
 #include "TermAccess.h" // for AssertCombiningTerm;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
+#include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <ystdex/functional.hpp> // for ystdex::expanded_caller;
+#include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
 
 namespace Unilang
 {
@@ -488,18 +489,6 @@ RetainN(const TermNode& term, size_t m = 1)
 }
 
 
-using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
-
-
-template<typename... _tParams>
-YB_ATTR_nodiscard inline EnvironmentGuard
-GuardFreshEnvironment(Context& ctx, _tParams&&... args)
-{
-	return EnvironmentGuard(ctx, Unilang::SwitchToFreshEnvironment(ctx,
-		yforward(args)...));
-}
-
-
 ReductionStatus
 ReduceCombinedBranch(TermNode&, Context&);
 
@@ -511,6 +500,47 @@ ReduceReturnUnspecified(TermNode& term) noexcept
 {
 	term.SetValue(ValueToken::Unspecified);
 	return ReductionStatus::Clean;
+}
+
+
+using EnvironmentGuard = ystdex::guard<EnvironmentSwitcher>;
+
+
+template<typename... _tParams>
+YB_ATTR_nodiscard inline EnvironmentGuard
+GuardFreshEnvironment(Context& ctx, _tParams&&... args)
+{
+	return EnvironmentGuard(ctx, Unilang::SwitchToFreshEnvironment(ctx,
+		yforward(args)...));
+}
+
+template<typename _fCallable, typename... _tParams>
+auto
+InvokeIn(Context& ctx, _fCallable&& f, _tParams&&... args)
+	-> decltype(ystdex::invoke(yforward(f), yforward(args)...))
+{
+	auto r_env(ctx.WeakenRecord());
+	const auto a(ToBindingsAllocator(ctx));
+	auto gd(GuardFreshEnvironment(ctx));
+
+	Unilang::AssignParent(ctx, a, in_place_type<EnvironmentReference>,
+		std::move(r_env));
+	return ystdex::invoke(yforward(f), yforward(args)...);
+}
+
+template<typename _fCallable, typename... _tParams>
+shared_ptr<Environment>
+GetModuleFor(Context& ctx, _fCallable&& f, _tParams&&... args)
+{
+	auto r_env(ctx.WeakenRecord());
+	const auto a(ToBindingsAllocator(ctx));
+	auto gd(GuardFreshEnvironment(ctx));
+
+	Unilang::AssignParent(ctx, a, in_place_type<EnvironmentReference>,
+		std::move(r_env));
+	ystdex::invoke(yforward(f), yforward(args)...);
+	ctx.GetRecordRef().Freeze();
+	return gd.func.Switch();
 }
 
 
