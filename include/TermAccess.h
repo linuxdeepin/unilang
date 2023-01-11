@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TermAccess_h_
 #define INC_Unilang_TermAccess_h_ 1
@@ -590,6 +590,18 @@ struct TypedValueAccessor<ResolvedArg<>>
 };
 
 
+struct ReferenceLeafOp
+{
+	template<typename _type>
+	auto
+	operator()(_type&& term) const
+		noexcept(noexcept(Unilang::ReferenceLeaf(yforward(term))))
+		-> decltype(Unilang::ReferenceLeaf(yforward(term)))
+	{
+		return Unilang::ReferenceLeaf(yforward(term));
+	}
+};
+
 struct ReferenceTermOp
 {
 	template<typename _type>
@@ -601,6 +613,14 @@ struct ReferenceTermOp
 		return Unilang::ReferenceTerm(yforward(term));
 	}
 };
+
+template<typename _func>
+YB_STATELESS auto
+ComposeReferencedLeafOp(_func f)
+	-> decltype(ystdex::compose_n(f, ReferenceLeafOp()))
+{
+	return ystdex::compose_n(f, ReferenceLeafOp());
+}
 
 template<typename _func>
 YB_STATELESS auto
