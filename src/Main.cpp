@@ -1,27 +1,26 @@
 ﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
-#include "Interpreter.h" // for Interpreter, ValueObject, string_view,
-//	string, YSLib::PolymorphicAllocatorHolder, default_allocator,
-//	YSLib::ifstream, YSLib::istringstream;
+#include "Interpreter.h" // for string_view, string, Interpreter, ValueObject,
+//	YSLib::PolymorphicAllocatorHolder, default_allocator, YSLib::ifstream,
+//	YSLib::istringstream;
 #include <cstdlib> // for std::getenv;
-#include "Context.h" // for Context, EnvironmentSwitcher,
-//	Unilang::SwitchToFreshEnvironment;
-#include <ystdex/scope_guard.hpp> // for ystdex::guard;
-#include <ystdex/invoke.hpp> // for ystdex::invoke;
-#include <functional> // for std::bind, std::placeholders;
-#include "BasicReduction.h" // for ReductionStatus, LiftOther;
-#include "Evaluation.h" // for RetainN, ValueToken, RegisterStrict,
-//	NameTypedContextHandler;
-#include "Forms.h" // for Forms::CallRawUnary, Forms::CallBinaryFold and other
-//	form implementations;
-#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
-//	UnilangException;
+#include "Evaluation.h" // for Unilang::GetModuleFor, RetainN, ValueToken,
+//	RegisterStrict;
+#include "Forms.h" // for RetainN, Forms::CallRawUnary, Forms::CallBinaryFold
+//	and other form implementations
+#include "Context.h" // for BindingMap, Context, Environment,
+//	EnvironmentSwitcher, Unilang::SwitchToFreshEnvironment;
 #include "TermAccess.h" // for ResolveTerm, ResolvedTermReferencePtr,
 //	ThrowValueCategoryError, IsTypedRegular, Unilang::ResolveRegular,
 //	ComposeReferencedTermOp, IsReferenceTerm, IsBoundLValueTerm,
 //	IsUncollapsedTerm, IsUniqueTerm, EnvironmentReference, TermNode,
 //	IsBranchedList, ThrowInsufficientTermsError;
+#include "BasicReduction.h" // for ReductionStatus, LiftOther;
+//	NameTypedContextHandler;
 #include <iterator> // for std::next, std::iterator_traits;
+#include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
+//	UnilangException;
+#include <functional> // for std::bind, std::placeholders;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
 //	ystdex::minus, ystdex::multiplies;
@@ -58,19 +57,6 @@ namespace
 {
 
 const bool Unilang_UseJIT(!std::getenv("UNILANG_NO_JIT"));
-
-template<typename _fCallable>
-shared_ptr<Environment>
-GetModuleFor(Context& ctx, _fCallable&& f)
-{
-	ystdex::guard<EnvironmentSwitcher> gd(ctx,
-		Unilang::SwitchToFreshEnvironment(ctx,
-		ValueObject(ctx.WeakenRecord())));
-
-	ystdex::invoke(f);
-	ctx.GetRecordRef().Freeze();
-	return ctx.ShareRecord();
-}
 
 template<typename _fCallable, typename... _tParams>
 inline void
@@ -1101,7 +1087,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.244"
+#define APP_VER "0.12.255"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

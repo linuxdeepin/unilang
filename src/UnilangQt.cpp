@@ -57,19 +57,6 @@ using YSLib::shared_ptr;
 using YSLib::unique_ptr;
 using YSLib::make_unique;
 
-template<typename _fCallable>
-shared_ptr<Environment>
-GetModuleFor(Context& ctx, _fCallable&& f)
-{
-	ystdex::guard<EnvironmentSwitcher>
-		gd(ctx, Unilang::SwitchToFreshEnvironment(ctx,
-		ValueObject(ctx.WeakenRecord())));
-
-	ystdex::invoke(f);
-	// TODO: Freeze the environment?
-	return ctx.ShareRecord();
-}
-
 YB_PURE QWidget&
 ResolveQWidget(TermNode& term)
 {
@@ -78,6 +65,7 @@ ResolveQWidget(TermNode& term)
 	assert(p_wgt.get());
 	return *p_wgt;
 }
+
 YB_PURE const QWidget&
 ResolveConstQWidget(TermNode& term)
 {
