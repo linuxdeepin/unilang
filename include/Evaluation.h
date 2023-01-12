@@ -305,6 +305,12 @@ public:
 		return CallN(wrapping, term, ctx);
 	}
 
+	YB_ATTR_nodiscard bool
+	IsDynamicWrapper() const noexcept
+	{
+		return call_n == DoCallN;
+	}
+
 	YB_ATTR_nodiscard YB_PURE size_t
 	GetWrappingCount() const noexcept
 	{
