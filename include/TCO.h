@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_TCO_h_
 #define INC_Unilang_TCO_h_ 1
@@ -6,8 +6,8 @@
 #include "Lexical.h" // for SourceName;
 #include "Evaluation.h" // for shared_ptr, Context, YSLib::allocate_shared,
 //	Unilang::Deref, UnilangException, map, lref, Environment, size_t, set,
-//	weak_ptr, IsTyped, pair, ContextHandler, list, TermNode, EnvironmentGuard,
-//	ReductionStatus, NameTypedContextHandler;
+//	weak_ptr, EnvironmentParent, IsTyped, pair, list, TermNode,
+//	EnvironmentGuard, ReductionStatus, NameTypedContextHandler;
 #include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1,
 //	std::ref, std::placeholder;
 #include <tuple> // for std::tuple, std::get;
@@ -104,7 +104,7 @@ struct RecordCompressor final
 
 	template<typename _fTracer>
 	static void
-	Traverse(Environment& e, ValueObject& parent, const _fTracer& trace)
+	Traverse(Environment& e, EnvironmentParent& parent, const _fTracer& trace)
 	{
 		const auto& tp(parent.type());
 
@@ -128,11 +128,11 @@ struct RecordCompressor final
 private:
 	template<typename _fTracer>
 	static void
-	TraverseForSharedPtr(Environment& e, ValueObject& parent,
+	TraverseForSharedPtr(Environment& e, EnvironmentParent& parent,
 		const _fTracer& trace, shared_ptr<Environment>& p)
 	{
 		if(ystdex::expand_proxy<void(const shared_ptr<Environment>&,
-			Environment&, ValueObject&)>::call(trace, p, e, parent))
+			Environment&, EnvironmentParent&)>::call(trace, p, e, parent))
 		{
 			auto& dst(Unilang::Deref(p));
 

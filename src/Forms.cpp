@@ -2,9 +2,10 @@
 
 #include "Forms.h" // for TryAccessReferencedTerm, type_id, TokenValue,
 //	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
-//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, TryAccessLeaf, assert,
-//	IsList, Unilang::Deref, GuardFreshEnvironment, AssertValueTags, IsLeaf,
-//	FormContextHandler, ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
+//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, TryAccessLeafAtom,
+//	shared_ptr, TryAccessLeaf, assert, IsList, Unilang::Deref, AssertValueTags,
+//	GuardFreshEnvironment, ystdex::size_t_, IsLeaf, FormContextHandler,
+//	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
 //	Forms::CallResolvedUnary, LiftTerm, Unilang::EmplaceCallResultOrReturn;
 #include "Exception.h" // for InvalidSyntax, ThrowTypeErrorForInvalidType,
 //	TypeError, ArityMismatch, ThrowListTypeErrorForNonList, UnilangException,
@@ -15,17 +16,16 @@
 //	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
 //	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
 #include "Context.h" // for ResolveEnvironment, ResolveEnvironmentValue,
-//	Unilang::AssignParent;
+//	Unilang::AssignParent, EnvironmentParent;
 #include "TermNode.h" // for TNIter, IsTypedRegular, Unilang::AsTermNode,
 //	CountPrefix, TNCIter;
 #include <ystdex/algorithm.hpp> // for ystdex::fast_all_of;
 #include <ystdex/range.hpp> // for ystdex::cbegin, ystdex::cend;
+#include "TCO.h" // for RefTCOAction, ReduceSubsequent, Action, OneShotChecker;
 #include <ystdex/utility.hpp> // ystdex::exchange, ystdex::as_const;
-#include "TCO.h" // for ReduceSubsequent, Action;
 #include <ystdex/deref_op.hpp> // for ystdex::invoke_value_or,
 //	ystdex::call_value_or;
 #include <ystdex/functional.hpp> // for ystdex::update_thunk;
-#include "TCO.h" // for OneShotChecker;
 
 namespace Unilang
 {
@@ -140,12 +140,12 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 }
 
 
-YB_ATTR_nodiscard ValueObject
+YB_ATTR_nodiscard EnvironmentParent
 MakeEnvironmentParentList(TNIter first, TNIter last, TermNode::allocator_type a,
 	bool move)
 {
 	const auto tr([&](TNIter iter){
-		return ystdex::make_transform(iter, [&](TNIter i) -> ValueObject{
+		return ystdex::make_transform(iter, [&](TNIter i) -> EnvironmentParent{
 			if(const auto p
 				= TryAccessLeafAtom<const TermReference>(Unilang::Deref(i)))
 			{
@@ -197,14 +197,14 @@ IsOptimizableFormalList(const TermNode& formals) noexcept
 		&& (formals.empty() || IsNonTrailingSymbol(*formals.rbegin()));
 }
 
-YB_ATTR_nodiscard YB_PURE ValueObject
+YB_ATTR_nodiscard YB_PURE EnvironmentParent
 MakeParent(ValueObject&& vo)
 {
 	Environment::CheckParent(vo);
 	return std::move(vo);
 }
 
-YB_ATTR_nodiscard YB_PURE ValueObject
+YB_ATTR_nodiscard YB_PURE EnvironmentParent
 MakeParentSingle(TermNode::allocator_type a,
 	pair<shared_ptr<Environment>, bool> pr)
 {
@@ -212,19 +212,19 @@ MakeParentSingle(TermNode::allocator_type a,
 
 	Environment::EnsureValid(p_env);
 	if(pr.second)
-		return ValueObject(std::allocator_arg, a,
+		return EnvironmentParent(std::allocator_arg, a,
 			in_place_type<shared_ptr<Environment>>, std::move(p_env));
-	return ValueObject(std::allocator_arg, a,
+	return EnvironmentParent(std::allocator_arg, a,
 		in_place_type<EnvironmentReference>, std::move(p_env));
 }
 
 
-YB_ATTR_nodiscard YB_PURE ValueObject
+YB_ATTR_nodiscard YB_PURE EnvironmentParent
 MakeParentSingleNonOwning(TermNode::allocator_type a,
 	const shared_ptr<Environment>& p_env)
 {
 	Environment::EnsureValid(p_env);
-	return ValueObject(std::allocator_arg, a,
+	return EnvironmentParent(std::allocator_arg, a,
 		in_place_type<EnvironmentReference>, p_env);
 }
 
@@ -287,7 +287,7 @@ VauBindOne(Context& ctx, const TermNode& formals, TermNode& term)
 }
 
 void
-VauPrepareCall(Context& ctx, TermNode& term, ValueObject& parent,
+VauPrepareCall(Context& ctx, TermNode& term, EnvironmentParent& parent,
 	TermNode& eval_struct, bool move)
 {
 	AssertNextTerm(ctx, term);
@@ -326,17 +326,17 @@ private:
 
 	shared_ptr<TermNode> p_formals;
 	GuardCall& guard_call;
-	mutable ValueObject parent;
+	mutable EnvironmentParent parent;
 	mutable shared_ptr<TermNode> p_eval_struct;
 
 public:
 	bool NoLifting = {};
 
 protected:
-	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
+	VauHandler(shared_ptr<TermNode>&& p_fm, EnvironmentParent&& ep,
 		shared_ptr<TermNode>&& p_es, bool nl, GuardCall& gd_call)
 		: p_formals(std::move(p_fm)), guard_call(gd_call),
-		parent(std::move(vo)), p_eval_struct(std::move(p_es)), NoLifting(nl)
+		parent(std::move(ep)), p_eval_struct(std::move(p_es)), NoLifting(nl)
 	{
 		assert(p_eval_struct.use_count() == 1
 			&& "Unexpected shared evaluation structure found.");
@@ -344,9 +344,9 @@ protected:
 	}
 
 public:
-	VauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
+	VauHandler(shared_ptr<TermNode>&& p_fm, EnvironmentParent&& ep,
 		shared_ptr<TermNode>&& p_es, bool nl)
-		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
+		: VauHandler(std::move(p_fm), std::move(ep), std::move(p_es), nl,
 		InitCall<GuardStatic>(p_fm))
 	{}
 
@@ -436,9 +436,9 @@ private:
 	string eformal{};
 
 public:
-	DynamicVauHandler(shared_ptr<TermNode>&& p_fm, ValueObject&& vo,
+	DynamicVauHandler(shared_ptr<TermNode>&& p_fm, EnvironmentParent&& ep,
 		shared_ptr<TermNode>&& p_es, bool nl, string&& ename)
-		: VauHandler(std::move(p_fm), std::move(vo), std::move(p_es), nl,
+		: VauHandler(std::move(p_fm), std::move(ep), std::move(p_es), nl,
 		InitCall<GuardDynamic>(p_fm)), eformal(std::move(ename))
 	{}
 
@@ -487,7 +487,7 @@ ReduceCreateFunction(TermNode& term, _func f)
 
 template<typename... _tParams>
 YB_ATTR_nodiscard ReductionStatus
-ReduceVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo,
+ReduceVau(TermNode& term, bool no_lift, TNIter i, EnvironmentParent&& ep,
 	_tParams&&... args)
 {
 	return ReduceCreateFunction(term, [&]() -> ContextHandler{
@@ -497,10 +497,10 @@ ReduceVau(TermNode& term, bool no_lift, TNIter i, ValueObject&& vo,
 
 		if(eformal)
 			return Unilang::MakeForm(term, DynamicVauHandler(
-				std::move(formals), std::move(vo), std::move(p_es), no_lift,
+				std::move(formals), std::move(ep), std::move(p_es), no_lift,
 				std::move(*eformal)), yforward(args)...);
 		return Unilang::MakeForm(term, VauHandler(std::move(formals),
-			std::move(vo), std::move(p_es), no_lift), yforward(args)...);
+			std::move(ep), std::move(p_es), no_lift), yforward(args)...);
 	});
 }
 
@@ -529,7 +529,7 @@ LambdaVauWithEnvironment(TermNode& term, Context& ctx, bool no_lift)
 	EnsureValueTags(tm.Tags);
 	return ReduceSubsequent(tm, ctx, NameTypedReducerHandler([&, i, no_lift]{
 		return ReduceVau(term, no_lift, i, ResolveTerm([](TermNode& nd,
-			ResolvedTermReferencePtr p_ref) -> ValueObject{
+			ResolvedTermReferencePtr p_ref) -> EnvironmentParent{
 			if(IsList(nd))
 				return MakeParent(MakeEnvironmentParentList(
 					nd.begin(), nd.end(), nd.get_allocator(),
