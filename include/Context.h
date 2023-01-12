@@ -3,17 +3,18 @@
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
-#include "TermAccess.h" // for vector, ValueObject, map, string, TermNode,
-//	pair, observer_ptr, shared_ptr, EnvironmentBase, AnchorPtr, pmr, yforward,
-//	Unilang::Deref, string_view, type_info, lref, Unilang::allocate_shared,
-//	EnvironmentReference, Unilang::AssertMatchedAllocators, Unilang::AsTermNode,
-//	stack;
+#include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
+//	pair, observer_ptr, shared_ptr, EnvironmentBase, pmr, yforward,
+//	Unilang::Deref, string_view, AnchorPtr, type_info, lref,
+//	Unilang::allocate_shared, EnvironmentReference,
+//	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include "BasicReduction.h" // for ReductionStatus;
-#include <ystdex/functional.hpp> // for ystdex::expanded_function;
+#include <ystdex/expanded_function.hpp> // for ystdex::expanded_function;
+#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 #include <cassert> // for assert;
 #include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
@@ -39,7 +40,9 @@ namespace Unilang
 #endif
 
 
-using EnvironmentList = vector<ValueObject>;
+using EnvironmentParent = ValueObject;
+
+using EnvironmentList = vector<EnvironmentParent>;
 
 using BindingMap = map<string, TermNode, ystdex::less<>>;
 
@@ -56,7 +59,7 @@ private:
 	mutable BindingMap bindings;
 
 public:
-	ValueObject Parent{};
+	EnvironmentParent Parent{};
 
 private:
 	bool frozen = {};
@@ -79,19 +82,19 @@ public:
 		: EnvironmentBase(InitAnchor(m.get_allocator())),
 		bindings(std::move(m))
 	{}
-	Environment(const ValueObject& vo, allocator_type a)
+	Environment(const EnvironmentParent& ep, allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		bindings(a), Parent((CheckParent(vo), vo))
+		bindings(a), Parent((CheckParent(ep), ep))
 	{}
-	Environment(ValueObject&& vo, allocator_type a)
+	Environment(EnvironmentParent&& ep, allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		bindings(a), Parent((CheckParent(vo), std::move(vo)))
+		bindings(a), Parent((CheckParent(ep), std::move(ep)))
 	{}
-	Environment(pmr::memory_resource& rsrc, const ValueObject& vo)
-		: Environment(vo, allocator_type(&rsrc))
+	Environment(pmr::memory_resource& rsrc, const EnvironmentParent& ep)
+		: Environment(ep, allocator_type(&rsrc))
 	{}
-	Environment(pmr::memory_resource& rsrc, ValueObject&& vo)
-		: Environment(std::move(vo), allocator_type(&rsrc))
+	Environment(pmr::memory_resource& rsrc, EnvironmentParent&& ep)
+		: Environment(std::move(ep), allocator_type(&rsrc))
 	{}
 	Environment(const Environment& e)
 		: EnvironmentBase(InitAnchor(e.bindings.get_allocator())),
@@ -217,8 +220,7 @@ ToReducer(const _tAlloc&, _func&& f)
 	return yforward(f);
 }
 template<class _tAlloc, typename _tParam, typename... _tParams>
-inline
-	yimpl(ystdex::exclude_self_t)<Reducer, _tParam, Reducer>
+inline yimpl(ystdex::exclude_self_t)<Reducer, _tParam, Reducer>
 ToReducer(const _tAlloc& a, _tParam&& arg, _tParams&&... args)
 {
 #if true
@@ -712,25 +714,25 @@ ResolveEnvironmentValue(ValueObject&, bool);
 
 
 inline void
-AssignParent(ValueObject& parent, const ValueObject& vo)
+AssignParent(EnvironmentParent& parent, const EnvironmentParent& ep)
 {
-	parent = vo;
+	parent = ep;
 }
 inline void
-AssignParent(ValueObject& parent, ValueObject&& vo)
+AssignParent(EnvironmentParent& parent, EnvironmentParent&& ep)
 {
-	parent = std::move(vo);
+	parent = std::move(ep);
 }
 template<typename... _tParams>
 inline void
-AssignParent(ValueObject& parent, TermNode::allocator_type a,
+AssignParent(EnvironmentParent& parent, TermNode::allocator_type a,
 	_tParams&&... args)
 {
 	parent.assign(std::allocator_arg, a, yforward(args)...);
 }
 template<typename... _tParams>
 inline void
-AssignParent(ValueObject& parent, TermNode& term, _tParams&&... args)
+AssignParent(EnvironmentParent& parent, TermNode& term, _tParams&&... args)
 {
 	Unilang::AssignParent(parent, term.get_allocator(), yforward(args)...);
 }

@@ -83,7 +83,7 @@ RecordCompressor::Compress()
 		bool collected = {};
 
 		Traverse(*p_root, p_root->Parent, [&](const shared_ptr<Environment>&
-			p_dst, Environment& src, ValueObject& parent) -> bool{
+			p_dst, Environment& src, EnvironmentParent& parent) -> bool{
 			auto& dst(Unilang::Deref(p_dst));
 
 			if(accessed.insert(src).second)
