@@ -159,7 +159,7 @@ MakeEnvironmentParentList(TNIter first, TNIter last, TermNode::allocator_type a,
 		});
 	});
 
-	return ValueObject(EnvironmentList(tr(first), tr(last), a));
+	return Unilang::ToParent<EnvironmentList>(tr(first), tr(last), a);
 }
 
 YB_ATTR_nodiscard shared_ptr<Environment>
@@ -212,10 +212,8 @@ MakeParentSingle(TermNode::allocator_type a,
 
 	Environment::EnsureValid(p_env);
 	if(pr.second)
-		return EnvironmentParent(std::allocator_arg, a,
-			in_place_type<shared_ptr<Environment>>, std::move(p_env));
-	return EnvironmentParent(std::allocator_arg, a,
-		in_place_type<EnvironmentReference>, std::move(p_env));
+		return Unilang::ToParent<shared_ptr<Environment>>(a, std::move(p_env));
+	return Unilang::ToParent<EnvironmentReference>(a, std::move(p_env));
 }
 
 
@@ -224,8 +222,7 @@ MakeParentSingleNonOwning(TermNode::allocator_type a,
 	const shared_ptr<Environment>& p_env)
 {
 	Environment::EnsureValid(p_env);
-	return EnvironmentParent(std::allocator_arg, a,
-		in_place_type<EnvironmentReference>, p_env);
+	return Unilang::ToParent<EnvironmentReference>(a, p_env);
 }
 
 void
