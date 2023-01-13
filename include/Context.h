@@ -14,11 +14,11 @@
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/expanded_function.hpp> // for ystdex::expanded_function;
-#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
+#include <ystdex/meta.hpp> // for ystdex::exclude_self_t, ystdex::enable_if_t,
+//	ystdex::is_same_param;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 #include <cassert> // for assert;
 #include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
-#include <ystdex/swap.hpp> // for ystdex::swap_depedent;
 #include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include <exception> // for std::exception_ptr;
 #include "Parser.h" // for ParseResultOf, ByteParser, SourcedByteParser;
@@ -712,6 +712,30 @@ ResolveEnvironmentValue(const ValueObject&);
 YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironmentValue(ValueObject&, bool);
 
+
+template<class>
+YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
+ToParent()
+{
+	return {};
+}
+template<class _tParent, typename _tParam, typename... _tParams,
+	yimpl(ystdex::enable_if_t<sizeof...(_tParams) != 0
+	|| !ystdex::is_same_param<ValueObject, _tParam>::value, int> = 0,
+	ystdex::exclude_self_t<std::allocator_arg_t, _tParam, int> = 0)>
+YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
+ToParent(_tParam&& arg, _tParams&&... args)
+{
+	return EnvironmentParent(in_place_type<_tParent>, yforward(arg),
+		yforward(args)...);
+}
+template<class _tParent, typename... _tParams>
+YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
+ToParent(TermNode::allocator_type a, _tParams&&... args)
+{
+	return EnvironmentParent(std::allocator_arg, a, in_place_type<_tParent>,
+		yforward(args)...);
+}
 
 inline void
 AssignParent(EnvironmentParent& parent, const EnvironmentParent& ep)
