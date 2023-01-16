@@ -9,7 +9,9 @@
 //	Unilang::allocate_shared, EnvironmentReference,
 //	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
+#include <ystdex/base.h> // for ystdex::cloneable;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
+#include <ystdex/function.hpp> // for ystdex::unchecked_function;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include "BasicReduction.h" // for ReductionStatus;
@@ -48,6 +50,33 @@ using BindingMap = map<string, TermNode, ystdex::less<>>;
 
 using NameResolution
 	= pair<observer_ptr<BindingMap::mapped_type>, shared_ptr<Environment>>;
+
+
+struct IParent : public ystdex::cloneable,
+	private ystdex::equality_comparable<IParent>
+{
+	using Redirector
+		= ystdex::unchecked_function<observer_ptr<const IParent>()>;
+
+	virtual
+	~IParent();
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const IParent& x, const IParent& y) noexcept
+	{
+		return x.Equals(y);
+	}
+
+	YB_ATTR_nodiscard YB_PURE virtual bool
+	Equals(const IParent&) const = 0;
+
+	YB_ATTR_nodiscard virtual shared_ptr<Environment>
+	TryRedirect(Redirector&) const = 0;
+
+	YB_ATTR_nodiscard IParent*
+	clone() const override = 0;
+};
+
 
 class Environment final : private EnvironmentBase,
 	private ystdex::equality_comparable<Environment>

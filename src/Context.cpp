@@ -83,6 +83,10 @@ ThrowResolveEnvironmentFailure(const TermNode& term, bool has_ref)
 
 } // unnamed namespace;
 
+
+IParent::~IParent() = default;
+
+
 BindingMap&
 Environment::GetMapCheckedRef()
 {
