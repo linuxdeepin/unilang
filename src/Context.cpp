@@ -40,31 +40,18 @@ public:
 };
 
 
-#if Unilang_CheckParentEnvironment
-YB_ATTR_nodiscard YB_PURE bool
-IsReserved(string_view id) noexcept
-{
-	YAssertNonnull(id.data());
-	return ystdex::begins_with(id, "__");
-}
-#endif
-
 shared_ptr<Environment>
-RedirectToShared(string_view id, shared_ptr<Environment> p_env)
+RedirectToShared(shared_ptr<Environment> p_env)
 {
 #if Unilang_CheckParentEnvironment
 	if(p_env)
 #else
-	yunused(id);
 	assert(p_env);
 #endif
 		return p_env;
 #if Unilang_CheckParentEnvironment
-	// XXX: Consider use more concrete semantic failure exception.
-	throw InvalidReference(ystdex::sfmt("Invalid reference found for%s name"
-		" '%s', probably due to invalid context access by a dangling"
-		" reference.",
-		IsReserved(id) ? " reserved" : "", id.data()));
+	throw InvalidReference(ystdex::sfmt("Invalid reference found for name,"
+		" probably due to invalid context access by a dangling reference."));
 #endif
 }
 
@@ -73,14 +60,14 @@ using Redirector = function<const ValueObject*()>;
 
 const ValueObject*
 RedirectEnvironmentList(EnvironmentList::const_iterator first,
-	EnvironmentList::const_iterator last, string_view id, Redirector& cont)
+	EnvironmentList::const_iterator last, Redirector& cont)
 {
 	if(first != last)
 	{
 		cont = std::bind(
 			[=, &cont](EnvironmentList::const_iterator i, Redirector& c){
 			cont = std::move(c);
-			return RedirectEnvironmentList(i, last, id, cont);
+			return RedirectEnvironmentList(i, last, cont);
 		}, std::next(first), std::move(cont));
 		return &*first;
 	}
@@ -242,13 +229,13 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 
 				if(IsTyped<EnvironmentReference>(tp))
 				{
-					p_redirected = RedirectToShared(id,
+					p_redirected = RedirectToShared(
 						parent.GetObject<EnvironmentReference>().Lock());
 					p_env.swap(p_redirected);
 				}
 				else if(IsTyped<shared_ptr<Environment>>(tp))
 				{
-					p_redirected = RedirectToShared(id,
+					p_redirected = RedirectToShared(
 						parent.GetObject<shared_ptr<Environment>>());
 					p_env.swap(p_redirected);
 				}
@@ -261,7 +248,7 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 						auto& envs(parent.GetObject<EnvironmentList>());
 
 						p_next = RedirectEnvironmentList(envs.cbegin(),
-							envs.cend(), id, cont);
+							envs.cend(), cont);
 					}
 					while(!p_next && bool(cont))
 						p_next = ystdex::exchange(cont, Redirector())();
