@@ -87,6 +87,9 @@ ThrowResolveEnvironmentFailure(const TermNode& term, bool has_ref)
 IParent::~IParent() = default;
 
 
+EmptyParent::~EmptyParent() = default;
+
+
 BindingMap&
 Environment::GetMapCheckedRef()
 {
