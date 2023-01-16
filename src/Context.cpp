@@ -97,6 +97,13 @@ SingleWeakParent::TryRedirect(IParent::Redirector&) const
 }
 
 
+shared_ptr<Environment>
+SingleStrongParent::TryRedirect(IParent::Redirector&) const
+{
+	return RedirectToShared(env_ptr);
+}
+
+
 BindingMap&
 Environment::GetMapCheckedRef()
 {

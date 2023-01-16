@@ -167,6 +167,62 @@ public:
 };
 
 
+class SingleStrongParent : public IParent,
+	private ystdex::equality_comparable<SingleStrongParent>
+{
+private:
+	shared_ptr<Environment> env_ptr;
+
+public:
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<SingleStrongParent, _tParams...>)>
+	inline
+	SingleStrongParent(_tParams&&... args)
+		: env_ptr(yforward(args)...)
+	{}
+	SingleStrongParent(const SingleStrongParent&) = default;
+	SingleStrongParent(SingleStrongParent&&) = default;
+
+	SingleStrongParent&
+	operator=(const SingleStrongParent&) = default;
+	SingleStrongParent&
+	operator=(SingleStrongParent&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const SingleStrongParent& x, const SingleStrongParent& y) noexcept
+	{
+		return x.env_ptr == y.env_ptr;
+	}
+
+	YB_ATTR_nodiscard YB_PURE const shared_ptr<Environment>&
+	Get() const noexcept
+	{
+		return env_ptr;
+	}
+	YB_ATTR_nodiscard YB_PURE shared_ptr<Environment>&
+	GetRef() noexcept
+	{
+		return env_ptr;
+	}
+
+	YB_ATTR_nodiscard YB_PURE bool
+	Equals(const IParent& x) const override
+	{
+		return typeid(x) == typeid(SingleStrongParent)
+			&& static_cast<const SingleStrongParent&>(x) == *this;
+	}
+
+	YB_ATTR_nodiscard shared_ptr<Environment>
+	TryRedirect(Redirector&) const override;
+
+	YB_ATTR_nodiscard SingleStrongParent*
+	clone() const override
+	{
+		return new SingleStrongParent(*this);
+	}
+};
+
+
 class Environment final : private EnvironmentBase,
 	private ystdex::equality_comparable<Environment>
 {
