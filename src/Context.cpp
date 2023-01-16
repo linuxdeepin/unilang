@@ -90,6 +90,13 @@ IParent::~IParent() = default;
 EmptyParent::~EmptyParent() = default;
 
 
+shared_ptr<Environment>
+SingleWeakParent::TryRedirect(IParent::Redirector&) const
+{
+	return RedirectToShared(env_ref.Lock());
+}
+
+
 BindingMap&
 Environment::GetMapCheckedRef()
 {
