@@ -78,6 +78,38 @@ struct IParent : public ystdex::cloneable,
 };
 
 
+class EmptyParent : public IParent,
+	private ystdex::equality_comparable<EmptyParent>
+{
+public:
+	~EmptyParent() override;
+
+	YB_ATTR_nodiscard YB_STATELESS friend bool
+	operator==(const EmptyParent&, const EmptyParent&) noexcept
+	{
+		return true;
+	}
+
+	YB_ATTR_nodiscard YB_PURE bool
+	Equals(const IParent& x) const override
+	{
+		return typeid(x) == typeid(EmptyParent);
+	}
+
+	YB_ATTR_nodiscard YB_STATELESS shared_ptr<Environment>
+	TryRedirect(Redirector&) const override
+	{
+		return {};
+	}
+
+	YB_ATTR_nodiscard EmptyParent*
+	clone() const override
+	{
+		return new EmptyParent(*this);
+	}
+};
+
+
 class Environment final : private EnvironmentBase,
 	private ystdex::equality_comparable<Environment>
 {
