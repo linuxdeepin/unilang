@@ -4,14 +4,15 @@
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
-//	pair, observer_ptr, shared_ptr, EnvironmentBase, pmr, yforward,
-//	Unilang::Deref, string_view, AnchorPtr, type_info, lref,
-//	Unilang::allocate_shared, EnvironmentReference,
-//	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
+//	pair, observer_ptr, shared_ptr, EnvironmentReference, yforward,
+//	EnvironmentBase, pmr, Unilang::Deref, string_view, AnchorPtr, type_info,
+//	lref, Unilang::allocate_shared, Unilang::AssertMatchedAllocators,
+//	Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/base.h> // for ystdex::cloneable;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/function.hpp> // for ystdex::unchecked_function;
+#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include "BasicReduction.h" // for ReductionStatus;
@@ -106,6 +107,62 @@ public:
 	clone() const override
 	{
 		return new EmptyParent(*this);
+	}
+};
+
+
+class SingleWeakParent : public IParent,
+	private ystdex::equality_comparable<SingleWeakParent>
+{
+private:
+	EnvironmentReference env_ref;
+
+public:
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<SingleWeakParent, _tParams...>)>
+	inline
+	SingleWeakParent(_tParams&&... args)
+		: env_ref(yforward(args)...)
+	{}
+	SingleWeakParent(const SingleWeakParent&) = default;
+	SingleWeakParent(SingleWeakParent&&) = default;
+
+	SingleWeakParent&
+	operator=(const SingleWeakParent&) = default;
+	SingleWeakParent&
+	operator=(SingleWeakParent&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const SingleWeakParent& x, const SingleWeakParent& y) noexcept
+	{
+		return x.env_ref == y.env_ref;
+	}
+
+	YB_ATTR_nodiscard YB_PURE const EnvironmentReference&
+	Get() const noexcept
+	{
+		return env_ref;
+	}
+	YB_ATTR_nodiscard YB_PURE EnvironmentReference&
+	GetRef() noexcept
+	{
+		return env_ref;
+	}
+
+	YB_ATTR_nodiscard YB_PURE bool
+	Equals(const IParent& x) const override
+	{
+		return typeid(x) == typeid(SingleWeakParent)
+			&& static_cast<const SingleWeakParent&>(x) == *this;
+	}
+
+	YB_ATTR_nodiscard shared_ptr<Environment>
+	TryRedirect(Redirector&) const override;
+
+	YB_ATTR_nodiscard SingleWeakParent*
+	clone() const override
+	{
+		return new SingleWeakParent(*this);
 	}
 };
 
