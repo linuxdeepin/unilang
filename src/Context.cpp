@@ -56,22 +56,38 @@ RedirectToShared(shared_ptr<Environment> p_env)
 }
 
 
-using Redirector = function<const ValueObject*()>;
-
-const ValueObject*
-RedirectEnvironmentList(EnvironmentList::const_iterator first,
-	EnvironmentList::const_iterator last, Redirector& cont)
+template<class _tRedirector>
+void
+RedirectEnvironmentList(Environment::allocator_type a, _tRedirector& cont,
+	EnvironmentList::const_iterator first, EnvironmentList::const_iterator last)
 {
-	if(first != last)
-	{
-		cont = std::bind(
-			[=, &cont](EnvironmentList::const_iterator i, Redirector& c){
-			cont = std::move(c);
-			return RedirectEnvironmentList(i, last, cont);
-		}, std::next(first), std::move(cont));
-		return &*first;
-	}
-	return {};
+	cont = ystdex::make_obj_using_allocator<_tRedirector>(a, std::bind(
+		[=, &cont](_tRedirector& c) -> decltype(make_observer(&*first)){
+		cont = std::move(c);
+		if(first != last)
+		{
+			RedirectEnvironmentList(a, cont, std::next(first), last);
+			return make_observer(&*first);
+		}
+		return {};
+	}, std::move(cont)));
+}
+template<>
+void
+RedirectEnvironmentList(Environment::allocator_type a,
+	IParent::Redirector& cont, EnvironmentList::const_iterator first,
+	EnvironmentList::const_iterator last)
+{
+	cont = ystdex::make_obj_using_allocator<IParent::Redirector>(a, std::bind(
+		[=, &cont](IParent::Redirector& c) -> observer_ptr<const IParent>{
+		cont = std::move(c);
+		if(first != last)
+		{
+			RedirectEnvironmentList(a, cont, std::next(first), last);
+			return make_observer(&first->GetObject<const IParent>());
+		}
+		return {};
+	}, std::move(cont)));
 }
 
 YB_NORETURN void
@@ -101,6 +117,15 @@ shared_ptr<Environment>
 SingleStrongParent::TryRedirect(IParent::Redirector&) const
 {
 	return RedirectToShared(env_ptr);
+}
+
+
+shared_ptr<Environment>
+ParentList::TryRedirect(IParent::Redirector& cont) const
+{
+	RedirectEnvironmentList(envs.get_allocator(), cont, envs.cbegin(),
+		envs.cend());
+	return {};
 }
 
 
@@ -228,6 +253,8 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 {
 	assert(bool(p_env));
 
+	using Redirector
+		= ystdex::unchecked_function<observer_ptr<const ValueObject>()>;
 	Redirector cont;
 	// NOTE: Blocked. Use ISO C++14 deduced lambda return type (cf. CWG 975)
 	//	compatible to G++ attribute.
@@ -262,14 +289,20 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 				}
 				else
 				{
-					const ValueObject* p_next = {};
+					observer_ptr<const ValueObject> p_next = {};
 
 					if(IsTyped<EnvironmentList>(tp))
 					{
 						auto& envs(parent.GetObject<EnvironmentList>());
 
-						p_next = RedirectEnvironmentList(envs.cbegin(),
-							envs.cend(), cont);
+						if(!envs.empty())
+						{
+							RedirectEnvironmentList(envs.get_allocator(), cont,
+								envs.cbegin(), envs.cend());
+							p_next = make_observer(&*envs.cbegin());
+						}
+						else
+							p_next = {};
 					}
 					while(!p_next && bool(cont))
 						p_next = ystdex::exchange(cont, Redirector())();

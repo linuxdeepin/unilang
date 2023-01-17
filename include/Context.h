@@ -223,6 +223,62 @@ public:
 };
 
 
+class ParentList : public IParent,
+	private ystdex::equality_comparable<ParentList>
+{
+private:
+	mutable EnvironmentList envs;
+
+public:
+	template<typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<ParentList, _tParams...>)>
+	inline
+	ParentList(_tParams&&... args)
+		: envs(yforward(args)...)
+	{}
+	ParentList(const ParentList&) = default;
+	ParentList(ParentList&&) = default;
+
+	ParentList&
+	operator=(const ParentList&) = default;
+	ParentList&
+	operator=(ParentList&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const ParentList& x, const ParentList& y) noexcept
+	{
+		return x.envs == y.envs;
+	}
+
+	YB_ATTR_nodiscard YB_PURE const EnvironmentList&
+	Get() const noexcept
+	{
+		return envs;
+	}
+	YB_ATTR_nodiscard YB_PURE EnvironmentList&
+	GetRef() const noexcept
+	{
+		return envs;
+	}
+
+	YB_ATTR_nodiscard YB_PURE bool
+	Equals(const IParent& x) const override
+	{
+		return typeid(x) == typeid(ParentList)
+			&& static_cast<const ParentList&>(x) == *this;
+	}
+
+	YB_ATTR_nodiscard shared_ptr<Environment>
+	TryRedirect(Redirector&) const override;
+
+	YB_ATTR_nodiscard ParentList*
+	clone() const override
+	{
+		return new ParentList(*this);
+	}
+};
+
+
 class Environment final : private EnvironmentBase,
 	private ystdex::equality_comparable<Environment>
 {
