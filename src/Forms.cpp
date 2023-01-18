@@ -2,10 +2,10 @@
 
 #include "Forms.h" // for TryAccessReferencedTerm, type_id, TokenValue,
 //	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
-//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, TryAccessLeafAtom,
-//	shared_ptr, TryAccessLeaf, assert, IsList, Unilang::Deref, AssertValueTags,
-//	GuardFreshEnvironment, ystdex::size_t_, IsLeaf, FormContextHandler,
-//	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
+//	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, Unilang::ToParent,
+//	shared_ptr, TryAccessLeafAtom, Unilang::Deref, TryAccessLeaf, assert,
+//	IsList, AssertValueTags, GuardFreshEnvironment, ystdex::size_t_, IsLeaf,
+//	FormContextHandler, ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
 //	Forms::CallResolvedUnary, LiftTerm, Unilang::EmplaceCallResultOrReturn;
 #include "Exception.h" // for InvalidSyntax, ThrowTypeErrorForInvalidType,
 //	TypeError, ArityMismatch, ThrowListTypeErrorForNonList, UnilangException,
@@ -139,6 +139,31 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift)
 		std::ref(ctx.ReduceOnce));
 }
 
+YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
+ToParentListElement(TermNode::allocator_type a, const ValueObject& vo)
+{
+	if(const auto p = vo.AccessPtr<EnvironmentReference>())
+		return Unilang::ToParent<EnvironmentReference>(a, *p);
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return Unilang::ToParent<shared_ptr<Environment>>(a, *p);
+	Environment::ThrowForInvalidType(vo.type());
+}
+YB_ATTR_nodiscard inline EnvironmentParent
+ToParentListElement(TermNode::allocator_type a, ValueObject&& vo)
+{
+	if(const auto p = vo.AccessPtr<EnvironmentReference>())
+		return Unilang::ToParent<EnvironmentReference>(a, std::move(*p));
+	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
+		return Unilang::ToParent<shared_ptr<Environment>>(a, std::move(*p));
+	Environment::ThrowForInvalidType(vo.type());
+}
+
+template<typename _tParam>
+YB_ATTR_nodiscard EnvironmentParent inline
+MakeParentListElement(TermNode::allocator_type a, _tParam&& arg)
+{
+	return ToParentListElement(a, yforward(arg));
+}
 
 YB_ATTR_nodiscard EnvironmentParent
 MakeEnvironmentParentList(TNIter first, TNIter last, TermNode::allocator_type a,
@@ -146,20 +171,34 @@ MakeEnvironmentParentList(TNIter first, TNIter last, TermNode::allocator_type a,
 {
 	const auto tr([&](TNIter iter){
 		return ystdex::make_transform(iter, [&](TNIter i) -> EnvironmentParent{
+			const auto al(i->get_allocator());
+
 			if(const auto p
 				= TryAccessLeafAtom<const TermReference>(Unilang::Deref(i)))
 			{
 				if(move && p->IsMovable())
-					return std::move(p->get().Value);
-				return p->get().Value;
+					return MakeParentListElement(al, std::move(p->get().Value));
+				return MakeParentListElement(al, p->get().Value);
 			}
 			if(move)
-				return std::move(i->Value);
-			return i->Value;
+				return MakeParentListElement(al, std::move(i->Value));
+			return MakeParentListElement(al, i->Value);
 		});
 	});
 
-	return Unilang::ToParent<EnvironmentList>(tr(first), tr(last), a);
+	return Unilang::ToParent<EnvironmentList>(a, tr(first), tr(last));
+}
+
+YB_ATTR_nodiscard YB_PURE EnvironmentParent
+MakeParentLeafResolved(TermNode::allocator_type a,
+	pair<shared_ptr<Environment>, bool>&& pr)
+{
+	auto& p_env(pr.first);
+
+	Environment::EnsureValid(p_env);
+	if(pr.second)
+		return Unilang::ToParent<shared_ptr<Environment>>(a, std::move(p_env));
+	return Unilang::ToParent<EnvironmentReference>(a, std::move(p_env));
 }
 
 YB_ATTR_nodiscard shared_ptr<Environment>
@@ -197,33 +236,6 @@ IsOptimizableFormalList(const TermNode& formals) noexcept
 		&& (formals.empty() || IsNonTrailingSymbol(*formals.rbegin()));
 }
 
-YB_ATTR_nodiscard YB_PURE EnvironmentParent
-MakeParent(ValueObject&& vo)
-{
-	Environment::CheckParent(vo);
-	return std::move(vo);
-}
-
-YB_ATTR_nodiscard YB_PURE EnvironmentParent
-MakeParentSingle(TermNode::allocator_type a,
-	pair<shared_ptr<Environment>, bool> pr)
-{
-	auto& p_env(pr.first);
-
-	Environment::EnsureValid(p_env);
-	if(pr.second)
-		return Unilang::ToParent<shared_ptr<Environment>>(a, std::move(p_env));
-	return Unilang::ToParent<EnvironmentReference>(a, std::move(p_env));
-}
-
-
-YB_ATTR_nodiscard YB_PURE EnvironmentParent
-MakeParentSingleNonOwning(TermNode::allocator_type a,
-	const shared_ptr<Environment>& p_env)
-{
-	Environment::EnsureValid(p_env);
-	return Unilang::ToParent<EnvironmentReference>(a, p_env);
-}
 
 void
 VauBind(Context& ctx, const TermNode& formals, TermNode& term)
@@ -506,9 +518,10 @@ ReductionStatus
 LambdaVau(TermNode& term, Context& ctx, bool no_lift)
 {
 	CheckVariadicArity(term, 1);
+
 	return ReduceVau(term, no_lift, term.begin(),
-		MakeParentSingleNonOwning(term.get_allocator(), ctx.GetRecordPtr()),
-		ystdex::size_t_<_vWrapping>());
+		Unilang::ToParent<EnvironmentReference>(term.get_allocator(),
+		ctx.GetRecordPtr()), ystdex::size_t_<_vWrapping>());
 }
 
 template<size_t _vWrapping>
@@ -527,14 +540,21 @@ LambdaVauWithEnvironment(TermNode& term, Context& ctx, bool no_lift)
 	return ReduceSubsequent(tm, ctx, NameTypedReducerHandler([&, i, no_lift]{
 		return ReduceVau(term, no_lift, i, ResolveTerm([](TermNode& nd,
 			ResolvedTermReferencePtr p_ref) -> EnvironmentParent{
+			const bool move(Unilang::IsMovable(p_ref));
+
 			if(IsList(nd))
-				return MakeParent(MakeEnvironmentParentList(
-					nd.begin(), nd.end(), nd.get_allocator(),
-					Unilang::IsMovable(p_ref)));
+				return !nd.empty() ? (nd.size() != 1
+					? MakeEnvironmentParentList(nd.begin(), nd.end(),
+					nd.get_allocator(), move)
+					: [&](TermNode& t) -> EnvironmentParent{
+
+					return MakeParentLeafResolved(t.get_allocator(),
+						move ? ResolveEnvironment(t)
+						: ResolveEnvironment(ystdex::as_const(t)));
+				}(*nd.begin())) : EnvironmentParent();
 			if(IsLeaf(nd))
-				return MakeParentSingle(nd.get_allocator(),
-					ResolveEnvironmentValue(nd.Value,
-					Unilang::IsMovable(p_ref)));
+				return MakeParentLeafResolved(nd.get_allocator(),
+					ResolveEnvironmentReferent(nd, p_ref));
 			ThrowInvalidEnvironmentType(nd, p_ref);
 		}, tm), ystdex::size_t_<_vWrapping>());
 	}, "eval-vau-parent"));
