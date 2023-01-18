@@ -314,11 +314,11 @@ public:
 	{}
 	Environment(const EnvironmentParent& ep, allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		bindings(a), Parent((CheckParent(ep), ep))
+		bindings(a), Parent(ep)
 	{}
 	Environment(EnvironmentParent&& ep, allocator_type a)
 		: EnvironmentBase(InitAnchor(a)),
-		bindings(a), Parent((CheckParent(ep), std::move(ep)))
+		bindings(a), Parent(std::move(ep))
 	{}
 	Environment(pmr::memory_resource& rsrc, const EnvironmentParent& ep)
 		: Environment(ep, allocator_type(&rsrc))
@@ -395,9 +395,6 @@ public:
 		return Unilang::Deref(ystdex::insert_or_assign(m, yforward(k),
 			yforward(tm)).first).second;
 	}
-
-	static void
-	CheckParent(const ValueObject&);
 
 	static void
 	DefineChecked(BindingMap&, string_view, ValueObject&&);
