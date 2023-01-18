@@ -138,33 +138,6 @@ Environment::GetMapCheckedRef()
 }
 
 void
-Environment::CheckParent(const ValueObject& vo)
-{
-	const auto& ti(vo.type());
-
-	if(IsTyped<EnvironmentList>(ti))
-	{
-		for(const auto& env : vo.GetObject<EnvironmentList>())
-			CheckParent(env);
-	}
-	else if(YB_UNLIKELY(!IsTyped<observer_ptr<const Environment>>(ti)
-		&& !IsTyped<EnvironmentReference>(ti)
-		&& !IsTyped<shared_ptr<Environment>>(ti)))
-		ThrowForInvalidType(ti);
-#if Unilang_CheckParentEnvironment
-	if(IsTyped<observer_ptr<const Environment>>(ti))
-	{
-		if(YB_UNLIKELY(!vo.GetObject<observer_ptr<const Environment>>()))
-			throw std::invalid_argument("Invalid environment found.");
-	}
-	else if(IsTyped<EnvironmentReference>(ti))
-		EnsureValid(vo.GetObject<EnvironmentReference>().Lock());
-	else if(IsTyped<shared_ptr<Environment>>(ti))
-		EnsureValid(vo.GetObject<shared_ptr<Environment>>());
-#endif
-}
-
-void
 Environment::DefineChecked(BindingMap& m, string_view id, ValueObject&& vo)
 {
 	assert(id.data());
