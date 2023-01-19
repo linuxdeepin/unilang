@@ -12,7 +12,6 @@ namespace Unilang
 {
 
 // NOTE: The host type of symbol.
-// XXX: The destructor is not virtual.
 class TokenValue final : public string
 {
 public:
@@ -23,7 +22,7 @@ public:
 	TokenValue(const base& b)
 		: base(b)
 	{}
-	TokenValue(base&& b)
+	TokenValue(base&& b) noexcept
 		: base(std::move(b))
 	{}
 	TokenValue(const TokenValue&) = default;
