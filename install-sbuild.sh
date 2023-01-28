@@ -62,11 +62,13 @@ else
 	echo 'Ready to patch files.'
 
 	if cd "$YSLib_BaseDir" && ! [[ -d .git ]] \
-|| (git show --summary | grep 'build 904 ' > /dev/null); then
-		# NOTE: Workaround for a bug with GCC < 9.2.
-		#	See https://stackoverflow.com/a/58376059/2307646.
-		sed -i 's/p_impl{}/p_impl/' \
-"$YSLib_BaseDir/YFramework/include/YCLib/HostedGUI.h"
+|| (git show --summary | grep -E 'build 96(1|5) ' > /dev/null); then
+		# NOTE: Workaround for non-noexcept std::recursive_mutex. Although not
+		#	guaranteed by the standard, some implementations may occasionally
+		#	support it, e.g. since
+		#	https://gcc.gnu.org/bugzilla/show_bug.cgi?id=49894.
+		sed -i 's/Logger() noexcept = default/Logger() noexcept {}/' \
+"$YSLib_BaseDir/YFramework/include/YCLib/Debug.h"
 	fi
 	# NOTE: Old GCC does not support LTO well. Disable it globally here.
 	sed -i 's/-flto=jobserver//g' \
