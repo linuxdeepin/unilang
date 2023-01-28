@@ -1,11 +1,12 @@
 ﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Forms.h" // for TryAccessReferencedTerm, type_id, TokenValue,
-//	ResolveTerm, TermToNamePtr, EnvironmentGuard, ResolvedTermReferencePtr,
+//	ResolveTerm, TermToNamePtr, ResolvedTermReferencePtr, EnvironmentGuard,
 //	Unilang::IsMovable, ystdex::sfmt, ClearCombiningTags, Unilang::ToParent,
-//	shared_ptr, TryAccessLeafAtom, Unilang::Deref, TryAccessLeaf, assert,
-//	IsList, AssertValueTags, GuardFreshEnvironment, ystdex::size_t_, IsLeaf,
-//	FormContextHandler, ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
+//	SingleWeakParent, shared_ptr, SingleStrongParent, TryAccessLeafAtom,
+//	Unilang::Deref, ParentList, TryAccessLeaf, assert, IsList, AssertValueTags,
+//	GuardFreshEnvironment, ystdex::size_t_, IsLeaf, FormContextHandler,
+//	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
 //	Forms::CallResolvedUnary, LiftTerm, Unilang::EmplaceCallResultOrReturn;
 #include "Exception.h" // for InvalidSyntax, ThrowTypeErrorForInvalidType,
 //	TypeError, ArityMismatch, ThrowListTypeErrorForNonList, UnilangException,
@@ -143,18 +144,18 @@ YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
 ToParentListElement(TermNode::allocator_type a, const ValueObject& vo)
 {
 	if(const auto p = vo.AccessPtr<EnvironmentReference>())
-		return Unilang::ToParent<EnvironmentReference>(a, *p);
+		return Unilang::ToParent<SingleWeakParent>(a, *p);
 	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-		return Unilang::ToParent<shared_ptr<Environment>>(a, *p);
+		return Unilang::ToParent<SingleStrongParent>(a, *p);
 	Environment::ThrowForInvalidType(vo.type());
 }
 YB_ATTR_nodiscard inline EnvironmentParent
 ToParentListElement(TermNode::allocator_type a, ValueObject&& vo)
 {
 	if(const auto p = vo.AccessPtr<EnvironmentReference>())
-		return Unilang::ToParent<EnvironmentReference>(a, std::move(*p));
+		return Unilang::ToParent<SingleWeakParent>(a, std::move(*p));
 	if(const auto p = vo.AccessPtr<shared_ptr<Environment>>())
-		return Unilang::ToParent<shared_ptr<Environment>>(a, std::move(*p));
+		return Unilang::ToParent<SingleStrongParent>(a, std::move(*p));
 	Environment::ThrowForInvalidType(vo.type());
 }
 
@@ -186,7 +187,7 @@ MakeEnvironmentParentList(TNIter first, TNIter last, TermNode::allocator_type a,
 		});
 	});
 
-	return Unilang::ToParent<EnvironmentList>(a, tr(first), tr(last));
+	return Unilang::ToParent<ParentList>(a, tr(first), tr(last));
 }
 
 YB_ATTR_nodiscard YB_PURE EnvironmentParent
@@ -197,8 +198,8 @@ MakeParentLeafResolved(TermNode::allocator_type a,
 
 	Environment::EnsureValid(p_env);
 	if(pr.second)
-		return Unilang::ToParent<shared_ptr<Environment>>(a, std::move(p_env));
-	return Unilang::ToParent<EnvironmentReference>(a, std::move(p_env));
+		return Unilang::ToParent<SingleStrongParent>(a, std::move(p_env));
+	return Unilang::ToParent<SingleWeakParent>(a, std::move(p_env));
 }
 
 YB_ATTR_nodiscard shared_ptr<Environment>
@@ -520,7 +521,7 @@ LambdaVau(TermNode& term, Context& ctx, bool no_lift)
 	CheckVariadicArity(term, 1);
 
 	return ReduceVau(term, no_lift, term.begin(),
-		Unilang::ToParent<EnvironmentReference>(term.get_allocator(),
+		Unilang::ToParent<SingleWeakParent>(term.get_allocator(),
 		ctx.GetRecordPtr()), ystdex::size_t_<_vWrapping>());
 }
 

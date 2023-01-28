@@ -56,35 +56,19 @@ RedirectToShared(shared_ptr<Environment> p_env)
 }
 
 
-template<class _tRedirector>
+using Redirector = IParent::Redirector;
+
 void
-RedirectEnvironmentList(Environment::allocator_type a, _tRedirector& cont,
+RedirectEnvironmentList(Environment::allocator_type a, Redirector& cont,
 	EnvironmentList::const_iterator first, EnvironmentList::const_iterator last)
 {
-	cont = ystdex::make_obj_using_allocator<_tRedirector>(a, std::bind(
-		[=, &cont](_tRedirector& c) -> decltype(make_observer(&*first)){
+	cont = ystdex::make_obj_using_allocator<Redirector>(a,
+		std::bind([=, &cont](Redirector& c) -> observer_ptr<const IParent>{
 		cont = std::move(c);
 		if(first != last)
 		{
 			RedirectEnvironmentList(a, cont, std::next(first), last);
-			return make_observer(&*first);
-		}
-		return {};
-	}, std::move(cont)));
-}
-template<>
-void
-RedirectEnvironmentList(Environment::allocator_type a,
-	IParent::Redirector& cont, EnvironmentList::const_iterator first,
-	EnvironmentList::const_iterator last)
-{
-	cont = ystdex::make_obj_using_allocator<IParent::Redirector>(a, std::bind(
-		[=, &cont](IParent::Redirector& c) -> observer_ptr<const IParent>{
-		cont = std::move(c);
-		if(first != last)
-		{
-			RedirectEnvironmentList(a, cont, std::next(first), last);
-			return make_observer(&first->GetObject<const IParent>());
+			return make_observer(&first->GetObject());
 		}
 		return {};
 	}, std::move(cont)));
@@ -226,11 +210,7 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 {
 	assert(bool(p_env));
 
-	using Redirector
-		= ystdex::unchecked_function<observer_ptr<const ValueObject>()>;
 	Redirector cont;
-	// NOTE: Blocked. Use ISO C++14 deduced lambda return type (cf. CWG 975)
-	//	compatible to G++ attribute.
 	NameResolution::first_type p_obj;
 
 	do
@@ -239,58 +219,22 @@ Context::Resolve(shared_ptr<Environment> p_env, string_view id) const
 	}while([&]() -> bool{
 		if(!p_obj)
 		{
-			lref<const ValueObject> cur(p_env->Parent);
-			shared_ptr<Environment> p_redirected{};
-			bool search_next;
+			observer_ptr<const IParent> p_next(&p_env->Parent.GetObject());
 
 			do
 			{
-				const ValueObject& parent(cur);
-				const auto& tp(parent.type());
+				auto& parent(*p_next);
 
-				if(IsTyped<EnvironmentReference>(tp))
+				p_next = {};
+				if(auto p_redirected = parent.TryRedirect(cont))
 				{
-					p_redirected = RedirectToShared(
-						parent.GetObject<EnvironmentReference>().Lock());
 					p_env.swap(p_redirected);
+					return true;
 				}
-				else if(IsTyped<shared_ptr<Environment>>(tp))
-				{
-					p_redirected = RedirectToShared(
-						parent.GetObject<shared_ptr<Environment>>());
-					p_env.swap(p_redirected);
-				}
-				else
-				{
-					observer_ptr<const ValueObject> p_next = {};
-
-					if(IsTyped<EnvironmentList>(tp))
-					{
-						auto& envs(parent.GetObject<EnvironmentList>());
-
-						if(!envs.empty())
-						{
-							RedirectEnvironmentList(envs.get_allocator(), cont,
-								envs.cbegin(), envs.cend());
-							p_next = make_observer(&*envs.cbegin());
-						}
-						else
-							p_next = {};
-					}
-					while(!p_next && bool(cont))
-						p_next = ystdex::exchange(cont, Redirector())();
-					if(p_next)
-					{
-						// XXX: Cyclic parent found is not allowed.
-						assert(&cur.get() != p_next);
-						cur = *p_next;
-						search_next = true;
-						continue;
-					}
-				}
-				search_next = {};
-			}while(search_next);
-			return bool(p_redirected);
+				while(!p_next && bool(cont))
+					p_next = ystdex::exchange(cont, Redirector())();
+				assert(p_next.get() != &parent && "Cyclic parent found.");
+			}while(p_next);
 		}
 		return false;
 	}());

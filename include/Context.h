@@ -5,20 +5,23 @@
 
 #include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
 //	pair, observer_ptr, shared_ptr, EnvironmentReference, yforward,
-//	EnvironmentBase, pmr, Unilang::Deref, string_view, AnchorPtr, type_info,
-//	lref, Unilang::allocate_shared, Unilang::AssertMatchedAllocators,
+//	YSLib::unique_ptr, YSLib::in_place_type, YSLib::in_place_type_t,
+//	YSLib::make_unique, std::allocator_arg_t, Unilang::Deref, EnvironmentBase,
+//	pmr, string_view, AnchorPtr, type_info, std::allocator_arg, lref,
+//	Unilang::allocate_shared, Unilang::AssertMatchedAllocators,
 //	Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/base.h> // for ystdex::cloneable;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/function.hpp> // for ystdex::unchecked_function;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
+#include <ystdex/meta.hpp> // for ystdex::enable_if_constructible_t,
+//	ystdex::exclude_self_t, ystdex::enable_if_t, ystdex::is_same_param;
+#include <ystdex/swap.hpp> // for ystdex::copy_and_swap;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
 #include "BasicReduction.h" // for ReductionStatus;
 #include <ystdex/expanded_function.hpp> // for ystdex::expanded_function;
-#include <ystdex/meta.hpp> // for ystdex::exclude_self_t, ystdex::enable_if_t,
-//	ystdex::is_same_param;
 #include YFM_YSLib_Core_YEvent // for ystdex::GHEvent;
 #include <cassert> // for assert;
 #include <ystdex/memory.hpp> // for ystdex::make_obj_using_allocator;
@@ -43,7 +46,7 @@ namespace Unilang
 #endif
 
 
-using EnvironmentParent = ValueObject;
+class EnvironmentParent;
 
 using EnvironmentList = vector<EnvironmentParent>;
 
@@ -219,6 +222,76 @@ public:
 	clone() const override
 	{
 		return new SingleStrongParent(*this);
+	}
+};
+
+
+class EnvironmentParent : private ystdex::equality_comparable<EnvironmentParent>
+{
+private:
+	YSLib::unique_ptr<IParent> parent_ptr{};
+
+public:
+	EnvironmentParent()
+		: EnvironmentParent(YSLib::in_place_type<EmptyParent>)
+	{}
+	template<class _tParent, typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<EnvironmentParent, _tParams...>,
+		typename = ystdex::enable_if_constructible_t<_tParent, _tParams...>)>
+	inline
+	EnvironmentParent(YSLib::in_place_type_t<_tParent>, _tParams&&... args)
+		: parent_ptr(YSLib::make_unique<_tParent>(yforward(args)...))
+	{}
+	template<class _tParent, typename... _tParams, yimpl(typename
+		= ystdex::exclude_self_params_t<EnvironmentParent, _tParams...>,
+		typename = ystdex::enable_if_constructible_t<_tParent, _tParams...>)>
+	inline
+	EnvironmentParent(std::allocator_arg_t, TermNode::allocator_type,
+		YSLib::in_place_type_t<_tParent>, _tParams&&... args)
+		: parent_ptr(YSLib::make_unique<_tParent>(yforward(args)...))
+	{}
+	EnvironmentParent(const EnvironmentParent& ep)
+		: parent_ptr(ystdex::clone_polymorphic_ptr(ep.parent_ptr))
+	{}
+	EnvironmentParent(EnvironmentParent&&) = default;
+
+	EnvironmentParent&
+	operator=(const EnvironmentParent& ep)
+	{
+		return ystdex::copy_and_swap(*this, ep);
+	}
+	EnvironmentParent&
+	operator=(EnvironmentParent&&) = default;
+
+	YB_ATTR_nodiscard YB_PURE bool
+	operator!() const noexcept
+	{
+		return !bool(*this);
+	}
+
+	YB_ATTR_nodiscard YB_PURE explicit
+	operator bool() const noexcept
+	{
+		return bool(parent_ptr);
+	}
+
+	YB_ATTR_nodiscard YB_PURE friend bool
+	operator==(const EnvironmentParent& x, const EnvironmentParent& y) noexcept
+	{
+		return x.parent_ptr == y.parent_ptr
+			|| (bool(x) && bool(y) && *x.parent_ptr == *y.parent_ptr);
+	}
+
+	YB_ATTR_nodiscard YB_PURE const IParent&
+	GetObject() const noexcept
+	{
+		return Unilang::Deref(parent_ptr);
+	}
+
+	friend void
+	swap(EnvironmentParent& x, EnvironmentParent& y) noexcept
+	{
+		x.parent_ptr.swap(y.parent_ptr);
 	}
 };
 
@@ -894,7 +967,8 @@ EmplaceLeaf(BindingMap& m, string_view name, _tParams&&... args)
 {
 	assert(name.data());
 	return ystdex::insert_or_assign(m, name, Unilang::AsTermNode(
-		m.get_allocator(), in_place_type<_type>, yforward(args)...)).second;
+		m.get_allocator(), YSLib::in_place_type<_type>,
+		yforward(args)...)).second;
 }
 template<typename _type, typename... _tParams>
 inline bool
@@ -940,11 +1014,11 @@ YB_ATTR_nodiscard pair<shared_ptr<Environment>, bool>
 ResolveEnvironmentValue(ValueObject&, bool);
 
 
-template<class>
+template<class _tParent>
 YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
 ToParent()
 {
-	return {};
+	return EnvironmentParent(in_place_type<_tParent>);
 }
 template<class _tParent, typename _tParam, typename... _tParams,
 	yimpl(ystdex::enable_if_t<sizeof...(_tParams) != 0
@@ -953,15 +1027,15 @@ template<class _tParent, typename _tParam, typename... _tParams,
 YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
 ToParent(_tParam&& arg, _tParams&&... args)
 {
-	return EnvironmentParent(in_place_type<_tParent>, yforward(arg),
+	return EnvironmentParent(YSLib::in_place_type<_tParent>, yforward(arg),
 		yforward(args)...);
 }
 template<class _tParent, typename... _tParams>
 YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
 ToParent(TermNode::allocator_type a, _tParams&&... args)
 {
-	return EnvironmentParent(std::allocator_arg, a, in_place_type<_tParent>,
-		yforward(args)...);
+	return EnvironmentParent(std::allocator_arg, a,
+		YSLib::in_place_type<_tParent>, yforward(args)...);
 }
 
 inline void
@@ -979,7 +1053,7 @@ inline void
 AssignParent(EnvironmentParent& parent, TermNode::allocator_type a,
 	_tParams&&... args)
 {
-	parent.assign(std::allocator_arg, a, yforward(args)...);
+	parent = EnvironmentParent(std::allocator_arg, a, yforward(args)...);
 }
 template<typename... _tParams>
 inline void

@@ -1,7 +1,8 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for TokenValue, ystdex::sfmt, HasValue,
-//	string_view, Context::DefaultHandleException, std::bind, std::getline;
+//	string_view, Context::DefaultHandleException, std::bind,
+//	Unilang::SwitchToFreshEnvironment, Unilang::ToParent, std::getline;
 #include <ostream> // for std::ostream;
 #include "Math.h" // for FPToString;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
@@ -351,10 +352,8 @@ Interpreter::SaveGround()
 {
 	if(!p_ground)
 	{
-		auto& cs(Main);
-
-		p_ground = Unilang::SwitchToFreshEnvironment(cs,
-			ValueObject(cs.WeakenRecord()));
+		p_ground = Unilang::SwitchToFreshEnvironment(Main, Unilang::ToParent<
+			SingleWeakParent>(Global.Allocator, Main.WeakenRecord()));
 		return true;
 	}
 	return {};
