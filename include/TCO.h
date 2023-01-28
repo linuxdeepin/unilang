@@ -106,22 +106,25 @@ struct RecordCompressor final
 	static void
 	Traverse(Environment& e, EnvironmentParent& parent, const _fTracer& trace)
 	{
-		const auto& tp(parent.type());
-
-		if(IsTyped<EnvironmentList>(tp))
+		const auto p_poly(&parent.GetObject());
+ 
+		if(const auto p_single_weak
+			= dynamic_cast<const SingleWeakParent*>(p_poly))
 		{
-			for(auto& vo : parent.GetObject<EnvironmentList>())
+			if(auto p = p_single_weak->Get().Lock())
+				TraverseForSharedPtr(e, parent, trace, p);
+		}
+		else if(const auto p_single_strong
+			= dynamic_cast<const SingleStrongParent*>(p_poly))
+		{
+			if(auto p = p_single_strong->Get())
+				TraverseForSharedPtr(e, parent, trace, p);
+		}
+		else if(const auto p_parent_list
+			= dynamic_cast<const ParentList*>(p_poly))
+		{
+			for(auto& vo : p_parent_list->GetRef())
 				Traverse(e, vo, trace);
-		}
-		else if(IsTyped<EnvironmentReference>(tp))
-		{
-			if(auto p = parent.GetObject<EnvironmentReference>().Lock())
-				TraverseForSharedPtr(e, parent, trace, p);
-		}
-		else if(IsTyped<shared_ptr<Environment>>(tp))
-		{
-			if(auto p = parent.GetObject<shared_ptr<Environment>>())
-				TraverseForSharedPtr(e, parent, trace, p);
 		}
 	}
 

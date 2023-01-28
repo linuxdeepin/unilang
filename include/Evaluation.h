@@ -8,7 +8,9 @@
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
-//	Unilang::EmplaceLeaf, Unilang::SwitchToFreshEnvironment, HasValue;
+//	Unilang::EmplaceLeaf, EnvironmentSwitcher,
+//	Unilang::SwitchToFreshEnvironment, Unilang::AssignParent,
+//	YSLib::in_place_type, SingleWeakParent, HasValue;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
@@ -529,7 +531,7 @@ InvokeIn(Context& ctx, _fCallable&& f, _tParams&&... args)
 	const auto a(ToBindingsAllocator(ctx));
 	auto gd(GuardFreshEnvironment(ctx));
 
-	Unilang::AssignParent(ctx, a, in_place_type<EnvironmentReference>,
+	Unilang::AssignParent(ctx, a, YSLib::in_place_type<SingleWeakParent>,
 		std::move(r_env));
 	return ystdex::invoke(yforward(f), yforward(args)...);
 }
@@ -542,7 +544,7 @@ GetModuleFor(Context& ctx, _fCallable&& f, _tParams&&... args)
 	const auto a(ToBindingsAllocator(ctx));
 	auto gd(GuardFreshEnvironment(ctx));
 
-	Unilang::AssignParent(ctx, a, in_place_type<EnvironmentReference>,
+	Unilang::AssignParent(ctx, a, YSLib::in_place_type<SingleWeakParent>,
 		std::move(r_env));
 	ystdex::invoke(yforward(f), yforward(args)...);
 	ctx.GetRecordRef().Freeze();
