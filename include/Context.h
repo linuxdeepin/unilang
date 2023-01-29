@@ -4,12 +4,12 @@
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
-//	pair, observer_ptr, shared_ptr, type_id, EnvironmentReference, yforward,
-//	YSLib::unique_ptr, YSLib::in_place_type, YSLib::in_place_type_t,
-//	YSLib::make_unique, std::allocator_arg_t, Unilang::Deref, EnvironmentBase,
-//	pmr, string_view, AnchorPtr, type_info, std::allocator_arg, lref,
-//	Unilang::allocate_shared, Unilang::AssertMatchedAllocators,
-//	Unilang::AsTermNode, stack;
+//	pair, observer_ptr, default_allocator, shared_ptr, type_id,
+//	EnvironmentReference, yforward, YSLib::unique_ptr, YSLib::in_place_type,
+//	YSLib::in_place_type_t, YSLib::make_unique, std::allocator_arg_t,
+//	Unilang::Deref, EnvironmentBase, pmr, string_view, AnchorPtr, type_info,
+//	std::allocator_arg, lref, Unilang::allocate_shared,
+//	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/base.h> // for ystdex::cloneable;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -55,6 +55,10 @@ using BindingMap = map<string, TermNode, ystdex::less<>>;
 using NameResolution
 	= pair<observer_ptr<BindingMap::mapped_type>, shared_ptr<Environment>>;
 
+
+struct IParent;
+
+using ParentAllocator = default_allocator<IParent>;
 
 struct IParent : public ystdex::cloneable,
 	private ystdex::equality_comparable<IParent>
