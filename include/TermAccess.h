@@ -3,10 +3,15 @@
 #ifndef INC_Unilang_TermAccess_h_
 #define INC_Unilang_TermAccess_h_ 1
 
-#include "TermNode.h" // for string, TermNode, type_info, YSLib::TryAccessValue,
-//	AssertReferentTags, Unilang::IsMovable, PropagateTo, Unilang::Deref, IsPair;
-#include "Exception.h" // for ListTypeError;
-#include <ystdex/functional.hpp> // for ystdex::expand_proxy, ystdex::compose_n;
+#include "TermNode.h" // for string, TermNode, IsPair, YSLib::TryAccessValue,
+//	weak_ptr, AssertReferentTags, Unilang::IsMovable, PropagateTo,
+//	Unilang::Deref;
+#include "Exception.h" // for ThrowListTypeErrorForInvalidType;
+#include <ystdex/operators.hpp> // for ystdex::equality_comparable;
+#include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
+#include <ystdex/meta.hpp> // for ystdex::enable_if_constructible_t;
+#include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy;
+#include <ystdex/compose.hpp> // for ystdex::compose_n;
 
 namespace Unilang
 {
@@ -211,7 +216,10 @@ private:
 public:
 	EnvironmentReference() = default;
 	EnvironmentReference(const shared_ptr<Environment>&) noexcept;
-	template<typename _tParam1, typename _tParam2>
+	template<typename _tParam1, typename _tParam2, yimpl(typename
+		= ystdex::enable_if_constructible_t<EnvironmentBase, _tParam2>,
+		typename = ystdex::enable_if_constructible_t<weak_ptr<Environment>,
+		_tParam1>)>
 	EnvironmentReference(_tParam1&& arg1, _tParam2&& arg2) noexcept
 		: EnvironmentBase(yforward(arg2)),
 		p_weak(yforward(arg1))
