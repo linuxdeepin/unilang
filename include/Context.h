@@ -85,7 +85,7 @@ struct IParent : public ystdex::cloneable,
 };
 
 
-class EmptyParent : public IParent,
+class EmptyParent final : public IParent,
 	private ystdex::equality_comparable<EmptyParent>
 {
 public:
@@ -123,7 +123,7 @@ public:
 };
 
 
-class SingleWeakParent : public IParent,
+class SingleWeakParent final : public IParent,
 	private ystdex::equality_comparable<SingleWeakParent>
 {
 private:
@@ -185,7 +185,7 @@ public:
 };
 
 
-class SingleStrongParent : public IParent,
+class SingleStrongParent final : public IParent,
 	private ystdex::equality_comparable<SingleStrongParent>
 {
 private:
@@ -317,7 +317,7 @@ public:
 };
 
 
-class ParentList : public IParent,
+class ParentList final : public IParent,
 	private ystdex::equality_comparable<ParentList>
 {
 private:
