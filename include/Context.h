@@ -100,7 +100,7 @@ public:
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const IParent& x) const override
 	{
-		return typeid(x) == typeid(EmptyParent);
+		return x.type() == type_id<EmptyParent>();
 	}
 
 	YB_ATTR_nodiscard YB_STATELESS shared_ptr<Environment>
@@ -164,7 +164,7 @@ public:
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const IParent& x) const override
 	{
-		return typeid(x) == typeid(SingleWeakParent)
+		return x.type() == type_id<SingleWeakParent>()
 			&& static_cast<const SingleWeakParent&>(x) == *this;
 	}
 
@@ -226,7 +226,7 @@ public:
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const IParent& x) const override
 	{
-		return typeid(x) == typeid(SingleStrongParent)
+		return x.type() == type_id<SingleStrongParent>()
 			&& static_cast<const SingleStrongParent&>(x) == *this;
 	}
 
@@ -358,7 +358,7 @@ public:
 	YB_ATTR_nodiscard YB_PURE bool
 	Equals(const IParent& x) const override
 	{
-		return typeid(x) == typeid(ParentList)
+		return x.type() == type_id<ParentList>()
 			&& static_cast<const ParentList&>(x) == *this;
 	}
 
