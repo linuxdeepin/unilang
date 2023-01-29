@@ -4,7 +4,7 @@
 #define INC_Unilang_Context_h_ 1
 
 #include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
-//	pair, observer_ptr, shared_ptr, EnvironmentReference, yforward,
+//	pair, observer_ptr, shared_ptr, type_id, EnvironmentReference, yforward,
 //	YSLib::unique_ptr, YSLib::in_place_type, YSLib::in_place_type_t,
 //	YSLib::make_unique, std::allocator_arg_t, Unilang::Deref, EnvironmentBase,
 //	pmr, string_view, AnchorPtr, type_info, std::allocator_arg, lref,
@@ -79,6 +79,9 @@ struct IParent : public ystdex::cloneable,
 
 	YB_ATTR_nodiscard IParent*
 	clone() const override = 0;
+
+	YB_ATTR_nodiscard YB_PURE virtual const type_info&
+	type() const noexcept = 0;
 };
 
 
@@ -110,6 +113,12 @@ public:
 	clone() const override
 	{
 		return new EmptyParent(*this);
+	}
+
+	YB_ATTR_nodiscard YB_PURE const type_info&
+	type() const noexcept override
+	{
+		return type_id<EmptyParent>();
 	}
 };
 
@@ -167,6 +176,12 @@ public:
 	{
 		return new SingleWeakParent(*this);
 	}
+
+	YB_ATTR_nodiscard YB_PURE const type_info&
+	type() const noexcept override
+	{
+		return type_id<SingleWeakParent>();
+	}
 };
 
 
@@ -222,6 +237,12 @@ public:
 	clone() const override
 	{
 		return new SingleStrongParent(*this);
+	}
+
+	YB_ATTR_nodiscard YB_PURE const type_info&
+	type() const noexcept override
+	{
+		return type_id<SingleStrongParent>();
 	}
 };
 
@@ -348,6 +369,12 @@ public:
 	clone() const override
 	{
 		return new ParentList(*this);
+	}
+
+	YB_ATTR_nodiscard YB_PURE const type_info&
+	type() const noexcept override
+	{
+		return type_id<ParentList>();
 	}
 };
 
