@@ -130,15 +130,34 @@ public:
 class SingleWeakParent final : public IParent,
 	private ystdex::equality_comparable<SingleWeakParent>
 {
+public:
+	using allocator_type = ParentAllocator;
+
 private:
+	allocator_type alloc{};
 	EnvironmentReference env_ref;
 
 public:
 	template<typename... _tParams, yimpl(typename
-		= ystdex::exclude_self_params_t<SingleWeakParent, _tParams...>)>
+		= ystdex::exclude_self_params_t<SingleWeakParent, _tParams...>,
+		typename = ystdex::enable_if_constructible_t<
+		EnvironmentReference, _tParams...>)>
 	inline
 	SingleWeakParent(_tParams&&... args)
 		: env_ref(yforward(args)...)
+	{}
+	template<typename... _tParams, yimpl(typename
+		= ystdex::enable_if_constructible_t<EnvironmentReference, _tParams...>)>
+	inline
+	SingleWeakParent(std::allocator_arg_t, allocator_type a,
+		_tParams&&... args)
+		: alloc(a), env_ref(yforward(args)...)
+	{}
+	SingleWeakParent(const SingleWeakParent& parent, allocator_type a)
+		: alloc(a), env_ref(parent.env_ref)
+	{}
+	SingleWeakParent(SingleWeakParent&& parent, allocator_type a)
+		: alloc(a), env_ref(std::move(parent.env_ref))
 	{}
 	SingleWeakParent(const SingleWeakParent&) = default;
 	SingleWeakParent(SingleWeakParent&&) = default;
@@ -181,6 +200,12 @@ public:
 		return new SingleWeakParent(*this);
 	}
 
+	YB_ATTR_nodiscard YB_PURE allocator_type
+	get_allocator() const noexcept
+	{
+		return alloc;
+	}
+
 	YB_ATTR_nodiscard YB_PURE const type_info&
 	type() const noexcept override
 	{
@@ -192,15 +217,35 @@ public:
 class SingleStrongParent final : public IParent,
 	private ystdex::equality_comparable<SingleStrongParent>
 {
+public:
+	using allocator_type = ParentAllocator;
+
 private:
+	allocator_type alloc{};
 	shared_ptr<Environment> env_ptr;
 
 public:
-	template<typename... _tParams, yimpl(typename
-		= ystdex::exclude_self_params_t<SingleStrongParent, _tParams...>)>
+	template<typename... _tParams,
+		yimpl(typename = ystdex::exclude_self_params_t<SingleStrongParent,
+		_tParams...>, typename = ystdex::enable_if_constructible_t<
+		shared_ptr<Environment>, _tParams...>)>
 	inline
 	SingleStrongParent(_tParams&&... args)
 		: env_ptr(yforward(args)...)
+	{}
+	template<typename... _tParams,
+		yimpl(typename = ystdex::enable_if_constructible_t<
+		shared_ptr<Environment>, _tParams...>)>
+	inline
+	SingleStrongParent(std::allocator_arg_t, allocator_type a,
+		_tParams&&... args)
+		: alloc(a), env_ptr(yforward(args)...)
+	{}
+	SingleStrongParent(const SingleStrongParent& parent, allocator_type a)
+		: alloc(a), env_ptr(parent.env_ptr)
+	{}
+	SingleStrongParent(SingleStrongParent&& parent, allocator_type a)
+		: alloc(a), env_ptr(std::move(parent.env_ptr))
 	{}
 	SingleStrongParent(const SingleStrongParent&) = default;
 	SingleStrongParent(SingleStrongParent&&) = default;
@@ -241,6 +286,12 @@ public:
 	clone() const override
 	{
 		return new SingleStrongParent(*this);
+	}
+
+	YB_ATTR_nodiscard YB_PURE allocator_type
+	get_allocator() const noexcept
+	{
+		return alloc;
 	}
 
 	YB_ATTR_nodiscard YB_PURE const type_info&
@@ -324,15 +375,25 @@ public:
 class ParentList final : public IParent,
 	private ystdex::equality_comparable<ParentList>
 {
+public:
+	using allocator_type = EnvironmentList::allocator_type;
+
 private:
 	mutable EnvironmentList envs;
 
 public:
 	template<typename... _tParams, yimpl(typename
-		= ystdex::exclude_self_params_t<ParentList, _tParams...>)>
+		= ystdex::exclude_self_params_t<ParentList, _tParams...>, typename
+		= ystdex::enable_if_constructible_t<EnvironmentList, _tParams...>)>
 	inline
 	ParentList(_tParams&&... args)
 		: envs(yforward(args)...)
+	{}
+	ParentList(const ParentList& parent, allocator_type a)
+		: envs(parent.envs, a)
+	{}
+	ParentList(ParentList&& parent, allocator_type a)
+		: envs(std::move(parent.envs), a)
 	{}
 	ParentList(const ParentList&) = default;
 	ParentList(ParentList&&) = default;
@@ -373,6 +434,12 @@ public:
 	clone() const override
 	{
 		return new ParentList(*this);
+	}
+
+	YB_ATTR_nodiscard YB_PURE allocator_type
+	get_allocator() const noexcept
+	{
+		return envs.get_allocator();
 	}
 
 	YB_ATTR_nodiscard YB_PURE const type_info&
