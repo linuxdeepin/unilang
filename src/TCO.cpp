@@ -182,8 +182,10 @@ TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 		if(auto& p_saved = gd.func.SavedPtr)
 		{
 			CompressForContext(ctx);
-			if(!record_list.empty() && !record_list.front().second)
-				record_list.front().second = std::move(p_saved);
+			if(!record_list.empty()
+				&& !std::get<ActiveEnvironmentPtr>(record_list.front()))
+				std::get<ActiveEnvironmentPtr>(record_list.front())
+					= std::move(p_saved);
 			else
 				record_list.emplace_front(ContextHandler(),
 					std::move(p_saved));
