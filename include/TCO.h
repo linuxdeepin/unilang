@@ -149,11 +149,11 @@ private:
 
 enum RecordFrameIndex : size_t
 {
-	ActiveCombiner,
-	ActiveEnvironmentPtr
+	ActiveEnvironmentPtr,
+	ActiveCombiner
 };
 
-using FrameRecord = pair<ValueObject, shared_ptr<Environment>>;
+using FrameRecord = pair<shared_ptr<Environment>, ValueObject>;
 
 
 class FrameRecordList : public yimpl(YSLib::forward_list)<FrameRecord>
@@ -262,7 +262,7 @@ public:
 	void
 	AddOperator(ValueObject& op) const
 	{
-		record_list.emplace_front(std::move(op), nullptr);
+		record_list.emplace_front(nullptr, std::move(op));
 	}
 
 	void
