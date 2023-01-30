@@ -6,6 +6,7 @@
 //	ystdex::dismiss;
 #include <ystdex/functional.hpp> // for ystdex::retry_on_cond, ystdex::id;
 #include "Context.h" // for Unilang::AssignParent;
+#include <ystdex/functor.hpp> // for ystdex::ref_eq;
 #include "Exception.h" // for UnilangException;
 
 namespace Unilang
@@ -177,22 +178,21 @@ TCOAction::CompressFrameList()
 void
 TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 {
+	auto& p_saved(gd.func.SavedPtr);
+
 	if(env_guard.func.SavedPtr)
 	{
-		if(auto& p_saved = gd.func.SavedPtr)
-		{
-			CompressForContext(ctx);
-			if(!record_list.empty()
-				&& !std::get<ActiveEnvironmentPtr>(record_list.front()))
-				std::get<ActiveEnvironmentPtr>(record_list.front())
-					= std::move(p_saved);
-			else
-				record_list.emplace_front(ContextHandler(),
-					std::move(p_saved));
-		}
+		if(!record_list.empty()
+			&& !std::get<ActiveEnvironmentPtr>(record_list.front()))
+			std::get<ActiveEnvironmentPtr>(record_list.front())
+				= std::move(p_saved);
+		else
+			record_list.emplace_front(std::move(p_saved), ValueObject(
+				record_list.get_allocator()));
+		CompressForContext(ctx);
 	}
 	else
-		env_guard = std::move(gd);
+		env_guard.func.SavedPtr = std::move(gd.func.SavedPtr);
 }
 
 void

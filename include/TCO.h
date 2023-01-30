@@ -231,6 +231,12 @@ public:
 	ReductionStatus
 	operator()(Context&) const;
 
+	YB_ATTR_nodiscard YB_PURE Context&
+	GetContextRef() const noexcept
+	{
+		return env_guard.func.ContextRef;
+	}
+
 private:
 	YB_ATTR_nodiscard ExtraInfo&
 	GetExtraInfoRef()
