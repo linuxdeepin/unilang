@@ -5,10 +5,10 @@
 
 #include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
 //	pair, observer_ptr, default_allocator, shared_ptr, type_id,
-//	EnvironmentReference, yforward, YSLib::unique_ptr, YSLib::in_place_type,
-//	YSLib::in_place_type_t, YSLib::make_unique, std::allocator_arg_t,
-//	Unilang::Deref, EnvironmentBase, pmr, string_view, AnchorPtr, type_info,
-//	std::allocator_arg, lref, Unilang::allocate_shared,
+//	EnvironmentReference, yforward, YSLib::allocate_unique, YSLib::unique_ptr,
+//	YSLib::in_place_type, YSLib::in_place_type_t, YSLib::make_unique,
+//	std::allocator_arg_t, Unilang::Deref, EnvironmentBase, pmr, string_view,
+//	AnchorPtr, type_info, std::allocator_arg, lref, Unilang::allocate_shared,
 //	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
 #include <ystdex/functor.hpp> // for ystdex::less;
 #include <ystdex/base.h> // for ystdex::cloneable;
@@ -75,6 +75,9 @@ struct IParent : public ystdex::cloneable,
 		return x.Equals(y);
 	}
 
+	YB_ATTR_nodiscard virtual
+	IParent* Clone() const = 0;
+
 	YB_ATTR_nodiscard YB_PURE virtual bool
 	Equals(const IParent&) const = 0;
 
@@ -99,6 +102,12 @@ public:
 	operator==(const EmptyParent&, const EmptyParent&) noexcept
 	{
 		return true;
+	}
+
+	YB_ATTR_nodiscard YB_STATELESS EmptyParent*
+	Clone() const noexcept override
+	{
+		return const_cast<EmptyParent*>(this);
 	}
 
 	YB_ATTR_nodiscard YB_PURE bool
@@ -182,6 +191,12 @@ public:
 	GetRef() noexcept
 	{
 		return env_ref;
+	}
+
+	YB_ATTR_nodiscard SingleWeakParent*
+	Clone() const override
+	{
+		return YSLib::allocate_unique<SingleWeakParent>(alloc, *this).release();
 	}
 
 	YB_ATTR_nodiscard YB_PURE bool
@@ -270,6 +285,13 @@ public:
 	GetRef() noexcept
 	{
 		return env_ptr;
+	}
+
+	YB_ATTR_nodiscard SingleStrongParent*
+	Clone() const override
+	{
+		return
+			YSLib::allocate_unique<SingleStrongParent>(alloc, *this).release();
 	}
 
 	YB_ATTR_nodiscard YB_PURE bool
@@ -418,6 +440,13 @@ public:
 	GetRef() const noexcept
 	{
 		return envs;
+	}
+
+	YB_ATTR_nodiscard ParentList*
+	Clone() const override
+	{
+		return
+			YSLib::allocate_unique<ParentList>(get_allocator(), envs).release();
 	}
 
 	YB_ATTR_nodiscard YB_PURE bool
