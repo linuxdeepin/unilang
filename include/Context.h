@@ -93,6 +93,9 @@ struct IParent : public ystdex::cloneable,
 
 	YB_ATTR_nodiscard YB_PURE virtual const type_info&
 	type() const noexcept = 0;
+
+	virtual void
+	destroy() const noexcept = 0;
 };
 
 
@@ -131,6 +134,10 @@ public:
 	{
 		return new EmptyParent(*this);
 	}
+
+	void
+	destroy() const noexcept override
+	{}
 
 	YB_ATTR_nodiscard YB_PURE const type_info&
 	type() const noexcept override
@@ -217,6 +224,13 @@ public:
 	clone() const override
 	{
 		return new SingleWeakParent(*this);
+	}
+
+	void
+	destroy() const noexcept override
+	{
+		GParentDeleter<SingleWeakParent>{alloc}(
+			const_cast<SingleWeakParent*>(this));
 	}
 
 	YB_ATTR_nodiscard YB_PURE allocator_type
@@ -312,6 +326,13 @@ public:
 	clone() const override
 	{
 		return new SingleStrongParent(*this);
+	}
+
+	void
+	destroy() const noexcept override
+	{
+		GParentDeleter<SingleStrongParent>{alloc}(
+			const_cast<SingleStrongParent*>(this));
 	}
 
 	YB_ATTR_nodiscard YB_PURE allocator_type
@@ -467,6 +488,13 @@ public:
 	clone() const override
 	{
 		return new ParentList(*this);
+	}
+
+	void
+	destroy() const noexcept override
+	{
+		GParentDeleter<ParentList>{get_allocator()}(
+			const_cast<ParentList*>(this));
 	}
 
 	YB_ATTR_nodiscard YB_PURE allocator_type
