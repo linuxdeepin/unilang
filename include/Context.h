@@ -18,7 +18,9 @@
 #include <ystdex/function.hpp> // for ystdex::unchecked_function;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/meta.hpp> // for ystdex::enable_if_constructible_t,
-//	ystdex::exclude_self_t, ystdex::enable_if_t, ystdex::is_same_param;
+//	ystdex::exclude_self_t, ystdex::enable_if_t, ystdex::is_same_param,
+//	ystdex::enable_if_inconvertible_t;
+#include <ystdex/memory.hpp> // for ystdex::destroy_delete;
 #include <ystdex/swap.hpp> // for ystdex::copy_and_swap;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
 //	ystdex::try_emplace_hint, ystdex::insert_or_assign;
@@ -352,31 +354,39 @@ public:
 class EnvironmentParent : private ystdex::equality_comparable<EnvironmentParent>
 {
 private:
-	YSLib::unique_ptr<IParent> parent_ptr{};
+	using ParentDeleter = ystdex::destroy_delete<const IParent*>;
+	using OwnerPtr = YSLib::unique_ptr<const IParent, ParentDeleter>;
+	static const EmptyParent DefaultEmptyParent;
+	OwnerPtr parent_ptr;
 
 public:
-	EnvironmentParent()
-		: EnvironmentParent(YSLib::in_place_type<EmptyParent>)
+	EnvironmentParent() noexcept
+		: parent_ptr(InitEmpty())
 	{}
 	template<class _tParent, typename... _tParams, yimpl(typename
 		= ystdex::exclude_self_params_t<EnvironmentParent, _tParams...>,
 		typename = ystdex::enable_if_constructible_t<_tParent, _tParams...>)>
 	inline
 	EnvironmentParent(YSLib::in_place_type_t<_tParent>, _tParams&&... args)
-		: parent_ptr(YSLib::make_unique<_tParent>(yforward(args)...))
+		: parent_ptr(InitPtr<_tParent>(ParentAllocator(), yforward(args)...))
 	{}
 	template<class _tParent, typename... _tParams, yimpl(typename
 		= ystdex::exclude_self_params_t<EnvironmentParent, _tParams...>,
 		typename = ystdex::enable_if_constructible_t<_tParent, _tParams...>)>
 	inline
-	EnvironmentParent(std::allocator_arg_t, TermNode::allocator_type,
+	EnvironmentParent(std::allocator_arg_t, TermNode::allocator_type a,
 		YSLib::in_place_type_t<_tParent>, _tParams&&... args)
-		: parent_ptr(YSLib::make_unique<_tParent>(yforward(args)...))
+		: parent_ptr(InitPtr<_tParent>(a, yforward(args)...))
 	{}
 	EnvironmentParent(const EnvironmentParent& ep)
-		: parent_ptr(ystdex::clone_polymorphic_ptr(ep.parent_ptr))
+		: parent_ptr(ep ? OwnerPtr(Unilang::Deref(ep.parent_ptr).Clone(),
+		ep.parent_ptr.get_deleter()) : InitEmpty())
 	{}
-	EnvironmentParent(EnvironmentParent&&) = default;
+	EnvironmentParent(EnvironmentParent&& ep) noexcept
+		: EnvironmentParent()
+	{
+		parent_ptr.swap(ep.parent_ptr);
+	}
 
 	EnvironmentParent&
 	operator=(const EnvironmentParent& ep)
@@ -384,7 +394,11 @@ public:
 		return ystdex::copy_and_swap(*this, ep);
 	}
 	EnvironmentParent&
-	operator=(EnvironmentParent&&) = default;
+	operator=(EnvironmentParent&& ep) noexcept
+	{
+		parent_ptr.swap(ep.parent_ptr);
+		return *this;
+	}
 
 	YB_ATTR_nodiscard YB_PURE bool
 	operator!() const noexcept
@@ -395,14 +409,13 @@ public:
 	YB_ATTR_nodiscard YB_PURE explicit
 	operator bool() const noexcept
 	{
-		return bool(parent_ptr);
+		return parent_ptr.get() != &DefaultEmptyParent;
 	}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const EnvironmentParent& x, const EnvironmentParent& y) noexcept
 	{
-		return x.parent_ptr == y.parent_ptr
-			|| (bool(x) && bool(y) && *x.parent_ptr == *y.parent_ptr);
+		return Unilang::Deref(x.parent_ptr) == Unilang::Deref(y.parent_ptr);
 	}
 
 	YB_ATTR_nodiscard YB_PURE const IParent&
@@ -411,6 +424,21 @@ public:
 		return Unilang::Deref(parent_ptr);
 	}
 
+private:
+	YB_ATTR_nodiscard YB_PURE static OwnerPtr
+	InitEmpty() noexcept
+	{
+		return OwnerPtr(&DefaultEmptyParent, ParentDeleter());
+	}
+	template<class _tParent, typename... _tParams>
+	YB_ATTR_nodiscard static inline OwnerPtr
+	InitPtr(_tParams&&... args)
+	{
+		return OwnerPtr(
+			YSLib::allocate_unique<_tParent>(yforward(args)...).release());
+	}
+
+public:
 	friend void
 	swap(EnvironmentParent& x, EnvironmentParent& y) noexcept
 	{

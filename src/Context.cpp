@@ -104,6 +104,9 @@ SingleStrongParent::TryRedirect(IParent::Redirector&) const
 }
 
 
+const EmptyParent EnvironmentParent::DefaultEmptyParent;
+
+
 shared_ptr<Environment>
 ParentList::TryRedirect(IParent::Redirector& cont) const
 {
