@@ -1,9 +1,9 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Exceptions_h_
 #define INC_Unilang_Exceptions_h_ 1
 
-#include "Lexical.h" // for size_t, string, string_view, shared_ptr,
+#include "Lexical.h" // for size_t, std::string, string_view, shared_ptr,
 //	SourceInformation, Unilang::Deref;
 #include <exception> // for std::runtime_error;
 #include "TermNode.h" // for TermNode;
@@ -109,7 +109,7 @@ public:
 class BadIdentifier : public InvalidSyntax
 {
 private:
-	shared_ptr<string> p_identifier;
+	shared_ptr<std::string> p_identifier;
 
 public:
 	SourceInformation Source{};
@@ -120,7 +120,7 @@ public:
 	BadIdentifier(const BadIdentifier&) = default;
 	~BadIdentifier() override;
 
-	YB_ATTR_nodiscard YB_PURE const string&
+	YB_ATTR_nodiscard YB_PURE const std::string&
 	GetIdentifier() const noexcept
 	{
 		return Unilang::Deref(p_identifier);
