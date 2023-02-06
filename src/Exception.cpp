@@ -1,7 +1,7 @@
 ﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Exception.h" // for std::string, YSLib::to_std_string, ystdex::sfmt,
-//	make_shared;
+//	make_shared, YSLib::share_move;
 #include "Lexical.h" // for EscapeLiteral;
 #include "TermAccess.h" // for TermToStringWithReferenceMark;
 #include <cassert> // for assert;
@@ -66,6 +66,15 @@ BadIdentifier::BadIdentifier(string_view id, size_t n)
 	: InvalidSyntax(InitBadIdentifierExceptionString(id, n)),
 	p_identifier(make_shared<std::string>(id.data(), id.size()))
 {}
+
+void
+BadIdentifier::ReplaceAllocator(default_allocator<yimpl(byte)> a)
+{
+	auto& p_src(Source.first);
+
+	if(p_src)
+		p_src = YSLib::share_move(a, *p_src);
+}
 
 
 void
