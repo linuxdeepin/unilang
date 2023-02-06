@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Exception.h" // for std::string, YSLib::to_std_string, ystdex::sfmt,
 //	make_shared;
@@ -60,11 +60,11 @@ ArityMismatch::ArityMismatch(size_t e, size_t r)
 
 BadIdentifier::BadIdentifier(const char* id, size_t n)
 	: InvalidSyntax(InitBadIdentifierExceptionString(id, n)),
-	p_identifier(make_shared<string>(id))
+	p_identifier(make_shared<std::string>(id))
 {}
 BadIdentifier::BadIdentifier(string_view id, size_t n)
 	: InvalidSyntax(InitBadIdentifierExceptionString(id, n)),
-	p_identifier(make_shared<string>(id))
+	p_identifier(make_shared<std::string>(id.data(), id.size()))
 {}
 
 
