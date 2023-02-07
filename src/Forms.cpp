@@ -44,19 +44,6 @@ ExtractBool(const TermNode& term)
 
 
 YB_NORETURN inline void
-ThrowInsufficientTermsErrorFor(InvalidSyntax&& e, const TermNode& term)
-{
-	try
-	{
-		ThrowInsufficientTermsError(term, {});
-	}
-	catch(...)
-	{
-		std::throw_with_nested(std::move(e));
-	}
-}
-
-YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref)
 {
 	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref);
