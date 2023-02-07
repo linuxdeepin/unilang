@@ -2,7 +2,7 @@
 
 #include "Interpreter.h" // for string_view, string, Interpreter, ValueObject,
 //	YSLib::PolymorphicAllocatorHolder, default_allocator, YSLib::ifstream,
-//	YSLib::istringstream;
+//	YSLib::istringstream, pmr::new_delete_resource_t;
 #include <cstdlib> // for std::getenv;
 #include "Evaluation.h" // for Unilang::GetModuleFor, RetainN, ValueToken,
 //	RegisterStrict;
@@ -19,7 +19,7 @@
 //	NameTypedContextHandler;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
-//	UnilangException;
+//	UnilangException, Unilang::GuardExceptionsForAllocator;
 #include <functional> // for std::bind, std::placeholders;
 #include <ystdex/functor.hpp> // for ystdex::plus, ystdex::equal_to,
 //	ystdex::less, ystdex::less_equal, ystdex::greater, ystdex::greater_equal,
@@ -1087,10 +1087,20 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.255"
+#define APP_VER "0.12.288"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
+
+template<typename _fCallable, typename... _tParams>
+inline void
+Launch(default_allocator<yimpl(byte)> a, _fCallable&& f, _tParams&&... args)
+{
+	Interpreter intp{};
+
+	Unilang::GuardExceptionsForAllocator(a, yforward(f), intp,
+		yforward(args)...);
+}
 
 // XXX: Reference to 'argc' is required for Qt initialization.
 void
@@ -1105,10 +1115,9 @@ RunEvalStrings(Interpreter& intp, vector<string>& eval_strs, int& argc,
 }
 
 void
-RunInteractive(int& argc, char* argv[])
+RunInteractive(Interpreter& intp, int& argc, char* argv[])
 {
 	using namespace std;
-	Interpreter intp{};
 
 	cout << title << endl << "Initializing the interpreter "
 		<< (Unilang_UseJIT ? "[JIT enabled]" : "[JIT disabled]") << " ..."
@@ -1132,6 +1141,7 @@ main(int argc, char* argv[])
 	using YSLib::LoggedEvent;
 
 	return YSLib::FilterExceptions([&]{
+		static pmr::new_delete_resource_t r;
 		const YSLib::CommandArguments xargv(argc, argv);
 		const auto xargc(xargv.size());
 
@@ -1186,27 +1196,22 @@ main(int argc, char* argv[])
 				const auto p_cmd_args(YSLib::LockCommandArguments());
 
 				p_cmd_args->Arguments = std::move(args);
-
-				Interpreter intp{};
-
-				RunEvalStrings(intp, eval_strs, argc, argv);
-				intp.RunScript(std::move(src));
+				Launch(&r, [&](Interpreter& intp){
+					RunEvalStrings(intp, eval_strs, argc, argv);
+					intp.RunScript(std::move(src));
+				});
 			}
 			else if(!eval_strs.empty())
-			{
-				Interpreter intp{};
-
-				RunEvalStrings(intp, eval_strs, argc, argv);
-			}
+				Launch(&r, RunEvalStrings, eval_strs, argc, argv);
 			else
-				RunInteractive(argc, argv);
+				Launch(&r, RunInteractive, argc, argv);
 		}
 		else if(xargc == 1)
 		{
 			using namespace std;
 
 			Unilang::Deref(YSLib::LockCommandArguments()).Reset(argc, argv);
-			RunInteractive(argc, argv);
+			Launch(&r, RunInteractive, argc, argv);
 		}
 	}, yfsig, YSLib::Alert) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
