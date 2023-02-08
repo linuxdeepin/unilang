@@ -180,6 +180,12 @@ TCOAction::CompressForGuard(Context& ctx, EnvironmentGuard&& gd)
 {
 	auto& p_saved(gd.func.SavedPtr);
 
+	assert(ystdex::ref_eq<>()(GetContextRef(), ctx)
+		&& "Invalid context found.");
+	assert(ystdex::ref_eq<>()(gd.func.ContextRef.get(), ctx)
+		&& "Invalid guard found.");
+	assert(p_saved && "Invalid guard found.");
+
 	if(env_guard.func.SavedPtr)
 	{
 		if(!record_list.empty()
