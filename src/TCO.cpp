@@ -1,6 +1,7 @@
 ﻿// SPDX-FileCopyrightText: 2021-2023 UnionTech Software Technology Co.,Ltd.
 
-#include "TCO.h" // for Unilang::Nonnull, std::get, Unilang::Deref, IsTyped;
+#include "TCO.h" // for Unilang::ToBindingsAllocator, Unilang::Deref,
+//	Unilang::Nonnull, std::get, IsTyped;
 #include <cassert> // for assert;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_unique_guard,
 //	ystdex::dismiss;
@@ -13,7 +14,8 @@ namespace Unilang
 {
 
 RecordCompressor::RecordCompressor(const shared_ptr<Environment>& p_root)
-	: RecordCompressor(p_root, p_root->GetMap().get_allocator())
+	: RecordCompressor(p_root,
+	Unilang::ToBindingsAllocator(Unilang::Deref(p_root)))
 {}
 RecordCompressor::RecordCompressor(const shared_ptr<Environment>& p_root,
 	Environment::allocator_type a)
