@@ -34,7 +34,7 @@ RecordCompressor::AddParents(Environment& e)
 void
 RecordCompressor::Compress()
 {
-	const auto p_root(Nonnull(RootPtr.lock()));
+	const auto p_root(Unilang::Nonnull(RootPtr.lock()));
 
 	assert(bool(p_root));
 	for(auto& pr : Universe)
