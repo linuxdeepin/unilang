@@ -620,6 +620,9 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	RegisterUnary(m, "null?", ComposeReferencedTermOp(IsEmpty));
 	RegisterUnary(m, "branch?", ComposeReferencedTermOp(IsBranch));
 	RegisterUnary(m, "pair?", ComposeReferencedTermOp(IsPair));
+	RegisterUnary(m, "symbol?", [](const TermNode& x) noexcept{
+		return IsTypedRegular<TokenValue>(ReferenceTerm(x));
+	});
 	RegisterUnary(m, "list?", ComposeReferencedTermOp(IsList));
 	RegisterUnary(m, "reference?", IsReferenceTerm);
 	RegisterUnary(m, "unique?", IsUniqueTerm);
@@ -1087,7 +1090,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.288"
+#define APP_VER "0.12.292"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

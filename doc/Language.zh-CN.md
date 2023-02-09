@@ -1715,6 +1715,10 @@
 
 　　`<pair>` 的[类型谓词](#操作类型约定)。
 
+`symbol? <object>`
+
+　　`<symbol>` 的类型谓词。
+
 `list? <object>`
 
 　　`<list>` 的类型谓词。
