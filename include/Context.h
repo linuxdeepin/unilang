@@ -1202,7 +1202,7 @@ AssignParent(EnvironmentParent& parent, const EnvironmentParent& ep)
 	parent = ep;
 }
 inline void
-AssignParent(EnvironmentParent& parent, EnvironmentParent&& ep)
+AssignParent(EnvironmentParent& parent, EnvironmentParent&& ep) noexcept
 {
 	parent = std::move(ep);
 }
