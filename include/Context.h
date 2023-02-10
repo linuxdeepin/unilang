@@ -1182,7 +1182,9 @@ template<class _tParent, typename _tParam, typename... _tParams,
 	yimpl(ystdex::enable_if_t<sizeof...(_tParams) != 0
 	|| !ystdex::is_same_param<ValueObject, _tParam>::value, int> = 0,
 	ystdex::exclude_self_t<std::allocator_arg_t, _tParam, int> = 0)>
-YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
+YB_ATTR_nodiscard YB_PURE inline
+	yimpl(ystdex::enable_if_inconvertible_t)<_tParam, TermNode::allocator_type,
+	EnvironmentParent>
 ToParent(_tParam&& arg, _tParams&&... args)
 {
 	return EnvironmentParent(YSLib::in_place_type<_tParent>, yforward(arg),
