@@ -1050,6 +1050,12 @@ public:
 	{
 		return ContextAllocator(&memory_rsrc.get());
 	}
+
+	void
+	shrink_to_fit() noexcept
+	{
+		stashed.clear();
+	}
 };
 
 
