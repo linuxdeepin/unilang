@@ -837,6 +837,7 @@ private:
 		Environment::allocator_type(&memory_rsrc.get()))};
 	ReducerSequence
 		current{ReducerSequence::allocator_type(&memory_rsrc.get())};
+	ReducerSequenceBase stashed{current.get_allocator()};
 	ReducerSequence stacked{current.get_allocator()};
 
 public:
@@ -979,12 +980,23 @@ public:
 		return SetupFront(yforward(args)...);
 	}
 
+	void
+	SetupFront(Reducer act)
+	{
+		if(!stashed.empty())
+		{
+			stashed.front() = std::move(act);
+			current.splice_after(current.cbefore_begin(), stashed,
+				stashed.cbefore_begin());
+		}
+		else
+			current.push_front(std::move(act));
+	}
 	template<typename... _tParams>
 	inline void
 	SetupFront(_tParams&&... args)
 	{
-		current.push_front(
-			Unilang::ToReducer(get_allocator(), yforward(args)...));
+		SetupFront(Unilang::ToReducer(get_allocator(), yforward(args)...));
 	}
 
 	template<typename... _tParams>
