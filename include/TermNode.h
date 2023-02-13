@@ -713,7 +713,7 @@ YB_NONNULL(3) inline void
 AssertMatchedAllocators(const TermNode::allocator_type& a, const TermNode& nd,
 	const char* msg = "Allocators mismatch to the term node.") noexcept
 {
-	AssertMatchedAllocators(a, nd.GetContainer(), msg);
+	Unilang::AssertMatchedAllocators(a, nd.GetContainer(), msg);
 }
 YB_NONNULL(3) inline void
 AssertMatchedAllocators(const TermNode& x, const TermNode& y,
