@@ -181,6 +181,13 @@ OpenFile(const char* filename)
 	}
 }
 
+template<typename _func>
+inline void
+RewriteBy(Context& ctx, _func f)
+{
+	ctx.Rewrite(Unilang::ToReducer(ctx.get_allocator(), std::move(f)));
+}
+
 } // unnamed namespace;
 
 
@@ -293,8 +300,8 @@ Interpreter::Read(string_view unit)
 void
 Interpreter::Run()
 {
-	Main.Rewrite(Unilang::ToReducer(Global.Allocator, std::bind(
-		&Interpreter::RunLoop, std::ref(*this), std::placeholders::_1)));
+	RewriteBy(Main,
+		std::bind(&Interpreter::RunLoop, this, std::placeholders::_1));
 }
 
 void
@@ -303,9 +310,9 @@ Interpreter::RunLine(string_view unit)
 	if(!unit.empty() && unit != "exit")
 	{
 		Main.ShareCurrentSource("*STDIN*");
-		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
+		RewriteBy(Main, [&](Context& ctx){
 			return ExecuteString(unit, ctx);
-		}));
+		});
 	}
 }
 
@@ -315,21 +322,21 @@ Interpreter::RunScript(string filename)
 	if(filename == "-")
 	{
 		Main.ShareCurrentSource("*STDIN*");
-		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
+		RewriteBy(Main, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term = Global.ReadFrom(std::cin, Main);
 			return ExecuteOnce(ctx);
-		}));
+		});
 	}
 	else if(!filename.empty())
 	{
 		Main.ShareCurrentSource(filename);
-		Main.Rewrite(Unilang::ToReducer(Global.Allocator, [&](Context& ctx){
+		RewriteBy(Main, [&](Context& ctx){
 			PrepareExecution(ctx);
 			Term
 				= Global.ReadFrom(*OpenUnique(Main, std::move(filename)), Main);
 			return ExecuteOnce(ctx);
-		}));
+		});
 	}
 }
 
