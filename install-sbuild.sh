@@ -62,13 +62,14 @@ else
 	echo 'Ready to patch files.'
 
 	if cd "$YSLib_BaseDir" && ! [[ -d .git ]] \
-|| (git show --summary | grep -E 'build 96(1|5) ' > /dev/null); then
-		# NOTE: Workaround for non-noexcept std::recursive_mutex. Although not
-		#	guaranteed by the standard, some implementations may occasionally
-		#	support it, e.g. since
-		#	https://gcc.gnu.org/bugzilla/show_bug.cgi?id=49894.
-		sed -i 's/Logger() noexcept = default/Logger() noexcept {}/' \
-"$YSLib_BaseDir/YFramework/include/YCLib/Debug.h"
+|| (git show --summary | grep -E 'build 969 ' > /dev/null); then
+		# NOTE: Workaround for compiler bugs.
+		sed -i 's/is_nothrow_swappable<key_container_type>()/true/' \
+"$YSLib_BaseDir/YBase/include/ystdex/flat_map.hpp"
+		sed -i 's/is_nothrow_swappable<mapped_container_type>()/true/' \
+"$YSLib_BaseDir/YBase/include/ystdex/flat_map.hpp"
+		sed -i 's/is_nothrow_swappable<container_type>()/true/' \
+"$YSLib_BaseDir/YBase/include/ystdex/flat_set.hpp"
 	fi
 	# NOTE: Old GCC does not support LTO well. Disable it globally here.
 	sed -i 's/-flto=jobserver//g' \
