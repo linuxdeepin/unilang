@@ -7,10 +7,12 @@
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::byte, YSLib::size_t,
 //	YSLib::lref, YSLib::pair, YSLib::allocate_shared, YSLib::make_shared,
 //	YSLib::shared_ptr, YSLib::weak_ptr, YSLib::string_view, YSLib::pmr,
-//	YSLib::default_allocator, YSLib::basic_string, YSLib::string,
-//	YSLib::forward-list, YSLib::list, YSLib::map, YSLib::set, YSLib::vector,
-//	YSLib::deque, YSLib::stack, YSLib::ostringstream, YSLib::sfmt,
-//	YSLib::make_observer, YSLib::observer_ptr, YSLib::Deref, YSLib::Nonnull;
+//	YSLib::default_allocator, YSLib::basic_string, YSLib::string, YSLib::array,
+//	YSLib::forward_list, YSLib::flat_map, YSLib::flat_set, YSLib::list,
+//	YSLib::map, YSLib::set, YSLib::unordered_map, YSLib::unordered_set,
+//	YSLib::vector, YSLib::deque, YSLib::stack, YSLib::ostringstream,
+//	YSLib::sfmt, YSLib::make_observer, YSLib::observer_ptr, YSLib::Deref,
+//	YSLib::Nonnull;
 #include YFM_YSLib_Core_YFunc // for YSLib::function;
 #include <ystdex/memory.hpp> // for YSLib::share_move;
 #include YFM_YSLib_Core_YObject // for YSLib::type_id, YSLib::type_index,
@@ -44,14 +46,21 @@ using YSLib::default_allocator;
 
 using YSLib::basic_string;
 using YSLib::string;
+
 using YSLib::array;
 using YSLib::forward_list;
+using YSLib::flat_map;
+using YSLib::flat_set;
 using YSLib::list;
 using YSLib::map;
 using YSLib::set;
+using YSLib::unordered_map;
+using YSLib::unordered_set;
 using YSLib::vector;
+
 using YSLib::deque;
 using YSLib::stack;
+
 using YSLib::ostringstream;
 
 // NOTE: Only use the unqualified call for unqualified 'string' type.
