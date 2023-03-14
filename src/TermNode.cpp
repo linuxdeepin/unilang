@@ -1,8 +1,8 @@
-﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2023 UnionTech Software Technology Co.,Ltd.
 
-#include "TermNode.h"
+#include "TermNode.h" // for stack, pair, lref;
 #include "Unilang.h" // for Unilang::Deref;
-#include <ystdex/functional.hpp> // for ystdex::retry_on_cond;
+#include <ystdex/expanded_function.hpp> // for ystdex::retry_on_cond;
 
 namespace Unilang
 {
@@ -14,8 +14,7 @@ TermNode::ConSub(const Container& con, allocator_type a)
 
 	if(!con.empty())
 	{
-		YSLib::stack<pair<lref<TermNode>, lref<const TermNode>>> remained(a),
-			tms(a);
+		stack<pair<lref<TermNode>, lref<const TermNode>>> remained(a), tms(a);
 	
 		for(const auto& sub : con)
 		{

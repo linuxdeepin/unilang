@@ -8,10 +8,10 @@
 //	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple, Continuation,
 //	TermToStringWithReferenceMark, IsSingleElementList, AccessFirstSubterm,
 //	GetLValueTagsOf, ThrowTypeErrorForInvalidType, TermToNamePtr, IsList,
-//	in_place_type, IsPair, yunseq, ResolveTerm, IsAtom, ResolveSuffix, IsTyped,
-//	ThrowInsufficientTermsError, ThrowListTypeErrorForAtom, YSLib::lock_guard,
-//	YSLib::mutex, YSLib::unordered_map, type_index, std::allocator, std::pair,
-//	AssertValueTags;
+//	in_place_type, stack, IsPair, yunseq, ResolveTerm, IsAtom, ResolveSuffix,
+//	IsTyped, ThrowInsufficientTermsError, ThrowListTypeErrorForAtom,
+//	YSLib::lock_guard, YSLib::mutex, unordered_map, type_index, std::allocator,
+//	pair, AssertValueTags;
 #include "TermAccess.h" // for ClearCombiningTags, TryAccessLeafAtom,
 //	TokenValue, AssertCombiningTerm, IsCombiningTerm, TryAccessTerm;
 #include <cassert> // for assert;
@@ -989,7 +989,7 @@ public:
 	_fBind Bind;
 
 private:
-	mutable YSLib::stack<MatchEntry, vector<MatchEntry>> remained;
+	mutable stack<MatchEntry, vector<MatchEntry>> remained;
 
 public:
 	template<typename... _tParams>
@@ -1312,9 +1312,9 @@ using YSLib::lock_guard;
 using YSLib::mutex;
 mutex NameTableMutex;
 
-using NameTable = YSLib::unordered_map<type_index, string_view,
+using NameTable = unordered_map<type_index, string_view,
 	std::hash<type_index>, ystdex::equal_to<type_index>,
-	std::allocator<std::pair<const type_index, string_view>>>;
+	std::allocator<pair<const type_index, string_view>>>;
 
 template<class _tKey>
 YB_ATTR_nodiscard inline NameTable&

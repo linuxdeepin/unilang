@@ -1,7 +1,7 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
-//	YSLib::unique_ptr, YSLib::make_unique, function, YSLib::vector,
+//	YSLib::unique_ptr, YSLib::make_unique, function, vector,
 //	YSLib::make_shared, std::bind, std::ref;
 #include "TermAccess.h" // for Unilang::ResolveTerm, Unilang::CheckRegular,
 //	Access, Unilang::ResolveRegular;
@@ -86,7 +86,7 @@ using DynamicSlot = function<void(QObject*, void**)>;
 struct Sink
 {
 	QHash<QByteArray, int> SlotIndices;
-	YSLib::vector<DynamicSlot> SlotList;
+	vector<DynamicSlot> SlotList;
 
 	[[gnu::nonnull(3, 5)]] bool
 	ConnectDynamicSlot(const QObject&, const char*,
