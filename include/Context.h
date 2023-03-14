@@ -3,14 +3,15 @@
 #ifndef INC_Unilang_Context_h_
 #define INC_Unilang_Context_h_ 1
 
-#include "TermAccess.h" // for ValueObject, vector, map, string, TermNode,
-//	pair, observer_ptr, default_allocator, shared_ptr, type_id,
+#include "TermAccess.h" // for ValueObject, vector, unordered_map, string,
+//	TermNode, pair, observer_ptr, default_allocator, shared_ptr, type_id,
 //	EnvironmentReference, yforward, YSLib::allocate_unique, YSLib::unique_ptr,
 //	YSLib::in_place_type, YSLib::in_place_type_t, YSLib::make_unique,
 //	std::allocator_arg_t, Unilang::Deref, EnvironmentBase, pmr, string_view,
 //	AnchorPtr, type_info, std::allocator_arg, lref, Unilang::allocate_shared,
 //	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
-#include <ystdex/functor.hpp> // for ystdex::less;
+#include <ystdex/string.hpp> // for ystdex::string_hash;
+#include <ystdex/functor.hpp> // for ystdex::equal_to;
 #include <ystdex/allocator.hpp> // for ystdex::allocator_delete,
 //	ystdex::rebind_alloc_t, ystdex::make_obj_using_allocator;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -52,7 +53,8 @@ class EnvironmentParent;
 
 using EnvironmentList = vector<EnvironmentParent>;
 
-using BindingMap = map<string, TermNode, ystdex::less<>>;
+using BindingMap = unordered_map<string, TermNode,
+	ystdex::string_hash<char>, ystdex::equal_to<>>;
 
 using NameResolution
 	= pair<observer_ptr<BindingMap::mapped_type>, shared_ptr<Environment>>;
