@@ -5,11 +5,11 @@
 
 #include "Lexical.h" // for SourceName;
 #include "Evaluation.h" // for shared_ptr, Context, YSLib::allocate_shared,
-//	Unilang::Deref, UnilangException, map, lref, Environment, size_t, set,
+//	Unilang::Deref, UnilangException, unordered_map, lref, Environment, size_t, set,
 //	weak_ptr, EnvironmentParent, IsTyped, pair, list, TermNode,
 //	EnvironmentGuard, ReductionStatus, NameTypedContextHandler;
-#include <ystdex/functional.hpp> // for ystdex::get_less, ystdex::bind1,
-//	std::ref, std::placeholder;
+#include <ystdex/functor.hpp> // for ystdex::get_hash, ystdex::get_less;
+#include <ystdex/bind.hpp> // for ystdex::bind1, std::ref, std::placeholder;
 #include <tuple> // for std::tuple, std::get;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard,
 //	ystdex::make_unique_guard;
@@ -79,7 +79,8 @@ public:
 
 struct RecordCompressor final
 {
-	using RecordInfo = map<lref<Environment>, size_t, ystdex::get_less<>>;
+	using RecordInfo = unordered_map<lref<Environment>, size_t,
+		ystdex::get_hash<>, ystdex::get_equal_to<>>;
 	using ReferenceSet = set<lref<Environment>, ystdex::get_less<>>;
 
 	weak_ptr<Environment> RootPtr;
