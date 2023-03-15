@@ -37,8 +37,8 @@ void
 RecordCompressor::Compress()
 {
 	const auto p_root(Unilang::Nonnull(RootPtr.lock()));
+	const auto a(Unilang::ToBindingsAllocator(Unilang::Deref(p_root)));
 
-	assert(bool(p_root));
 	for(auto& pr : Universe)
 	{
 		auto& e(pr.first.get());
@@ -80,7 +80,7 @@ RecordCompressor::Compress()
 				++i;
 	}
 
-	ReferenceSet accessed;
+	ReferenceSet accessed(a);
 
 	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
 		bool collected = {};
