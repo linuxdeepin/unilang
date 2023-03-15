@@ -8,7 +8,7 @@
 //	Unilang::Deref, UnilangException, unordered_map, lref, Environment, size_t, set,
 //	weak_ptr, EnvironmentParent, IsTyped, pair, list, TermNode,
 //	EnvironmentGuard, ReductionStatus, NameTypedContextHandler;
-#include <ystdex/functor.hpp> // for ystdex::get_hash, ystdex::get_less;
+#include <ystdex/functor.hpp> // for ystdex::get_hash;
 #include <ystdex/bind.hpp> // for ystdex::bind1, std::ref, std::placeholder;
 #include <tuple> // for std::tuple, std::get;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard,
@@ -81,7 +81,8 @@ struct RecordCompressor final
 {
 	using RecordInfo = unordered_map<lref<Environment>, size_t,
 		ystdex::get_hash<>, ystdex::get_equal_to<>>;
-	using ReferenceSet = set<lref<Environment>, ystdex::get_less<>>;
+	using ReferenceSet = unordered_set<lref<Environment>,
+		ystdex::get_hash<>, ystdex::get_equal_to<>>;
 
 	weak_ptr<Environment> RootPtr;
 	ReferenceSet Reachable, NewlyReachable;
