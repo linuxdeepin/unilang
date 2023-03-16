@@ -59,8 +59,10 @@ RecordCompressor::Compress()
 		}
 		else
 			++i;
-	for(ReferenceSet rs; !NewlyReachable.empty();
-		NewlyReachable = std::move(rs))
+
+	ReferenceSet rs(a);
+
+	while(!NewlyReachable.empty())
 	{
 		for(const auto& e : NewlyReachable)
 			Traverse(e, e.get().Parent,
@@ -78,10 +80,9 @@ RecordCompressor::Compress()
 				i = rs.erase(i);
 			else
 				++i;
+		NewlyReachable = std::move(rs);
+		rs.clear();
 	}
-
-	ReferenceSet accessed(a);
-
 	ystdex::retry_on_cond(ystdex::id<>(), [&]() -> bool{
 		bool collected = {};
 
@@ -89,7 +90,7 @@ RecordCompressor::Compress()
 			p_dst, Environment& src, EnvironmentParent& parent) -> bool{
 			auto& dst(Unilang::Deref(p_dst));
 
-			if(accessed.insert(src).second)
+			if(rs.insert(src).second)
 			{
 				if(!ystdex::exists(Universe, ystdex::ref(dst)))
 					return true;
