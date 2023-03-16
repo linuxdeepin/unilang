@@ -73,8 +73,7 @@ RecordCompressor::Compress()
 				Universe.erase(dst);
 				return false;
 			});
-		Reachable.insert(std::make_move_iterator(NewlyReachable.begin()),
-			std::make_move_iterator(NewlyReachable.end()));
+		Reachable.merge(std::move(NewlyReachable));
 		for(auto i(rs.cbegin()); i != rs.cend(); )
 			if(ystdex::exists(Reachable, *i))
 				i = rs.erase(i);
