@@ -31,6 +31,11 @@ case $(uname) in
 	LIBS_EXTRA="$LIBS_Qt $LIBS_EXTRA"
 	;;
 *)
+	if echo "$CXX" | grep -q clang; then
+		# XXX: Workaround for old versions of Clang++ not recognizing
+		#	'-fno-semantic-interposition'.
+		export C_CXXFLAGS_PIC=-fPIC
+	fi
 	LIBS_EXTRA="$LIBS_Qt $LIBS_EXTRA -ldl"
 esac
 mkdir -p "$Unilang_BaseDir/build"
