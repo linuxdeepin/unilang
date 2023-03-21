@@ -526,7 +526,7 @@ LoadModule_std_modules(Interpreter& intp)
 {
 	intp.Perform(R"Unilang(
 $provide/let! (registered-requirement? register-requirement!
-	unregister-requirement! find-requirement-filename)
+	unregister-requirement! find-requirement-filename require)
 ((mods $as-environment (
 	$import! std.strings &string-empty? &++ &string->symbol;
 
@@ -537,6 +537,7 @@ $provide/let! (registered-requirement? register-requirement!
 	$defl! bound-name? (&req)
 		$and (eval (list bound? req) registry)
 			(not? (null? (eval (string->symbol req) registry))),
+	$defl%! get-cell% (&req) first& (eval% (string->symbol req) registry),
 	$defl! set-value! (&req &v)
 		eval (list $def! (string->symbol req) $quote (forward! v)) registry
 	),
@@ -574,13 +575,16 @@ $provide/let! (registered-requirement? register-requirement!
 				(++ "Requirement '" req "' is not registered."))),
 	$defl/e! &find-requirement-filename mods (&req)
 		get-requirement-filename
-			(($remote-eval% force std.promises) prom_pathspecs) req
+			(($remote-eval% force std.promises) prom_pathspecs) req;
+	$defl/e%! require mods (&req)
+		$if (registered-requirement? req) (get-cell% (forward! req))
+			($let*% ((filename find-requirement-filename req)
+				(env register-requirement! req) (&res get-cell% (forward! req)))
+				$sequence
+					(assign%! res (eval% (list ($remote-eval% load std.io)
+						(move! filename)) (move! env)))
+					res);
 );
-$defl%! require (&req)
-	$if (registered-requirement? req) #inert
-		($let ((filename find-requirement-filename req))
-			$sequence (register-requirement! (forward! req))
-				(($remote-eval% load std.io) filename));
 	)Unilang");
 }
 
@@ -1093,7 +1097,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.309"
+#define APP_VER "0.12.310"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
