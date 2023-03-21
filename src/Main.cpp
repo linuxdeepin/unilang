@@ -563,8 +563,11 @@ $provide/let! (registered-requirement? register-requirement!
 		$if (string-empty? req) (() requirement-error) (bound-name? req),
 	$defl/e! &register-requirement! mods (&req)
 		$if (string-empty? req) (() requirement-error)
-			($if (bound-name? req) (raise-error (++ "Requirement '" req
-				"' is already registered.")) (set-value! req req)),
+			($if (bound-name? req) (raise-error
+				(++ "Requirement '" req "' is already registered."))
+				($let ((env () make-standard-environment))
+					$sequence (set-value! req (list () env))
+						(weaken-environment (move! env)))),
 	$defl/e! &unregister-requirement! mods (&req)
 		$if (string-empty? req) (() requirement-error)
 			($if (bound-name? req) (set-value! req ()) (raise-error
@@ -1090,7 +1093,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.308"
+#define APP_VER "0.12.309"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
