@@ -709,43 +709,43 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(intp),
 		std::ref(argc), argv));
 	intp.Perform(R"Unilang(
-		$def! UnilangQt $let ()
+$def! UnilangQt $let ()
+(
+	$import! UnilangQt.native__ QObject-connect
+		Qt.AA_EnableHighDpiScaling
+		QCoreApplication-setAttribute
+		make-QApplication QApplication-exec
+		make-QWidget QWidget-resize QWidget-show QWidget-setLayout
+		make-QPushButton
+		Qt.AlignCenter
+		make-QLabel QLabel-setText
+		make-QVBoxLayout QLayout-addWidget
+		make-QQuickView QQuickView-show QQuickView-showFullScreen
+		QQuickView_set-source QQuickView_set-transparent;
+	$def! impl__ $provide!
+	(
+		QWidget
+	)
+	(
+		$import! std.classes make-class;
+		$import! UnilangQt.native__ make-DynamicQObject;
+		$def! QWidget make-class () ($lambda (self)
 		(
-			$import! UnilangQt.native__ QObject-connect
-				Qt.AA_EnableHighDpiScaling
-				QCoreApplication-setAttribute
-				make-QApplication QApplication-exec
-				make-QWidget QWidget-resize QWidget-show QWidget-setLayout
-				make-QPushButton
-				Qt.AlignCenter
-				make-QLabel QLabel-setText
-				make-QVBoxLayout QLayout-addWidget
-				make-QQuickView QQuickView-show QQuickView-showFullScreen
-				QQuickView_set-source QQuickView_set-transparent;
-			$def! impl__ $provide!
-			(
-				QWidget
-			)
-			(
-				$import! std.classes make-class;
-				$import! UnilangQt.native__ make-DynamicQObject;
-				$def! QWidget make-class () ($lambda (self)
-				(
-					$set! self _widget () make-QWidget;
-					$set! self _dynamic () make-DynamicQObject;
-					$set! self QWidget-setLayout QWidget-setLayout;
-					$set! self setLayout
-						$lambda/e self (layout)
-							QWidget-setLayout _widget layout;
-					$set! self QWidget-resize QWidget-resize;
-					$set! self resize
-						$lambda/e self (w h) QWidget-resize _widget w h;
-					$set! self QWidget-show QWidget-show;
-					$set! self show $lambda/e self () QWidget-show _widget;
-				));
-			);
-			() lock-current-environment
-		);
+			$set! self _widget () make-QWidget;
+			$set! self _dynamic () make-DynamicQObject;
+			$set! self QWidget-setLayout QWidget-setLayout;
+			$set! self setLayout
+				$lambda/e self (layout)
+					QWidget-setLayout _widget layout;
+			$set! self QWidget-resize QWidget-resize;
+			$set! self resize
+				$lambda/e self (w h) QWidget-resize _widget w h;
+			$set! self QWidget-show QWidget-show;
+			$set! self show $lambda/e self () QWidget-show _widget;
+		));
+	);
+	() lock-current-environment
+);
 	)Unilang");
 }
 
