@@ -502,6 +502,7 @@ LoadModule_std_io(Interpreter& intp)
 		YSLib::IO::StreamPut(std::cout, str.c_str());
 		return ValueToken::Unspecified;
 	});
+	intp.Main.ShareCurrentSource("<lib:std.io>");
 	intp.Perform(R"Unilang(
 $defl! puts (&s) $sequence (put s) (() newline);
 	)Unilang");
@@ -524,6 +525,7 @@ LoadModule_std_system(Interpreter& intp)
 void
 LoadModule_std_modules(Interpreter& intp)
 {
+	intp.Main.ShareCurrentSource("<lib:std.modules>");
 	intp.Perform(R"Unilang(
 $provide/let! (registered-requirement? register-requirement!
 	unregister-requirement! find-requirement-filename require)
@@ -694,6 +696,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	RegisterStrict(m, "get-current-environment", GetCurrentEnvironment);
 	RegisterForm(m, "$vau", Vau);
 	RegisterForm(m, "$vau%", VauRef);
+	intp.Main.ShareCurrentSource("<root:basic-derived-1>");
 	intp.Perform(R"Unilang(
 $def! lock-current-environment (wrap ($vau () d lock-environment d));
 $def! $quote $vau% (x) #ignore $move-resolved! x;
@@ -702,6 +705,7 @@ $def! idv wrap $quote;
 	)Unilang");
 	RegisterStrict(m, "list", ReduceBranchToListValue);
 	RegisterStrict(m, "list%", ReduceBranchToList);
+	intp.Main.ShareCurrentSource("<root:basic-derived-2>");
 	intp.Perform(R"Unilang(
 $def! $lvalue-identifier? $vau (&s) d
 	eval (list bound-lvalue? (list $resolve-identifier s)) d;
@@ -737,6 +741,7 @@ $def! $lambda/e% $vau (&p &formals .&body) d
 		(cons p (cons% (forward! formals) (cons% #ignore (forward! body))))) d);
 	)Unilang");
 	RegisterForm(m, "$sequence", Sequence);
+	intp.Main.ShareCurrentSource("<root:basic-derived-3>");
 	intp.Perform(R"Unilang(
 $def! collapse $lambda% (%x)
 	$if (uncollapsed? x) (($if ($lvalue-identifier? x) ($lambda% (%x) x) id)
@@ -1100,7 +1105,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.311"
+#define APP_VER "0.12.312"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
