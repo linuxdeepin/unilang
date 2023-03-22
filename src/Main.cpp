@@ -591,10 +591,13 @@ $provide/let! (registered-requirement? register-requirement!
 [[gnu::nonnull(2)]] void
 PreloadExternal(Interpreter& intp, const char* filename)
 {
+	auto& ctx(intp.Main);
+	const auto& global(ctx.Global.get());
+
 	try
 	{
-		auto& ctx(intp.Main);
-		auto term(intp.Global.ReadFrom(*intp.OpenUnique(ctx, filename), ctx));
+		auto term(global.ReadFrom(*intp.OpenUnique(ctx,
+			string(filename, global.Allocator)), ctx));
 
 		intp.Evaluate(term);
 	}
@@ -1097,7 +1100,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.310"
+#define APP_VER "0.12.311"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
