@@ -710,6 +710,7 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 	rctx.GetRecordRef().GetMapRef()["UnilangQt.native__"].Value
 		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(intp),
 		std::ref(argc), argv));
+	intp.Main.ShareCurrentSource("<lib:UnilangQt>");
 	intp.Perform(R"Unilang(
 $def! UnilangQt make-environment ($let ()
 (
