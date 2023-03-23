@@ -2,7 +2,7 @@
 
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, vector,
-//	Unilang::make_shared, std::bind, std::ref;
+//	Unilang::make_shared, Environment, std::bind, std::ref;
 #include "TermAccess.h" // for Unilang::ResolveTerm, Unilang::CheckRegular,
 //	Access, Unilang::ResolveRegular;
 #include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
@@ -22,6 +22,7 @@
 #include <QByteArray> // for QByteArray;
 #include <QString> // for QString;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::to_std_string;
+#include <QtConfig> // for QT_VERSION_STR;
 #include <Qt> // for Qt::AA_EnableHighDpiScaling, Qt::AlignCenter,
 //	Qt::ApplicationAttribute, Qt::InputMethodQuery, Qt::AlignmentFlag,
 //	Qt::WindowFlags;
@@ -185,6 +186,8 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	auto& renv(rctx.GetRecordRef());
 	auto& m(renv.GetMapRef());
 
+	Environment::DefineChecked(m, "QT_VERSION_STR",
+		string(QT_VERSION_STR, m.get_allocator()));
 	RegisterStrict(m, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
 		term.Value = Unilang::make_shared<DynamicQObject>();
