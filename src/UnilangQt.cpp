@@ -711,26 +711,17 @@ InitializeQt(Interpreter& intp, int& argc, char* argv[])
 		= GetModuleFor(rctx, std::bind(InitializeQtNative, std::ref(intp),
 		std::ref(argc), argv));
 	intp.Perform(R"Unilang(
-$def! UnilangQt $let ()
+$def! UnilangQt make-environment ($let ()
 (
-	$import! UnilangQt.native__ QObject-connect
-		Qt.AA_EnableHighDpiScaling
-		QCoreApplication-setAttribute
-		make-QApplication QApplication-exec
-		make-QWidget QWidget-resize QWidget-show QWidget-setLayout
-		make-QPushButton
-		Qt.AlignCenter
-		make-QLabel QLabel-setText
-		make-QVBoxLayout QLayout-addWidget
-		make-QQuickView QQuickView-show QQuickView-showFullScreen
-		QQuickView_set-source QQuickView_set-transparent;
 	$def! impl__ $provide!
 	(
 		QWidget
 	)
 	(
 		$import! std.classes make-class;
-		$import! UnilangQt.native__ make-DynamicQObject;
+		$import! UnilangQt.native__ make-QWidget make-DynamicQObject
+			QWidget-setLayout QWidget-setLayout QWidget-resize QWidget-show;
+
 		$def! QWidget make-class () ($lambda (self)
 		(
 			$set! self _widget () make-QWidget;
@@ -747,7 +738,7 @@ $def! UnilangQt $let ()
 		));
 	);
 	() lock-current-environment
-);
+)) UnilangQt.native__;
 	)Unilang");
 }
 
