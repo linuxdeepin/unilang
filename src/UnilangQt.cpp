@@ -2,7 +2,7 @@
 
 #include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
 //	YSLib::unique_ptr, YSLib::make_unique, function, vector,
-//	YSLib::make_shared, std::bind, std::ref;
+//	Unilang::make_shared, std::bind, std::ref;
 #include "TermAccess.h" // for Unilang::ResolveTerm, Unilang::CheckRegular,
 //	Access, Unilang::ResolveRegular;
 #include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
@@ -181,14 +181,13 @@ void
 InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 {
 	using namespace Forms;
-	using YSLib::make_shared;
 	auto& rctx(intp.Main);
 	auto& renv(rctx.GetRecordRef());
 	auto& m(renv.GetMapRef());
 
 	RegisterStrict(m, "make-DynamicQObject", [](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_shared<DynamicQObject>();
+		term.Value = Unilang::make_shared<DynamicQObject>();
 	});
 	RegisterStrict(m, "QObject-connect", [&](TermNode& term, Context& ctx){
 		RetainN(term, 4);
@@ -310,7 +309,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	});
 	RegisterStrict(m, "make-QGuiApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_shared<QGuiApplication>(argc, argv);
+		term.Value = Unilang::make_shared<QGuiApplication>(argc, argv);
 	});
 	RegisterStrict(m, "QGuiApplication-exec", [](TermNode& term){
 		RetainN(term, 0);
@@ -337,7 +336,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	});
 	RegisterStrict(m, "make-QApplication", [&, argv](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_shared<QApplication>(argc, argv);
+		term.Value = Unilang::make_shared<QApplication>(argc, argv);
 	});
 	RegisterStrict(m, "QApplication-aboutQt", [](TermNode& term){
 		RetainN(term, 0);
@@ -350,7 +349,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	});
 	RegisterStrict(m, "make-QWidget", [](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_shared<QWidget>();
+		term.Value = Unilang::make_shared<QWidget>();
 	});
 	RegisterStrict(m, "QWidget-addAction", [](TermNode& term){
 		RetainN(term, 2);
@@ -514,7 +513,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 
-		term.Value = shared_ptr<QWidget>(make_shared<QPushButton>(
+		term.Value = shared_ptr<QWidget>(Unilang::make_shared<QPushButton>(
 			Unilang::ResolveRegular<const string>(*++i).c_str()));
 	});
 	RegisterStrict(m, "make-QLabel", [](TermNode& term){
@@ -524,7 +523,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 		const auto& text(Unilang::ResolveRegular<const string>(*++i));
 		const auto& align(
 			Unilang::ResolveRegular<const Qt::AlignmentFlag>(*++i));
-		auto p_lbl(make_shared<QLabel>(QString(text.c_str())));
+		auto p_lbl(Unilang::make_shared<QLabel>(QString(text.c_str())));
 
 		p_lbl->setAlignment(align);
 		term.Value = shared_ptr<QWidget>(std::move(p_lbl));
@@ -541,7 +540,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	});
 	RegisterStrict(m, "make-QVBoxLayout", [](TermNode& term){
 		RetainN(term, 0);
-		term.Value = shared_ptr<QLayout>(make_shared<QVBoxLayout>());
+		term.Value = shared_ptr<QLayout>(Unilang::make_shared<QVBoxLayout>());
 	});
 	RegisterStrict(m, "make-QMainWindow", [](TermNode& term){
 		const auto n(FetchArgumentN(term));
@@ -552,9 +551,9 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 			const auto p_wgt(n == 0 ? nullptr
 				: Unilang::ResolveRegular<QWidget* const>(*++i));
 
-			term.Value = shared_ptr<QWidget>(make_shared<QMainWindow>(p_wgt,
-				n == 2 ? Unilang::ResolveRegular<const Qt::WindowFlags>(*++i)
-				: Qt::WindowFlags()));
+			term.Value = shared_ptr<QWidget>(Unilang::make_shared<QMainWindow>(
+				p_wgt, n == 2 ? Unilang::ResolveRegular<const Qt::WindowFlags>(
+				*++i) : Qt::WindowFlags()));
 		}
 		throw ArityMismatch(2, n);
 	});
@@ -621,7 +620,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 
 		auto i(term.begin());
 
-		term.Value = make_shared<QQmlApplicationEngine>(
+		term.Value = Unilang::make_shared<QQmlApplicationEngine>(
 			Unilang::ResolveRegular<QObject* const>(*++i));
 	});	
 	RegisterStrict(m, "QQmlApplicationEngine-load", [](TermNode& term){
@@ -652,7 +651,7 @@ InitializeQtNative(Interpreter& intp, int& argc, char* argv[])
 	});	
 	RegisterStrict(m, "make-QQuickView", [](TermNode& term){
 		RetainN(term, 0);
-		term.Value = make_shared<QQuickView>();
+		term.Value = Unilang::make_shared<QQuickView>();
 	});
 	RegisterStrict(m, "QQuickView-show", [](TermNode& term){
 		RetainN(term, 1);
