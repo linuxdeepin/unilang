@@ -725,16 +725,18 @@ $def! UnilangQt make-environment ($let ()
 
 		$def! QWidget make-class () ($lambda (self)
 		(
+			$defv! $inh! (sym) d
+				eval (list $def! sym (unwrap eval%) sym d) self;
 			$set! self _widget () make-QWidget;
 			$set! self _dynamic () make-DynamicQObject;
-			$set! self QWidget-setLayout QWidget-setLayout;
+			$inh! QWidget-setLayout;
 			$set! self setLayout
 				$lambda/e self (layout)
 					QWidget-setLayout _widget layout;
-			$set! self QWidget-resize QWidget-resize;
+			$inh! QWidget-resize;
 			$set! self resize
 				$lambda/e self (w h) QWidget-resize _widget w h;
-			$set! self QWidget-show QWidget-show;
+			$inh! QWidget-show;
 			$set! self show $lambda/e self () QWidget-show _widget;
 		));
 	);
