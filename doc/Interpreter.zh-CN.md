@@ -1142,14 +1142,17 @@ using string = basic_string<char>;
 	* `random.choice`
 	* `sys.exit`
 
-　　包含以下在 Demo 中需要使用的非公开特性：
+　　通过 UnilangQt 支持在 Demo 中需要使用的 Qt 绑定特性：
 
-* Qt 绑定 API `UnilangQt` ：
+* **注释** 当前非公开。
+* **注释** 除非另行指定，以下被实现的特性都是合并子。
+* 以下直接依赖 Qt 本机实现的名称在非公开环境 `UnilangQt.native__` 中提供。
 	* 以下内部的成员跳过实现：
 		* `qt_metacall`
 		* `qt_netacast`
 		* `staticMetaObject`
 	* `QtCore`
+		* `<string>`对象 `QT_VERSION_STR`
 		* `make-DynamicQObject`
 		* `QObject-connect`
 			* 信号连接可直接调用。
@@ -1170,6 +1173,7 @@ using string = basic_string<char>;
 			* `QGuiApplication-exec`
 			* `QGuiApplication-restoreOverrideCursor`
 			* `QGuiApplication-setFallbackSessionManagementEnabled`
+				* **注释** 仅当 Qt 5.6.0 起，6.0.0 前可用。
 	* `QtWidgets`
 		* `QApplication`
 			* `make-QApplication`
@@ -1247,6 +1251,9 @@ using string = basic_string<char>;
 			* `QQuickView-showFullScreen`
 		* `QQuickView_set-source`
 		* `QQuickView_set-transparent`
+* 以下名称在环境 `UnilangQt` 中提供：
+	* `UnilangQt.native__` 中的名称。
+	* `QWidget`
 * Qt API 类型映射（用于传递参数或值）：
 	* 宿主类型同对象类型：
 		* 任意没有在以下另行指定的类类型以外的平凡对象类型
