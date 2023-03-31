@@ -45,16 +45,18 @@
 * ISO/IEC 2382 (all parts), Information technology — Vocabulary
 * ISO/IEC 10646, Information technology — Universal Coded Character Set (UCS)
 * ISO/IEC 14882:2017, Information technology — Programming languages — C++
-* [Fexprs as the basis of Lisp function application or $vau : the ultimate abstraction](http://www.wpi.edu/Pubs/ETD/Available/etd-090110-124904/unrestricted/jshutt.pdf) ([Shu10])
-* [Revised<sup>-1</sup> Report on the Kernel Programming Language](https://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf) ([RnRK])
+* [Shu10] John N. Shutt, [Fexprs as the basis of Lisp function application; or, `$vau`: the ultimate abstraction](https://web.wpi.edu/Pubs/ETD/Available/etd-090110-124904/unrestricted/jshutt.pdf), Ph.D. Dissertation, WPI CS Department, 2010.
+* [R<sup>n</sup>RK] [Revised Report on the Kernel Programming Language](https://web.cs.wpi.edu/~jshutt/kernel.html)
+	* [Shu09] John N. Shutt, [Revised<sup>-1</sup> Report on the Kernel Programming Language](ftp://ftp.cs.wpi.edu/pub/techreports/pdf/05-07.pdf), Technical report WPI-CS-TR-05-07, Worcester Polytechnic Institute, Worcester, MA, March 2005, amended 29 October 2009.	
+	* **注释** 当前 [R<sup>n</sup>RK] 只有 <tt>n = -1</tt> 的版本。引用确切版本时，同 [Shu10] 中的用法，使用 [Shu09] 标记；但引用时一般同样不涉及其版本差异。
 
-　　对文献的引用以 [] 包含的形式标记。除以上列表中结尾 () 备注的部分外，包括：
+　　对文献的引用以 [] 包含的形式标记。除以上列表中备注的部分外，包括：
 
 * [ISO C++] ISO/IEC 14882
 * [ISO C] ISO/IEC 9899
 * [ISO 2382] ISO/IEC 2382
 
-**原理** Unilang 预期实现和 C++ 语言的实现能进行一定程度上的互操作；设计上，和 C++ 等语言也共享一些相似的基本概念。没有在本文档定义的术语可直接引用这些外部参考文献中的定义。[RnRK] 作为本文档中的一些 API 的参考设计来源，也在此一并列出。
+**原理** Unilang 预期实现和 C++ 语言的实现能进行一定程度上的互操作；设计上，和 C++ 等语言也共享一些相似的基本概念。没有在本文档定义的术语可直接引用这些外部参考文献中的定义。[R<sup>n</sup>RK] 作为本文档中的一些 API 的参考设计来源，也在此一并列出。
 
 # 术语和定义(Terms and Definitions)
 
@@ -1556,7 +1558,7 @@
 
 　　若函数提供结果无条件保留引用值和不保留引用值的不同版本且保留引用值的函数是不安全函数，保留引用值的函数名以 `%` 作为（在可能的 `!` 之前的）后缀。
 
-**原理** 关于 `$`、`?` 和 `!` 的原理，参见 [RnRK] 1.3.7 。
+**原理** 关于 `$`、`?` 和 `!` 的原理，参见 [R<sup>n</sup>RK] 1.3.7 。
 
 ## 不安全操作
 
@@ -2038,7 +2040,7 @@
 
 　　创建指定静态环境的 vau 抽象。
 
-**原理** 关于 vau 抽象，参见 [Shu10] 。[RnRK] 提供和本文档中的 vau 抽象构造器类似的操作，但不包含 `<parent>` 的支持。
+**原理** 关于 vau 抽象，参见 [Shu10] 。[R<sup>n</sup>RK] 提供和本文档中的 vau 抽象构造器类似的操作，但不包含 `<parent>` 的支持。
 
 　　创建的抽象是操作子，作为求值 `$vau/e` 的调用结果。
 
@@ -2112,7 +2114,7 @@
 
 　　创建的封装类型的相等性（以 `eqv?` 判断）同被封装的对象。
 
-**原理** 关于 API 的设计，参见 [RnRK] 8.1.1 。相等性判断的规则与之不同，以允许更好地支持和宿主语言中非特定对象类型的值之间的互操作。另见 [SRFI-137](https://srfi.schemers.org/srfi-137/srfi-137.html) 引用的关于[对唯一类型的讨论](https://small.r7rs.org/wiki/UniqueTypesSnellPym/)。
+**原理** 关于 API 的设计，参见 [R<sup>n</sup>RK] 8.1.1 。相等性判断的规则与之不同，以允许更好地支持和宿主语言中非特定对象类型的值之间的互操作。另见 [SRFI-137](https://srfi.schemers.org/srfi-137/srfi-137.html) 引用的关于[对唯一类型的讨论](https://small.r7rs.org/wiki/UniqueTypesSnellPym/)。
 
 ## 核心库函数
 
@@ -2724,7 +2726,7 @@
 
 **注释** 通过 `force` 引起 `<promise>` 对象的求值可能蕴含修改这个对象而使其中的状态失效的操作（如通过 `assign!` ）。因此，实现中需要重新访问状态，而重新进行类型检查。
 
-**原理** 代理求值的原语可实现[惰性求值](https://en.wikipedia.org/wiki/Lazy_evaluation)和透明的[记忆化](https://en.wikipedia.org/wiki/Memoization)求值。和一些流行的误解不同，尽管这些原语的[原始设计](https://en.wikipedia.org/wiki/Futures_and_promises)是关于并行处理的，这不必然蕴含并发的[投机执行](https://en.wikipedia.org/wiki/Speculative_execution)，只是因为*解析(resolve)* 内部状态并不在用户程序中可见，而蕴含必要的最小同步。由于当前语言不支持并发访问，即使是对 `<promise>` 的修改操作导致改变对象蕴含的状态，在语言中其状态也不可见，没有要求支持这种同步；未来可能会附加要求以提供更完善的并发支持。关于 API 的设计，参见 [RnRK] 第 9 章和 [SRFI-45](https://srfi.schemers.org/srfi-45/) 。
+**原理** 代理求值的原语可实现[惰性求值](https://en.wikipedia.org/wiki/Lazy_evaluation)和透明的[记忆化](https://en.wikipedia.org/wiki/Memoization)求值。和一些流行的误解不同，尽管这些原语的[原始设计](https://en.wikipedia.org/wiki/Futures_and_promises)是关于并行处理的，这不必然蕴含并发的[投机执行](https://en.wikipedia.org/wiki/Speculative_execution)，只是因为*解析(resolve)* 内部状态并不在用户程序中可见，而蕴含必要的最小同步。由于当前语言不支持并发访问，即使是对 `<promise>` 的修改操作导致改变对象蕴含的状态，在语言中其状态也不可见，没有要求支持这种同步；未来可能会附加要求以提供更完善的并发支持。关于 API 的设计，参见 [R<sup>n</sup>RK] 第 9 章和 [SRFI-45](https://srfi.schemers.org/srfi-45/) 。
 	
 ## 字符串操作
 
@@ -3071,7 +3073,7 @@
 
 　　部分 I/O 操作使用隐含的端口参数。除非另行指定，这些参数对应宿主环境中的*标准输入(standard input)* 和*标准输出(standard output)* 抽象设备，对应的端口对象具有的生存期至少同用户程序的生存期。
 
-**注释** 端口提供和实现环境交互的 I/O 副作用。作用同 [RnRK] 中的类似类型。这对应 ISO C++ 等语言中的库的*流(stream)* 的概念。但流在更一般的意义上是和惰性求值关联的数据结构，不一定具有副作用。
+**注释** 端口提供和实现环境交互的 I/O 副作用。作用同 [R<sup>n</sup>RK] 中的类似类型。这对应 ISO C++ 等语言中的库的*流(stream)* 的概念。但流在更一般的意义上是和惰性求值关联的数据结构，不一定具有副作用。
 
 `() newline`
 
