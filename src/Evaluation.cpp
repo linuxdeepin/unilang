@@ -1632,7 +1632,7 @@ AddTypeNameTableEntry(const type_info& ti, string_view sv)
 string_view
 QueryContinuationName(const Reducer& act)
 {
-	if(IsTyped<GLContinuation<>>(act))
+	if(IsTyped<GLContinuation<>>(act.target_type()))
 		return QueryTypeName(type_id<ContextHandler>());
 	if(const auto p_cont = act.target<Continuation>())
 		return QueryTypeName(p_cont->Handler.target_type());
