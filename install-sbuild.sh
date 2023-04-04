@@ -32,7 +32,7 @@ else
 		echo "Missing tool: wget. Install wget first."
 		exit 1
 	fi
-	if ! hash "7z" 2> /dev/null; then
+	if ! hash "7za" 2> /dev/null; then
 		echo "Missing tool: 7za. Install p7zip first."
 		exit 1
 	fi
