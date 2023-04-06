@@ -148,14 +148,18 @@
 
 ## 内建对象
 
-　　对象 `ignore` 的值是符号 `#ignore` ，用于需要值为 `#ignore` 同时是一等对象的场合。例如：
+　　对象 `ignore` 的值是符号 `#ignore` ，用于需要值为 `#ignore` 同时是左值的场合。
+
+　　若仅需转换 `ignore` 为右值，也可以代替 `#ignore` ，例如：
 
 ```
 	$def! $lambda $vau (formals .body) d wrap
 		(eval (cons $vau (cons formals (cons ignore body))) d);
 ```
 
-　　因为 `#ignore` 不保证能作为表示变量名的符号求值，所以不能直接作为函数 `cons` 的参数。（求值 `cons #ignore body` 时会求值参数，以 `#ignore` 作为变量名进行名称解析，不符合构造一个包含 `#ignore` 值的列表的目的。）而 `ignore` 经过求值，结果是 `#ignore` 。
+　　这种用法不依赖 `#ignore` 是单元类型字面量的事实。
+
+**注释** 这项特性为兼容性保留。早期 Unilang 版本中，`#ignore` 不是单元类型的字面量而是符号值。此时 `ignore` 是必要的，因为 `#ignore` 自身是符号值，它不保证能作为表示变量名的符号求值，所以不能直接作为这里的 `cons` 的参数——求值 `cons #ignore body` 时会求值参数，以 `#ignore` 作为变量名进行名称解析，结果是名为 `#ignore` 的对象的值而非 `#ignore` 自身，这不符合构造一个包含 `#ignore` 值的列表的目的。而 `ignore` 经过求值转换为右值，结果是 `#ignore` ，无论 `#ignore` 是否为符号值。 
 
 ## 等价谓词
 
