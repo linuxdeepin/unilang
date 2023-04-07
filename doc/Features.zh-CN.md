@@ -361,6 +361,18 @@ $def! base-env () make-standard-environment;
 $sequence (display "x") (display "y");
 ```
 
+## 赋值
+
+　　函数 `assign!` 接受两个参数，其中第一个参数的值应是左值。函数 `assign!` 修改第一个参数表示的对象的值为第二个参数的值。这是*赋值(assignment)* 。例如：
+
+```
+$def! x "a";
+assign! x "b";
+x; => "b";
+```
+
+　　和 `$set!` 以及 `$def!` 等其它可能修改对象的操作不同，赋值不改变被赋值对象的*同一性(identity)* ，被赋值对象的引用值保证不因修改它的值而失效。
+
 ## 列表访问
 
 　　函数 `first` 和 `rest%` 接受一个应为非空列表的参数，分别取列表的第一个元素和剩余元素：
