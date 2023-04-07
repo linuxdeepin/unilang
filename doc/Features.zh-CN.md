@@ -533,7 +533,7 @@ $let ((a 43)) call/1cc ($lambda . a); "=> 43";
 　　这可通过 `std.continuation` 的函数 `continuation->applicative` 实现：首先取得一个调用时蕴含续延调用的应用子，然后对这个应用子进行函数引用，使之被调用，这使对应的续延被显式调用，如：
 
 ```
-call/1cc ($lambda (&k) ((continuation->applicative (move! k)) 44; raise-error "Failed to skip.")); "=> (list 44)"
+call/1cc ($lambda (&k) ((continuation->applicative (move! k)) 44; raise-error "Failed to skip.")); "=> (44)"
 ```
 
 　　这种方式调用续延的结果是应用子的参数构成的列表值。在取得结果之前，其中蕴含的续延调用的控制作用修改了当前上下文，使之后的表达式不再被调用，而直接返回到了调用者。
@@ -562,13 +562,13 @@ call/1cc ($lambda (&k) ((continuation->applicative (move! k)) 44; raise-error "F
 
 ```
 floor/ -5 2;
-"=> (list -3 1)";
+"=> (-3 1)";
 floor-quotient -5 2;
 "=> -3";
 floor-remainder -5 2;
 "=> 1";
 truncate/ 5 -2;
-"=> (list -2 1)";
+"=> (-2 1)";
 truncate-quotient 5 -2;
 "=> -2";
 truncate-remainder 5 -2;
