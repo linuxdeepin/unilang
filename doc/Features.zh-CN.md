@@ -554,6 +554,57 @@ call/1cc ($lambda (&k) ((continuation->applicative (move! k)) 44; raise-error "F
 
 **注释** 因为互操作性等问题，当前设计只允许捕获一次续延。
 
+## 字符串库
+
+　　字符串库提供涉及字符串类型的值的操作。
+
+　　函数 `string?` 判断参数的值是否是字符串。
+
+　　函数 `++` 串接参数指定的字符串的值。参数可以是零个或多个。被串接的结果中参数对应子串的顺序和参数出现的顺序相同。
+
+　　函数 `string-empty?` 判断字符串参数的值是否为空字符串。
+
+　　函数 `string<-` 接受两个参数，第一个参数是字符串左值，第二个字符串的值是字符串值，作用是把第二个参数的值赋值给第一个参数。和 `$def!` 不同，赋值不引起被赋值的对象的引用失效。和 `assign!` 不同，`string<-` 对参数进行类型检查。
+
+　　函数 `string=?` 接受两个字符串值作为参数，比较两个字符串参数相等。和 `eqv?` 不同，`string=?` 对参数进行类型检查。
+
+　　函数 `string-split` 接受两个字符串值作为参数，以第二参数值作为分隔符分割第一参数值。结果是分割得到的字符串值的列表。
+
+　　函数 `string-contains?` 接受两个字符串值作为参数，判断第二参数值是否是第一参数值的子串。
+
+　　函数 `string-contains-ci?` 同 `string-contains?` ，但比较字符串时忽略大小写的不同。
+
+　　函数 `string->symbol` 接受一个字符串值作为参数。调用函数的结果是参数值转换得到的符号值。
+
+　　函数 `symbol->string` 接受一个符号值作为参数。调用函数的结果是参数值转换得到的字符串值。
+
+　　函数 `symbol->regex` 接受一个字符串值作为参数。调用函数的结果是参数值转换得到的正则表达式值。
+
+　　函数 `regex->match?` 接受一个字符串值和一个正则表达式值作为参数。调用函数的结果是第二参数是否正则匹配第一参数。
+
+　　函数 `regex->replace` 接受三个参数，其中第二个参数是正则表达式值，另两个参数是字符串值。调用函数的作用是把第一参数中和作为正则模式串的第二参数值匹配的子串替换为第三参数的值。
+
+　　例如：
+
+```
+$import! std.strings string? ++ string-empty? string<- string=? string-split string-contains? string-contains-ci? regex-match? string->regex regex-replace;
+string? (); "=> #f";
+string? ""; "=> #t";
+string? "x"; "=> #t";
+++ "x" "y" "z"; "=> \"xyz\"";
+$def! x "x";
+string-empty? x; "=> #f";
+string<- x "y";
+string=? x "y"; "=> #t";
+string-split "x y z" " "; => "(\"x\" \"y\" \"z\")";
+string-contains? "x y z" "y z"; "=> #t";
+string-contains-ci? "x y z" "Y Z"; "=> #t";
+eqv? (string->symbol "x") ($quote x); "=> #t";
+string=? (symbol->string (string->symbol "x")) "x"; "=> #t";
+regex-match? ("123xyz" (string->regex ".+x.+")) "=> #t";
+regex-replace "123xyz125" (string->regex "45.") "=> \"456xyz456\"";
+```
+
 ## 数学库
 
 　　数学库主要处理数值类型的值。
