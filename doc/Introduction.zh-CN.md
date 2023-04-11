@@ -993,7 +993,7 @@ display (rest l);
 
 ```
 	$defw! map1 (appv l) d
-		foldr1 ($lambda (x xs) cons% (apply appv (list x) d) xs) () (forward! l);
+		foldr1 ($lambda (x xs) cons (apply appv (list x) d) xs) () (forward! l);
 ```
 
 **注释** 因为需要正确地实现值类别(value category) 、转发(forwarding) 和复制消除(copy elision) ，标准库的实际实现更加复杂。但是，对足够简单的（大多数）类型的值，这里的行为是一致的。
