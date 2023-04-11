@@ -1,10 +1,40 @@
 "Strings demos.";
 
-$import! std.strings string?;
-
-"TODO: String construction.";
+$import! std.strings string? ++ string-empty? string<- string=? string-split
+	string-contains? string-contains-ci? regex-match? string->regex
+	regex-replace;
 
 "String type predicate.";
 $check not? (string? ());
 $check string? "";
+$check string? "x";
+
+"String concatenation.";
+$expect "xyz" ++ "x" "y" "z";
+
+$def! x "x";
+
+"String access.";
+$check not? (string-empty? x);
+
+"String assignment.";
+string<- x "y";
+
+"String comparison.";
+$check (string=? x "y");
+
+"String split.";
+$expect (list "x" "y" "z") string-split "x y z" " ";
+
+"Substring test.";
+$check string-contains? "x y z" "y z";
+$check string-contains-ci? "x y z" "Y Z";
+
+"String conversion.";
+$check eqv? (string->symbol "x") ($quote x);
+$check string=? (symbol->string (string->symbol "x"));
+
+"Regular expressions.";
+$check regex-match? ((string->regex ".+x.+") "123xyz");
+$expect "456xyz456" regex-replace "123xyz125" (string->regex "45.");
 
