@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2021 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021, 2023 UnionTech Software Technology Co.,Ltd.
 
 #ifndef INC_Unilang_Math_h_
 #define INC_Unilang_Math_h_ 1
@@ -125,6 +125,9 @@ TruncateQuotient(ResolvedArg<>&&, ResolvedArg<>&&);
 
 YB_ATTR_nodiscard YB_PURE ValueObject
 TruncateRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+Inexact(ResolvedArg<>&&);
 
 
 void

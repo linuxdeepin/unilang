@@ -1,7 +1,7 @@
-﻿// SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2021-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Math.h" // for size_t, type_info, TryAccessValue, Unilang::Nonnull,
-//	 Unilang::Deref, ptrdiff_t, string_view, sfmt;
+//	lref, ptrdiff_t, string_view, sfmt;
 #include <ystdex/exception.h> // for ystdex::unsupported;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <ystdex/meta.hpp> // for ystdex::_t, ystdex::exclude_self_t,
@@ -834,6 +834,28 @@ struct GBDivRem : GBDivRemBase<_tOpPolicy>
 };
 
 
+struct ReplaceInexact
+{
+	lref<ValueObject> Result;
+
+	ReplaceInexact(ValueObject& res) noexcept
+		: Result(res)
+	{}
+
+	template<typename _type>
+	inline yimpl(ystdex::enable_if_t)<std::is_floating_point<_type>{}>
+	operator()(_type&) const noexcept
+	{}
+	template<typename _type, yimpl(ystdex::enable_if_t<
+		!std::is_floating_point<_type>::value, int> = 0)>
+	inline void
+	operator()(_type& x) const
+	{
+		Result.get() = double(x);
+	}
+};
+
+
 using DivRemResult = array<ValueObject, 2>;
 
 template<typename _type>
@@ -1476,6 +1498,12 @@ ValueObject
 TruncateRemainder(ResolvedArg<>&& x, ResolvedArg<>&& y)
 {
 	return NumBinaryOp<GBDivRem<BTruncatePolicy, BRemainderPolicy>>(x, y);
+}
+
+ValueObject
+Inexact(ResolvedArg<>&& x)
+{
+	return NumUnaryOp<ReplaceInexact>(x);
 }
 
 
