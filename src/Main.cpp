@@ -413,6 +413,7 @@ LoadModule_std_math(Interpreter& intp)
 		TruncateQuotient);
 	RegisterBinary<Strict, NumberNode, NumberNode>(m, "truncate-remainder",
 		TruncateRemainder);
+	RegisterUnary<Strict, NumberNode>(m, "inexact", Inexact);
 	RegisterBinary<Strict, const int, const int>(m, "div",
 		[](const int& e1, const int& e2){
 		if(e2 != 0)
@@ -1105,7 +1106,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.312"
+#define APP_VER "0.12.320"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
