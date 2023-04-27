@@ -507,6 +507,16 @@ $defl! puts (&s) $sequence (put s) (() newline);
 		intp.Global.Preprocess(term);
 		return ctx.ReduceOnce.Handler(term, ctx);
 	});
+	intp.Main.ShareCurrentSource("<lib:std.io-1>");
+	intp.Perform(R"Unilang(
+$defl! get-module (&filename .&opt)	
+	$let ((env $if (null? opt) (() make-standard-environment)
+		($let (((&e .&eopt) opt)) $if (null? eopt)
+			($let ((env () make-standard-environment)) $sequence
+				($set! env module-parameters (check-environemnt e)) env)
+			(raise-invalid-syntax-error "Syntax error in get-module."))))
+		$sequence (eval% (list load filename) env) env;
+	)Unilang");
 }
 
 void
@@ -1106,7 +1116,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.321"
+#define APP_VER "0.12.322"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
