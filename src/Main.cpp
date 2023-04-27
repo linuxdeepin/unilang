@@ -562,8 +562,7 @@ $provide/let! (registered-requirement? register-requirement!
 	$def! placeholder ($remote-eval% string->regex std.strings) "\?",
 	$defl! get-requirement-filename (&specs &req)
 		$if (null? specs)
-			(raise-error (++ "No module for requirement '" req
-				"' found."))
+			(raise-error (++ "No module for requirement '" req "' found."))
 			(
 				$let* ((spec first& specs) (path ($remote-eval% regex-replace
 					std.strings) spec placeholder req))
@@ -939,12 +938,12 @@ $def! ($let $let% $let* $let*% $letrec $bindings/p->environment) ($lambda (&ce)
 		res;
 	map1 move! (list% $let $let% $let* $let*% $letrec $bindings/p->environment)
 )) (() get-current-environment);
-$defv! $as-environment (.&body) d
-	eval (list $let () (list $sequence (forward! body)
-		(list () lock-current-environment))) d;
 $defw! derive-current-environment (.&envs) d
 	apply make-environment (append envs (list d)) d;
 $defl! make-standard-environment () () lock-current-environment;
+$defv! $as-environment (.&body) d
+	eval (list $let () (list $sequence (forward! body)
+		(list () lock-current-environment))) d;
 $defv! $bindings->environment (.&bindings) d
 	eval (list* $bindings/p->environment () (forward! bindings)) d;
 $defl! symbols->imports (&symbols)
@@ -1116,7 +1115,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.322"
+#define APP_VER "0.12.323"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
