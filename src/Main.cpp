@@ -446,24 +446,9 @@ LoadModule_std_io(Interpreter& intp)
 	using YSLib::istringstream;
 	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
-	RegisterStrict(m, "newline", [&](TermNode& term){
-		RetainN(term, 0);
-		std::cout << std::endl;
-		return ReduceReturnUnspecified(term);
-	});
 	RegisterUnary<Strict, const string>(m, "readable-file?",
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
-	});
-	RegisterStrict(m, "load", [&](TermNode& term, Context& ctx){
-		RetainN(term);
-		RefTCOAction(ctx).SaveTailSourceName(ctx.CurrentSource,
-			std::move(ctx.CurrentSource));
-		term = intp.Global.ReadFrom(*intp.OpenUnique(ctx, string(
-			Unilang::ResolveRegular<const string>(Unilang::Deref(
-			std::next(term.begin()))), term.get_allocator())), ctx);
-		intp.Global.Preprocess(term);
-		return ctx.ReduceOnce.Handler(term, ctx);
 	});
 	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
@@ -499,6 +484,11 @@ LoadModule_std_io(Interpreter& intp)
 		DisplayTermValue(std::cout, term);
 		return ValueToken::Unspecified;
 	});
+	RegisterStrict(m, "newline", [&](TermNode& term){
+		RetainN(term, 0);
+		std::cout << std::endl;
+		return ReduceReturnUnspecified(term);
+	});
 	RegisterUnary<Strict, const string>(m, "put", [&](const string& str){
 		YSLib::IO::StreamPut(std::cout, str.c_str());
 		return ValueToken::Unspecified;
@@ -507,6 +497,16 @@ LoadModule_std_io(Interpreter& intp)
 	intp.Perform(R"Unilang(
 $defl! puts (&s) $sequence (put s) (() newline);
 	)Unilang");
+	RegisterStrict(m, "load", [&](TermNode& term, Context& ctx){
+		RetainN(term);
+		RefTCOAction(ctx).SaveTailSourceName(ctx.CurrentSource,
+			std::move(ctx.CurrentSource));
+		term = intp.Global.ReadFrom(*intp.OpenUnique(ctx, string(
+			Unilang::ResolveRegular<const string>(Unilang::Deref(
+			std::next(term.begin()))), term.get_allocator())), ctx);
+		intp.Global.Preprocess(term);
+		return ctx.ReduceOnce.Handler(term, ctx);
+	});
 }
 
 void
@@ -1106,7 +1106,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.320"
+#define APP_VER "0.12.321"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
