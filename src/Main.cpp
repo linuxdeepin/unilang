@@ -891,6 +891,7 @@ $defl! append (.&ls) foldr1 list-concat () (move! ls);
 $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 $defl%! list-extract-first (&l) map1 first (forward! l);
+$defl%! list-extract-rest% (&l) map1 rest% (forward! l);
 $def! ($let $let% $let* $let*% $letrec $bindings/p->environment) ($lambda (&ce)
 (
 	$def! mods () ($lambda/e ce ()
@@ -1116,7 +1117,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.324"
+#define APP_VER "0.12.325"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
