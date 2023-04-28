@@ -904,10 +904,8 @@ $def! ($let $let% $let* $let*% $letrec $bindings/p->environment) ($lambda (&ce)
 					($lambda (%x &xs) (cons% ($resolve-identifier x)
 						(move! xs))))
 				(idv (forward! (check-list-reference l)));
-		$defl%! list-extract-first (&l) map1 first (forward! l);
-		$defl%! list-extract-rest% (&l) map1 rest% (forward! l);
 		$defv%! $lqual (&ls) d
-			($if (eval (list $lvalue-identifier? ls) d) id rulist) (eval% ls d);
+			($if (eval (list $lvalue-identifier? ls) d) id rulist) (eval% ls d),
 		$defv%! $lqual* (&x) d
 			($if (eval (list $lvalue-identifier? x) d) id expire) (eval% x d);
 		$defl%! mk-let ($ctor &bindings &body)
@@ -1117,7 +1115,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.325"
+#define APP_VER "0.12.326"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
