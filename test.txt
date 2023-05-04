@@ -290,6 +290,9 @@ $let ()
 );
 
 info "list operations";
+subinfo "list?";
+$check list? (list 1);
+$check list? (cons% 2 ());
 subinfo "empty list calls: list and list%";
 $expect () () list;
 $expect () () list%;
