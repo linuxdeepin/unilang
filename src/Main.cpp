@@ -37,6 +37,7 @@
 #include <sstream> // for complete istringstream;
 #include <string> // for std::getline;
 #include "TCO.h" // for RefTCOAction;
+#include <ystdex/base.h> // for ystdex::noncopyable;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
 #include <cstdlib> // for std::exit;
@@ -620,6 +621,9 @@ PreloadExternal(Interpreter& intp, const char* filename)
 	}
 }
 
+struct NoCopy : ystdex::noncopyable
+{};
+
 #define Unilang_Default_Init_File "init.txt"
 const char* init_file = Unilang_Default_Init_File;
 
@@ -657,6 +661,10 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 		ystdex::bind1(Qualify, TermTags::Unique));
 	RegisterStrict(m, "move!",
 		std::bind(DoMoveOrTransfer, std::ref(LiftOtherOrCopy), _1));
+	RegisterStrict(m, "__make-nocopy", [](TermNode& term){
+		RetainN(term, 0);
+		term.Value = NoCopy();
+	});
 	RegisterBinary(m, "assign@!", [](TermNode& x, TermNode& y){
 		return DoAssign(ystdex::bind1(static_cast<void(&)(TermNode&,
 			TermNode&)>(LiftOther), std::ref(y)), x);
@@ -1115,7 +1123,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.326"
+#define APP_VER "0.12.327"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
