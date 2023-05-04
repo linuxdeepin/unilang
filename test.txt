@@ -81,6 +81,13 @@ $let ()
 );
 
 info "basic object operations";
+subinfo "copy elision";
+$let ()
+(
+	$defl! test-elision (f) $let ((x () __make-nocopy)) f (expire x);
+	test-elision idv;
+	test-elision collapse
+);
 subinfo "equal?";
 $let ((a 2))
 (
