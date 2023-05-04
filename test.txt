@@ -348,8 +348,8 @@ $let ((n 1))
 		$check unique? (first& (expire l0))
 	);
 	subinfo "rest& xvalues";
-	$let ((l0 list n n) (l1 list% n n) (l2 list% (expire n)
-		(expire n)) (l3 cons% (expire n) (expire n)))
+	$let ((l0 list n n) (l1 list% n n) (l2 list% (expire n) (expire n))
+		(l3 cons% (expire n) (expire n)))
 	(
 		subinfo "rest& unique";
 		$check-not unique? (rest& l0);
@@ -377,6 +377,8 @@ $let ((n 1))
 		test first&
 	)
 );
+subinfo "firstv copy elision on xvalues";
+$let ((li list% (() __make-nocopy))) $def! b firstv (expire li);
 subinfo "improper list access";
 $expect (cons% 2 3) restv (list*% 1 2 3);
 $let ((a 1)) $check eq? (rest% (cons% 2 a)) a;
