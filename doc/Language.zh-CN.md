@@ -2721,6 +2721,10 @@
 
 　　结果是有序对对象。
 
+`set-first! <pair> <object>`
+
+　　修改有序对的第一个元素。
+
 `set-first%! <pair> <object>`
 
 　　修改有序对的第一个元素，保留引用值。
