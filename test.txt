@@ -391,6 +391,8 @@ $expect (cons% 2 3) restv (list*% 1 2 3);
 $let ((a 1)) $check eq? (rest% (cons% 2 a)) a;
 subinfo "rest& improper list access";
 $let ((ca cons 1 2)) $expect 2 idv (rest& ca);
+subinfo "subpair reference referent";
+$let* ((pr cons 1 2) ((#ignore .&xs) pr)) $check-not uncollapsed? xs;
 subinfo "list modification";
 $let* ((a 1) (b 4) (l list% a 2))
 (
