@@ -396,8 +396,12 @@ $let* ((pr cons 1 2) ((#ignore .&xs) pr)) $check-not uncollapsed? xs;
 subinfo "list modification";
 $let* ((a 1) (b 4) (l list% a 2))
 (
+	set-first! l b;
+	$expect (list b 2) l;
 	set-first%! l b;
 	$expect (list b 2) l;
+	set-first! l 5;
+	$expect (list 5 2) l;
 	set-first%! l 7;
 	$expect (list 7 2) l
 );
