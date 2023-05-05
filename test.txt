@@ -379,6 +379,13 @@ $let ((n 1))
 );
 subinfo "firstv copy elision on xvalues";
 $let ((li list% (() __make-nocopy))) $def! b firstv (expire li);
+$let* ((a 1) (li list% a a))
+(
+	subinfo "first& propagation of nonmodifiable reference elements";
+	$let ((li list% a)) $check-not modifiable? (first& (as-const li));
+	subinfo "rest& propagation of nonmodifiable reference elements";
+	$check-not modifiable? (rest& (as-const li))
+);
 subinfo "improper list access";
 $expect (cons% 2 3) restv (list*% 1 2 3);
 $let ((a 1)) $check eq? (rest% (cons% 2 a)) a;
