@@ -837,6 +837,7 @@ $defl%! rest& (&pr)
 	($if (unique? ($resolve-identifier pr)) pr
 		(check-pair-reference (forward! pr)));
 $defl! restv ((#ignore .xs)) $move-resolved! xs;
+$defl! set-first! (&pr x) assign@! (first@ (forward! pr)) (move! x);
 $defl! set-first%! (&pr &x) assign%! (first@ (forward! pr)) (forward! x);
 $defl! equal? (&x &y)
 	$if ($if (pair? x) (pair? y) #f)
@@ -1123,7 +1124,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.327"
+#define APP_VER "0.12.328"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
