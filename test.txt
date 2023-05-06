@@ -4,6 +4,7 @@
 $import! std.math &=? &<? &<=? &>? &>=? &stoi &itos;
 
 $def! $rem $vau . #ignore "";
+$def! &make-nocopy __make-nocopy;
 
 info "sanity";
 subinfo "empty expression";
@@ -363,7 +364,7 @@ $let ((n 1))
 	)
 );
 subinfo "firstv copy elision on xvalues";
-$let ((li list% (() __make-nocopy))) $def! b firstv (expire li);
+$let ((li list% (() make-nocopy))) $def! b firstv (expire li);
 $let* ((a 1) (li list% a a))
 (
 	subinfo "first& propagation of nonmodifiable reference elements";
