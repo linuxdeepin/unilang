@@ -421,6 +421,17 @@ info "bindings operations";
 	subinfo "$letrec%";
 	$let ((a 2)) $check reference? ($letrec% () a)
 );
+subinfo "binding lvalue lists";
+$let ((n 42))
+(
+	$defl! test-let ($let)
+	(
+		$expect 42 eval% (list% $let () idv n) (() get-current-environment);
+		$def! bd list% (list% ($quote a) 1) (list% ($quote b) 2);
+		$expect n eval% (list% $let bd idv n) (() get-current-environment)
+	);
+	map1 test-let (list $let $let% $let* $let*% $letrec $letrec%)
+);
 
 info "std.promises";
 $let ()
