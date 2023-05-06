@@ -417,7 +417,9 @@ info "bindings operations";
 	$expect 4 $let* ((&x 2) (&y x)) + x y;
 	subinfo "$letrec";
 	$expect 3 $letrec ((x + 0 1) (x 2) (x - 4 1)) x;
-	$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z
+	$expect (list 1 2 3) $letrec ((x + 0 1) (y 2) (z - 4 1)) list x y z;
+	subinfo "$letrec%";
+	$let ((a 2)) $check reference? ($letrec% () a)
 );
 
 info "std.promises";
