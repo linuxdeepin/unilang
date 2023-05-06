@@ -2892,6 +2892,10 @@
 
 　　顺序局部绑定求值，允许递归引用绑定。
 
+`$letrec% <bindings> <body>`
+
+　　同 `$letrec` ，但保留引用值。
+
 `derive-current-environment <environment>...`
 
 　　创建当前环境的派生环境。
