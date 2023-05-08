@@ -422,44 +422,44 @@ info "bindings operations";
 	subinfo "$letrec%";
 	$let ((a 2)) $check reference? ($letrec% () a)
 );
-subinfo "binding lvalue lists";
-$let ((n 42))
+$let ((n 42) (e () get-current-environment) (test-lets $lambda (&test)
+	map1 test (list $let $let% $let* $let*% $letrec $letrec%)))
 (
-	$defl! test-let ($let)
+	subinfo "binding lvalue lists";
+	test-lets ($lambda ($let)
 	(
-		$expect 42 eval% (list% $let () idv n) (() get-current-environment);
+		$expect 42 eval% (list% $let () idv n) e;
 		$def! bd list% (list% ($quote a) 1) (list% ($quote b) 2);
-		$expect n eval% (list% $let bd idv n) (() get-current-environment)
-	);
-	map1 test-let (list $let $let% $let* $let*% $letrec $letrec%)
-);
-subinfo "binding noncopyable objects";
-$let ()
-(
-	$defl! test-let-case ($let &x can-copy)
+		$expect n eval% (list% $let bd idv n) e
+	));
+	subinfo "binding noncopyable objects";
+	$let ()
 	(
-		$def! n 42;
-		$def! li1 list% ($quote a) n;
-		$def! bindings list% li1 (list% ($quote t) (move! x));
-		$if can-copy
+		$defl! test-let-case ($let &x can-copy)
 		(
-			$def! backup bindings;
-			eval% (list% $let (as-const bindings) move! ($quote t))
-				(() get-current-environment);
-			$expect bindings backup;
-			eval% (list% $let bindings move! ($quote t))
-				(() get-current-environment);
-			$expect bindings (id backup)
+			"reference support in parameter trees";
+			$def! n 42;
+			$def! li1 list% ($quote a) n;
+			$def! bindings list% li1 (list% ($quote t) (move! x));
+			$if can-copy
+			(
+				$def! backup bindings;
+				eval% (list% $let (as-const bindings) move! ($quote t))
+					(() get-current-environment);
+				$expect bindings backup;
+				eval% (list% $let bindings move! ($quote t))
+					(() get-current-environment);
+				$expect bindings (id backup)
+			);
+			eval% (list% $let (expire bindings) move! ($quote t))
+				(() get-current-environment)
 		);
-		eval% (list% $let (expire bindings) move! ($quote t))
-			(() get-current-environment)
-	);
-	$defl! test-let ($let)
-	(
-		test-let-case $let (list make-nocopy) #t;
-		test-let-case $let (() make-nocopy) #f
-	);
-	map1 test-let (list $let $let% $let* $let*% $letrec $letrec%)
+		test-lets ($lambda ($let)
+		(
+			test-let-case $let (list make-nocopy) #t;
+			test-let-case $let (() make-nocopy) #f
+		))
+	)
 );
 
 info "std.promises";
