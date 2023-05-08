@@ -433,6 +433,34 @@ $let ((n 42))
 	);
 	map1 test-let (list $let $let% $let* $let*% $letrec $letrec%)
 );
+subinfo "binding noncopyable objects";
+$let ()
+(
+	$defl! test-let-case ($let &x can-copy)
+	(
+		$def! n 42;
+		$def! li1 list% ($quote a) n;
+		$def! bindings list% li1 (list% ($quote t) (move! x));
+		$if can-copy
+		(
+			$def! backup bindings;
+			eval% (list% $let (as-const bindings) move! ($quote t))
+				(() get-current-environment);
+			$expect bindings backup;
+			eval% (list% $let bindings move! ($quote t))
+				(() get-current-environment);
+			$expect bindings (id backup)
+		);
+		eval% (list% $let (expire bindings) move! ($quote t))
+			(() get-current-environment)
+	);
+	$defl! test-let ($let)
+	(
+		test-let-case $let (list make-nocopy) #t;
+		test-let-case $let (() make-nocopy) #f
+	);
+	map1 test-let (list $let $let% $let* $let*% $letrec $letrec%)
+);
 
 info "std.promises";
 $let ()
