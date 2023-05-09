@@ -652,7 +652,17 @@ YB_ATTR_nodiscard YB_PURE string_view
 QueryTypeName(const type_info&);
 
 void
-TraceBacktrace(const Context::ReducerSequence&, YSLib::Logger&) noexcept;
+TraceAction(const Reducer&, YSLib::Logger&);
+
+void
+TraceBacktrace(Context::ReducerSequence::const_iterator,
+	Context::ReducerSequence::const_iterator, YSLib::Logger&) noexcept;
+inline void
+TraceBacktrace(const Context::ReducerSequence& backtrace, YSLib::Logger& trace)
+	noexcept
+{
+	return Unilang::TraceBacktrace(backtrace.cbegin(), backtrace.cend(), trace);
+}
 
 
 template<class _tGuard>
