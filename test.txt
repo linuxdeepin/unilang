@@ -425,6 +425,10 @@ info "bindings operations";
 $let ((n 42) (e () get-current-environment) (test-lets $lambda (&test)
 	map1 test (list $let $let% $let* $let*% $letrec $letrec%)))
 (
+	subinfo "let single lvalue preservation";
+	test-lets ($lambda ($l)
+		$expect ($or (eqv? $l $let%) (eqv? $l $let*%) (eqv? $l $letrec%))
+			reference? (eval% (list% $l () n) e));
 	subinfo "binding lvalue lists";
 	test-lets ($lambda ($let)
 	(
