@@ -1,8 +1,8 @@
 ﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "Interpreter.h" // for TokenValue, ystdex::sfmt, HasValue,
-//	string_view, Context::DefaultHandleException, std::bind,
-//	Unilang::SwitchToFreshEnvironment, Unilang::ToParent, std::getline;
+//	string_view, std::bind, Unilang::SwitchToFreshEnvironment,
+//	Unilang::ToParent, std::getline;
 #include <ostream> // for std::ostream;
 #include "Math.h" // for FPToString;
 #include <ystdex/functional.hpp> // for ystdex::bind1, std::placeholders::_1;
@@ -12,7 +12,7 @@
 //	YSLib::Notice, YSLib::stringstream;
 #include YFM_YSLib_Service_TextFile // for Text::OpenSkippedBOMtream,
 //	Text::BOM_UTF_8, YSLib::share_move;
-#include <exception> // for std::throw_with_nested;
+#include <exception> // for std::throw_with_nested, std::rethrow_exception;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
 #include <iostream> // for std::cout, std::endl, std::cin;
 
@@ -230,7 +230,7 @@ Interpreter::HandleREPLException(std::exception_ptr p, YSLib::Logger& trace)
 {
 	try
 	{
-		Context::DefaultHandleException(std::move(p));
+		std::rethrow_exception(std::move(p));
 	}
 	catch(std::exception& e)
 	{
