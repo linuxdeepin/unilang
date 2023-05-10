@@ -188,6 +188,18 @@ RewriteBy(Context& ctx, _func f)
 	ctx.Rewrite(Unilang::ToReducer(ctx.get_allocator(), std::move(f)));
 }
 
+template<typename _func>
+void
+SetupExceptionHandler(Context& ctx, _func f)
+{
+	ctx.SaveExceptionHandler();
+	ctx.HandleException = ystdex::bind1([&, f](std::exception_ptr p,
+		const Context::ReducerSequence::const_iterator& i){
+		ctx.TailAction = nullptr;
+		f(std::move(p), i);
+	}, ctx.GetCurrent().cbegin());
+}
+
 } // unnamed namespace;
 
 
@@ -225,26 +237,6 @@ Interpreter::Exit()
 	return ReductionStatus::Neutral;
 }
 
-void
-Interpreter::HandleREPLException(std::exception_ptr p, YSLib::Logger& trace)
-{
-	try
-	{
-		std::rethrow_exception(std::move(p));
-	}
-	catch(std::exception& e)
-	{
-		const auto gd(ystdex::make_guard([&]() noexcept{
-			Backtrace.clear();
-		}));
-
-		TraceException(e, trace);
-		trace.TraceFormat(YSLib::Notice, "Location: %s.", Main.CurrentSource
-			? Main.CurrentSource->c_str() : "<unknown>");
-		TraceBacktrace(Backtrace, trace);
-	}
-}
-
 YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(Context& ctx, string filename)
 {
@@ -258,16 +250,28 @@ Interpreter::OpenUnique(Context& ctx, string filename)
 void
 Interpreter::PrepareExecution(Context& ctx)
 {
-	ctx.SaveExceptionHandler();
-	ctx.HandleException = ystdex::bind1([&](std::exception_ptr p,
+	SetupExceptionHandler(ctx, [&](std::exception_ptr p,
 		const Context::ReducerSequence::const_iterator& i){
-		ctx.TailAction = nullptr;
 		ctx.Shift(Backtrace, i);
 
 		static YSLib::Logger trace;
 
-		HandleREPLException(std::move(p), trace);
-	}, ctx.GetCurrent().cbegin());
+		try
+		{
+			std::rethrow_exception(std::move(p));
+		}
+		catch(std::exception& e)
+		{
+			const auto gd(ystdex::make_guard([&]() noexcept{
+				Backtrace.clear();
+			}));
+
+			TraceException(e, trace);
+			trace.TraceFormat(YSLib::Notice, "Location: %s.",
+				Main.CurrentSource ? Main.CurrentSource->c_str() : "<unknown>");
+			TraceBacktrace(Backtrace, trace);
+		}
+	});
 	if(Echo)
 		RelaySwitched(ctx, [&]{
 			Print(Term);

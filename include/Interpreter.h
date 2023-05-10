@@ -45,9 +45,6 @@ public:
 	ReductionStatus
 	Exit();
 
-	void
-	HandleREPLException(std::exception_ptr, YSLib::Logger&);
-
 	static YSLib::unique_ptr<std::istream>
 	OpenUnique(Context&, string);
 
