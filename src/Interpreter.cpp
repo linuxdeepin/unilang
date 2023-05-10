@@ -214,11 +214,6 @@ ReductionStatus
 Interpreter::ExecuteString(string_view unit, Context& ctx)
 {
 	PrepareExecution(ctx);
-	if(Echo)
-		RelaySwitched(ctx, [&]{
-			Print(Term);
-			return ReductionStatus::Neutral;
-		});
 	Term = Read(unit);
 	return ExecuteOnce(ctx);
 }
@@ -273,6 +268,11 @@ Interpreter::PrepareExecution(Context& ctx)
 
 		HandleREPLException(std::move(p), trace);
 	}, ctx.GetCurrent().cbegin());
+	if(Echo)
+		RelaySwitched(ctx, [&]{
+			Print(Term);
+			return ReductionStatus::Neutral;
+		});
 }
 
 void
