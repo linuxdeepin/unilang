@@ -589,14 +589,19 @@ $provide/let! (registered-requirement? register-requirement!
 	$defl/e! &find-requirement-filename mods (&req)
 		get-requirement-filename
 			(($remote-eval% force std.promises) prom_pathspecs) req;
-	$defl/e%! require mods (&req)
+	$defl/e%! require mods (&req .&opt)
 		$if (registered-requirement? req) (get-cell% (forward! req))
 			($let*% ((filename find-requirement-filename req)
 				(env register-requirement! req) (&res get-cell% (forward! req)))
 				$sequence
+					($unless (null? opt)
+						($set! env module-parameters $let (((&e .&eopt) opt))
+							$if (null? eopt) (check-environemnt e)
+								(raise-invalid-syntax-error
+									"Syntax error in require.")))
 					(assign%! res (eval% (list ($remote-eval% load std.io)
 						(move! filename)) (move! env)))
-					res);
+					res)
 );
 	)Unilang");
 }
@@ -1128,7 +1133,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.329"
+#define APP_VER "0.12.331"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
