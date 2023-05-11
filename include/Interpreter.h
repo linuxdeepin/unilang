@@ -45,6 +45,11 @@ public:
 	ReductionStatus
 	Exit();
 
+private:
+	void
+	HandleWithTrace(std::exception_ptr, Context&);
+
+public:
 	static YSLib::unique_ptr<std::istream>
 	OpenUnique(Context&, string);
 

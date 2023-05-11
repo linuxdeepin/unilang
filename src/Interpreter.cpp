@@ -237,6 +237,28 @@ Interpreter::Exit()
 	return ReductionStatus::Neutral;
 }
 
+void
+Interpreter::HandleWithTrace(std::exception_ptr p, Context& ctx)
+{
+	assert(p);
+	try
+	{
+		std::rethrow_exception(std::move(p));
+	}
+	catch(std::exception& e)
+	{
+		const auto gd(ystdex::make_guard([&]() noexcept{
+			Backtrace.clear();
+		}));
+		static YSLib::Logger trace;
+
+		TraceException(e, trace);
+		trace.TraceFormat(YSLib::Notice, "Location: %s.",
+			Main.CurrentSource ? Main.CurrentSource->c_str() : "<unknown>");
+		TraceBacktrace(Backtrace, trace);
+	}
+}
+
 YSLib::unique_ptr<std::istream>
 Interpreter::OpenUnique(Context& ctx, string filename)
 {
@@ -253,24 +275,7 @@ Interpreter::PrepareExecution(Context& ctx)
 	SetupExceptionHandler(ctx, [&](std::exception_ptr p,
 		const Context::ReducerSequence::const_iterator& i){
 		ctx.Shift(Backtrace, i);
-
-		static YSLib::Logger trace;
-
-		try
-		{
-			std::rethrow_exception(std::move(p));
-		}
-		catch(std::exception& e)
-		{
-			const auto gd(ystdex::make_guard([&]() noexcept{
-				Backtrace.clear();
-			}));
-
-			TraceException(e, trace);
-			trace.TraceFormat(YSLib::Notice, "Location: %s.",
-				Main.CurrentSource ? Main.CurrentSource->c_str() : "<unknown>");
-			TraceBacktrace(Backtrace, trace);
-		}
+		HandleWithTrace(std::move(p), ctx);
 	});
 	if(Echo)
 		RelaySwitched(ctx, [&]{
