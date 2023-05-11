@@ -26,7 +26,6 @@ public:
 	GlobalState Global{};
 	Context Main{Global};
 	TermNode Term{Global.Allocator};
-	Context::ReducerSequence Backtrace{Global.Allocator};
 
 	Interpreter();
 	Interpreter(const Interpreter&) = delete;
