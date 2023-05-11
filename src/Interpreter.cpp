@@ -125,7 +125,7 @@ MismatchedTypesToString(const bad_any_cast& e)
 }
 
 void
-TraceException(std::exception& e, YSLib::Logger& trace)
+TraceException(const std::exception& e, YSLib::Logger& trace)
 {
 	using namespace YSLib;
 
