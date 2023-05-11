@@ -248,17 +248,16 @@ Interpreter::HandleWithTrace(std::exception_ptr p, Context& ctx,
 	}
 	catch(std::exception& e)
 	{
-		ctx.Shift(Backtrace, i);
-
+		auto& cur(ctx.GetCurrentRef());
 		const auto gd(ystdex::make_guard([&]() noexcept{
-			Backtrace.clear();
+			cur.UnwindUntil(i);
 		}));
 		static YSLib::Logger trace;
 
 		TraceException(e, trace);
 		trace.TraceFormat(YSLib::Notice, "Location: %s.",
 			Main.CurrentSource ? Main.CurrentSource->c_str() : "<unknown>");
-		TraceBacktrace(Backtrace, trace);
+		TraceBacktrace(cur.cbegin(), i, trace);
 	}
 }
 
