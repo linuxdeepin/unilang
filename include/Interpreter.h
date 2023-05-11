@@ -47,7 +47,8 @@ public:
 
 private:
 	void
-	HandleWithTrace(std::exception_ptr, Context&);
+	HandleWithTrace(std::exception_ptr, Context&,
+		Context::ReducerSequence::const_iterator);
 
 public:
 	static YSLib::unique_ptr<std::istream>

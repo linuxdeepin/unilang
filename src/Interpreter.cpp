@@ -238,7 +238,8 @@ Interpreter::Exit()
 }
 
 void
-Interpreter::HandleWithTrace(std::exception_ptr p, Context& ctx)
+Interpreter::HandleWithTrace(std::exception_ptr p, Context& ctx,
+	Context::ReducerSequence::const_iterator i)
 {
 	assert(p);
 	try
@@ -247,6 +248,8 @@ Interpreter::HandleWithTrace(std::exception_ptr p, Context& ctx)
 	}
 	catch(std::exception& e)
 	{
+		ctx.Shift(Backtrace, i);
+
 		const auto gd(ystdex::make_guard([&]() noexcept{
 			Backtrace.clear();
 		}));
@@ -274,8 +277,7 @@ Interpreter::PrepareExecution(Context& ctx)
 {
 	SetupExceptionHandler(ctx, [&](std::exception_ptr p,
 		const Context::ReducerSequence::const_iterator& i){
-		ctx.Shift(Backtrace, i);
-		HandleWithTrace(std::move(p), ctx);
+		HandleWithTrace(std::move(p), ctx, i);
 	});
 	if(Echo)
 		RelaySwitched(ctx, [&]{
