@@ -925,7 +925,7 @@ $def! ($let $let% $let* $let*% $letrec $letrec% $bindings/p->environment)
 			($if (eval (list $lvalue-identifier? x) d) id expire) (eval% x d);
 		$defl%! mk-let ($ctor &bindings &body)
 			list* () (list* $ctor (list-extract-first bindings)
-				(list (forward! body))) (list-extract-rest% bindings),
+				(list% (forward! body))) (list-extract-rest% bindings),
 		$defl%! mk-let* ($let $let* &bindings &body)
 			$if (null? bindings) (list* $let () (forward! body))
 				(list $let (list (first% ($lqual* bindings)))
@@ -1133,7 +1133,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.332"
+#define APP_VER "0.12.340"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
