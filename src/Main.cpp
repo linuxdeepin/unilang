@@ -906,7 +906,7 @@ $defl! filter (&accept? &ls) apply append
 	(map1 ($lambda (&x) $if (apply accept? (list x)) (list x) ()) ls);
 $defl%! list-extract-first (&l) map1 first (forward! l);
 $defl%! list-extract-rest% (&l) map1 rest% (forward! l);
-$def! ($let $let% $let* $let*% $letrec $letrec% $bindings/p->environment)
+$def! ($let $let% $let/e $let* $let*% $letrec $letrec% $bindings/p->environment)
 	($lambda (&ce)
 (
 	$def! mods () ($lambda/e ce ()
@@ -926,6 +926,9 @@ $def! ($let $let% $let* $let*% $letrec $letrec% $bindings/p->environment)
 		$defl%! mk-let ($ctor &bindings &body)
 			list* () (list* $ctor (list-extract-first bindings)
 				(list% (forward! body))) (list-extract-rest% bindings),
+		$defl%! mk-let/e ($ctor &p &bindings &body)
+			list* () (list* $ctor p (list-extract-first bindings)
+				(list% (forward! body))) (list-extract-rest% bindings),
 		$defl%! mk-let* ($let $let* &bindings &body)
 			$if (null? bindings) (list* $let () (forward! body))
 				(list $let (list (first% ($lqual* bindings)))
@@ -943,6 +946,8 @@ $def! ($let $let% $let* $let*% $letrec $letrec% $bindings/p->environment)
 		eval% (mk-let* $let $let* ($lqual* bindings) (forward! body)) d,
 	$defv/e%! $let*% mods (&bindings .&body) d
 		eval% (mk-let* $let% $let*% ($lqual* bindings) (forward! body)) d,
+	$defv/e%! $let/e mods (&p &bindings .&body) d
+		eval% (mk-let/e $lambda/e p ($lqual bindings) (forward! body)) d,
 	$defv/e%! $letrec mods (&bindings .&body) d
 		eval% (mk-letrec $let ($lqual bindings) (forward! body)) d,
 	$defv/e%! $letrec% mods (&bindings .&body) d
@@ -953,7 +958,7 @@ $def! ($let $let% $let* $let*% $letrec $letrec% $bindings/p->environment)
 		(eval% (list $set! res (list-extract-first bref)
 			(list* () list (list-extract-rest% bref))) d)
 		res;
-	map1 move! (list% $let $let% $let* $let*% $letrec $letrec%
+	map1 move! (list% $let $let% $let/e $let* $let*% $letrec $letrec%
 		$bindings/p->environment)
 )) (() get-current-environment);
 $defw! derive-current-environment (.&envs) d
@@ -1133,7 +1138,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.340"
+#define APP_VER "0.12.341"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
