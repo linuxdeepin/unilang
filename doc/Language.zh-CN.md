@@ -3240,6 +3240,10 @@
 
 　　注意此时 `<parent>` 中的环境中创建的环境对象在表达式求值后仍会因引入的合并子生存期结束而被销毁。
 
+`$let/e% <parent> <bindings> <body>`
+
+　　同 `$let/e` ，但使用 `$lambda/e%` 而非 `$lambda/e` 创建抽象，保留引用值。
+
 `$let* <bindings> <body>`
 
 　　顺序局部绑定求值。
