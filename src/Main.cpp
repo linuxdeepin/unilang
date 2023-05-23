@@ -1000,6 +1000,9 @@ $defv! $provide! (&symbols .&body) d
 $defv! $import! (&e .&symbols) d
 	eval% (list $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (eval e d);
+$defv! $import&! (&e .&symbols) d
+	eval% (list $set! d (append (map1 ensigil symbols)
+		((unwrap list%) .)) (symbols->imports symbols)) (eval e d);
 	)Unilang");
 	LoadStandardDerived(intp);
 	// NOTE: Supplementary functions.
@@ -1158,7 +1161,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.343"
+#define APP_VER "0.12.344"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
