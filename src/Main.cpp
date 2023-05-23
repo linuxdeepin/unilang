@@ -983,6 +983,9 @@ $def! ($let $let% $let/e $let/e% $let* $let*% $letrec $letrec%
 $defw! derive-current-environment (.&envs) d
 	apply make-environment (append envs (list d)) d;
 $defl! make-standard-environment () () lock-current-environment;
+$def! derive-environment ()
+	($vau () d $lambda/e (() lock-current-environment) (.&envs)
+		() ($lambda/e (append envs (list d)) () () lock-current-environment));
 $defv! $as-environment (.&body) d
 	eval (list $let () (list $sequence (forward! body)
 		(list () lock-current-environment))) d;
@@ -1161,7 +1164,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.345"
+#define APP_VER "0.12.346"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
