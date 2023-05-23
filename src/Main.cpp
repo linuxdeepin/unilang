@@ -559,7 +559,7 @@ LoadModule_std_modules(Interpreter& intp)
 $provide/let! (registered-requirement? register-requirement!
 	unregister-requirement! find-requirement-filename require)
 ((mods $as-environment (
-	$import! std.strings &string-empty? &++ &string->symbol;
+	$import&! std.strings string-empty? ++ string->symbol;
 
 	$defl! requirement-error ()
 		raise-error "Empty requirement name found.",
@@ -1161,7 +1161,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.344"
+#define APP_VER "0.12.345"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
