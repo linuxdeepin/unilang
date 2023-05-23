@@ -180,6 +180,23 @@ struct LeafPred
 
 
 void
+LoadStandardDerived(Interpreter& intp)
+{
+	// XXX: The derivations depends on 'std.strings' and core functions
+	//	derivations available later in the bodies. Otherwise, they are not
+	//	relied on. To avoid cyclic dependencies, the derivation of 'ensigl'
+	//	further avoids specific core functions.
+	intp.Main.ShareCurrentSource("<root:standard-derived>");
+	intp.Perform(R"Unilang(
+$def! ensigil $lambda (&s)
+	$let/e (derive-current-environment std.strings) ()
+		$let ((&str symbol->string s))
+			$if (string-empty? str) s
+				(string->symbol (++ "&" (symbol->string (desigil s))));
+	)Unilang");
+}
+
+void
 LoadModule_std_continuations(Interpreter& intp)
 {
 	using namespace Forms;
@@ -984,6 +1001,7 @@ $defv! $import! (&e .&symbols) d
 	eval% (list $set! d (append symbols ((unwrap list%) .))
 		(symbols->imports symbols)) (eval e d);
 	)Unilang");
+	LoadStandardDerived(intp);
 	// NOTE: Supplementary functions.
 	RegisterStrict(m, "random.choice", [&](TermNode& term){
 		RetainN(term);
@@ -1140,7 +1158,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.342"
+#define APP_VER "0.12.343"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
