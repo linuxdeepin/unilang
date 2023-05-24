@@ -1506,6 +1506,7 @@ Inexact(ResolvedArg<>&& x)
 	return NumUnaryOp<ReplaceInexact>(x);
 }
 
+} // inline namespace Math;
 
 void
 ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
@@ -1571,8 +1572,6 @@ FPToString(long double x)
 		return std::signbit(x) ? "-nan.0" : "+nan.0";
 	}
 }
-
-} // inline namespace Math;
 
 } // namespace Unilang;
 

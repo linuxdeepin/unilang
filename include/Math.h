@@ -129,6 +129,7 @@ TruncateRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 Inexact(ResolvedArg<>&&);
 
+} // inline namespace Math;
 
 void
 ReadDecimal(ValueObject&, string_view, string_view::const_iterator);
@@ -141,7 +142,6 @@ FPToString(double x);
 string
 FPToString(long double x);
 
-} // inline namespace Math;
 
 template<>
 struct TypedValueAccessor<NumberLeaf>
