@@ -15,7 +15,7 @@
 #include "TermAccess.h" // for ClearCombiningTags, TryAccessLeafAtom,
 //	TokenValue, AssertCombiningTerm, IsCombiningTerm, TryAccessTerm;
 #include <cassert> // for assert;
-#include "Math.h" // for ReadDecimal;
+#include "Math.h" // for ReadNumber;
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
@@ -101,98 +101,35 @@ DefaultEvaluateLeaf(TermNode& term, string_view id)
 {
 	assert(bool(id.data()));
 	assert(!id.empty() && "Invalid leaf token found.");
-	switch(id.front())
-	{
-	case '#':
-		id.remove_prefix(1);
-		if(!id.empty())
-			switch(id.front())
-			{
-			case 't':
-				if(id.size() == 1 || id.substr(1) == "rue")
-				{
-					term.Value = true;
-					return ReductionStatus::Clean;
-				}
-				break;
-			case 'f':
-				if(id.size() == 1 || id.substr(1) == "alse")
-				{
-					term.Value = false;
-					return ReductionStatus::Clean;
-				}
-				break;
-			case 'i':
-				if(id.substr(1) == "nert")
-				{
-					term.Value = ValueToken::Unspecified;
-					return ReductionStatus::Clean;
-				}
-				else if(id.substr(1) == "gnore")
-				{
-					term.Value = ValueToken::Ignore;
-					return ReductionStatus::Clean;
-				}
-				break;
-			}
-	default:
-		break;
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-		ReadDecimal(term.Value, id, id.begin());
-		return ReductionStatus::Clean;
-	case '-':
-		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
-			break;
-		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
+	if(id.front() != '#')
+		return ReadNumber(term.Value, id);
+	if(id.size() > 1)
+		switch(id[1])
 		{
-			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+		case 't':
+			if(id.size() == 2 || id.substr(2) == "rue")
 			{
-				term.Value = -std::numeric_limits<double>::infinity();
+				term.Value = true;
 				return ReductionStatus::Clean;
 			}
-			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
-			{
-				term.Value = -std::numeric_limits<double>::quiet_NaN();
-				return ReductionStatus::Clean;
-			}
-		}
-		if(id.size() > 1)
-			ReadDecimal(term.Value, id, std::next(id.begin()));
-		else
-			term.Value = 0;
-		return ReductionStatus::Clean;
-	case '+':
-		if(YB_UNLIKELY(id.find_first_not_of("+-") == string_view::npos))
 			break;
-		if(id.size() == 6 && id[4] == '.' && id[5] == '0')
-		{
-			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+		case 'f':
+			if(id.size() == 2 || id.substr(2) == "alse")
 			{
-				term.Value = std::numeric_limits<double>::infinity();
+				term.Value = false;
 				return ReductionStatus::Clean;
 			}
-			if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			break;
+		case 'i':
+			if(id.substr(2) == "nert")
+				return ReduceReturnUnspecified(term);
+			else if(id.substr(2) == "gnore")
 			{
-				term.Value = std::numeric_limits<double>::quiet_NaN();
+				term.Value = ValueToken::Ignore;
 				return ReductionStatus::Clean;
 			}
+			break;
 		}
-		YB_ATTR_fallthrough;
-	case '0':
-		if(id.size() > 1)
-			ReadDecimal(term.Value, id, std::next(id.begin()));
-		else
-			term.Value = 0;
-		return ReductionStatus::Clean;
-	}
 	return ReductionStatus::Retrying;
 }
 
