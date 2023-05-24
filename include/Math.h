@@ -5,7 +5,7 @@
 
 #include "TermAccess.h" // for ValueObject, TypedValueAccessor,
 //	Unilang::ResolveTerm, ThrowTypeErrorForInvalidType;
-#include <ystdex/operators.hpp> // for ystdex::ordered_field_operators;
+#include "Context.h" // for ReductionStatus;
 
 namespace Unilang
 {
@@ -133,6 +133,10 @@ Inexact(ResolvedArg<>&&);
 
 void
 ReadDecimal(ValueObject&, string_view, string_view::const_iterator);
+
+ReductionStatus
+ReadNumber(ValueObject&, string_view);
+
 
 // XXX: These functions are known problematic with non-default locales.
 string

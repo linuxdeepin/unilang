@@ -1265,6 +1265,13 @@ ReadDecimalExact(ValueObject& vo, string_view id,
 	}) == ReductionStatus::Partial;
 }
 
+YB_ATTR_nodiscard YB_PURE inline bool
+IsAllSignLexeme(string_view id) noexcept
+{
+	assert(id.data());
+	return id.find_first_not_of("+-") == string_view::npos;
+}
+
 } // unnamed namespace;
 
 bool
@@ -1532,6 +1539,112 @@ ReadDecimal(ValueObject& vo, string_view id, string_view::const_iterator first)
 				id.end());
 	}
 }
+
+ReductionStatus
+ReadNumber(ValueObject& vo, string_view id)
+{
+	assert(id.data());
+	assert(!id.empty() && "Invalid leaf token found.");
+	switch(id.front())
+	{
+	case '1':
+	case '2':
+	case '3':
+	case '4':
+	case '5':
+	case '6':
+	case '7':
+	case '8':
+	case '9':
+		ReadDecimal(vo, id, id.begin());
+		return ReductionStatus::Clean;
+	case '-':
+		if(YB_UNLIKELY(IsAllSignLexeme(id)))
+			break;
+		if(id.size() == 6 && id[4] == '.')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				switch(id[5])
+				{
+				case '0':
+					vo = -std::numeric_limits<double>::infinity();
+					return ReductionStatus::Clean;
+				case 'f':
+					vo = -std::numeric_limits<float>::infinity();
+					return ReductionStatus::Clean;
+				case 't':
+					vo = -std::numeric_limits<long double>::infinity();
+					return ReductionStatus::Clean;
+				}
+			}
+			else if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				switch(id[5])
+				{
+				case '0':
+					vo = -std::numeric_limits<double>::quiet_NaN();
+					return ReductionStatus::Clean;
+				case 'f':
+					vo = -std::numeric_limits<float>::quiet_NaN();
+					return ReductionStatus::Clean;
+				case 't':
+					vo = -std::numeric_limits<long double>::quiet_NaN();
+					return ReductionStatus::Clean;
+				}
+			}
+		}
+		goto case_zero;
+	case '+':
+		if(YB_UNLIKELY(IsAllSignLexeme(id)))
+			break;
+		if(id.size() == 6 && id[4] == '.')
+		{
+			if(id[1] == 'i' && id[2] == 'n' && id[3] == 'f')
+			{
+				switch(id[5])
+				{
+				case '0':
+					vo = std::numeric_limits<double>::infinity();
+					return ReductionStatus::Clean;
+				case 'f':
+					vo = std::numeric_limits<float>::infinity();
+					return ReductionStatus::Clean;
+				case 't':
+					vo = std::numeric_limits<long double>::infinity();
+					return ReductionStatus::Clean;
+				}
+			}
+			else if(id[1] == 'n' && id[2] == 'a' && id[3] == 'n')
+			{
+				switch(id[5])
+				{
+				case '0':
+					vo = std::numeric_limits<double>::quiet_NaN();
+					return ReductionStatus::Clean;
+				case 'f':
+					vo = std::numeric_limits<float>::quiet_NaN();
+					return ReductionStatus::Clean;
+				case 't':
+					vo = std::numeric_limits<long double>::quiet_NaN();
+					return ReductionStatus::Clean;
+				}
+			}
+		}
+		YB_ATTR_fallthrough;
+	case '0':
+case_zero:
+		if(id.size() > 1)
+			ReadDecimal(vo, id, std::next(id.begin()));
+		else
+			vo = 0;
+		return ReductionStatus::Clean;
+	default:
+		break;
+	}
+	return ReductionStatus::Retrying;
+}
+
 
 string
 FPToString(float x)
