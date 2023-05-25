@@ -1686,5 +1686,39 @@ FPToString(long double x, string::allocator_type)
 	}
 }
 
+string
+NumberValueToString(const ValueObject& vo, string::allocator_type a)
+{
+	using YSLib::sfmt;
+
+	if(const auto p = vo.AccessPtr<int>())
+		return sfmt<string>("%d", *p);
+	if(const auto p = vo.AccessPtr<unsigned>())
+		return sfmt<string>("%u", *p);
+	if(const auto p = vo.AccessPtr<long long>())
+		return sfmt<string>("%lld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long long>())
+		return sfmt<string>("%llu", *p);
+	if(const auto p = vo.AccessPtr<double>())
+		return FPToString(*p);
+	if(const auto p = vo.AccessPtr<long>())
+		return sfmt<string>("%ld", *p);
+	if(const auto p = vo.AccessPtr<unsigned long>())
+		return sfmt<string>("%lu", *p);
+	if(const auto p = vo.AccessPtr<short>())
+		return sfmt<string>("%hd", *p);
+	if(const auto p = vo.AccessPtr<unsigned short>())
+		return sfmt<string>("%hu", *p);
+	if(const auto p = vo.AccessPtr<signed char>())
+		return sfmt<string>("%d", int(*p));
+	if(const auto p = vo.AccessPtr<unsigned char>())
+		return sfmt<string>("%u", unsigned(*p));
+	if(const auto p = vo.AccessPtr<float>())
+		return FPToString(*p, a);
+	if(const auto p = vo.AccessPtr<long double>())
+		return FPToString(*p, a);
+	return string(a);
+}
+
 } // namespace Unilang;
 

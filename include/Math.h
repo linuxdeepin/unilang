@@ -146,6 +146,9 @@ FPToString(double, string::allocator_type = {});
 YB_ATTR_nodiscard YB_PURE string
 FPToString(long double, string::allocator_type = {});
 
+YB_ATTR_nodiscard YB_PURE string
+NumberValueToString(const ValueObject&, string::allocator_type = {});
+
 
 template<>
 struct TypedValueAccessor<NumberLeaf>
