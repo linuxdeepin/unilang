@@ -139,12 +139,12 @@ ReadNumber(ValueObject&, string_view);
 
 
 // XXX: These functions are known problematic with non-default locales.
-string
-FPToString(float x);
-string
-FPToString(double x);
-string
-FPToString(long double x);
+YB_ATTR_nodiscard YB_PURE string
+FPToString(float, string::allocator_type = {});
+YB_ATTR_nodiscard YB_PURE string
+FPToString(double, string::allocator_type = {});
+YB_ATTR_nodiscard YB_PURE string
+FPToString(long double, string::allocator_type = {});
 
 
 template<>

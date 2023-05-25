@@ -1647,7 +1647,7 @@ case_zero:
 
 
 string
-FPToString(float x)
+FPToString(float x, string::allocator_type)
 {
 	switch(std::fpclassify(x))
 	{
@@ -1660,7 +1660,7 @@ FPToString(float x)
 	}
 }
 string
-FPToString(double x)
+FPToString(double x, string::allocator_type)
 {
 	switch(std::fpclassify(x))
 	{
@@ -1673,7 +1673,7 @@ FPToString(double x)
 	}
 }
 string
-FPToString(long double x)
+FPToString(long double x, string::allocator_type)
 {
 	switch(std::fpclassify(x))
 	{
