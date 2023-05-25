@@ -1654,9 +1654,9 @@ FPToString(float x)
 	default:
 		return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.6g", double(x));
 	case FP_INFINITE:
-		return std::signbit(x) ? "-inf.0" : "+inf.0";
+		return std::signbit(x) ? "-inf.f" : "+inf.f";
 	case FP_NAN:
-		return std::signbit(x) ? "-nan.0" : "+nan.0";
+		return std::signbit(x) ? "-nan.f" : "+nan.f";
 	}
 }
 string
@@ -1680,9 +1680,9 @@ FPToString(long double x)
 	default:
 		return sfmt<string>(FloatIsInteger(x) ? "%.1Lf" : "%.18Lg", x);
 	case FP_INFINITE:
-		return std::signbit(x) ? "-inf.0" : "+inf.0";
+		return std::signbit(x) ? "-inf.t" : "+inf.t";
 	case FP_NAN:
-		return std::signbit(x) ? "-nan.0" : "+nan.0";
+		return std::signbit(x) ? "-nan.t" : "+nan.t";
 	}
 }
 
