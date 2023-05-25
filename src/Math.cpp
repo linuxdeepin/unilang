@@ -1513,6 +1513,22 @@ Inexact(ResolvedArg<>&& x)
 	return NumUnaryOp<ReplaceInexact>(x);
 }
 
+
+ValueObject
+StringToNumber(const string& s) noexcept
+{
+	ValueObject vo;
+
+	try
+	{
+		if(ReadNumber(vo, s) == ReductionStatus::Clean)
+			return vo;
+	}
+	catch(...)
+	{}
+	return false;
+}
+
 } // inline namespace Math;
 
 void

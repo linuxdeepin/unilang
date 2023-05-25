@@ -129,6 +129,10 @@ TruncateRemainder(ResolvedArg<>&&, ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 Inexact(ResolvedArg<>&&);
 
+
+YB_ATTR_nodiscard YB_PURE ValueObject
+StringToNumber(const string&) noexcept;
+
 } // inline namespace Math;
 
 void
