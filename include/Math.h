@@ -133,6 +133,9 @@ Inexact(ResolvedArg<>&&);
 YB_ATTR_nodiscard YB_PURE ValueObject
 StringToNumber(const string&) noexcept;
 
+YB_ATTR_nodiscard YB_PURE string
+NumberToString(const ResolvedArg<>&);
+
 } // inline namespace Math;
 
 void

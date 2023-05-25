@@ -1529,6 +1529,16 @@ StringToNumber(const string& s) noexcept
 	return false;
 }
 
+string
+NumberToString(const ResolvedArg<>& x)
+{
+	auto& nd(x.first.get());
+	auto res(NumberValueToString(nd.Value, nd.get_allocator()));
+
+	assert(!res.empty() && "Invalid number conversion result found.");
+	return res;
+}
+
 } // inline namespace Math;
 
 void
