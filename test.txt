@@ -549,6 +549,35 @@ $let ()
 	$check exact-integer? 32;
 	$check-not exact-integer? ""
 );
+subinfo "arithmetic operations";
+$let ()
+(
+	$import&! std.math >=? zero? positive? negative? odd? even? max min abs;
+
+	$check =? 2 2;
+	$check <? 1 2;
+	$check <? 1 +inf.0;
+	$check-not <? 2 1;
+	$check-not <? 1 -nan.0;
+	$check-not >? 2 2;
+	$check >=? 2 2;
+	$check-not <=? 2 1;
+	$check zero? 0;
+	$check-not zero? 1;
+	$check positive? 1;
+	$check-not positive? 0;
+	$check-not negative? 1;
+	$check-not negative? 0;
+	$check odd? 1;
+	$check odd? (- 0 1);
+	$check even? 0;
+	$check-not even? (- 0 1);
+	$expect 2 max 1 2;
+	$expect -inf.0 min -inf.0 2;
+	$expect 0 abs 0;
+	subinfo "odd? for negative odd flonums";
+	$check odd? -1.0
+);
 
 info "std.strings tests";
 $let ()
