@@ -578,6 +578,49 @@ $let ()
 	subinfo "odd? for negative odd flonums";
 	$check odd? -1.0
 );
+() $let ()
+(
+	$import&! std.math floor/ floor-quotient floor-remainder truncate/
+		truncate-quotient truncate-remainder - /;
+
+	subinfo "integer divisions (R7RS cases)";
+	$expect (list 2 1) floor/ 5 2;
+	$expect 2 floor-quotient 5 2;
+	$expect 1 floor-remainder 5 2;
+	$expect (list -3 1) floor/ -5 2;
+	$expect -3 floor-quotient -5 2;
+	$expect 1 floor-remainder -5 2;
+	$expect (list -3 -1) floor/ 5 -2;
+	$expect -3 floor-quotient 5 -2;
+	$expect -1 floor-remainder 5 -2;
+	$expect (list 2 -1) floor/ -5 -2;
+	$expect 2 floor-quotient -5 -2;
+	$expect -1 floor-remainder -5 -2;
+	$expect (list 2 1) truncate/ 5 2;
+	$expect 2 truncate-quotient 5 2;
+	$expect 1 truncate-remainder 5 2;
+	$expect (list -2 -1) truncate/ -5 2;
+	$expect -2 truncate-quotient -5 2;
+	$expect -1 truncate-remainder -5 2;
+	$expect (list -2 1) truncate/ 5 -2;
+	$expect -2 truncate-quotient 5 -2;
+	$expect 1 truncate-remainder 5 -2;
+	$expect (list 2 -1) truncate/ -5 -2;
+	$expect 2 truncate-quotient -5 -2;
+	$expect -1 truncate-remainder -5 -2;
+	$expect (list 2.0 -1.0) truncate/ -5.0 -2;
+	$expect 2.0 truncate-quotient -5.0 -2;
+	$expect -1.0 truncate-remainder -5.0 -2;
+	subinfo "32-bit integer underflow";
+	$def! imin - -2147483647 1;
+	$def! neg-imin - 0 imin;
+	$expect imin / imin 1;
+	$expect neg-imin / imin -1;
+	$expect imin floor-quotient imin 1;
+	$expect neg-imin floor-quotient imin -1;
+	$expect imin truncate-quotient imin 1;
+	$expect neg-imin truncate-quotient imin -1
+);
 
 info "std.strings tests";
 $let ()
