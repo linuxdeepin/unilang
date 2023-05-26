@@ -531,6 +531,25 @@ $let ()
 	)
 );
 
+info "std.math tests";
+subinfo "number predicates";
+$let ()
+(
+	$import&! std.math number? real? rational? integer? exact-integer?;
+
+	$check number? 123;
+	$check-not number? "123";
+	$check real? 3;
+	$check real? (- 0 2);
+	$check real? +inf.0;
+	$check real? +nan.0;
+	$check-not rational? -inf.0;
+	$check rational? (- 0 3);
+	$check integer? 3;
+	$check exact-integer? 32;
+	$check-not exact-integer? ""
+);
+
 info "std.strings tests";
 $let ()
 (
