@@ -1,7 +1,7 @@
 ﻿"SPDX-FileCopyrightText: 2021-2022 UnionTech Software Technology Co.,Ltd.",
 "Unilang test script.";
 
-$import! std.math &=? &<? &<=? &>? &>=? &stoi &itos;
+$import&! std.math =? <? <=? >? >=? stoi itos;
 
 $def! $rem $vau . #ignore "";
 $def! &make-nocopy __make-nocopy;
@@ -469,8 +469,9 @@ $let ((n 42) (e () get-current-environment) (test-lets $lambda (&test)
 info "std.promises";
 $let ()
 (
-	$import! std.promises
+	$import&! std.promises
 		promise? memoize $lazy $lazy% $lazy/d $lazy/d% force;
+
 	subinfo "value category preservation";
 	$let ((p1 $lazy% idv unit))
 	(
@@ -643,7 +644,8 @@ $let ()
 info "std.strings tests";
 $let ()
 (
-	$import! std.strings string-empty? ++;
+	$import&! std.strings string-empty? ++;
+
 	$check string-empty? "";
 	$check-not string-empty? "x";
 	$expect "abc123" ++ "a" "bc" "123"
