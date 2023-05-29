@@ -5,7 +5,7 @@ The contents in this document are available in:
 * **English**
 * [简体中文](README.zh-CN.md)
 
-© 2020-2022 UnionTech Software Technology Co., Ltd.
+© 2020-2023 UnionTech Software Technology Co., Ltd.
 
 This is the repository of the programming language named **Unilang**, including documents and an interpreter as the reference implementation.
 
@@ -369,17 +369,21 @@ For automatic update of binary dependencies and patching the source in the scrip
 * `7za`
 * `sed` (avoiding Win32 ones which may corrupt the line ending)
 
+The following dependency can accelerate the installation in `./install-sbuild.sh`:
+
+* `parallel`
+
 For example, by package managers:
 
 ```sh
 # MSYS2
 # XXX: Do not use mingw-w64-x86_64-sed to ensure the EOL characters as-is.
-pacman -S --needed mingw-w64-x86_64-wget p7zip sed
+pacman -S --needed mingw-w64-x86_64-wget p7zip sed parallel
 # Arch Linux
-sudo pacman -S --needed wget p7zip sed
+sudo pacman -S --needed wget p7zip sed parallel
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
-sudo apt install wget p7zip-full sed
+sudo apt install wget p7zip-full sed parallel
 ```
 
 Then run the script `./install-sbuild.sh` to install the external tools and libraries. The script updates precompiled binary dependencies, then builds and deploys the tools and the libraries. The binaray dependencies are deployed directly into the source tree. Currently the prebuilt dependencies only supports the `x86_64-linux-gnu` target. Any output files built by this project do not need to deploy these binary dependencies.
@@ -394,6 +398,7 @@ The following environment variables controls the behavior of the script:
 * `SHBuild_Rebuild_S1`: If not empty, specify the rebuild of [stage 1 SHBuild (zh-CN)](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA) (it might be slow).
 	* **CAUTION** Update of `3rdparty/YSLib/Tools/Scripts` requires the rebuild to prevent imcompatibility.
 	* This is not necessary in other cases. It is recommened to not rebuild to improve performance during the installation.
+	* If GNU parallel is detected, the build is automatically in parallel by using `parallel` command.
 
 Using of the installed binary tools and dynamic libraries requires the configurations of paths, as:
 

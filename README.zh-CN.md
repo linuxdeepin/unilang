@@ -5,7 +5,7 @@
 * [English](README.md)
 * **简体中文**
 
-© 2020-2022 统信软件技术有限公司
+© 2020-2023 统信软件技术有限公司
 
 　　本仓库维护名为 **Unilang** 新编程语言，包括相关的文档和参考实现——一个解释器。
 
@@ -365,17 +365,21 @@ sudo apt install libfreetype6-dev
 * `7za`
 * `sed`（避免可能破坏行尾的 Win32 版本）
 
+　　使用以下可选依赖可加速脚本 `./install-sbuild.sh` 中的安装：
+
+* `parallel`
+
 　　例如，使用包管理器：
 
 ```sh
 # MSYS2
 # XXX: Do not use mingw-w64-x86_64-sed to ensure the EOL characters as-is.
-pacman -S --needed mingw-w64-x86_64-wget p7zip sed
+pacman -S --needed mingw-w64-x86_64-wget p7zip sed parallel
 # Arch Linux
-sudo pacman -S --needed wget p7zip sed
+sudo pacman -S --needed wget p7zip sed parallel
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
-sudo apt install wget p7zip-full sed
+sudo apt install wget p7zip-full sed parallel
 ```
 
 　　运行脚本 `./install-sbuild.sh` 安装外部工具和库。脚本更新预编译的二进制依赖之后，构建和部署工具和库。其中，二进制依赖直接被部署到源码树中。当前二进制依赖只支持 `x86_64-linux-gnu` 。本项目构建输出的文件分发时不需要依赖其中的二进制文件。
@@ -390,6 +394,7 @@ sudo apt install wget p7zip-full sed
 * `SHBuild_Rebuild_S1` ：非空值指定重新构建 [stage 1 SHBuild](https://frankhb.github.io/YSLib-book/Tools/SHBuild.zh-CN.html#%E5%A4%9A%E9%98%B6%E6%AE%B5%E6%9E%84%E5%BB%BA)（较慢）。
 	* **注意** 构建环境更新 `3rdparty/YSLib/Tools/Scripts` 的文件后，需指定此环境变量为非空值，以避免可能和更新后的文件不兼容的问题。
 	* 其它情形不必要。建议忽略，以提升安装时的构建性能。
+	* 若 GNU parallel 可用，自动使用 `parallel` 命令启动并行构建。
 
 　　使用安装的二进制工具和动态库需配置路径，如下：
 
