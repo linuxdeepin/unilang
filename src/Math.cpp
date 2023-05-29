@@ -1673,12 +1673,12 @@ case_zero:
 
 
 string
-FPToString(float x, string::allocator_type)
+FPToString(float x, string::allocator_type a)
 {
 	switch(std::fpclassify(x))
 	{
 	default:
-		return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.6g", double(x));
+		return sfmt<string>(a, FloatIsInteger(x) ? "%.1f" : "%.6g", double(x));
 	case FP_INFINITE:
 		return std::signbit(x) ? "-inf.f" : "+inf.f";
 	case FP_NAN:
@@ -1686,12 +1686,12 @@ FPToString(float x, string::allocator_type)
 	}
 }
 string
-FPToString(double x, string::allocator_type)
+FPToString(double x, string::allocator_type a)
 {
 	switch(std::fpclassify(x))
 	{
 	default:
-		return sfmt<string>(FloatIsInteger(x) ? "%.1f" : "%.14g", x);
+		return sfmt<string>(a, FloatIsInteger(x) ? "%.1f" : "%.14g", x);
 	case FP_INFINITE:
 		return std::signbit(x) ? "-inf.0" : "+inf.0";
 	case FP_NAN:
@@ -1699,12 +1699,12 @@ FPToString(double x, string::allocator_type)
 	}
 }
 string
-FPToString(long double x, string::allocator_type)
+FPToString(long double x, string::allocator_type a)
 {
 	switch(std::fpclassify(x))
 	{
 	default:
-		return sfmt<string>(FloatIsInteger(x) ? "%.1Lf" : "%.18Lg", x);
+		return sfmt<string>(a, FloatIsInteger(x) ? "%.1Lf" : "%.18Lg", x);
 	case FP_INFINITE:
 		return std::signbit(x) ? "-inf.t" : "+inf.t";
 	case FP_NAN:
@@ -1718,27 +1718,27 @@ NumberValueToString(const ValueObject& vo, string::allocator_type a)
 	using YSLib::sfmt;
 
 	if(const auto p = vo.AccessPtr<int>())
-		return sfmt<string>("%d", *p);
+		return sfmt<string>(a, "%d", *p);
 	if(const auto p = vo.AccessPtr<unsigned>())
-		return sfmt<string>("%u", *p);
+		return sfmt<string>(a, "%u", *p);
 	if(const auto p = vo.AccessPtr<long long>())
-		return sfmt<string>("%lld", *p);
+		return sfmt<string>(a, "%lld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long long>())
-		return sfmt<string>("%llu", *p);
+		return sfmt<string>(a, "%llu", *p);
 	if(const auto p = vo.AccessPtr<double>())
 		return FPToString(*p);
 	if(const auto p = vo.AccessPtr<long>())
-		return sfmt<string>("%ld", *p);
+		return sfmt<string>(a, "%ld", *p);
 	if(const auto p = vo.AccessPtr<unsigned long>())
-		return sfmt<string>("%lu", *p);
+		return sfmt<string>(a, "%lu", *p);
 	if(const auto p = vo.AccessPtr<short>())
-		return sfmt<string>("%hd", *p);
+		return sfmt<string>(a, "%hd", *p);
 	if(const auto p = vo.AccessPtr<unsigned short>())
-		return sfmt<string>("%hu", *p);
+		return sfmt<string>(a, "%hu", *p);
 	if(const auto p = vo.AccessPtr<signed char>())
-		return sfmt<string>("%d", int(*p));
+		return sfmt<string>(a, "%d", int(*p));
 	if(const auto p = vo.AccessPtr<unsigned char>())
-		return sfmt<string>("%u", unsigned(*p));
+		return sfmt<string>(a, "%u", unsigned(*p));
 	if(const auto p = vo.AccessPtr<float>())
 		return FPToString(*p, a);
 	if(const auto p = vo.AccessPtr<long double>())
