@@ -185,8 +185,6 @@ public:
 	void
 	clear() noexcept
 	{
-		auto i(before_begin());
-
 		while(!empty())
 			pop_front();
 	}
