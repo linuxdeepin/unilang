@@ -9,10 +9,17 @@
 #	pragma GCC diagnostic ignored "-Wsign-conversion"
 #	pragma GCC diagnostic ignored "-Wunused-parameter"
 #endif
+#if __clang__
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wshorten-64-to-32"
+#endif
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Support/TargetSelect.h" // for llvm::InitializeNativeTarget,
-//	 llvm::InitializeNativeTargetAsmPrinter,
+//	llvm::InitializeNativeTargetAsmPrinter,
 //	llvm::InitializeNativeTargetAsmParser;
+#if __clang__
+#	pragma clang diagnostic pop
+#endif
 #if __GNUG__
 #	pragma GCC diagnostic pop
 #endif
