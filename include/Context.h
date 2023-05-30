@@ -20,6 +20,7 @@
 #include <ystdex/meta.hpp> // for ystdex::enable_if_constructible_t,
 //	ystdex::exclude_self_t, ystdex::enable_if_t, ystdex::is_same_param,
 //	ystdex::enable_if_inconvertible_t;
+#include <ystdex/placement.hpp> // for ystdex::copy_assign;
 #include <ystdex/memory.hpp> // for ystdex::destroy_delete;
 #include <ystdex/swap.hpp> // for ystdex::copy_and_swap;
 #include <ystdex/container.hpp> // for ystdex::try_emplace,
@@ -176,9 +177,19 @@ public:
 	SingleWeakParent(SingleWeakParent&&) = default;
 
 	SingleWeakParent&
-	operator=(const SingleWeakParent&) = default;
+	operator=(const SingleWeakParent& parent)
+	{
+		ystdex::copy_assign(alloc, parent.alloc);
+		env_ref = parent.env_ref;
+		return *this;
+	}
 	SingleWeakParent&
-	operator=(SingleWeakParent&&) = default;
+	operator=(SingleWeakParent&& parent)
+	{
+		ystdex::copy_assign(alloc, parent.alloc);
+		env_ref = std::move(parent.env_ref);
+		return *this;
+	}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const SingleWeakParent& x, const SingleWeakParent& y) noexcept
