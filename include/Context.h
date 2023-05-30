@@ -282,9 +282,19 @@ public:
 	SingleStrongParent(SingleStrongParent&&) = default;
 
 	SingleStrongParent&
-	operator=(const SingleStrongParent&) = default;
+	operator=(const SingleStrongParent& parent)
+	{
+		ystdex::copy_assign(alloc, parent.alloc);
+		env_ptr = parent.env_ptr;
+		return *this;
+	}
 	SingleStrongParent&
-	operator=(SingleStrongParent&&) = default;
+	operator=(SingleStrongParent&& parent)
+	{
+		ystdex::copy_assign(alloc, parent.alloc);
+		env_ptr = std::move(parent.env_ptr);
+		return *this;
+	}
 
 	YB_ATTR_nodiscard YB_PURE friend bool
 	operator==(const SingleStrongParent& x, const SingleStrongParent& y) noexcept
