@@ -123,6 +123,66 @@ We also encourage users to add new sets of features from the current language an
 
 This approach, like less contention with locks of smaller granularity, also improves the potential parallelism on the process of the language evolation. We have identified the high cost of communication in the development process in some major program languages and try to prevent some foreseeable problems in this way. Hopefully this would be more efficient than alternative methods.
 
+## Discussions in more depth
+
+**NOTE** The contents in this section can be regarded as the rationale of above 2 sections.
+
+**NOTE** This section may involve less well-known theoretical viewpoints. Although the background knownledge is verifiable, relevant references are intentionally not provided here; this is reserved as an exercise for readers interested in language design.
+
+The designer of this language believes that:
+
+* For the completeness of the design, documentation and the usable implementation are at least as important.
+	* Although a language like Rust, which only has the reference manual but not the specification, is also usable for most users, it hinders the fundamental process of the evolution and secondary development of the language.
+* Computation model is necessary for the design of a general-purpose language.
+	* Although the model does not necessarily need to be formal, it needs to be precise.
+* Many real-world applications require *asymmetry* for decision-making. So are programming languages.
+	* A significant example is *encapsulation*.
+		* Encapsulation and the encapsulated entities are not equivalent: there is no external way to determine the implementation details of the encapsulation.
+			* This is an important universal source of program optimizability besides semantic equivalence translation.
+		* Lack of encapsulation can lead to more general and profound issues.
+			* An important example is the implementation of natural numbers.
+				* Specific implementation, such as *Church numerals* encoded in λ-calculus are encapsulated, as instances are all λ terms. There are no numbers in λ-calculus which are not λ terms.
+				* For another instance, natural numbers encoded in set theories (whether in Zemelo or von Neuman ways) are not encapsulated, because instances are sets.
+			* In mathematical philosophy, this is manifested as the Benacerraf's identification problem: *What Numbers Could Not Be*.
+				* This has shaken the ontological basis of fundamental of mathematics from the perspective of structuralism.
+			* To solve the problem in a manner of model theory is to use a different model with encapsulation.
+				* In this way, at least when solving problems that do not rely on the model (but regard it as pure implementation details), we can avoid the problem of the *intrinsic arbitrary* nature of specific implementations.
+				* However, other shortcomings of the model (such as lacking of ideal computational complexity) require evolutionary iterations of the model itself.
+					* These should be implementation details not relating to specific issues.
+			* Another alternative is to introduce different metalanguage to provide isolation among encapsulated entites and others.
+				* Introduction of multiple languages often leads to unnecessary complexity, making it difficult to rule out the possibility of over design in the language.
+		* As a general language, the computation model should at least cover the above examples.
+			* To introduce different languages or maintaining one language is a question that should be addressed here.
+	* Another important point is to avoid the central narrative of static properties - including but not limited to static languages and static type systems.
+		* Static properties are relative to non-static (dynamic) ones.
+			* A sufficiently general language should make this relativity possible - let users to specify what is static and what is more static.
+		* Static design is able to use simplified conclusions on the surface, but it misses more general problem-solving opportunities, making the introduction of truly universal solutions more complex.
+			* For example, introducing static translation stages (such as preprocessing) and computations containing static phases (such as constant evaluation) can make it difficult to reuse programs across phases of translation.
+				* Why do function macros and regular functions need to be constructed differently?
+				* Why sometimes the same logic between preprocessor metaprogramming, template metaprogramming and `constexpr` in C++ has to be written differently and cannot be merged?
+			* For example, the inapplicability in a static type system design is difficult to overcome by user programs.
+			* It is also reflected in the implementation of the language: using SSA (static single assignment) IR (intermediate representation) can be simpler on the surface than using CPS (continuation transitive style) or ANF (A-normal form) IR, but cannot represent the non-local and static *control*.
+				* In an IR which lacks a global control context, inter-procedural optimization has to be distinguished from intra-procedural optimization and discussed separately.
+				* Although optimization algorithms with the global control may be more difficult than intra-procedural optimization, merging or reusing intra-procedural and inter-procedural optimization is often even more difficult or even impossible to achieve.
+				* This is also the reason why some static language optimization implementation frameworks such as LLVM are not so effective for the optimizing implementation of general dynamic programming languages.
+			* The problems reflected in implementations do not only affect implementations, however.
+				* For example, the concept of *control flow* refers to the extracted information from the view of static layout of source code, strictly less universal than eh control without preset static properties.
+			* The popularity of static IR endorses the static properties while preventing more general solutions.
+	* Without considering background issues, some decisions are relatively trivial - because the opposing decisions are obvious.
+		* The design of the language should allow undefined behavior.
+			* Assuming that undefined behavior is not allowed, a whole new language design is required if the benefits of undefined behavior are to be achieved.
+			* Conversely, to locally avoid the defects of undefined behavior, just add well-defined behaviors.
+			* Users can pick different configurations of well defined behaviors to be supplemented as needed.
+		* The design of the language should not imply a global static type system.
+			* Assuming that there is a global static type system, if one need to avoid the infection of inapplicable type rules, type erasure is needed first.
+			* Conversely, to locally get the benefits of type static typing, just introduce the local type system.
+			* Users can pick different designs of the supplemented static type system as required.
+		* The design of the language should not rely on GC.
+			* Assuming that GC is introduced by default, a whole new language design not depending on GC is required to avoid the general problems of GC.
+			* On the contrary, to locally get the benefits of GC, simply introduce local GC.
+			* Users can pick different implementations of supplemented GCs as needed.
+		* There will be some more specific examples in [Characteristics](#Characteristics).
+
 ## How to do GUI?
 
 GUI is a major problem domain with non-trivial programming works in reality. It is important and complicated enough. In particular, it has quite a lot different subdomains of problems, and many solutions already choose the mixture of different DSLs. Thus, it is a great field to experiment our methodology.
