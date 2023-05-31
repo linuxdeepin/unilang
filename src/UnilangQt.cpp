@@ -1,13 +1,14 @@
 ﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
-#include "UnilangQt.h" // for ReduceReturnUnspecified, YSLib::shared_ptr,
-//	YSLib::unique_ptr, YSLib::make_unique, function, vector,
-//	Unilang::make_shared, Environment, std::bind, std::ref;
+#include "UnilangQt.h" // for YSLib::shared_ptr, YSLib::unique_ptr,
+//	YSLib::make_unique, function, vector, Environment, Unilang::make_shared,
+//	ReduceReturnUnspecified, std::bind, std::ref;
 #include "TermAccess.h" // for Unilang::ResolveTerm, Unilang::CheckRegular,
 //	Access, Unilang::ResolveRegular;
-#include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
 #include <cassert> // for assert;
+#include YFM_YSLib_Core_YCoreUtilities // for YSLib::CheckUpperBound;
 #include <iostream> // for std::cerr, std::endl, std::clog;
+#include "Exception.h" // for ThrowInsufficientTermsError, ArityMismatch;
 #ifdef __GNUC__
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
@@ -112,7 +113,7 @@ Sink::ConnectDynamicSlot(const QObject& sender, const char* signal,
 
 			if(slot_id < 0)
 			{
-				slot_id = SlotList.size();
+				slot_id = YSLib::CheckUpperBound<int>(SlotList.size());
 				SlotList.push_back(create(the_slot.data()));
 				SlotIndices[the_slot] = slot_id;
 			}
