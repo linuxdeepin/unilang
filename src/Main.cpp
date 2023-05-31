@@ -753,6 +753,8 @@ $def! idv wrap $quote;
 	intp.Perform(R"Unilang(
 $def! $lvalue-identifier? $vau (&s) d
 	eval (list bound-lvalue? (list $resolve-identifier s)) d;
+$def! $expire-rvalue $vau% (&s) d
+	$if (eval (list $lvalue-identifier? s) d) id expire;
 $def! forward! wrap
 	($vau% (%x) #ignore $if ($lvalue-identifier? x) x (move! x));
 $def! $remote-eval $vau (&o &e) d eval o (eval e d);
@@ -1168,7 +1170,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.365"
+#define APP_VER "0.12.366"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
