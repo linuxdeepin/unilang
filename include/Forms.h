@@ -451,6 +451,9 @@ ReductionStatus
 Eval(TermNode&, Context&);
 
 ReductionStatus
+EvalAt(TermNode&, Context&);
+
+ReductionStatus
 EvalRef(TermNode&, Context&);
 
 
