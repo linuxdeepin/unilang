@@ -406,7 +406,7 @@ ThrowFormalParameterTypeError(const TermNode& term, bool has_ref,
 	ThrowTypeErrorForInvalidType(type_id<TokenValue>(), term, has_ref, n_skip);
 }
 
-void
+YB_NORETURN void
 ThrowNestedParameterTreeMismatch()
 {
 	std::throw_with_nested(ParameterMismatch("Failed initializing the operand"
@@ -860,11 +860,11 @@ struct NoParameterCheck final
 		}
 	}
 
-	static void
-	CheckSuffix(const TermNode& t, bool)
+	YB_NORETURN static void
+	CheckSuffix(const TermNode&, bool)
 	{
-		yunused(t);
 		assert(false && "Invalid parameter tree found.");
+		YB_ASSUME(false);
 	}
 
 	template<typename _func>
