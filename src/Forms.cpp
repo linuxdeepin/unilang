@@ -111,16 +111,20 @@ ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 
 
 ReductionStatus
-EvalImpl(TermNode& term, Context& ctx, bool no_lift)
+EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
 {
 	RetainN(term, 2);
 
 	const auto i(std::next(term.begin()));
 	auto p_env(ResolveEnvironment(*std::next(i)).first);
+	auto& tm(*i);
 
-	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
-		LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
-	}, *i);
+	if(at)
+		LiftOther(term, tm);
+	else
+		ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
+			LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
+		}, tm);
 	ClearCombiningTags(term);
 	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
 		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
@@ -978,6 +982,12 @@ ReductionStatus
 Eval(TermNode& term, Context& ctx)
 {
 	return EvalImpl(term, ctx, {});
+}
+
+ReductionStatus
+EvalAt(TermNode& term, Context& ctx)
+{
+	return EvalImpl(term, ctx, true, true);
 }
 
 ReductionStatus

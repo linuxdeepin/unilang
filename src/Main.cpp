@@ -701,6 +701,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 			? s.substr(1) : std::move(s));
 	});
 	RegisterStrict(m, "eval", Eval);
+	RegisterStrict(m, "eval@", EvalAt);
 	RegisterStrict(m, "eval%", EvalRef);
 	RegisterUnary<Strict, const string>(m, "bound?",
 		[](const string& id, Context& c){
@@ -1167,7 +1168,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.354"
+#define APP_VER "0.12.364"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
