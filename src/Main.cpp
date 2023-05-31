@@ -869,7 +869,7 @@ $defl! equal? (&x &y)
 	$if ($if (pair? x) (pair? y) #f)
 		($if (equal? (first& x) (first& y)) (equal? (rest& x) (rest& y)) #f)
 		(eqv? x y);
-$defl%! check-environment (&e) $sequence (eval% #inert e) (forward! e);
+$defl%! check-environment (&e) $sequence (eval@ #inert e) (forward! e);
 $defv%! $cond &clauses d
 	$if (null? clauses) #inert
 		(apply-list ($lambda% ((&test .&body) .&clauses)
@@ -1168,7 +1168,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.364"
+#define APP_VER "0.12.365"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
