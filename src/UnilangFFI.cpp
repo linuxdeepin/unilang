@@ -5,7 +5,8 @@
 #	pragma GCC diagnostic ignored "-Wfloat-equal"
 #endif
 #include "UnilangFFI.h" // for Context, Unilang::allocate_shared, IsTyped;
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::unique_ptr_from;
+#include YFM_YSLib_Core_YCoreUtilities // for YSLib::unique_ptr_from,
+//	YSLib::CheckUpperBound;
 #if __GNUC__
 #	pragma GCC diagnostic pop
 #endif
@@ -108,6 +109,7 @@ DynamicLibrary::LookupFunctionPtr(const string& fn) const
 		yunused(::dlerror());
 
 		const auto p_fn(::dlsym(h, fn.c_str()));
+
 		if(const auto p_err = dlerror())
 			throw UnilangException(ystdex::sfmt("Failed looking up symbol '%s'"
 				" in the library '%s': %s.", fn.c_str(), Name.c_str(), p_err));
@@ -311,8 +313,8 @@ public:
 			param_types.push_back(&t);
 			buffer_size = align_offset(buffer_size, t.alignment) + t.size;
 		}
-		switch(::ffi_prep_cif(&cif, get_abi(abi), n_params,
-			&ret_codec.libffi_type, param_types.data()))
+		switch(::ffi_prep_cif(&cif, get_abi(abi), YSLib::CheckUpperBound<
+			unsigned>(n_params), &ret_codec.libffi_type, param_types.data()))
 		{
 		case FFI_OK:
 			break;
@@ -545,7 +547,6 @@ InitializeFFI(Interpreter& intp)
 			*++i));
 		return ReductionStatus::Clean;
 	});
-
 }
 
 } // namespace Unilang;
