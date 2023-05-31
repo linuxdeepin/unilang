@@ -849,8 +849,7 @@ $defl%! first@ (&pr) ($lambda% ((@x .))
 	$if (unique? ($resolve-identifier pr)) (expire x) x)
 	($if (unique? ($resolve-identifier pr)) pr
 		(check-pair-reference (forward! pr)));
-$defl%! first% (&pr)
-	($lambda (fwd (@x .)) fwd x) ($if ($lvalue-identifier? pr) id expire) pr;
+$defl%! first% (&pr) ($lambda (fwd (@x .)) fwd x) ($expire-rvalue pr) pr;
 $defl%! first& (&pr)
 	($lambda% ((@x .)) $if (uncollapsed? x)
 		($if (modifiable? pr) (idv x) (as-const (idv x)))
@@ -944,8 +943,7 @@ $def! ($let $let% $let/e $let/e% $let* $let*% $letrec $letrec%
 				(idv (forward! (check-list-reference l)));
 		$defv%! $lqual (&ls) d
 			($if (eval (list $lvalue-identifier? ls) d) id rulist) (eval% ls d),
-		$defv%! $lqual* (&x) d
-			($if (eval (list $lvalue-identifier? x) d) id expire) (eval% x d);
+		$defv%! $lqual* (&x) d (eval (list $expire-rvalue x) d) (eval% x d);
 		$defl%! mk-let ($ctor &bindings &body)
 			list* () (list* $ctor (list-extract-first bindings)
 				(list% (forward! body))) (list-extract-rest% bindings),
@@ -1170,7 +1168,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.366"
+#define APP_VER "0.12.367"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
