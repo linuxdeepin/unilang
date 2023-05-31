@@ -18,6 +18,10 @@
 #		pragma GCC diagnostic ignored "-Wsuggest-attribute=pure"
 #	endif
 #endif
+#if __clang__
+#	pragma clang diagnostic push
+#	pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#endif
 #include <QtGlobal> // for QT_VERSION, QT_VERSION_CHECK;
 #include <QHash> // for QHash;
 #include <QByteArray> // for QByteArray;
@@ -41,6 +45,9 @@
 #include <QMainWindow> // for QMainWindow;
 #include <QQmlApplicationEngine> // for QQmlApplicationEngine;
 #include <QQuickView> // for QQuickView;
+#if __clang__
+#	pragma clang diagnostic pop
+#endif
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
 #endif
