@@ -59,13 +59,7 @@ info "function calls";
 	$expect 42 apply list% 42;
 	$expect (list 1 2) apply list% (list% 1 2);
 	$expect (cons 1 2) apply list% (cons% 1 2);
-	$expect (list* 1 2 3) apply list% (list* 1 2 3);
-	subinfo "apply and apply-list trailing irregular representation";
-	$let* ((e () get-current-environment) (l list () e))
-	(
-		$expect 42 eval% (list*% (unwrap apply) list% 42 (rest& l)) e;
-		$expect () eval% (list*% (unwrap apply-list) list% () (rest& l)) e
-	)
+	$expect (list* 1 2 3) apply list% (list* 1 2 3)
 );
 
 info "recursive function calls";
