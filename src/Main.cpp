@@ -953,19 +953,20 @@ $def! ($let $let% $let/e $let/e% $let* $let*% $letrec $letrec%
 		$defv%! $lqual (&ls) d
 			($if (eval (list $lvalue-identifier? ls) d) id rulist) (eval% ls d),
 		$defv%! $lqual* (&x) d (eval (list $expire-rvalue x) d) (eval% x d);
-		$defl%! mk-let ($ctor &bindings &body)
-			list* () (list* $ctor (list-extract-first bindings)
+		$defl%! mk-let (&$ctor &bindings &body)
+			list*% () (list*% $ctor (list-extract-first bindings)
 				(list% (forward! body))) (list-extract-rest% bindings),
-		$defl%! mk-let/e ($ctor &p &bindings &body)
-			list* () (list* $ctor p (list-extract-first bindings)
+		$defl%! mk-let/e (&$ctor &p &bindings &body)
+			list*% () (list*% $ctor p (list-extract-first bindings)
 				(list% (forward! body))) (list-extract-rest% bindings),
-		$defl%! mk-let* ($let $let* &bindings &body)
-			$if (null? bindings) (list* $let () (forward! body))
-				(list $let (list (first% ($lqual* bindings)))
-				(list* $let* (rest% ($lqual* bindings)) (forward! body))),
-		$defl%! mk-letrec ($let &bindings &body)
-			list $let () $sequence (list $def! (list-extract-first bindings)
-				(list* () list (list-extract-rest% bindings))) (forward! body);
+		$defl%! mk-let* (&$l &$l* &bindings &body)
+			$if (null? bindings) (list*% $l () (forward! body))
+				(list% $l (list% (first% ($lqual* bindings)))
+				(list*% $l* (rest% ($lqual* bindings)) (forward! body))),
+		$defl%! mk-letrec (&$l &bindings &body)
+			list% $l () $sequence (list% $def! (list-extract-first bindings)
+				(list*% () list% (list-extract-rest% bindings)))
+				(forward! body);
 		() lock-current-environment
 	));
 	$defv/e%! $let mods (&bindings .&body) d
@@ -1177,7 +1178,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.369"
+#define APP_VER "0.12.370"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
