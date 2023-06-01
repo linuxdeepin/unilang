@@ -794,7 +794,7 @@ $def! collapse $lambda% (%x)
 		($if (modifiable? x) (idv x) (as-const (idv x)))) ($move-resolved! x);
 $def! assign%! $lambda (&x &y) assign@! (forward! x) (forward! (collapse y));
 $def! assign! $lambda (&x &y) assign@! (forward! x) (idv (collapse y));
-$def! (list* list*%) ($lambda (&ce)
+$def! (list* list*% apply apply-list) ($lambda (&ce)
 (
 	$def! mods () ($lambda/e ce ()
 	(
@@ -803,30 +803,27 @@ $def! (list* list*%) ($lambda (&ce)
 			$if (list? x) (f x) (eval% (cons% $if (forward! x)) d),
 		$def! mk-list* $lambda% (cons fwd (&head .&tail))
 			$if (null? tail) (idv (fwd head))
-				(cons (idv (fwd head)) (mk-list* cons fwd (forward! tail)));
+				(cons (idv (fwd head)) (mk-list* cons fwd (forward! tail))),
+		$def! apply-args $lambda% (c fwd (@appv @arg .&opt))
+			eval@ (cons% ($if c ($if (list? arg) () $if) ())
+				(cons% (unwrap (idv (fwd appv))) (idv (fwd arg))))
+				($if (null? opt) (() make-environment)
+					(($lambda ((&e .&eopt))
+						$if (null? eopt) e
+							(raise-invalid-syntax-error
+								"Syntax error in applying form.")) opt));
 		() lock-current-environment
 	));
 	$def! list* $lambda/e mods &args
 		mk-list* cons ($expire-rvalue args) (fwdl l@ args),
 	$def! list*% $lambda/e% mods &args
-		mk-list* cons% ($expire-rvalue args) (fwdl l@ args);
-	list% (move! list*) (move! list*%)
+		mk-list* cons% ($expire-rvalue args) (fwdl l@ args),
+	$def! apply $lambda/e% mods &args
+		apply-args #f ($expire-rvalue args) (fwdl forward! args),
+	$def! apply-list $lambda/e% mods &args
+		apply-args #t ($expire-rvalue args) (fwdl forward! args);
+	list% (move! list*) (move! list*%) (move! apply) (move! apply-list)
 )) (() get-current-environment);
-$def! apply $lambda% (&appv &arg .&opt)
-	eval% (cons% () (cons% (unwrap (forward! appv)) (forward! arg)))
-		($if (null? opt) (() make-environment)
-			(($lambda ((&e .&eopt))
-				$if (null? eopt) e
-					(raise-invalid-syntax-error
-						"Syntax error in applying form.")) opt));
-$def! apply-list $lambda% (&appv &arg .&opt)
-	eval% (cons% ($if (list? arg) () $if) (cons% (unwrap (forward! appv))
-		(forward! arg)))
-		($if (null? opt) (() make-environment)
-			(($lambda ((&e .&eopt))
-				$if (null? eopt) e
-					(raise-invalid-syntax-error
-						"Syntax error in applying form.")) opt));
 $def! $defv! $vau (&$f &formals &ef .&body) d
 	eval (list*% $def! $f $vau (forward! formals) ef (forward! body)) d;
 $defv! $defv%! (&$f &formals &ef .&body) d
@@ -1180,7 +1177,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.368"
+#define APP_VER "0.12.369"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
