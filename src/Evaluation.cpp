@@ -7,11 +7,11 @@
 //	YSLib::AllocatorHolder, YSLib::IValueHolder::Creation,
 //	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple, Continuation,
 //	TermToStringWithReferenceMark, IsSingleElementList, AccessFirstSubterm,
-//	GetLValueTagsOf, ThrowTypeErrorForInvalidType, TermToNamePtr, IsList,
-//	in_place_type, stack, IsPair, yunseq, ResolveTerm, IsAtom, ResolveSuffix,
-//	IsTyped, ThrowInsufficientTermsError, ThrowListTypeErrorForAtom,
-//	YSLib::lock_guard, YSLib::mutex, unordered_map, type_index, std::allocator,
-//	pair, AssertValueTags;
+//	IsBranch, GetLValueTagsOf, ThrowTypeErrorForInvalidType, TermToNamePtr,
+//	IsList, in_place_type, stack, IsPair, yunseq, ResolveTerm, IsAtom,
+//	ResolveSuffix, IsTyped, ThrowInsufficientTermsError,
+//	ThrowListTypeErrorForAtom, YSLib::lock_guard, YSLib::mutex, unordered_map,
+//	type_index, std::allocator, pair, AssertValueTags;
 #include "TermAccess.h" // for ClearCombiningTags, TryAccessLeafAtom,
 //	TokenValue, AssertCombiningTerm, IsCombiningTerm, TryAccessTerm;
 #include <cassert> // for assert;
@@ -1475,6 +1475,8 @@ ReduceCombinedBranch(TermNode& term, Context& ctx)
 	if(p_ref_fm)
 	{
 		ClearCombiningTags(term);
+		if(YB_UNLIKELY(IsBranch(fm)))
+			AssertSubobjectReferenceTerm(fm);
 		if(const auto p_handler
 			= TryAccessLeafAtom<const ContextHandler>(p_ref_fm->get()))
 		{
