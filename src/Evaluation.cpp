@@ -46,13 +46,6 @@ namespace Unilang
 namespace
 {
 
-template<class _tAlloc, typename... _tParams>
-YB_ATTR_nodiscard inline shared_ptr<TermNode>
-AllocateSharedTerm(const _tAlloc& a, _tParams&&... args)
-{
-	return Unilang::allocate_shared<TermNode>(a, yforward(args)...);
-}
-
 YB_ATTR_nodiscard inline TermNode
 MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
 {
@@ -1444,10 +1437,9 @@ ReduceForCombinerRef(TermNode& term, const TermReference& ref,
 	const auto& r_env(ref.GetEnvironmentReference());
 	const auto a(term.get_allocator());
 
-	return ReduceAsSubobjectReference(term, Unilang::allocate_shared<TermNode>(
-		a, Unilang::AsTermNode(a, ContextHandler(std::allocator_arg, a,
-		FormContextHandler(RefContextHandler(h, r_env), n)))), r_env,
-		ref.GetTags());
+	return ReduceAsSubobjectReference(term, Unilang::AllocateSharedTermValue(a,
+		ContextHandler(std::allocator_arg, a, FormContextHandler(
+		RefContextHandler(h, r_env), n))), r_env, ref.GetTags());
 }
 
 } // inline namespace Internals;

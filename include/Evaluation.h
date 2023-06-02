@@ -3,8 +3,9 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "TermNode.h" // for TermNode, string_view, shared_ptr, in_place_type,
-//	type_id, ValueObject, YSLib::Logger;
+#include "TermNode.h" // for TermNode, Unilang::AsTermNode, string_view,
+//	shared_ptr, in_place_type, Unilang::allocate_shared, type_id, ValueObject,
+//	YSLib::Logger;
 #include "Parser.h" // for SourceLocation;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
@@ -549,6 +550,22 @@ GetModuleFor(Context& ctx, _fCallable&& f, _tParams&&... args)
 	ystdex::invoke(yforward(f), yforward(args)...);
 	ctx.GetRecordRef().Freeze();
 	return gd.func.Switch();
+}
+
+
+template<class _tAlloc, typename... _tParams>
+YB_ATTR_nodiscard inline shared_ptr<TermNode>
+AllocateSharedTerm(const _tAlloc& a, _tParams&&... args)
+{
+	return Unilang::allocate_shared<TermNode>(a, yforward(args)...);
+}
+
+template<class _tAlloc, typename... _tParams>
+YB_ATTR_nodiscard inline shared_ptr<TermNode>
+AllocateSharedTermValue(const _tAlloc& a, _tParams&&... args)
+{
+	return Unilang::AllocateSharedTerm(a,
+		Unilang::AsTermNode(a, yforward(args)...));
 }
 
 
