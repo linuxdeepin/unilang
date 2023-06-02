@@ -3,10 +3,12 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "TermNode.h" // for TermNode, Unilang::AsTermNode, string_view,
-//	shared_ptr, in_place_type, Unilang::allocate_shared, type_id, ValueObject,
+#include "TermNode.h" // for TermNode, Unilang::AsTermNode, Unilang::Deref,
+//	string_view, shared_ptr, in_place_type, Unilang::allocate_shared, IsSticky,
+//	IsLeaf, IsTyped, ystdex::ref_eq, AccessFirstSubterm, type_id, ValueObject,
 //	YSLib::Logger;
 #include "Parser.h" // for SourceLocation;
+#include "TermAccess.h" // for IsReferenceTerm, TryAccessLeaf, TermReference;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
 //	Unilang::EmplaceLeaf, EnvironmentSwitcher,
@@ -566,6 +568,33 @@ AllocateSharedTermValue(const _tAlloc& a, _tParams&&... args)
 {
 	return Unilang::AllocateSharedTerm(a,
 		Unilang::AsTermNode(a, yforward(args)...));
+}
+
+inline void
+AssertSubobjectReferenceFirstSubterm(const TermNode& tm, const TermNode& nd)
+	noexcept
+{
+	yunused(tm), yunused(nd);
+	YAssert(IsSticky(tm.Tags),
+		"Invalid 1st subterm of irregular representation of reference found.");
+	YAssert(IsLeaf(tm), "Invalid irregular representation of reference with"
+		" non-leaf 1st subterm found.");
+	YAssert(IsTyped<shared_ptr<TermNode>>(tm), "Invalid type of value object in"
+		" the 1st subterm for irregular representation found.");
+	YAssert(ystdex::ref_eq<>()(Unilang::Deref(tm.Value.GetObject<shared_ptr<
+		TermNode>>()), nd), "Invalid subobject reference found.");
+}
+
+inline void
+AssertSubobjectReferenceTerm(const TermNode& term) noexcept
+{
+	yunused(term);
+	YAssert(IsReferenceTerm(term), "Invalid value object type for irregular"
+		" representation of reference found.");
+	YAssert(term.size() == 1 || term.size() == 2, "Invalid number of subterms"
+		" in irregular representation of reference found.");
+	AssertSubobjectReferenceFirstSubterm(AccessFirstSubterm(term),
+		Unilang::Deref(TryAccessLeaf<const TermReference>(term)).get());
 }
 
 
