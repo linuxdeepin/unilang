@@ -8,10 +8,11 @@
 //	YSLib::AllocatedHolderOperations, YSLib::forward_as_tuple, Continuation,
 //	TermToStringWithReferenceMark, IsSingleElementList, AccessFirstSubterm,
 //	IsBranch, GetLValueTagsOf, ThrowTypeErrorForInvalidType, TermToNamePtr,
-//	IsList, in_place_type, stack, IsPair, yunseq, ResolveTerm, IsAtom,
-//	ResolveSuffix, IsTyped, ThrowInsufficientTermsError,
-//	ThrowListTypeErrorForAtom, YSLib::lock_guard, YSLib::mutex, unordered_map,
-//	type_index, std::allocator, pair, AssertValueTags;
+//	IsList, in_place_type, Unilang::TransferSubtermsAfter, stack, IsPair,
+//	yunseq, ResolveTerm, IsAtom, ResolveSuffix, IsTyped,
+//	ThrowInsufficientTermsError, ThrowListTypeErrorForAtom, YSLib::lock_guard,
+//	YSLib::mutex, unordered_map, type_index, std::allocator, pair,
+//	AssertValueTags;
 #include "TermAccess.h" // for ClearCombiningTags, TryAccessLeafAtom,
 //	TokenValue, AssertCombiningTerm, IsCombiningTerm, TryAccessTerm;
 #include <cassert> // for assert;
@@ -777,7 +778,7 @@ private:
 	{
 		TermNode::Container tcon(o.get_allocator());
 
-		tcon.splice(tcon.end(), o.GetContainerRef(), j, o.end());
+		Unilang::TransferSubtermsAfter(tcon, o, j, o.end());
 		return tcon;
 	}
 };
