@@ -823,6 +823,54 @@ SetContentWith(TermNode& dst, _tNode&& nd, _fCallable f)
 	dst.SetContent(std::move(con), std::move(vo));
 }
 
+YB_ATTR_nodiscard YB_STATELESS constexpr TermNode::Container&
+SpliceAccess(TermNode::Container& con)
+{
+	return con;
+}
+YB_ATTR_nodiscard YB_STATELESS constexpr TermNode::Container&
+SpliceAccess(TermNode::Container&& con)
+{
+	return con;
+}
+YB_ATTR_nodiscard YB_STATELESS inline TermNode::Container&
+SpliceAccess(TermNode& term)
+{
+	return term.GetContainerRef();
+}
+YB_ATTR_nodiscard YB_STATELESS inline TermNode::Container&
+SpliceAccess(TermNode&& term)
+{
+	return term.GetContainerRef();
+}
+
+template<class _tParam1, class _tParam2, typename... _tParams>
+inline void
+TransferSubterms(_tParam1&& x, TNCIter i, _tParam2&& y, _tParams&&... args)
+{
+	yconstexpr_if(sizeof...(args) == 0)
+		assert(!ystdex::ref_eq<>()(Unilang::SpliceAccess(x),
+			Unilang::SpliceAccess(y)) && "Invalid self move found.");
+	Unilang::SpliceAccess(x).splice(i, Unilang::SpliceAccess(y),
+		yforward(args)...);
+}
+
+template<class _tParam1, class _tParam2, typename... _tParams>
+inline void
+TransferSubtermsAfter(_tParam1&& x, _tParam2&& y, _tParams&&... args)
+{
+	Unilang::TransferSubterms(yforward(x), x.end(), yforward(y),
+		yforward(args)...);
+}
+
+template<class _tParam1, class _tParam2, typename... _tParams>
+inline void
+TransferSubtermsBefore(_tParam1&& x, _tParam2&& y, _tParams&&... args)
+{
+	Unilang::TransferSubterms(yforward(x), x.begin(), yforward(y),
+		yforward(args)...);
+}
+
 } // namespace Unilang;
 
 #endif
