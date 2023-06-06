@@ -121,7 +121,7 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 (
 	subinfo "expecting different results for 'first&' and 'first@'";
 	$check-not eq? (first& li) (first@ li);
-	subinfo "collapsing test";
+	subinfo "reference collapsing";
 	$let ((lic list% (as-const a) 2))
 	(
 		$check reference? (first@ li);
