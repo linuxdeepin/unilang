@@ -228,7 +228,7 @@ $let ()
 	$check eqv? (unwrap idv) $quote;
 	$check eqv? (unwrap (idv idv)) $quote;
 	$check eqv? (unwrap idv) (unwrap (idv idv));
-	$check eqv? (wrap (unwrap idv)) idv;
+	$check eqv? (wrap (unwrap idv)) idv
 );
 subinfo "unwrap propagation of nonmodifiable references of irregular"
 	" representation;" "fixed derivation since V0.12.77";
@@ -485,7 +485,7 @@ $let ()
 	$let ((a unit))
 	(
 		$def! p $lazy a;
-		$expect (force p) force p;
+		$expect (force p) force p
 	);
 	subinfo "lifting safety";
 	$let ()
@@ -521,7 +521,7 @@ $let ()
 			($def! pb box% p);
 		$expect 5 () get-count;
 		$expect 0 force (unbox pb);
-		$expect 10 () get-count;
+		$expect 10 () get-count
 	);
 	subinfo "resolved referencing shared state move;" " fixed since V0.8.57";
 	$let ()
