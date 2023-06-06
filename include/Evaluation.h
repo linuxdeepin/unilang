@@ -427,6 +427,12 @@ BindReferenceTags(const TermReference& ref) noexcept
 	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
 }
 
+inline void
+CopyTermTags(TermNode& term, const TermNode& tm) noexcept
+{
+	term.Tags = GetLValueTagsOf(tm.Tags);
+}
+
 
 ReductionStatus
 ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
@@ -435,6 +441,24 @@ ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
 ReductionStatus
 ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
 	size_t);
+
+
+struct BindInsert final
+{
+	TermNode::Container& tcon;
+
+	void
+	operator()(const TermNode& tm) const
+	{
+		CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
+	}
+	TermNode&
+	operator()(TermNode::Container&& c, ValueObject&& vo) const
+	{
+		tcon.emplace_back(std::move(c), std::move(vo));
+		return tcon.back();
+	}
+};
 
 } // inline namespace Internals;
 

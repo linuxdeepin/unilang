@@ -367,13 +367,6 @@ EvalSequence::operator()(Context& ctx) const
 }
 
 
-inline void
-CopyTermTags(TermNode& term, const TermNode& tm) noexcept
-{
-	term.Tags = GetLValueTagsOf(tm.Tags);
-}
-
-
 YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref,
 	size_t n_skip = 0)
@@ -492,23 +485,6 @@ struct BindAdd final
 	operator()(TermNode::Container&& c, ValueObject&& vo) const
 	{
 		return Environment::Bind(m, id, TermNode(std::move(c), std::move(vo)));
-	}
-};
-
-struct BindInsert final
-{
-	TermNode::Container& tcon;
-
-	void
-	operator()(const TermNode& tm) const
-	{
-		CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
-	}
-	TermNode&
-	operator()(TermNode::Container&& c, ValueObject&& vo) const
-	{
-		tcon.emplace_back(std::move(c), std::move(vo));
-		return tcon.back();
 	}
 };
 
