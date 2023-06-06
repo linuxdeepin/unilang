@@ -4,9 +4,10 @@
 #define INC_Unilang_Evaluation_h_ 1
 
 #include "TermNode.h" // for TermNode, ValueObject, Unilang::AsTermNode,
-//	Unilang::Deref, string_view, shared_ptr, TermTags, in_place_type,
-//	Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped, ystdex::ref_eq,
-//	AccessFirstSubterm, Unilang::AsTermNodeTagged, type_id, YSLib::Logger;
+//	Unilang::Deref, string_view, shared_ptr, TermTags, GetLValueTagsOf,
+//	in_place_type, Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped,
+//	ystdex::ref_eq, AccessFirstSubterm, Unilang::AsTermNodeTagged, type_id,
+//	YSLib::Logger;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
 //	Unilang::EmplaceLeaf, EnvironmentSwitcher,
@@ -413,6 +414,19 @@ RegisterFormHandler(_tTarget& target, string_view name, _tParams&&... args)
 
 inline namespace Internals
 {
+
+YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
+BindReferenceTags(TermTags ref_tags) noexcept
+{
+	return bool(ref_tags & TermTags::Unique) ? ref_tags | TermTags::Temporary
+		: ref_tags;
+}
+YB_ATTR_nodiscard YB_PURE inline TermTags
+BindReferenceTags(const TermReference& ref) noexcept
+{
+	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
+}
+
 
 ReductionStatus
 ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,

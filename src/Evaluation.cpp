@@ -373,18 +373,6 @@ CopyTermTags(TermNode& term, const TermNode& tm) noexcept
 	term.Tags = GetLValueTagsOf(tm.Tags);
 }
 
-YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
-BindReferenceTags(TermTags ref_tags) noexcept
-{
-	return bool(ref_tags & TermTags::Unique) ? ref_tags | TermTags::Temporary
-		: ref_tags;
-}
-YB_ATTR_nodiscard YB_PURE inline TermTags
-BindReferenceTags(const TermReference& ref) noexcept
-{
-	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
-}
-
 
 YB_NORETURN inline void
 ThrowFormalParameterTypeError(const TermNode& term, bool has_ref,
