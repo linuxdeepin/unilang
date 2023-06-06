@@ -184,26 +184,26 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	$def! b 2;
 	$def! li list% a 2;
 	assign@! b (first@ li);
-	$check-not uncollapsed? (move! b);
-	subinfo "preventing non-first-class temporary objects";
-	$let ()
-	(
-		$defl! test-nt (&f)
-			$let ((&t (idv unit)) (&u (idv unit)) (&v (idv unit)))
-			(
-				$def! x f t;
-				forward! x;
-				$expect unit x;
-				assign@! x (f u);
-				forward! x;
-				$expect unit x;
-				assign%! x (f v);
-				forward! x;
-				$expect unit x
-			);
-		test-nt move!;
-		test-nt forward!
-	)
+	$check-not uncollapsed? (move! b)
+);
+subinfo "preventing non-first-class temporary objects";
+$let ()
+(
+	$defl! test-nt (&f)
+		$let ((&t (idv unit)) (&u (idv unit)) (&v (idv unit)))
+		(
+			$def! x f t;
+			forward! x;
+			$expect unit x;
+			assign@! x (f u);
+			forward! x;
+			$expect unit x;
+			assign%! x (f v);
+			forward! x;
+			$expect unit x
+		);
+	test-nt move!;
+	test-nt forward!
 );
 
 info "environment operations";
