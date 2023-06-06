@@ -110,6 +110,13 @@ $let ()
 );
 
 info "reference and assignment operations";
+subinfo "$expire-rvalue";
+$check eq? id ($expire-rvalue id);
+$let* ((id2 id) (&id3 move! id))
+(
+	$check eq? id ($expire-rvalue id2);
+	$check eq? expire ($expire-rvalue id3)
+);
 $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 (
 	subinfo "expecting different results for 'first&' and 'first@'";
