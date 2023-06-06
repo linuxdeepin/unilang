@@ -3,39 +3,38 @@
 #ifndef INC_Unilang_Evaluation_h_
 #define INC_Unilang_Evaluation_h_ 1
 
-#include "TermNode.h" // for TermNode, Unilang::AsTermNode, Unilang::Deref,
-//	string_view, shared_ptr, in_place_type, Unilang::allocate_shared, IsSticky,
-//	IsLeaf, IsTyped, ystdex::ref_eq, AccessFirstSubterm, type_id, ValueObject,
-//	YSLib::Logger;
-#include "Parser.h" // for SourceLocation;
-#include "TermAccess.h" // for IsReferenceTerm, TryAccessLeaf, TermReference;
+#include "TermNode.h" // for TermNode, ValueObject, Unilang::AsTermNode,
+//	Unilang::Deref, string_view, shared_ptr, TermTags, in_place_type,
+//	Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped, ystdex::ref_eq,
+//	AccessFirstSubterm, Unilang::AsTermNodeTagged, type_id, YSLib::Logger;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
 //	Unilang::EmplaceLeaf, EnvironmentSwitcher,
 //	Unilang::SwitchToFreshEnvironment, Unilang::AssignParent,
 //	YSLib::in_place_type, SingleWeakParent, HasValue;
-#include <ystdex/string.hpp> // for ystdex::sfmt;
-#include <ystdex/meta.hpp> // for ystdex::exclude_self_t;
 #include <iterator> // for std::make_move_iterator, std::next;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
-#include <algorithm> // for std::find_if;
+#include "Parser.h" // for SourceLocation;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
 #include <ystdex/function.hpp> // for ystdex::make_function_type_t,
 //	ystdex::make_parameter_list_t, function;
-#include <cassert> // for assert;
-#include <utility> // for std::declval;
+#include <ystdex/integral_constant.hpp> // for ystdex::or_, ystdex::nor_,
+//	ystdex::size_t_;
+#include <ystdex/expanded_function.hpp> // for ystdex::expanded_caller;
 #include <ystdex/type_op.hpp> // for ystdex::is_instance_of;
-#include <ystdex/integral_constant.hpp> // for ystdex::nor_, ystdex::size_t_;
-#include <tuple> // for std::tuple, std::forward_as_tuple;
-#include <type_traits> // for std::is_same;
 #include <ystdex/variadic.hpp> // for ystdex::vseq::_a;
+#include <tuple> // for std::tuple, std::forward_as_tuple;
+#include <type_traits> // for std::is_same, std;
 #include <ystdex/meta.hpp> // for ystdex::enable_if_t, ystdex::is_same_param;
 #include <ystdex/apply.hpp> // for ystdex::apply;
-#include "TermAccess.h" // for AssertCombiningTerm;
+#include <cassert> // for assert;
+#include "TermAccess.h" // for EnvironmentReference, TermReference,
+//	AssertCombiningTerm, IsReferenceTerm, TryAccessLeaf;
+#include <utility> // for std::declval;
+#include "Exception.h" // for ArityMismatch;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
-#include <ystdex/functional.hpp> // for ystdex::expanded_caller;
 #include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
 
 namespace Unilang
@@ -595,6 +594,12 @@ AssertSubobjectReferenceTerm(const TermNode& term) noexcept
 		" in irregular representation of reference found.");
 	AssertSubobjectReferenceFirstSubterm(AccessFirstSubterm(term),
 		Unilang::Deref(TryAccessLeaf<const TermReference>(term)).get());
+}
+
+YB_ATTR_nodiscard inline TermNode
+MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
+{
+	return Unilang::AsTermNodeTagged(a, TermTags::Sticky, std::move(p_sub));
 }
 
 

@@ -47,13 +47,6 @@ namespace Unilang
 namespace
 {
 
-YB_ATTR_nodiscard inline TermNode
-MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
-{
-	return Unilang::AsTermNodeTagged(a, TermTags::Sticky, std::move(p_sub));
-}
-
-
 class RefContextHandler final
 	: private ystdex::equality_comparable<RefContextHandler>
 {
