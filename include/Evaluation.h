@@ -898,6 +898,7 @@ public:
 
 			tcon.clear();
 			tcon.push_back(MakeSubobjectReferent(a, std::move(p_sub)));
+			AttachSubpairSubterm(tcon, o, first, sigil);
 			init(std::move(tcon), ValueObject(std::allocator_arg, a,
 				in_place_type<TermReference>, tags, sub, Referenced));
 		});
