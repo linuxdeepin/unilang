@@ -20,7 +20,7 @@
 #include <limits> // for std::numeric_limits;
 #include <ystdex/string.hpp> // for ystdex::sfmt, std::string,
 //	ystdex::begins_with;
-#include "Exception.h" // for BadIdentifier, InvalidReference, InvalidSyntax,
+#include "Exception.h" // for InvalidSyntax, BadIdentifier,
 //	std::throw_with_nested, ParameterMismatch, ListReductionFailure,
 //	ThrowListTypeErrorForNonList;
 #include <utility> // for std::declval;
@@ -485,258 +485,6 @@ struct BindAdd final
 	operator()(TermNode::Container&& c, ValueObject&& vo) const
 	{
 		return Environment::Bind(m, id, TermNode(std::move(c), std::move(vo)));
-	}
-};
-
-class BindParameterObject final
-{
-public:
-	lref<const EnvironmentReference> Referenced;
-
-private:
-	char sigil;
-
-public:
-	BindParameterObject(const EnvironmentReference& r_env, char s) noexcept
-		: Referenced(r_env), sigil(s)
-	{}
-
-	template<typename _fInit>
-	void
-	operator()(TermTags o_tags, TermNode& o, _fInit init) const
-	{
-		const bool temp(bool(o_tags & TermTags::Temporary));
-
-		if(sigil != '@')
-		{
-			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
-			const auto a(o.get_allocator());
-
-			if(const auto p = TryAccessLeafAtom<TermReference>(o))
-			{
-				if(sigil != char())
-				{
-					const auto ref_tags(PropagateTo(sigil == '&'
-						? BindReferenceTags(*p) : p->GetTags(), o_tags));
-
-					if(can_modify && temp)
-						init(std::move(o.GetContainerRef()),
-							ValueObject(in_place_type<TermReference>, ref_tags,
-							std::move(*p)));
-					else
-						init(TermNode::Container(o.GetContainer(), a),
-							ValueObject(in_place_type<TermReference>, ref_tags,
-							*p));
-				}
-				else
-				{
-					auto& src(p->get());
-
-					if(!p->IsMovable())
-						init(src);
-					else
-						init(std::move(src.GetContainerRef()),
-							std::move(src.Value));
-				}
-			}
-			else if((can_modify || sigil == '%') && temp)
-				MarkTemporaryTerm(init(std::move(o.GetContainerRef()),
-					std::move(o.Value)));
-			else if(sigil == '&')
-				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
-					in_place_type<TermReference>,
-					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
-			else
-				init(o);
-		}
-		else if(!temp)
-			init(TermNode::Container(o.get_allocator()),
-				ValueObject(std::allocator_arg, o.get_allocator(),
-				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
-				o, Referenced));
-		else
-			throw
-				InvalidReference("Invalid operand found on binding sigil '@'.");
-	}
-	template<typename _fInit>
-	void
-	operator()(TermTags o_tags, TermNode& o, TNIter first, _fInit init) const
-	{
-		const bool temp(bool(o_tags & TermTags::Temporary));
-		const auto bind_subpair_val_fwd(
-			[&](TermNode& src, TNIter j, TermTags tags) -> TermNode&{
-			assert((sigil == char() || sigil == '%') && "Invalid sigil found.");
-
-			auto t(CreateForBindSubpairPrefix(src, j, tags));
-
-			if(src.Value)
-				BindSubpairCopySuffix(t, src, j);
-			return init(std::move(t.GetContainerRef()), std::move(t.Value));
-		});
-		const auto bind_subpair_ref_at([&](TermTags tags){
-			assert((sigil == '&' || sigil == '@') && "Invalid sigil found.");
-
-			const auto a(o.get_allocator());
-			auto t(CreateForBindSubpairPrefix(o, first, tags));
-
-			if(o.Value)
-				LiftTermRef(t.Value, o.Value);
-
-			auto p_sub(Unilang::AllocateSharedTerm(a, std::move(t)));
-			auto& sub(*p_sub);
-			auto& tcon(t.GetContainerRef());
-
-			tcon.clear();
-			tcon.push_back(MakeSubobjectReferent(a, std::move(p_sub)));
-			init(std::move(tcon), ValueObject(std::allocator_arg, a,
-				in_place_type<TermReference>, tags, sub, Referenced));
-		});
-
-		if(sigil != '@')
-		{
-			const auto a(o.get_allocator());
-			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
-
-			if(const auto p = TryAccessLeaf<TermReference>(o))
-			{
-				if(sigil != char())
-				{
-					const auto ref_tags(PropagateTo(sigil == '&'
-						? BindReferenceTags(*p) : p->GetTags(), o_tags));
-
-					if(can_modify && temp)
-						init(MoveSuffix(o, first),
-							ValueObject(std::allocator_arg, a, in_place_type<
-							TermReference>, ref_tags, std::move(*p)));
-					else
-						init(TermNode::Container(first, o.end(),
-							o.get_allocator()), ValueObject(std::allocator_arg,
-							a, in_place_type<TermReference>, ref_tags, *p));
-				}
-				else
-				{
-					auto& src(p->get());
-
-					if(!p->IsMovable())
-						CopyTermTags(bind_subpair_val_fwd(src, src.begin(),
-							GetLValueTagsOf(o_tags & ~TermTags::Unique)), src);
-					else
-						init(MoveSuffix(o, first), std::move(src.Value));
-				}
-			}
-			else if((can_modify || sigil == '%')
-				&& (temp || bool(o_tags & TermTags::Unique)))
-			{
-				if(sigil == char())
-					LiftPrefixToReturn(o, first);
-				MarkTemporaryTerm(init(MoveSuffix(o, first),
-					std::move(o.Value)));
-			}
-			else if(sigil == '&')
-				bind_subpair_ref_at(GetLValueTagsOf(o.Tags | o_tags));
-			else
-				MarkTemporaryTerm(bind_subpair_val_fwd(o, first, o_tags));
-		}
-		else if(!temp)
-			bind_subpair_ref_at(o_tags & TermTags::Nonmodifying);
-		else
-			throw
-				InvalidReference("Invalid operand found on binding sigil '@'.");
-	}
-
-private:
-	static void
-	BindSubpairCopySuffix(TermNode& t, TermNode& o, TNIter& j)
-	{
-		while(j != o.end())
-			t.emplace(*j++);
-		t.Value = ValueObject(o.Value);
-	}
-
-	void
-	BindSubpairPrefix(TermNode::Container& tcon, TermNode& o, TNIter& j,
-		TermTags tags) const
-	{
-		assert(!bool(tags & TermTags::Temporary)
-			&& "Unexpected temporary tag found.");
-		for(; j != o.end() && !IsSticky(j->Tags); ++j)
-			BindSubpairSubterm(tcon, tags, Unilang::Deref(j));
-	}
-
-	void
-	BindSubpairSubterm(TermNode::Container& tcon, TermTags o_tags, TermNode& o)
-		const
-	{
-		assert(!bool(o_tags & TermTags::Temporary)
-			&& "Unexpected temporary tag found.");
-
-		const BindInsert init{tcon};
-
-		if(sigil != '@')
-		{
-			const auto a(o.get_allocator());
-
-			if(const auto p = TryAccessLeafAtom<TermReference>(o))
-			{
-				if(sigil != char())
-					init(TermNode::Container(o.GetContainer(), a),
-						ValueObject(in_place_type<TermReference>,
-						PropagateTo(p->GetTags(), o_tags), *p));
-				else
-				{
-					auto& src(p->get());
-
-					if(!p->IsMovable())
-						init(src);
-					else
-						init(std::move(src.GetContainerRef()),
-							std::move(src.Value));
-				}
-			}
-			else if(sigil == '&')
-				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
-					in_place_type<TermReference>,
-					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
-			else
-				init(o);
-		}
-		else
-			init(TermNode::Container(o.get_allocator()),
-				ValueObject(std::allocator_arg, o.get_allocator(),
-				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
-				o, Referenced));
-	}
-
-	YB_ATTR_nodiscard TermNode
-	CreateForBindSubpairPrefix(TermNode& o, TNIter first, TermTags tags) const
-	{
-		assert(!bool(tags & TermTags::Temporary)
-			&& "Unexpected temporary tag found.");
-
-		const auto a(o.get_allocator());
-		TermNode t(a);
-		auto& tcon(t.GetContainerRef());
-
-		BindSubpairPrefix(tcon, o, first, tags);
-		if(!o.Value)
-			assert(first == o.end() && "Invalid representation found.");
-		return t;
-	}
-
-	void
-	MarkTemporaryTerm(TermNode& term) const noexcept
-	{
-		if(sigil != char())
-			term.Tags |= TermTags::Temporary;
-	}
-
-	YB_ATTR_nodiscard static TermNode::Container
-	MoveSuffix(TermNode& o, TNIter j)
-	{
-		TermNode::Container tcon(o.get_allocator());
-
-		Unilang::TransferSubtermsAfter(tcon, o, j, o.end());
-		return tcon;
 	}
 };
 
@@ -1367,42 +1115,6 @@ FormContextHandler::Equals(const FormContextHandler& fch) const
 }
 
 
-inline namespace Internals
-{
-
-ReductionStatus
-ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
-	const EnvironmentReference& r_env, TermTags tags)
-{
-	assert(bool(p_sub)
-		&& "Invalid subterm to form a subobject reference found.");
-
-	auto& con(term.GetContainerRef());
-	auto i(con.begin());
-
-	term.SetValue(TermReference(tags, Unilang::Deref(p_sub), r_env)),
-	term.Tags = TermTags::Unqualified;
-	con.insert(i,
-		Unilang::MakeSubobjectReferent(con.get_allocator(), std::move(p_sub)));		
-	con.erase(i, con.end());
-	return ReductionStatus::Retained;
-}
-
-ReductionStatus
-ReduceForCombinerRef(TermNode& term, const TermReference& ref,
-	const ContextHandler& h, size_t n)
-{
-	const auto& r_env(ref.GetEnvironmentReference());
-	const auto a(term.get_allocator());
-
-	return ReduceAsSubobjectReference(term, Unilang::AllocateSharedTermValue(a,
-		ContextHandler(std::allocator_arg, a, FormContextHandler(
-		RefContextHandler(h, r_env), n))), r_env, ref.GetTags());
-}
-
-} // inline namespace Internals;
-
-
 ReductionStatus
 ReduceLeaf(TermNode& term, Context& ctx)
 {
@@ -1617,6 +1329,42 @@ TraceBacktrace(Context::ReducerSequence::const_iterator first,
 		}, "guard unwinding for backtrace");
 	}
 }
+
+
+inline namespace Internals
+{
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode& term, shared_ptr<TermNode> p_sub,
+	const EnvironmentReference& r_env, TermTags tags)
+{
+	assert(bool(p_sub)
+		&& "Invalid subterm to form a subobject reference found.");
+
+	auto& con(term.GetContainerRef());
+	auto i(con.begin());
+
+	term.SetValue(TermReference(tags, Unilang::Deref(p_sub), r_env)),
+	term.Tags = TermTags::Unqualified;
+	con.insert(i,
+		Unilang::MakeSubobjectReferent(con.get_allocator(), std::move(p_sub)));		
+	con.erase(i, con.end());
+	return ReductionStatus::Retained;
+}
+
+ReductionStatus
+ReduceForCombinerRef(TermNode& term, const TermReference& ref,
+	const ContextHandler& h, size_t n)
+{
+	const auto& r_env(ref.GetEnvironmentReference());
+	const auto a(term.get_allocator());
+
+	return ReduceAsSubobjectReference(term, Unilang::AllocateSharedTermValue(a,
+		ContextHandler(std::allocator_arg, a, FormContextHandler(
+		RefContextHandler(h, r_env), n))), r_env, ref.GetTags());
+}
+
+} // inline namespace Internals;
 
 } // namespace Unilang;
 

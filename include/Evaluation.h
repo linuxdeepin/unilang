@@ -4,15 +4,15 @@
 #define INC_Unilang_Evaluation_h_ 1
 
 #include "TermNode.h" // for TermNode, ValueObject, Unilang::AsTermNode,
-//	Unilang::Deref, string_view, shared_ptr, TermTags, GetLValueTagsOf,
-//	in_place_type, Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped,
-//	ystdex::ref_eq, AccessFirstSubterm, Unilang::AsTermNodeTagged, type_id,
-//	YSLib::Logger;
+//	Unilang::Deref, string_view, in_place_type, shared_ptr,
+//	Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped, ystdex::ref_eq,
+//	AccessFirstSubterm, Unilang::AsTermNodeTagged, TermTags, type_id,
+//	YSLib::Logger, GetLValueTagsOf, lref, TNIter;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
 //	Unilang::EmplaceLeaf, EnvironmentSwitcher,
-//	Unilang::SwitchToFreshEnvironment, Unilang::AssignParent,
-//	YSLib::in_place_type, SingleWeakParent, HasValue;
+//	Unilang::SwitchToFreshEnvironment, Unilang::AssignParent, SingleWeakParent,
+//	HasValue;
 #include <iterator> // for std::make_move_iterator, std::next;
 #include <ystdex/algorithm.hpp> // for ystdex::split;
 #include "Parser.h" // for SourceLocation;
@@ -30,13 +30,14 @@
 #include <ystdex/meta.hpp> // for ystdex::enable_if_t, ystdex::is_same_param;
 #include <ystdex/apply.hpp> // for ystdex::apply;
 #include <cassert> // for assert;
-#include "TermAccess.h" // for EnvironmentReference, TermReference,
-//	AssertCombiningTerm, IsReferenceTerm, TryAccessLeaf;
+#include "TermAccess.h" // for TermReference, EnvironmentReference,
+//	TryAccessLeafAtom, TryAccessLeaf, AssertCombiningTerm, IsReferenceTerm;
 #include <utility> // for std::declval;
-#include "Exception.h" // for ArityMismatch;
+#include "Exception.h" // for ArityMismatch, InvalidReference;
 #include <ystdex/scope_guard.hpp> // for ystdex::guard;
 #include <ystdex/invoke.hpp> // for ystdex::invoke;
 #include <ystdex/meta.hpp> // for ystdex::remove_cvref_t;
+#include "BasicReduction.h" // for LiftPrefixToReturn;
 
 namespace Unilang
 {
@@ -412,57 +413,6 @@ RegisterFormHandler(_tTarget& target, string_view name, _tParams&&... args)
 }
 
 
-inline namespace Internals
-{
-
-YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
-BindReferenceTags(TermTags ref_tags) noexcept
-{
-	return bool(ref_tags & TermTags::Unique) ? ref_tags | TermTags::Temporary
-		: ref_tags;
-}
-YB_ATTR_nodiscard YB_PURE inline TermTags
-BindReferenceTags(const TermReference& ref) noexcept
-{
-	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
-}
-
-inline void
-CopyTermTags(TermNode& term, const TermNode& tm) noexcept
-{
-	term.Tags = GetLValueTagsOf(tm.Tags);
-}
-
-
-ReductionStatus
-ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
-	const EnvironmentReference&, TermTags);
-
-ReductionStatus
-ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
-	size_t);
-
-
-struct BindInsert final
-{
-	TermNode::Container& tcon;
-
-	void
-	operator()(const TermNode& tm) const
-	{
-		CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
-	}
-	TermNode&
-	operator()(TermNode::Container&& c, ValueObject&& vo) const
-	{
-		tcon.emplace_back(std::move(c), std::move(vo));
-		return tcon.back();
-	}
-};
-
-} // inline namespace Internals;
-
-
 enum WrappingKind
 	: decltype(std::declval<FormContextHandler>().GetWrappingCount())
 {
@@ -571,7 +521,7 @@ InvokeIn(Context& ctx, _fCallable&& f, _tParams&&... args)
 	const auto a(ToBindingsAllocator(ctx));
 	auto gd(GuardFreshEnvironment(ctx));
 
-	Unilang::AssignParent(ctx, a, YSLib::in_place_type<SingleWeakParent>,
+	Unilang::AssignParent(ctx, a, in_place_type<SingleWeakParent>,
 		std::move(r_env));
 	return ystdex::invoke(yforward(f), yforward(args)...);
 }
@@ -584,7 +534,7 @@ GetModuleFor(Context& ctx, _fCallable&& f, _tParams&&... args)
 	const auto a(ToBindingsAllocator(ctx));
 	auto gd(GuardFreshEnvironment(ctx));
 
-	Unilang::AssignParent(ctx, a, YSLib::in_place_type<SingleWeakParent>,
+	Unilang::AssignParent(ctx, a, in_place_type<SingleWeakParent>,
 		std::move(r_env));
 	ystdex::invoke(yforward(f), yforward(args)...);
 	ctx.GetRecordRef().Freeze();
@@ -777,6 +727,310 @@ MoveKeptGuard(_tGuard&& gd)
 {
 	return Unilang::MoveKeptGuard(gd);
 }
+
+
+inline namespace Internals
+{
+
+YB_ATTR_nodiscard YB_STATELESS constexpr TermTags
+BindReferenceTags(TermTags ref_tags) noexcept
+{
+	return bool(ref_tags & TermTags::Unique) ? ref_tags | TermTags::Temporary
+		: ref_tags;
+}
+YB_ATTR_nodiscard YB_PURE inline TermTags
+BindReferenceTags(const TermReference& ref) noexcept
+{
+	return BindReferenceTags(GetLValueTagsOf(ref.GetTags()));
+}
+
+inline void
+CopyTermTags(TermNode& term, const TermNode& tm) noexcept
+{
+	term.Tags = GetLValueTagsOf(tm.Tags);
+}
+
+
+ReductionStatus
+ReduceAsSubobjectReference(TermNode&, shared_ptr<TermNode>,
+	const EnvironmentReference&, TermTags);
+
+ReductionStatus
+ReduceForCombinerRef(TermNode&, const TermReference&, const ContextHandler&,
+	size_t);
+
+
+struct BindInsert final
+{
+	TermNode::Container& tcon;
+
+	void
+	operator()(const TermNode& tm) const
+	{
+		CopyTermTags(tcon.emplace_back(tm.GetContainer(), tm.Value), tm);
+	}
+	TermNode&
+	operator()(TermNode::Container&& c, ValueObject&& vo) const
+	{
+		tcon.emplace_back(std::move(c), std::move(vo));
+		return tcon.back();
+	}
+};
+
+
+class BindParameterObject final
+{
+public:
+	lref<const EnvironmentReference> Referenced;
+
+private:
+	char sigil;
+
+public:
+	BindParameterObject(const EnvironmentReference& r_env, char s) noexcept
+		: Referenced(r_env), sigil(s)
+	{}
+
+	template<typename _fInit>
+	void
+	operator()(TermTags o_tags, TermNode& o, _fInit init) const
+	{
+		const bool temp(bool(o_tags & TermTags::Temporary));
+
+		if(sigil != '@')
+		{
+			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
+			const auto a(o.get_allocator());
+
+			if(const auto p = TryAccessLeafAtom<TermReference>(o))
+			{
+				if(sigil != char())
+				{
+					const auto ref_tags(PropagateTo(sigil == '&'
+						? BindReferenceTags(*p) : p->GetTags(), o_tags));
+
+					if(can_modify && temp)
+						init(std::move(o.GetContainerRef()),
+							ValueObject(in_place_type<TermReference>, ref_tags,
+							std::move(*p)));
+					else
+						init(TermNode::Container(o.GetContainer(), a),
+							ValueObject(in_place_type<TermReference>, ref_tags,
+							*p));
+				}
+				else
+				{
+					auto& src(p->get());
+
+					if(!p->IsMovable())
+						init(src);
+					else
+						init(std::move(src.GetContainerRef()),
+							std::move(src.Value));
+				}
+			}
+			else if((can_modify || sigil == '%') && temp)
+				MarkTemporaryTerm(init(std::move(o.GetContainerRef()),
+					std::move(o.Value)));
+			else if(sigil == '&')
+				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
+					in_place_type<TermReference>,
+					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
+			else
+				init(o);
+		}
+		else if(!temp)
+			init(TermNode::Container(o.get_allocator()),
+				ValueObject(std::allocator_arg, o.get_allocator(),
+				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
+				o, Referenced));
+		else
+			throw
+				InvalidReference("Invalid operand found on binding sigil '@'.");
+	}
+	template<typename _fInit>
+	void
+	operator()(TermTags o_tags, TermNode& o, TNIter first, _fInit init) const
+	{
+		const bool temp(bool(o_tags & TermTags::Temporary));
+		const auto bind_subpair_val_fwd(
+			[&](TermNode& src, TNIter j, TermTags tags) -> TermNode&{
+			assert((sigil == char() || sigil == '%') && "Invalid sigil found.");
+
+			auto t(CreateForBindSubpairPrefix(src, j, tags));
+
+			if(src.Value)
+				BindSubpairCopySuffix(t, src, j);
+			return init(std::move(t.GetContainerRef()), std::move(t.Value));
+		});
+		const auto bind_subpair_ref_at([&](TermTags tags){
+			assert((sigil == '&' || sigil == '@') && "Invalid sigil found.");
+
+			const auto a(o.get_allocator());
+			auto t(CreateForBindSubpairPrefix(o, first, tags));
+
+			if(o.Value)
+				LiftTermRef(t.Value, o.Value);
+
+			auto p_sub(Unilang::AllocateSharedTerm(a, std::move(t)));
+			auto& sub(*p_sub);
+			auto& tcon(t.GetContainerRef());
+
+			tcon.clear();
+			tcon.push_back(MakeSubobjectReferent(a, std::move(p_sub)));
+			init(std::move(tcon), ValueObject(std::allocator_arg, a,
+				in_place_type<TermReference>, tags, sub, Referenced));
+		});
+
+		if(sigil != '@')
+		{
+			const auto a(o.get_allocator());
+			const bool can_modify(!bool(o_tags & TermTags::Nonmodifying));
+
+			if(const auto p = TryAccessLeaf<TermReference>(o))
+			{
+				if(sigil != char())
+				{
+					const auto ref_tags(PropagateTo(sigil == '&'
+						? BindReferenceTags(*p) : p->GetTags(), o_tags));
+
+					if(can_modify && temp)
+						init(MoveSuffix(o, first),
+							ValueObject(std::allocator_arg, a, in_place_type<
+							TermReference>, ref_tags, std::move(*p)));
+					else
+						init(TermNode::Container(first, o.end(),
+							o.get_allocator()), ValueObject(std::allocator_arg,
+							a, in_place_type<TermReference>, ref_tags, *p));
+				}
+				else
+				{
+					auto& src(p->get());
+
+					if(!p->IsMovable())
+						CopyTermTags(bind_subpair_val_fwd(src, src.begin(),
+							GetLValueTagsOf(o_tags & ~TermTags::Unique)), src);
+					else
+						init(MoveSuffix(o, first), std::move(src.Value));
+				}
+			}
+			else if((can_modify || sigil == '%')
+				&& (temp || bool(o_tags & TermTags::Unique)))
+			{
+				if(sigil == char())
+					LiftPrefixToReturn(o, first);
+				MarkTemporaryTerm(init(MoveSuffix(o, first),
+					std::move(o.Value)));
+			}
+			else if(sigil == '&')
+				bind_subpair_ref_at(GetLValueTagsOf(o.Tags | o_tags));
+			else
+				MarkTemporaryTerm(bind_subpair_val_fwd(o, first, o_tags));
+		}
+		else if(!temp)
+			bind_subpair_ref_at(o_tags & TermTags::Nonmodifying);
+		else
+			throw
+				InvalidReference("Invalid operand found on binding sigil '@'.");
+	}
+
+private:
+	static void
+	BindSubpairCopySuffix(TermNode& t, TermNode& o, TNIter& j)
+	{
+		while(j != o.end())
+			t.emplace(*j++);
+		t.Value = ValueObject(o.Value);
+	}
+
+	void
+	BindSubpairPrefix(TermNode::Container& tcon, TermNode& o, TNIter& j,
+		TermTags tags) const
+	{
+		assert(!bool(tags & TermTags::Temporary)
+			&& "Unexpected temporary tag found.");
+		for(; j != o.end() && !IsSticky(j->Tags); ++j)
+			BindSubpairSubterm(tcon, tags, Unilang::Deref(j));
+	}
+
+	void
+	BindSubpairSubterm(TermNode::Container& tcon, TermTags o_tags, TermNode& o)
+		const
+	{
+		assert(!bool(o_tags & TermTags::Temporary)
+			&& "Unexpected temporary tag found.");
+
+		const BindInsert init{tcon};
+
+		if(sigil != '@')
+		{
+			const auto a(o.get_allocator());
+
+			if(const auto p = TryAccessLeafAtom<TermReference>(o))
+			{
+				if(sigil != char())
+					init(TermNode::Container(o.GetContainer(), a),
+						ValueObject(in_place_type<TermReference>,
+						PropagateTo(p->GetTags(), o_tags), *p));
+				else
+				{
+					auto& src(p->get());
+
+					if(!p->IsMovable())
+						init(src);
+					else
+						init(std::move(src.GetContainerRef()),
+							std::move(src.Value));
+				}
+			}
+			else if(sigil == '&')
+				init(TermNode::Container(a), ValueObject(std::allocator_arg, a,
+					in_place_type<TermReference>,
+					GetLValueTagsOf(o.Tags | o_tags), o, Referenced));
+			else
+				init(o);
+		}
+		else
+			init(TermNode::Container(o.get_allocator()),
+				ValueObject(std::allocator_arg, o.get_allocator(),
+				in_place_type<TermReference>, o_tags & TermTags::Nonmodifying,
+				o, Referenced));
+	}
+
+	YB_ATTR_nodiscard TermNode
+	CreateForBindSubpairPrefix(TermNode& o, TNIter first, TermTags tags) const
+	{
+		assert(!bool(tags & TermTags::Temporary)
+			&& "Unexpected temporary tag found.");
+
+		const auto a(o.get_allocator());
+		TermNode t(a);
+		auto& tcon(t.GetContainerRef());
+
+		BindSubpairPrefix(tcon, o, first, tags);
+		if(!o.Value)
+			assert(first == o.end() && "Invalid representation found.");
+		return t;
+	}
+
+	void
+	MarkTemporaryTerm(TermNode& term) const noexcept
+	{
+		if(sigil != char())
+			term.Tags |= TermTags::Temporary;
+	}
+
+	YB_ATTR_nodiscard static TermNode::Container
+	MoveSuffix(TermNode& o, TNIter j)
+	{
+		TermNode::Container tcon(o.get_allocator());
+
+		Unilang::TransferSubtermsAfter(tcon, o, j, o.end());
+		return tcon;
+	}
+};
+
+} // inline namespace Internals;
 
 } // namespace Unilang;
 
