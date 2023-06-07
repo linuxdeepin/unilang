@@ -6,8 +6,8 @@
 #include "TermNode.h" // for TermNode, ValueObject, Unilang::AsTermNode,
 //	Unilang::Deref, string_view, in_place_type, shared_ptr,
 //	Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped, ystdex::ref_eq,
-//	AccessFirstSubterm, Unilang::AsTermNodeTagged, TermTags, type_id,
-//	YSLib::Logger, GetLValueTagsOf, lref, TNIter;
+//	AccessFirstSubterm, Unilang::AsTermNodeTagged, TermTags, lref, TNIter,
+//	type_id, YSLib::Logger, GetLValueTagsOf;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
 //	Unilang::EmplaceLeaf, EnvironmentSwitcher,
@@ -589,6 +589,18 @@ MakeSubobjectReferent(TermNode::allocator_type a, shared_ptr<TermNode> p_sub)
 {
 	return Unilang::AsTermNodeTagged(a, TermTags::Sticky, std::move(p_sub));
 }
+
+
+struct SubpairMetadata final
+{
+	lref<TermNode> TermRef;
+	TNIter First;
+	char Sigil;
+
+	SubpairMetadata(TermNode& term, TNIter i, char sigil) noexcept
+		: TermRef(term), First(i), Sigil(sigil)
+	{}
+};
 
 
 YB_ATTR_nodiscard YB_PURE inline bool
