@@ -7,7 +7,7 @@
 //	Unilang::Deref, string_view, in_place_type, shared_ptr,
 //	Unilang::allocate_shared, IsSticky, IsLeaf, IsTyped, ystdex::ref_eq,
 //	AccessFirstSubterm, Unilang::AsTermNodeTagged, TermTags, lref, TNIter,
-//	type_id, YSLib::Logger, GetLValueTagsOf;
+//	NoContainer, type_id, YSLib::Logger, GetLValueTagsOf;
 #include "Context.h" // for ReductionStatus, Context, YSLib::AreEqualHeld,
 //	YSLib::GHEvent, allocator_arg, ContextHandler, std::allocator_arg_t,
 //	Unilang::EmplaceLeaf, EnvironmentSwitcher,
@@ -601,6 +601,14 @@ struct SubpairMetadata final
 		: TermRef(term), First(i), Sigil(sigil)
 	{}
 };
+
+inline void
+AttachSubpairSubterm(TermNode::Container& tcon, TermNode& o, TNIter first,
+	char sigil)
+{
+	tcon.emplace_back(NoContainer, in_place_type<SubpairMetadata>, o, first,
+		sigil);
+}
 
 
 YB_ATTR_nodiscard YB_PURE inline bool
