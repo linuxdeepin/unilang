@@ -966,6 +966,7 @@ private:
 		vo = ValueObject(o.Value);
 	}
 
+public:
 	void
 	BindSubpairPrefix(TermNode::Container& tcon, TermNode& o, TNIter j,
 		TermTags tags) const
@@ -1021,6 +1022,7 @@ private:
 				o, Referenced));
 	}
 
+private:
 	void
 	MarkTemporaryTerm(TermNode& term) const noexcept
 	{
