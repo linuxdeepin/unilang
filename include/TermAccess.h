@@ -336,6 +336,17 @@ public:
 	}
 
 	void
+	SetReferent(TermNode& t) noexcept
+	{
+		term_ref = t;
+	}
+	void
+	SetTags(TermTags t) noexcept
+	{
+		tags = t;
+	}
+
+	void
 	AddTags(TermTags t) noexcept
 	{
 		tags |= t;
