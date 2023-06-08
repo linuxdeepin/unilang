@@ -1,4 +1,4 @@
-﻿// SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+﻿// SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 #include "TermAccess.h" // for TermToNamePtr, sfmt, ystdex::sfmt, TryAccessLeafAtom, IsTyped,
 //	Unilang::Nonnull;
@@ -60,6 +60,30 @@ TermReference::get() const
 }
 #endif
 
+
+namespace
+{
+
+YB_ATTR_nodiscard YB_STATELESS TermTags
+MergeTermTags(TermTags x, TermTags y) noexcept
+{
+	return (((x & ~TermTags::Temporary) | y) & ~TermTags::Unique)
+		| (x & y & TermTags::Unique);
+}
+
+} // unnamed namespace;
+
+pair<TermReference, bool>
+Collapse(TermReference ref)
+{
+	if(const auto p = TryAccessLeafAtom<TermReference>(ref.get()))
+	{
+		ref.SetTags(MergeTermTags(ref.GetTags(), p->GetTags())),
+		ref.SetReferent(p->get());
+		return {std::move(ref), true};
+	}
+	return {std::move(ref), {}};
+}
 
 TermNode
 PrepareCollapse(TermNode& term, const shared_ptr<Environment>& p_env)

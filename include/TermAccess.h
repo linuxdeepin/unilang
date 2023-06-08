@@ -4,7 +4,7 @@
 #define INC_Unilang_TermAccess_h_ 1
 
 #include "TermNode.h" // for string, TermNode, IsPair, YSLib::TryAccessValue,
-//	weak_ptr, AssertReferentTags, Unilang::IsMovable, PropagateTo,
+//	weak_ptr, AssertReferentTags, Unilang::IsMovable, PropagateTo, pair,
 //	Unilang::Deref;
 #include "Exception.h" // for ThrowListTypeErrorForInvalidType;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
@@ -377,6 +377,9 @@ public:
 
 };
 
+
+YB_ATTR_nodiscard YF_API pair<TermReference, bool>
+Collapse(TermReference);
 
 YB_ATTR_nodiscard TermNode
 PrepareCollapse(TermNode&, const shared_ptr<Environment>&);
