@@ -184,7 +184,16 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	$def! b 2;
 	$def! li list% a 2;
 	assign@! b (first@ li);
-	$check-not uncollapsed? (move! b)
+	$check-not uncollapsed? (move! b);
+	subinfo "subpair reference assignment";
+	$let* ((pr cons% 1 2) ((#ignore .&y) pr))
+	(
+		assign! y 3;
+		$expect 3 $let (((#ignore .&y) pr)) y;
+		assign! y (list 4);
+		$expect (list 4) $let (((#ignore .&y) pr)) y;
+		$expect (list 1 4) pr
+	)
 );
 subinfo "preventing non-first-class temporary objects";
 $let ()
