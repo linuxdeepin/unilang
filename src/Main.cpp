@@ -5,7 +5,9 @@
 //	YSLib::istringstream, pmr::new_delete_resource_t;
 #include <cstdlib> // for std::getenv;
 #include "Evaluation.h" // for Unilang::GetModuleFor, RetainN, ValueToken,
+//	AssertSubobjectReferenceTerm, IsTyped, SubpairMetadata, BindParameterObject,
 //	RegisterStrict;
+#include "BasicReduction.h" // for ReductionStatus, LiftToReturn, LiftOther;
 #include "Forms.h" // for RetainN, Forms::CallRawUnary, Forms::CallBinaryFold
 //	and other form implementations
 #include "Context.h" // for BindingMap, Context, Environment,
@@ -15,8 +17,6 @@
 //	ComposeReferencedTermOp, IsReferenceTerm, IsBoundLValueTerm,
 //	IsUncollapsedTerm, IsUniqueTerm, EnvironmentReference, TermNode,
 //	IsBranchedList, ThrowInsufficientTermsError;
-#include "BasicReduction.h" // for ReductionStatus, LiftOther;
-//	NameTypedContextHandler;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
 //	UnilangException, Unilang::GuardExceptionsForAllocator;
@@ -129,11 +129,49 @@ CheckForAssignment(TermNode& nd, ResolvedTermReferencePtr p_ref)
 
 template<typename _func>
 YB_ATTR_nodiscard ValueToken
-DoAssign(_func f, TermNode& x)
+DoAssign(_func f, bool collapse, bool lift, TermNode& x, TermNode& y)
 {
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		CheckForAssignment(nd, p_ref);
-		f(nd);
+		if(p_ref && IsBranch(x))
+		{
+			AssertSubobjectReferenceTerm(x);
+			if(x.size() == 2)
+			{
+				auto i(x.begin());
+				auto& mterm(*++i);
+
+				assert(IsTyped<SubpairMetadata>(mterm)
+					&& "Invalid metadata subterm found.");
+
+				auto& mdata(mterm.Value.GetObject<SubpairMetadata>());
+				auto& o(mdata.TermRef.get());
+				auto& vo(o.Value);
+				auto& j(mdata.First);
+				auto& tcon(nd.GetContainerRef());
+
+				i = j;
+				if(lift)
+					LiftToReturn(y);
+				tcon.clear();
+				BindParameterObject(p_ref->GetEnvironmentReference(),
+					mdata.Sigil).BindSubpairPrefix(tcon, y, y.begin(),
+					p_ref->GetTags());
+				o.erase(i, o.end());
+				Unilang::TransferSubtermsAfter(o, y);
+				vo = [&]() -> ValueObject{
+					if(collapse)
+					{
+						if(const auto p = TryAccessLeafAtom<TermReference>(y))
+							return Collapse(std::move(*p)).first;
+					}
+					return std::move(y.Value);
+				}();
+				nd.Value = vo ? vo.MakeIndirect() : ValueObject();
+				return;
+			}
+		}
+		f(nd, y);
 	}, x);
 	return ValueToken::Unspecified;
 }
@@ -691,8 +729,8 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 		term.Value = NoCopy();
 	});
 	RegisterBinary(m, "assign@!", [](TermNode& x, TermNode& y){
-		return DoAssign(ystdex::bind1(static_cast<void(&)(TermNode&,
-			TermNode&)>(LiftOther), std::ref(y)), x);
+		return DoAssign(static_cast<void(&)(TermNode&, TermNode&)>(LiftOther),
+			{}, {}, x, y);
 	});
 	RegisterStrict(m, "cons", Cons);
 	RegisterStrict(m, "cons%", ConsRef);
@@ -1178,7 +1216,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.370"
+#define APP_VER "0.12.388"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
