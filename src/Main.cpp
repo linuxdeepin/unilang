@@ -333,6 +333,10 @@ LoadModule_std_strings(Interpreter& intp)
 	});
 	RegisterBinary<Strict, const string, const string>(m, "string=?",
 		ystdex::equal_to<>());
+	RegisterBinary<Strict, const string, const string>(m, "string-contains?",
+		[](const string& x, const string& y) noexcept{
+		return x.find(y) != string::npos;
+	});
 	RegisterStrict(m, "string-split", [](TermNode& term){
 		return CallBinaryAs<string, const string>(
 			[&](string& x, const string& y) -> ReductionStatus{
@@ -1216,7 +1220,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.388"
+#define APP_VER "0.12.390"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

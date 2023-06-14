@@ -3722,6 +3722,10 @@
 
 　　判断字符串是否相等。
 
+`string-contains? <string1> <string2>`
+
+　　判断第一参数是否包含第二参数作为子串。
+
 `string-split <string1> <string2>`
 
 　　取第二参数分隔第一参数得到的字符串的列表。
