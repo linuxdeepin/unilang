@@ -1402,7 +1402,7 @@ public:
 	}
 
 	YB_ATTR_nodiscard TermNode
-	Read(string_view, Context&);
+	Read(string_view, Context&) const;
 
 	YB_ATTR_nodiscard TermNode
 	ReadFrom(std::streambuf&, Context&) const;

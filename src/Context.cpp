@@ -583,7 +583,7 @@ GlobalState::GlobalState(TermNode::allocator_type a)
 {}
 
 TermNode
-GlobalState::Read(string_view unit, Context& ctx)
+GlobalState::Read(string_view unit, Context& ctx) const
 {
 	LexicalAnalyzer lexer;
 
