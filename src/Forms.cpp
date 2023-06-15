@@ -112,12 +112,12 @@ ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 
 
 ReductionStatus
-EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
+EvalImplUnchecked(TermNode& term, Context& ctx, bool no_lift, bool at = {})
 {
-	RetainN(term, 2);
+	AssertNextTerm(ctx, term);
 
 	const auto i(std::next(term.begin()));
-	auto p_env(ResolveEnvironment(*std::next(i)).first);
+	auto p_env(ResolveEnvironment(Unilang::Deref(std::next(i))).first);
 	auto& tm(*i);
 
 	if(at)
@@ -127,9 +127,15 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
 			LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
 		}, tm);
 	ClearCombiningTags(term);
-	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
-		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
-		std::ref(ctx.ReduceOnce));
+	return RelayForCall(ctx, term, EnvironmentGuard(ctx,
+		ctx.SwitchEnvironment(std::move(p_env))), no_lift);
+}
+
+ReductionStatus
+EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
+{
+	RetainN(term, 2);
+	return EvalImplUnchecked(term, ctx, no_lift, at);
 }
 
 YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
