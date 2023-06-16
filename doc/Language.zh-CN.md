@@ -4094,6 +4094,12 @@
 
 　　在参数指定的环境中求值作为外部表示的字符串。
 
+`eval-string% <string> <environment>`
+
+　　在参数指定的环境中求值作为外部表示的字符串。
+
+　　同 `eval-string` ，但保留引用值。
+
 `env-get <string>`
 
 　　取宿主环境的环境变量字符串。

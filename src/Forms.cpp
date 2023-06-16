@@ -1015,6 +1015,12 @@ EvalString(TermNode& term, Context& ctx)
 	return EvalStringImpl(term, ctx, {});
 }
 
+ReductionStatus
+EvalStringRef(TermNode& term, Context& ctx)
+{
+	return EvalStringImpl(term, ctx, true);
+}
+
 
 void
 MakeEnvironment(TermNode& term)
