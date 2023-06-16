@@ -456,6 +456,9 @@ EvalAt(TermNode&, Context&);
 ReductionStatus
 EvalRef(TermNode&, Context&);
 
+ReductionStatus
+EvalString(TermNode&, Context&);
+
 
 void
 MakeEnvironment(TermNode&);

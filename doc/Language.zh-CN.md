@@ -4090,6 +4090,10 @@
 
 　　系统库的操作加载为基础环境下的 `std.system` 环境。
 
+`eval-string <string> <environment>`
+
+　　在参数指定的环境中求值作为外部表示的字符串。
+
 `env-get <string>`
 
 　　取宿主环境的环境变量字符串。

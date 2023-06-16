@@ -14,9 +14,9 @@
 //	ThrowValueCategoryError;
 #include <ystdex/optional.h> // for ystdex::optional;
 #include <exception> // for std::throw_with_nested;
-#include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
-//	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
-//	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
+#include "Evaluation.h" // for IsIgnore, RetainN, std::next,
+//	BindParameterWellFormed, Unilang::MakeForm, CheckVariadicArity, Form,
+//	RetainList, ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
 #include "Context.h" // for ResolveEnvironment, ResolveEnvironmentValue,
 //	Unilang::AssignParent, EnvironmentParent;
 #include "TermNode.h" // for TNIter, IsTypedRegular, Unilang::AsTermNode,
@@ -136,6 +136,30 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
 {
 	RetainN(term, 2);
 	return EvalImplUnchecked(term, ctx, no_lift, at);
+}
+
+template<typename _func>
+ReductionStatus
+RelayWithSavedSourceName(Context& ctx, _func f)
+{
+	RefTCOAction(ctx).SaveTailSourceName(ctx.CurrentSource,
+		std::move(ctx.CurrentSource));
+	return f();
+}
+
+ReductionStatus
+EvalStringImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	RetainN(term, 2);
+
+	auto& expr(*std::next(term.begin()));
+	auto& global(ctx.Global.get());
+
+	return RelayWithSavedSourceName(ctx, [&]{
+		expr = global.Read(Unilang::ResolveRegular<const string>(expr), ctx);
+		global.Preprocess(expr);
+		return EvalImplUnchecked(term, ctx, no_lift);
+	});
 }
 
 YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
@@ -983,6 +1007,12 @@ ReductionStatus
 EvalRef(TermNode& term, Context& ctx)
 {
 	return EvalImpl(term, ctx, true);
+}
+
+ReductionStatus
+EvalString(TermNode& term, Context& ctx)
+{
+	return EvalStringImpl(term, ctx, {});
 }
 
 
