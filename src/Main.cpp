@@ -28,11 +28,11 @@
 #include <YSLib/Core/YModules.h>
 #include "Math.h" // for NumberLeaf, NumberNode and other math functions;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
-//	YSLib::FetchEnvironmentVariable;
 #include YFM_YSLib_Core_YShellDefinition // for std::to_string,
 //	YSLib::make_string_view, YSLib::to_std::string;
 #include <iostream> // for std::ios_base, std::cout, std::endl, std::cin;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists, IO::UniqueFile,
+//	uopen, IO::use_openmode_t, YSLib::FetchEnvironmentVariable;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <sstream> // for complete istringstream;
 #include <string> // for std::getline;
@@ -512,6 +512,15 @@ LoadModule_std_io(Interpreter& intp)
 	RegisterUnary<Strict, const string>(m, "readable-file?",
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
+	});
+	RegisterUnary<Strict, const string>(m, "readable-nonempty-file?",
+		[](const string& str) -> bool{
+		using namespace YSLib;
+
+		if(IO::UniqueFile file{uopen(str.c_str(), IO::use_openmode_t(),
+			std::ios_base::in)})
+			return file->GetSize() > 0;
+		return {};
 	});
 	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
@@ -1222,7 +1231,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.395"
+#define APP_VER "0.12.396"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
