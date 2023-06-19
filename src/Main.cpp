@@ -522,6 +522,10 @@ LoadModule_std_io(Interpreter& intp)
 			return file->GetSize() > 0;
 		return {};
 	});
+	RegisterUnary<Strict, const string>(m, "writable-file?",
+		[](const string& str) noexcept{
+		return YSLib::ufexists(str.c_str(), "r+b");
+	});
 	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
 		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
@@ -1231,7 +1235,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.396"
+#define APP_VER "0.12.397"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
