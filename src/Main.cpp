@@ -32,7 +32,7 @@
 //	YSLib::make_string_view, YSLib::to_std::string;
 #include <iostream> // for std::ios_base, std::cout, std::endl, std::cin;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists, IO::UniqueFile,
-//	uopen, IO::use_openmode_t, YSLib::FetchEnvironmentVariable;
+//	uopen, IO::use_openmode_t, YSLib::FetchEnvironmentVariable, YSLib::uremove;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <sstream> // for complete istringstream;
 #include <string> // for std::getline;
@@ -608,6 +608,10 @@ LoadModule_std_system(Interpreter& intp)
 
 		YSLib::FetchEnvironmentVariable(res, var.c_str());
 		return res;
+	});
+	RegisterUnary<Strict, const string>(m, "remove-file",
+		[](const string& filename){
+		return YSLib::uremove(filename.c_str());
 	});
 }
 
@@ -1235,7 +1239,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.397"
+#define APP_VER "0.12.398"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
