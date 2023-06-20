@@ -32,11 +32,14 @@
 //	YSLib::make_string_view, YSLib::to_std::string;
 #include <iostream> // for std::ios_base, std::cout, std::endl, std::cin;
 #include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists, IO::UniqueFile,
-//	uopen, IO::use_openmode_t, YSLib::FetchEnvironmentVariable, YSLib::uremove;
+//	uopen, IO::use_openmode_t, YSLib::IO, YSLib::FetchEnvironmentVariable,
+//	YSLib::uremove;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <sstream> // for complete istringstream;
 #include <string> // for std::getline;
 #include "TCO.h" // for RefTCOAction;
+#include <YSLib/Service/YModules.h>
+#include YFM_YSLib_Service_FileSystem // for IO::CreateDirectory;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -599,6 +602,7 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
+	namespace IO = YSLib::IO;
 	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
 	RegisterStrict(m, "eval-string", EvalString);
@@ -612,6 +616,10 @@ LoadModule_std_system(Interpreter& intp)
 	RegisterUnary<Strict, const string>(m, "remove-file",
 		[](const string& filename){
 		return YSLib::uremove(filename.c_str());
+	});
+	RegisterUnary<Strict, const string>(m, "create-directory",
+		[](const string& path){
+		return IO::CreateDirectory(path);
 	});
 }
 
@@ -1239,7 +1247,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.398"
+#define APP_VER "0.12.399"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
