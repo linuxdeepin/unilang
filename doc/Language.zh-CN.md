@@ -4122,6 +4122,12 @@
 
 　　创建参数指定的名称的文件系统目录。
 
+`create-directory* <string>`
+
+　　创建参数指定的名称的文件系统目录及其必要的父目录。
+
+　　`create-directory` 和 `create-directory*` 只创建一级目录时的行为确保一致。
+
 ## 模块管理
 
 　　模块管理操作加载为基础环境下的 `std.modules` 环境。
