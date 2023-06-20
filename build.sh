@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+# SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
@@ -22,7 +22,9 @@ $YSLib_BaseDir/YFramework/source/YCLib/Host.cpp \
 $YSLib_BaseDir/YFramework/Win32/source/YCLib/MinGW32.cpp \
 $YSLib_BaseDir/YFramework/Win32/source/YCLib/NLS.cpp \
 $YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp \
-$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
+$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp \
+$YSLib_BaseDir/YFramework/source/YSLib/Core/YConsole.cpp \
+$YSLib_BaseDir/YBase/source/ystdex/hash_table.cpp"
 	;;
 *)
 	EXTRA_OPT="-fPIC -pthread \
