@@ -4128,6 +4128,14 @@
 
 　　`create-directory` 和 `create-directory*` 只创建一级目录时的行为确保一致。
 
+`create-parent-directory* <string>`
+
+　　创建参数指定的名称对应的父目录及其必要的父目录。
+
+**注释**
+
+　　当前实现中，若创建目录失败而引起错误，抛出 `std::system_error` 异常。
+
 ## 模块管理
 
 　　模块管理操作加载为基础环境下的 `std.modules` 环境。
