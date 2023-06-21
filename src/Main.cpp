@@ -40,7 +40,7 @@
 #include "TCO.h" // for RefTCOAction;
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Service_FileSystem // for IO::CreateDirectory,
-//	EnsureDirectory, IO::Path;
+//	EnsureDirectory, IO::Path, IO::IsAbsolute;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -636,6 +636,10 @@ LoadModule_std_system(Interpreter& intp)
 			return EnsureDirectory(pth);
 		}
 		return {};
+	});
+	RegisterUnary<Strict, const string>(m, "absolute-path?",
+		[](const string& path){
+		return IO::IsAbsolute(path);
 	});
 }
 
@@ -1263,7 +1267,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.401"
+#define APP_VER "0.12.402"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
