@@ -41,6 +41,10 @@
 #include <YSLib/Service/YModules.h>
 #include YFM_YSLib_Service_FileSystem // for IO::CreateDirectory,
 //	EnsureDirectory, IO::Path, IO::IsAbsolute;
+#include YFM_YSLib_Core_YCoreUtilities // for YSLib::RandomizeTemplateString;
+#include <ystdex/cstdio.h> // for ystdex::fexists;
+#include <cerrno> // for errno, EEXIST, EPERM;
+#include <ystdex/exception.h> // for ystdex::throw_error;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -640,6 +644,30 @@ LoadModule_std_system(Interpreter& intp)
 	RegisterUnary<Strict, const string>(m, "absolute-path?",
 		[](const string& path){
 		return IO::IsAbsolute(path);
+	});
+	RegisterBinary<Strict, const string, const string>(m,
+		"make-temporary-filename", [](const string& pfx, const string& sfx){
+		const string_view tmpl("0123456789abcdef");
+
+		for(size_t n(16); n != 0; --n)
+		{
+			string str("%%%%%%", pfx.get_allocator());
+
+			str = YSLib::RandomizeTemplateString(str, '%', tmpl);
+			str = pfx + std::move(str) + sfx;
+			if(ystdex::fexists(str.c_str(), "w+b"))
+				return str;
+
+			const int err(errno);
+
+			if(err != EEXIST && err != EPERM)
+				continue;
+		}
+
+		int err(errno);
+
+		ystdex::throw_error(err, "Failed opening temporary file with the"
+			" prefix '" + YSLib::to_std_string(pfx) + '\'');
 	});
 }
 
@@ -1267,7 +1295,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.402"
+#define APP_VER "0.12.403"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
