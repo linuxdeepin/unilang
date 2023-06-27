@@ -1148,6 +1148,7 @@ $defw%! map-reverse (&appv .&ls) d
 	accl (forward! (check-list-reference ls)) nonfoldable? () list-extract-first
 		list-extract-rest%
 		($lambda (&x &xs) cons% (apply appv (forward! x) d) (forward! xs));
+$defw! for-each-ltr &ls d $sequence (apply map-reverse (forward! ls) d) #inert;
 	)Unilang");
 	LoadStandardDerived(intp);
 	// NOTE: Supplementary functions.
@@ -1306,7 +1307,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.406"
+#define APP_VER "0.12.407"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
