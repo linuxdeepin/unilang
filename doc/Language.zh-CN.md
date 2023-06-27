@@ -2965,7 +2965,7 @@
 
 　　包装合并子为应用子。
 
-　　若无法为包装的合并子分配资源，则引起错误。
+　　若无法为包装的合并子分配资源，则[引起错误](#错误)。
 
 `unwrap <applicative>`
 
@@ -3386,6 +3386,24 @@
 　　求值参数的逻辑或。
 
 　　同 `$or?` ，但作为应用子，对每个参数都求值一次，而不短路求值，也不保证参数求值顺序。
+
+`accl <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
+
+　　在抽象列表的元素上应用左结合的二元操作。
+
+　　对 `<object1>` 指定的抽象列表进行处理，取得部分和。
+
+　　当谓词 `<predicate>` 成立时结果是 `<object2>` ，否则继续处理抽象列表中余下的元素。
+
+　　处理抽象的列表的操作通过余下的应用子分别定义：取列表头、取列表尾和部分和的二元合并操作。
+
+　　参数 `<applicative1>` 和参数参数 `<applicative2>` 应接受两个参数，否则引起错误。
+
+　　参数 `<applicative3>` 应接受两个参数，否则引起错误。
+
+　　调用参数中的应用子的 `<object1>` 实际参数在不同的应用子调用中可能[同一](#基本语义概念)。
+
+　　调用参数中的应用子的底层合并子的当前环境同调用 `accl` 的动态环境。
 
 `accr <object1> <predicate> <object2> <applicative1> <applicative2> <applicative3>`
 
