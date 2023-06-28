@@ -421,6 +421,8 @@ info "list utilities";
 subinfo "accr";
 accr (list (list "2") (list "3")) null? () first% rest%
 	($lambda% (&x &y) accr (forward! x) null? y first% rest% cons%);
+subinfo "foldr1";
+$expect (list "2" "3") foldr1 list-concat () (list (list "2") (list "3"));
 
 info "bindings operations";
 () $let ()
