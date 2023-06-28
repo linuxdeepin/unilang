@@ -417,6 +417,11 @@ $let ()
 	$expect 2 $or #f 2 #f 3
 );
 
+info "list utilities";
+subinfo "accr";
+accr (list (list "2") (list "3")) null? () first% rest%
+	($lambda% (&x &y) accr (forward! x) null? y first% rest% cons%);
+
 info "bindings operations";
 () $let ()
 (
