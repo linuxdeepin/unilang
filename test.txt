@@ -423,6 +423,15 @@ accr (list (list "2") (list "3")) null? () first% rest%
 	($lambda% (&x &y) accr (forward! x) null? y first% rest% cons%);
 subinfo "foldr1";
 $expect (list "2" "3") foldr1 list-concat () (list (list "2") (list "3"));
+subinfo "map1";
+$expect (list% id 2 3) map1 id (list% id 2 3);
+$expect (list "afx" "bfx" "cfx")
+	map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
+$let* ((&x 1) (li list% x))
+(
+	$expect (list 1) (map1 forward! li);
+	$expect-moved first li
+);
 
 info "bindings operations";
 () $let ()
