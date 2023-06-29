@@ -1042,7 +1042,7 @@ ReductionStatus
 Define(TermNode& term, Context& ctx)
 {
 	Retain(term);
-	if(term.size() > 2)
+	if(term.size() >= 2)
 	{
 		RemoveHead(term);
 		ClearCombiningTags(term);
