@@ -435,6 +435,8 @@ $let* ((&x 1) (li list% x))
 subinfo "list-concat";
 $expect (list "2" "3") list-concat (list "2") (list "3");
 $check-not $let ((e)) reference? (list-concat () e);
+subinfo "append";
+$expect (list% "2" id) append (list "2") (list% id);
 
 info "bindings operations";
 () $let ()
