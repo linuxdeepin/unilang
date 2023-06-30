@@ -432,6 +432,9 @@ $let* ((&x 1) (li list% x))
 	$expect (list 1) (map1 forward! li);
 	$expect-moved first li
 );
+subinfo "list-concat";
+$expect (list "2" "3") list-concat (list "2") (list "3");
+$check-not $let ((e)) reference? (list-concat () e);
 
 info "bindings operations";
 () $let ()
