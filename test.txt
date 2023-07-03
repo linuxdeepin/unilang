@@ -437,6 +437,49 @@ $expect (list "2" "3") list-concat (list "2") (list "3");
 $check-not $let ((e)) reference? (list-concat () e);
 subinfo "append";
 $expect (list% "2" id) append (list "2") (list% id);
+subinfo "list extraction";
+() $let (($list unwrap list))
+(
+	$def! rlist $lambda ((.&x)) forward! (check-list-reference x);
+	$defl! test-lextr (list-extract%)
+	(
+		$defl%! list-extract-first! (&l)
+			list-extract% (map1 expire (rlist l)) first;
+		$defl%! list-extract-rest%! (&l)
+			list-extract% (map1 expire (rlist l)) rest%;
+		$defl! make-test-list () $list (x + 1 2) (y idv) (z id id);
+		$def! li () make-test-list;
+		$expect ($list x y z) list-extract-first! li;
+		$expect ($list (() + 1 2) (() idv) (() id id)) li;
+		$def! li () make-test-list;
+		$expect ($list (+ 1 2) (idv) (id id)) list-extract-rest%! li;
+		$expect ($list (x) (y) (z)) li;
+		$expect ($list x y z) list-extract-first! (() make-test-list);
+		$expect ($list (+ 1 2) (idv) (id id))
+			list-extract-rest%! (() make-test-list);
+		subinfo "list-extract-first";
+		$expect ($list x y z) list-extract-first (() make-test-list);
+		subinfo "list-extract-rest%";
+		$expect ($list (+ 1 2) (idv) (id id))
+			list-extract-rest% (() make-test-list)
+	);
+	subinfo "list extraction #1";
+	$defw%! list-extract% (&l &extr) d
+		foldr1 ($if ($lvalue-identifier? l)
+			($lambda% (&x &xs) cons% (apply extr (list% x) d)
+				(move! xs))
+			($lambda% (&x &xs) cons% (apply extr (list% (expire x)) d)
+				(move! xs))) () l;
+	test-lextr list-extract%;
+	subinfo "list extraction #2";
+	$defw%! list-extract% (&l &extr) d
+		accr l null? () ($lambda% (&l)
+			apply forward-first% (list% extr (expire l)) d) rest% cons%;
+	test-lextr list-extract%;
+	subinfo "list extraction #3";
+	$defl! list-extract% (&l &extr) map1 extr (forward! l);
+	test-lextr list-extract%
+);
 
 info "bindings operations";
 () $let ()
