@@ -1144,6 +1144,9 @@ $defv! $import&! (&e .&symbols) d
 		((unwrap list%) .)) (symbols->imports symbols)) (eval e d);
 $defl! nonfoldable? (&l)
 	$if (null? l) #f ($if (null? (first l)) #t (nonfoldable? (rest& l)));
+$defl%! assq (&x &alist) $cond ((null? alist))
+	((eq? x (first& (first& alist))) first% alist)
+	(#t assq (forward! x) (rest% alist));
 $defw%! map-reverse (&appv .&ls) d
 	accl (forward! (check-list-reference ls)) nonfoldable? () list-extract-first
 		list-extract-rest%
@@ -1307,7 +1310,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.407"
+#define APP_VER "0.12.409"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
