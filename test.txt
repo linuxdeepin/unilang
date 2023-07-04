@@ -480,6 +480,18 @@ subinfo "list extraction";
 	$defl! list-extract% (&l &extr) map1 extr (forward! l);
 	test-lextr list-extract%
 );
+subinfo "list-extract-first value";
+$let* ((i 1) (l0 list% i 2) (li list% (as-const l0) (list 3 4)))
+	$check-not modifiable? (first% (list-extract-first li));
+$let ((li list (list 3 4)))
+(
+	subinfo "list-extract-first unexpected move";
+	$expect (list 3) (list-extract-first li);
+	$check-not moved? (first (first li));
+	subinfo "list-extract-rest% unexpected move";
+	$expect (list (list 4)) (list-extract-rest% li);
+	$check-not null? (rest% (first li))
+);
 
 info "bindings operations";
 () $let ()
