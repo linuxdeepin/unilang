@@ -495,6 +495,9 @@ $let ((li list (list 3 4)))
 subinfo "assq";
 $let ((a 1)) $expect (list a "l")
 	assq a (list (list 9 2) (list 1 "m") (list% a "l") (list 3 4) (list% a 3));
+subinfo "assv";
+$expect (list 1 "l")
+	assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
 
 info "bindings operations";
 () $let ()
