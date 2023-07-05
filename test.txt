@@ -515,7 +515,7 @@ info "bindings operations";
 	$let ((a 2)) $check reference? ($letrec% () a)
 );
 $let ((n 42) (e () get-current-environment) (test-lets $lambda (&test)
-	map1 test (list $let $let% $let* $let*% $letrec $letrec%)))
+	for-each-ltr test (list $let $let% $let* $let*% $letrec $letrec%)))
 (
 	subinfo "let single lvalue preservation";
 	test-lets ($lambda ($l)
