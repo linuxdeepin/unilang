@@ -498,6 +498,9 @@ $let ((a 1)) $expect (list a "l")
 subinfo "assv";
 $expect (list 1 "l")
 	assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
+subinfo "map-reverse and for-each-ltr tail calls";
+$expect #inert for-each-ltr ($lambda .) (list ());
+$expect (list ()) map-reverse ($lambda .) (list ());
 
 info "bindings operations";
 () $let ()
