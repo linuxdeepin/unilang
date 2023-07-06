@@ -99,15 +99,11 @@ $let ((a 2))
 	$check-not equal? (cons 2 2) (cons% 2 3);
 	$check-not equal? (cons% 2 2) (cons% 2 3)
 );
-subinfo "fwd?";
-$let ()
-(
-	$def! fwd? $vau% (&x) d
-		($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d);
+subinfo "condition of lvalues";
+$let ((lv? $vau% (&x) d
+	($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d)))
 	$expect (list% #f #f #t #t #f)
-		list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
-			(fwd? (idv fwd?))
-);
+		list% (lv? 1) (lv? ()) (lv? lv?) (lv? (id lv?)) (lv? (idv lv?));
 
 info "reference and assignment operations";
 subinfo "$expire-rvalue";
