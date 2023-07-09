@@ -42,7 +42,7 @@ Currently, there are many options for desktop application development, with thei
 
 From the perspective of higher-level structure, different types of GUI solutions also have different technical limitations in the sense of architecture, which greatly limits the choices of real general solutions:
 
-* Compared with the traditional *retained mode* GUI, the *immediate mode* GUI as [Dear ImGUI](https://github.com/ocornut/imgui) lacks the abstraction of entities, not reflecting the traditonal approach of [WIMP metaphor](https://en.wikipedia.org/wiki/WIMP_%28computing%29).
+* Compared with the traditional *retained mode* GUI, the *immediate mode* GUI as [Dear ImGUI](https://github.com/ocornut/imgui) lacks the abstraction of entities, not reflecting the traditional approach of [WIMP metaphor](https://en.wikipedia.org/wiki/WIMP_%28computing%29).
 	* The so-called [immediate mode](https://en.wikipedia.org/wiki/Immediate_mode_%28computer_graphics%29) originally focused on graphics rendering and lacked attention to UI interaction. Therefore, even if good display output is achieved, a lot of work is still needed to improve interactivity.
 	* Due to the simplification of intermediate states, immediate mode GUI is basically difficult to extend to implement the UI automation interface in nature.
 * It is difficult to overcome the specific functional limitations of the underlying implementation by relying on the "native" solution provided with the system.
@@ -370,7 +370,7 @@ If there exists the submodule update, and the script `install-sbuild.sh` is alre
 rm -f 3rdparty/.patched
 ```
 
-Alternatively, the follwing `git` command can make the cleanup:
+Alternatively, the following `git` command can make the cleanup:
 
 ```sh
 git clean -f -X 3rdparty
@@ -402,7 +402,7 @@ With the [script of external build tools (zh-CN)](https://frankhb.github.io/YSLi
 
 Currently, only x86_64 architecture is supported on Linux.
 
-The following instructions assume the number of maximum parallel build tasks as `$(nproc)`. This can be overriden by a positive integer in the command lines.
+The following instructions assume the number of maximum parallel build tasks as `$(nproc)`. This can be overridden by a positive integer in the command lines.
 
 ### Environment configuration
 
@@ -518,7 +518,7 @@ The `LD_LIBRARY_PATH` in Linux configurations above can also be configured by ot
 
 Use of static library instead can avoid the necessity of the configurations above. However, LLVM may be deployed only with dynamic libraries.
 
-**CAUTION** There is no guarantee to ensure the compatibility among external binary dependencies not configurated by the scripts. They may need other reliable ways of deployment, e.g. by the system package manager. Relying on such libraries cuases the final executable of the interpreter not portable among different system enviornments (like different Linux distrobutions).
+**CAUTION** There is no guarantee to ensure the compatibility among external binary dependencies not configurated by the scripts. They may need other reliable ways of deployment, e.g. by the system package manager. Relying on such libraries causes the final executable of the interpreter not portable among different system enviornments (like different Linux distrobutions).
 
 ## Running the interpreter
 
