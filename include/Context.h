@@ -10,7 +10,6 @@
 //	std::allocator_arg_t, Unilang::Deref, EnvironmentBase, pmr, string_view,
 //	AnchorPtr, type_info, std::allocator_arg, lref, Unilang::allocate_shared,
 //	Unilang::AssertMatchedAllocators, Unilang::AsTermNode, stack;
-#include <ystdex/string.hpp> // for ystdex::string_hash;
 #include <ystdex/functor.hpp> // for ystdex::equal_to;
 #include <ystdex/allocator.hpp> // for ystdex::allocator_delete,
 //	ystdex::rebind_alloc_t, ystdex::make_obj_using_allocator;
@@ -54,8 +53,40 @@ class EnvironmentParent;
 
 using EnvironmentList = vector<EnvironmentParent>;
 
-using BindingMap = unordered_map<string, TermNode,
-	ystdex::string_hash<char>, ystdex::equal_to<>>;
+class SymbolStringHash
+{
+public:
+	using is_transparent = yimpl(void);
+
+	YB_ATTR_nodiscard YB_NONNULL(2) YB_PURE size_t
+	operator()(const char* s) const noexcept
+	{
+		assert(s);
+		return DoHash(s);
+	}
+	template<class _tString>
+	YB_ATTR_nodiscard YB_PURE size_t
+	operator()(const _tString& str) const noexcept
+	{
+		return DoHash(ystdex::make_string_view(str));
+	}
+
+private:
+	YB_ATTR_nodiscard YB_PURE size_t
+	DoHash(const string_view& k) const noexcept
+	{
+		auto first(reinterpret_cast<const unsigned char*>(k.data()));
+		size_t h(5381);
+
+		for(auto n = k.size(); n != 0; --n)
+			h = size_t(ystdex::plus<>()(ystdex::multiplies<>()(h,
+				size_t(65599)), size_t(*first++)));
+		return h;
+	}
+};
+
+using BindingMap
+	= unordered_map<string, TermNode, SymbolStringHash, ystdex::equal_to<>>;
 
 using NameResolution
 	= pair<observer_ptr<BindingMap::mapped_type>, shared_ptr<Environment>>;
