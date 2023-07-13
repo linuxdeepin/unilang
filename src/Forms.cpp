@@ -776,6 +776,13 @@ ConsTail(TermNode& term, TermNode& t)
 }
 
 void
+LiftNoOp(TermNode&)
+#if !(YB_IMPL_GNUCPP < 110200 && YB_HAS_NOEXCEPT && __cplusplus >= 201703L)
+	noexcept
+#endif
+{}
+
+void
 CheckResolvedListReference(TermNode& nd, bool has_ref)
 {
 	if(has_ref)
@@ -1015,6 +1022,12 @@ void
 SetRest(TermNode& term)
 {
 	DoSetRest<LiftToReturn>(term);
+}
+
+void
+SetRestRef(TermNode& term)
+{
+	DoSetRest<LiftNoOp>(term);
 }
 
 

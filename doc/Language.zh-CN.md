@@ -2857,6 +2857,10 @@
 
 　　修改列表的第一个以外的元素。
 
+`set-rest%! <pair> <object>`
+
+　　同 `set-rest!` ，但保留引用值。
+
 `desigil <symbol>`
 
 　　移除参数中的引用标记字符 `&` 或 `%` 。

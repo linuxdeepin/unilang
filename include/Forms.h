@@ -449,6 +449,9 @@ ConsRef(TermNode&);
 void
 SetRest(TermNode&);
 
+void
+SetRestRef(TermNode&);
+
 
 ReductionStatus
 Eval(TermNode&, Context&);
