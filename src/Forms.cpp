@@ -775,6 +775,51 @@ ConsTail(TermNode& term, TermNode& t)
 	return ReductionStatus::Retained;
 }
 
+void
+CheckResolvedListReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(!IsList(nd)))
+			ThrowListTypeErrorForNonList(nd, true);
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
+void
+CheckResolvedPairReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(IsAtom(nd)))
+			ThrowListTypeErrorForAtom(nd, true);
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
+template<void(&_rLift)(TermNode&)>
+void
+DoSetRest(TermNode& term)
+{
+	RetainN(term, 2);
+
+	auto i(term.begin());
+
+	ResolveTerm([&](TermNode& nd_x, bool has_ref_x){
+		CheckResolvedPairReference(nd_x, has_ref_x);
+
+		TermNode& y(*++i);
+
+		_rLift(y);
+		ConsSplice(y, nd_x);
+		y.GetContainerRef().swap(nd_x.GetContainerRef());
+		nd_x.Value = std::move(y.Value);
+	}, *++i);
+	term.Value = ValueToken::Unspecified;
+}
+
 
 template<typename... _tParams>
 YB_ATTR_nodiscard YB_PURE inline TermNode
@@ -816,30 +861,6 @@ CheckReference(TermNode& term, void(&f)(TermNode&, bool))
 		LiftTerm(term, *std::next(term.begin()));
 		return ReductionStatus::Regular;
 	}, term);
-}
-
-void
-CheckResolvedListReference(TermNode& nd, bool has_ref)
-{
-	if(has_ref)
-	{
-		if(YB_UNLIKELY(!IsList(nd)))
-			ThrowListTypeErrorForNonList(nd, true);
-	}
-	else
-		ThrowValueCategoryError(nd);
-}
-
-void
-CheckResolvedPairReference(TermNode& nd, bool has_ref)
-{
-	if(has_ref)
-	{
-		if(YB_UNLIKELY(IsAtom(nd)))
-			ThrowListTypeErrorForAtom(nd, true);
-	}
-	else
-		ThrowValueCategoryError(nd);
 }
 
 } // unnamed namespace;
@@ -988,6 +1009,12 @@ ConsRef(TermNode& term)
 	auto i(ConsHead(term));
 
 	return ConsTail(term, *++i);
+}
+
+void
+SetRest(TermNode& term)
+{
+	DoSetRest<LiftToReturn>(term);
 }
 
 

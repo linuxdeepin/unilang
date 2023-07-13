@@ -813,6 +813,7 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 	});
 	RegisterStrict(m, "cons", Cons);
 	RegisterStrict(m, "cons%", ConsRef);
+	RegisterStrict(m, "set-rest!", SetRest);
 	RegisterUnary<Strict, const TokenValue>(m, "desigil", [](TokenValue s){
 		return TokenValue(!s.empty() && (s.front() == '&' || s.front() == '%')
 			? s.substr(1) : std::move(s));
@@ -1313,7 +1314,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.410"
+#define APP_VER "0.12.412"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
