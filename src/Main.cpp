@@ -1289,7 +1289,7 @@ PrintHelpMessage(const string& prog)
 		"\tThe source specified by SRCPATH shall have Unilang source tokens"
 		" encoded in a text stream with optional UTF-8 BOM (byte-order mark),"
 		" which are to be read and evaluated in the initial environment of the"
-		" interpreter. Otherwise, errors are raise to reject the source.\n\n"
+		" interpreter. Otherwise, errors are raised to reject the source.\n\n"
 		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
 		"\tThe options and arguments for the program execution. After '--',"
 		" options parsing is turned off and every remained command line"
@@ -1315,7 +1315,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.413"
+#define APP_VER "0.12.414"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
