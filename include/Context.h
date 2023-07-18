@@ -210,14 +210,14 @@ public:
 	SingleWeakParent(SingleWeakParent&&) = default;
 
 	SingleWeakParent&
-	operator=(const SingleWeakParent& parent)
+	operator=(const SingleWeakParent& parent) noexcept
 	{
 		ystdex::copy_assign(alloc, parent.alloc);
 		env_ref = parent.env_ref;
 		return *this;
 	}
 	SingleWeakParent&
-	operator=(SingleWeakParent&& parent)
+	operator=(SingleWeakParent&& parent) noexcept
 	{
 		ystdex::copy_assign(alloc, parent.alloc);
 		env_ref = std::move(parent.env_ref);
@@ -295,6 +295,8 @@ public:
 		shared_ptr<Environment>, _tParams...>)>
 	inline
 	SingleStrongParent(_tParams&&... args)
+		noexcept(ystdex::is_nothrow_constructible<shared_ptr<Environment>,
+		_tParams...>())
 		: env_ptr(yforward(args)...)
 	{}
 	template<typename... _tParams,
@@ -302,27 +304,29 @@ public:
 		shared_ptr<Environment>, _tParams...>)>
 	inline
 	SingleStrongParent(std::allocator_arg_t, allocator_type a,
-		_tParams&&... args)
+		_tParams&&... args) noexcept(ystdex::is_nothrow_constructible<
+		shared_ptr<Environment>, _tParams...>())
 		: alloc(a), env_ptr(yforward(args)...)
 	{}
 	SingleStrongParent(const SingleStrongParent& parent, allocator_type a)
+		noexcept
 		: alloc(a), env_ptr(parent.env_ptr)
 	{}
-	SingleStrongParent(SingleStrongParent&& parent, allocator_type a)
+	SingleStrongParent(SingleStrongParent&& parent, allocator_type a) noexcept
 		: alloc(a), env_ptr(std::move(parent.env_ptr))
 	{}
 	SingleStrongParent(const SingleStrongParent&) = default;
 	SingleStrongParent(SingleStrongParent&&) = default;
 
 	SingleStrongParent&
-	operator=(const SingleStrongParent& parent)
+	operator=(const SingleStrongParent& parent) noexcept
 	{
 		ystdex::copy_assign(alloc, parent.alloc);
 		env_ptr = parent.env_ptr;
 		return *this;
 	}
 	SingleStrongParent&
-	operator=(SingleStrongParent&& parent)
+	operator=(SingleStrongParent&& parent) noexcept
 	{
 		ystdex::copy_assign(alloc, parent.alloc);
 		env_ptr = std::move(parent.env_ptr);
@@ -422,7 +426,7 @@ public:
 	}
 
 	EnvironmentParent&
-	operator=(const EnvironmentParent& ep)
+	operator=(const EnvironmentParent& ep) noexcept
 	{
 		return ystdex::copy_and_swap(*this, ep);
 	}
@@ -494,7 +498,8 @@ public:
 		= ystdex::exclude_self_params_t<ParentList, _tParams...>, typename
 		= ystdex::enable_if_constructible_t<EnvironmentList, _tParams...>)>
 	inline
-	ParentList(_tParams&&... args)
+	ParentList(_tParams&&... args) ynoexcept(
+		ystdex::is_nothrow_constructible<EnvironmentList, _tParams...>())
 		: envs(yforward(args)...)
 	{}
 	ParentList(const ParentList& parent, allocator_type a)
