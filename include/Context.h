@@ -188,20 +188,22 @@ public:
 		typename = ystdex::enable_if_constructible_t<
 		EnvironmentReference, _tParams...>)>
 	inline
-	SingleWeakParent(_tParams&&... args)
+	SingleWeakParent(_tParams&&... args) noexcept(
+		ystdex::is_nothrow_constructible<EnvironmentReference, _tParams...>())
 		: env_ref(yforward(args)...)
 	{}
 	template<typename... _tParams, yimpl(typename
 		= ystdex::enable_if_constructible_t<EnvironmentReference, _tParams...>)>
 	inline
 	SingleWeakParent(std::allocator_arg_t, allocator_type a,
-		_tParams&&... args)
+		_tParams&&... args) noexcept(
+		ystdex::is_nothrow_constructible<EnvironmentReference, _tParams...>())
 		: alloc(a), env_ref(yforward(args)...)
 	{}
-	SingleWeakParent(const SingleWeakParent& parent, allocator_type a)
+	SingleWeakParent(const SingleWeakParent& parent, allocator_type a) noexcept
 		: alloc(a), env_ref(parent.env_ref)
 	{}
-	SingleWeakParent(SingleWeakParent&& parent, allocator_type a)
+	SingleWeakParent(SingleWeakParent&& parent, allocator_type a) noexcept
 		: alloc(a), env_ref(std::move(parent.env_ref))
 	{}
 	SingleWeakParent(const SingleWeakParent&) = default;

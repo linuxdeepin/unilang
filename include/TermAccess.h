@@ -9,7 +9,8 @@
 #include "Exception.h" // for ThrowListTypeErrorForInvalidType;
 #include <ystdex/operators.hpp> // for ystdex::equality_comparable;
 #include <ystdex/type_op.hpp> // for ystdex::exclude_self_params_t;
-#include <ystdex/meta.hpp> // for ystdex::enable_if_constructible_t;
+#include <ystdex/meta.hpp> // for ystdex::is_nothrow_constructible,
+//	ystdex::enable_if_constructible_t;
 #include <ystdex/expanded_function.hpp> // for ystdex::expand_proxy;
 #include <ystdex/compose.hpp> // for ystdex::compose_n;
 
@@ -84,8 +85,7 @@ CheckRegular(_tTerm& term, bool has_ref)
 
 template<typename _type, class _tTerm>
 YB_ATTR_nodiscard YB_PURE inline auto
-AccessRegular(_tTerm& term, bool has_ref)
-	-> decltype(Access<_type>(term))
+AccessRegular(_tTerm& term, bool has_ref) -> decltype(Access<_type>(term))
 {
 	Unilang::CheckRegular<_type>(term, has_ref);
 	return Access<_type>(term);
@@ -170,7 +170,8 @@ public:
 	template<typename... _tParams, yimpl(typename
 		= ystdex::exclude_self_params_t<EnvironmentBase, _tParams...>)>
 	inline
-	EnvironmentBase(_tParams&&... args) noexcept
+	EnvironmentBase(_tParams&&... args) noexcept(
+		ystdex::is_nothrow_constructible<AnchorPtr, _tParams...>())
 		: p_anchor(yforward(args)...)
 	{}
 	EnvironmentBase(const EnvironmentBase&) = default;
@@ -220,7 +221,8 @@ public:
 		= ystdex::enable_if_constructible_t<EnvironmentBase, _tParam2>,
 		typename = ystdex::enable_if_constructible_t<weak_ptr<Environment>,
 		_tParam1>)>
-	EnvironmentReference(_tParam1&& arg1, _tParam2&& arg2) noexcept
+	EnvironmentReference(_tParam1&& arg1, _tParam2&& arg2)
+		noexcept(ystdex::is_nothrow_constructible<EnvironmentBase, _tParam2>())
 		: EnvironmentBase(yforward(arg2)),
 		p_weak(yforward(arg1))
 	{}
@@ -266,14 +268,13 @@ private:
 public:
 	template<typename _tParam, typename... _tParams>
 	inline
-	TermReference(TermNode& term, _tParam&& arg, _tParams&&... args) noexcept
+	TermReference(TermNode& term, _tParam&& arg, _tParams&&... args)
 		: TermReference(TermToTags(term), term, yforward(arg),
 		yforward(args)...)
 	{}
 	template<typename _tParam, typename... _tParams>
 	inline
 	TermReference(TermTags t, TermNode& term, _tParam&& arg, _tParams&&... args)
-		noexcept
 		: term_ref(term), tags((AssertReferentTags(t), t)),
 		r_env(yforward(arg), yforward(args)...)
 	{}
