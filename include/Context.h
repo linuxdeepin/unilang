@@ -149,13 +149,13 @@ public:
 	}
 
 	YB_ATTR_nodiscard YB_PURE bool
-	Equals(const IParent& x) const override
+	Equals(const IParent& x) const noexcept override
 	{
 		return x.type() == type_id<EmptyParent>();
 	}
 
 	YB_ATTR_nodiscard YB_STATELESS shared_ptr<Environment>
-	TryRedirect(Redirector&) const override
+	TryRedirect(Redirector&) const noexcept override
 	{
 		return {};
 	}
