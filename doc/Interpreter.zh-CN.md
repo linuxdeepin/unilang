@@ -195,7 +195,7 @@
 
 ### PTC（proper tail call，真尾调用）
 
-**注释** PTC 不仅仅在对象语言中的函数调用使用，而且在 `eval` 等直接求值的情形下也被使用，这不一定对应程序语法上的递归重入。PTC 的 [[Cl98]](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) 中以 Scheme 的子集为对象语言定义的 PTR(proper tail recursion) 更广，但其形式上本质相同，除了本设计因为支持链式环境（因为语言规范要求一等环境对象支持父环境）而无法实现比一般 PTC 更强的 SFS(safe for space) 保证。
+**注释** PTC 不仅仅在对象语言中的函数调用使用，而且在 `eval` 等直接求值的情形下也被使用，这不一定对应程序语法上的递归重入。[\[Cl98\]](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) 中以 Scheme 的子集为对象语言定义的 PTR(proper tail recursion) 更广，但其形式上本质相同，除了本设计因为支持链式环境（因为语言规范要求一等环境对象支持父环境）而无法实现比一般 PTC 更强的 SFS(safe for space) 保证。
 
 　　为支持 PTC 要求，基础语言中的函数调用一般包含 TCO（tail call optimization，尾调用优化）。这不需要全程序表示的重写（典型地，CPS 变换）。本设计中，这通过使用特殊的 TCO 异步规约动作作为抽象机中存储的当前上下文实现。
 
@@ -238,7 +238,7 @@
 * 当前处理的尾环境的守卫。
 * 保存当前活动记录帧（环境）的记录列表。
 
-　　[Cl98] 指出被分析的对象语言中，非尾调用的上下文只有参数的求值。Unilang 基础语言没有增加此种分析方法不适用的构造，因此结论相同。不过，为了减少 TCO 动作的创建开销，本机实现可以直接跳过判断，而不依赖 TCO 动作。PTC 转而以本机实现保证。
+　　\[Cl98] 指出被分析的对象语言中，非尾调用的上下文只有参数的求值。Unilang 基础语言没有增加此种分析方法不适用的构造，因此结论相同。不过，为了减少 TCO 动作的创建开销，本机实现可以直接跳过判断，而不依赖 TCO 动作。PTC 转而以本机实现保证。
 
 **注释** 因为 C++ 自身不支持 PTC 保证，这里通常使用循环而不能使用 C++ 递归调用。
 	
