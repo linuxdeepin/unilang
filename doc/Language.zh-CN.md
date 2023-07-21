@@ -3240,29 +3240,22 @@
 
 **注释** 因为左值到右值转换，即便 `<object>` 指定的值来自 `<reference>` ，也可赋值而不因此引起[未定义行为](#术语和定义)。
 
-`apply <applicative> <object> <environment>`
+`apply <applicative> <object> <environment>?`
 
-　　在指定环境中应用。
+　　转发第一参数指定的应用子和第二参数指定的参数构成[函数合并](#函数)，在环境中[应用](#函数)。其中，环境是：
 
-　　同求值 `eval% (cons% () (cons% (unwrap <applicative>) <object>)) <environment>` 。
+* [新环境](#新环境)，若第二参数不存在。
+* 否则，第二参数指定的环境。
 
-`apply <applicative> <object>`
+**注释** 检查 `<environment>` 和 \[R<sup>n</sup>RK] 的参考派生不同。
 
-　　在新环境中应用。
+　　`apply` 的函数值保留引用值。
 
-　　同求值 `eval% (cons% () (cons (unwrap <applicative>) <object>)) (() make-environment)` 。
+`apply-list <applicative> <list> <environment>?`
 
-　　以上 apply 的函数值保留引用值。
+　　转发第一参数指定的应用子和第二参数指定的[参数列表](#类型检查)构成函数合并，在环境中应用。其中，环境同 `apply` 中的方式指定。
 
-`apply-list <applicative> <list>`
-
-　　在新环境中应用参数列表。
-
-`apply-list <applicative> <list> <environment>`
-
-　　在指定环境中应用参数列表。
-
-　　同 `apply` ，但首先检查第二参数的类型，若失败则引发错误。
+　　同 `apply` ，但首先检查第二参数的类型，若失败则[引发错误](#错误)。
 
 `list* <object>+`
 
