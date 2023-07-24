@@ -13,11 +13,6 @@ case $(uname) in
 	exit 1
 esac
 
-# NOTE: This works around the missing execution bit in scripts cloned from YSLib
-#	repository (originally in Mercurial which cannot set the bit portably).
-
-find "$YSLib_BaseDir" -type f -name "*.sh" -exec chmod +x {} \;
-
 # NOTE: Prepare archives for YSLib build.
 
 LIB="$YSLib_BaseDir/YFramework/Linux/lib"
