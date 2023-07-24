@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+# SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 # Requires: wget, 7z.
 
 set -e
@@ -61,16 +61,13 @@ if [[ -f "$PATCHED_SIG" ]]; then
 else
 	echo 'Ready to patch files.'
 
-	if cd "$YSLib_BaseDir" && ! [[ -d .git ]] \
-|| (git show --summary | grep -E 'build 969 ' > /dev/null); then
-		# NOTE: Workaround for compiler bugs.
-		sed -i 's/is_nothrow_swappable<key_container_type>()/true/' \
+	# NOTE: Workaround for compiler bugs.
+	sed -i 's/is_nothrow_swappable<key_container_type>()/true/' \
 "$YSLib_BaseDir/YBase/include/ystdex/flat_map.hpp"
-		sed -i 's/is_nothrow_swappable<mapped_container_type>()/true/' \
+	sed -i 's/is_nothrow_swappable<mapped_container_type>()/true/' \
 "$YSLib_BaseDir/YBase/include/ystdex/flat_map.hpp"
-		sed -i 's/is_nothrow_swappable<container_type>()/true/' \
+	sed -i 's/is_nothrow_swappable<container_type>()/true/' \
 "$YSLib_BaseDir/YBase/include/ystdex/flat_set.hpp"
-	fi
 	# NOTE: Old GCC does not support LTO well. Disable it globally here.
 	sed -i 's/-flto=jobserver//g' \
 "$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
