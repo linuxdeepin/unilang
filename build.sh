@@ -13,7 +13,7 @@ YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
 
-echo "Building ..."
+echo 'Building ...'
 
 case $(uname) in
 *MSYS* | *MINGW*)
@@ -57,5 +57,5 @@ $CXXFLAGS_EXTRA \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
 $CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT $LIBS_EXTRA
 
-echo "Done."
+echo 'Done.'
 
