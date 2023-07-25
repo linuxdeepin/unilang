@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+# SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 
 set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
@@ -41,6 +41,7 @@ $CXXFLAGS_EXTRA \
 "$YSLib_BaseDir/YBase/source/ystdex/memory_resource.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/node_base.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/tree.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/hash_table.cpp" \
 -I$YSLib_BaseDir/YFramework/include \
 "$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp" \
 "$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp" \
@@ -53,6 +54,7 @@ $CXXFLAGS_EXTRA \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YCoreUtilities.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Service/FileSystem.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
 "$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
 $CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT $LIBS_EXTRA
