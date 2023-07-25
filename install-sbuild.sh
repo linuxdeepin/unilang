@@ -17,7 +17,8 @@ esac
 
 LIB="$YSLib_BaseDir/YFramework/Linux/lib"
 
-if [[ -d "$LIB" && -r "$LIB/libFreeImage.a" && -r "$LIB/libFreeImaged.a" ]]; \
+if test -d "$LIB" && test -r "$LIB/libFreeImage.a" \
+	&& test -r "$LIB/libFreeImaged.a"; \
 then
 	echo 'Archive files for YSLib are detected. Skip.'
 else
@@ -51,7 +52,7 @@ fi
 # NOTE: Patch files.
 
 PATCHED_SIG="$Unilang_BaseDir/3rdparty/.patched"
-if [[ -f "$PATCHED_SIG" ]]; then
+if test -f "$PATCHED_SIG"; then
 	echo 'Patched source found. Skipped patching.'
 else
 	echo 'Ready to patch files.'
