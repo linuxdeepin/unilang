@@ -12,6 +12,13 @@ YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
 CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
+# NOTE: These are known redundant or false positives.
+if echo "$CXX" --version | grep -q clang; then
+	CXXFLAGS_WKRD=-Wno-mismatched-tags
+else
+	CXXFLAGS_WKRD=\
+'-Wno-dangling-reference -Wno-ignored-attributes -Wno-uninitialized'
+fi
 
 echo 'Building ...'
 
@@ -31,7 +38,7 @@ esac
 
 # shellcheck disable=2086
 "$CXX" $CXXFLAGS -ounilang $Unilang_BaseDir/src/*.cpp \
-$CXXFLAGS_EXTRA \
+$CXXFLAGS_EXTRA $CXXFLAGS_WKRD \
 -Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/cassert.cpp" \
