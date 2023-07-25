@@ -36,7 +36,7 @@ echo 'LLVM version:' "$("$LLVM_BINDIR/llvm-config" --version)"
 
 CXXFLAGS_EXTRA="$("$LLVM_BINDIR/llvm-config" --cxxflags | sed s/-DNDEBUG//g) \
 -fexceptions -frtti -Wp,-U_FORTIFY_SOURCE -U_FORTIFY_SOURCE -Wno-date-time"
-if echo "$CXX" | grep -q clang; then
+if echo "$CXX" --version | grep -q clang; then
 	echo 'Found $CXX: '"$CXX"', unsupported compiler options are removed.'
 	CXXFLAGS_EXTRA="$(echo "$CXXFLAGS_EXTRA" \
 | sed -E 's/-Wno-(class-memaccess|maybe-uninitialized)//g')"
