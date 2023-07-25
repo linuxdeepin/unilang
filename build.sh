@@ -8,6 +8,8 @@ YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 : "${CXX:=g++}"
 : "${CXXFLAGS=-std=c++11 -Wall -Wextra -g}"
 
+echo 'Configuring ...'
+
 . "$Unilang_BaseDir/detect-llvm.sh"
 
 CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
@@ -19,8 +21,6 @@ else
 	CXXFLAGS_WKRD=\
 '-Wno-dangling-reference -Wno-ignored-attributes -Wno-uninitialized'
 fi
-
-echo 'Building ...'
 
 case $(uname) in
 *MSYS* | *MINGW*)
@@ -35,6 +35,10 @@ $YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
 	EXTRA_OPT="-fPIC -pthread \
 $YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
 esac
+
+echo 'Configuring Done.'
+
+echo 'Building ...'
 
 # shellcheck disable=2086
 "$CXX" $CXXFLAGS -ounilang $Unilang_BaseDir/src/*.cpp \
