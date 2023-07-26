@@ -312,19 +312,19 @@ The building environment relies on the following tools:
 * `git`
 * `bash`
 * [GNU coreutils](https://www.gnu.org/software/coreutils/)
-* G++ supporting ISO C++, and compatible GNU binutils
-
-The following dependencies are optional:
-
-* Clang++ can be a replacement of G++.
-
-The binary form of the following dependencies are also used:
-
+* C++ toolchain supporting `std=c++11`, any of:
+	* G++ and a linker compatible with (defaulted to GNU ld)
+		* **NOTE** The current minimal tested G++ version is GCC 8.
+	* Clang++ and a linker compatible with
+		* **NOTE** The minimal version should be compatible to the minimal version of G++ in general.
 * libffi
-* LLVM 7 (optional)
-	* `llvm-config`
 * Qt 5
 * `pkg-config`
+
+* The following dependencies are optional:
+
+* LLVM 7
+	* `llvm-config`
 
 The following commands illustrates how to prepare the build environment by package managers:
 

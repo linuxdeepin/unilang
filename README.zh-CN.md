@@ -309,19 +309,19 @@
 * `git`
 * `bash`
 * [GNU coreutils](https://www.gnu.org/software/coreutils/)
-* 支持 ISO C++ 11 的 G++ 和与之兼容的 GNU binutils
+* 支持 `-std=c++11` 的 G++ 兼容工具链，可选以下任意：
+	* G++ 和与之兼容的链接器（如 GNU ld ）
+		* **注释** 当前测试的 G++ 最低版本是 GCC 8 。
+	* Clang++ 和兼容的链接器
+		* **注释** 使用的版本一般应能兼容最低的 GCC 版本。
+* libffi
+* Qt 5
+* `pkg-config`
 
 　　可选依赖：
 
-* 可使用 Clang++ 代替 G++ 。
-
-　　构建使用外部二进制依赖和相关工具：
-
-* libffi
-* LLVM 7（可选）
+* LLVM 7
 	* `llvm-config`
-* Qt 5
-* `pkg-config`
 
 　　安装构建环境依赖的包管理器命令行举例：
 
