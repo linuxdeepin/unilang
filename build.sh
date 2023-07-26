@@ -40,8 +40,19 @@ echo 'Configuring Done.'
 
 echo 'Building ...'
 
+Call_()
+{
+	# XXX: %Verbose is external.
+	# shellcheck disable=2154
+	if test -n "$Verbose"; then
+		# shellcheck disable=2086
+		echo "${@@Q}"
+	fi
+	"$@"
+}
+
 # shellcheck disable=2086
-"$CXX" $CXXFLAGS -ounilang $Unilang_BaseDir/src/*.cpp \
+Call_ "$CXX" $CXXFLAGS -ounilang $Unilang_BaseDir/src/*.cpp \
 $CXXFLAGS_EXTRA $CXXFLAGS_WKRD \
 -Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \

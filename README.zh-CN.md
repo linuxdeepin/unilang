@@ -308,6 +308,7 @@
 
 * `git`
 * `bash`
+	* 支持的最低版本是 4.4 。
 * [GNU coreutils](https://www.gnu.org/software/coreutils/)
 * 支持 `-std=c++11` 的 G++ 兼容工具链，可选以下任意：
 	* G++ 和与之兼容的链接器（如 GNU ld ）
@@ -389,6 +390,10 @@ env CXX=clang++ ./build.sh
 　　默认使用 `-std=c++11 -Wall -Wextra -g` 编译器选项。类似地，使用环境变量 `CXXFLAGS` 可替代默认值。
 
 　　这个脚本使用 shell 命令行调用 `$CXX` 指定的编译器驱动，不支持并行构建，可能较慢。
+
+　　此外，脚本支持设置以下环境变量为非空值以调整行为：
+
+* `Verbose` ：启用详细输出。
 
 　　优点是不需要进一步配置环境即可使用。适合一次性测试和部署。
 

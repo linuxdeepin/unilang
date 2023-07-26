@@ -311,6 +311,7 @@ The building environment relies on the following tools:
 
 * `git`
 * `bash`
+	* The minimal version supported is 4.4.
 * [GNU coreutils](https://www.gnu.org/software/coreutils/)
 * C++ toolchain supporting `std=c++11`, any of:
 	* G++ and a linker compatible with (defaulted to GNU ld)
@@ -393,6 +394,10 @@ env CXX=clang++ ./build.sh
 The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use the environment variable `CXXFLAGS` can override the default value.
 
 The script uses shell command lines to call the compiler driver specified by `$CXX` directly, and no parallel builds are supported. It may be slow.
+
+This script also supports setting the following non-empty environment variables to tweak the behavior:
+
+* `Verbose`: Enable the verbose output.
 
 The advantage of this script is the ease to use without further configurations. It may be suitable for one-time testing and deployment.
 
