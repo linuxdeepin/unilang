@@ -391,6 +391,11 @@ env CXX=clang++ ./build.sh
 
 　　这个脚本使用 shell 命令行调用 `$CXX` 指定的编译器驱动，不支持并行构建，可能较慢。
 
+　　脚本使用以下可选的环境变量指定输出文件的位置：
+
+* `Unilang_Output` ：输出的解释器可执行文件路径。默认值为 `unilang` 。
+* `Unilang_BuildDir` ：输出的中间构建文件目录。默认值为 `Unilang_Output` 的值所在的目录。
+
 　　此外，脚本支持设置以下环境变量为非空值以调整行为：
 
 * `Verbose` ：启用详细输出。

@@ -4,6 +4,8 @@
 set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
+: "${Unilang_Output=unilang}"
+: "${Unilang_BuildDir="$(dirname "$Unilang_Output")"}"
 
 echo 'Configuring ...'
 
@@ -40,6 +42,9 @@ echo 'Configuring Done.'
 
 echo 'Building ...'
 
+mkdir -p "$Unilang_BuildDir"
+mkdir -p "$(dirname "$Unilang_Output")"
+
 Call_()
 {
 	# XXX: %Verbose is external.
@@ -52,7 +57,7 @@ Call_()
 }
 
 # shellcheck disable=2086
-Call_ "$CXX" $CXXFLAGS -ounilang $Unilang_BaseDir/src/*.cpp \
+Call_ "$CXX" $CXXFLAGS -o"$Unilang_Output" $Unilang_BaseDir/src/*.cpp \
 $CXXFLAGS_EXTRA $CXXFLAGS_WKRD \
 -Iinclude -I$YSLib_BaseDir/YBase/include \
 "$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \

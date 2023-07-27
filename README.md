@@ -395,6 +395,11 @@ The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use t
 
 The script uses shell command lines to call the compiler driver specified by `$CXX` directly, and no parallel builds are supported. It may be slow.
 
+The following optional environment variables are used in the script to specify the location of output files:
+
+* `Unilang_Output`: The output path of the interpreter executable file. The default value is `unilang`.
+* `Unilang_BuildDir`: The directory for intermediate files during the build. The default value is the directory of the value of `Unilang_Output`.
+
 This script also supports setting the following non-empty environment variables to tweak the behavior:
 
 * `Verbose`: Enable the verbose output.
