@@ -9,6 +9,9 @@ YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
 echo 'Configuring ...'
 
+echo "Output path is \"$Unilang_Output\"."
+echo "Build directory is \"$Unilang_BuildDir\"."
+
 : "${CXX:=g++}"
 : "${CXXFLAGS=-std=c++11 -Wall -Wextra -g}"
 
