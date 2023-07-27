@@ -319,8 +319,8 @@ The building environment relies on the following tools:
 	* Clang++ and a linker compatible with
 		* **NOTE** The minimal version should be compatible to the minimal version of G++ in general.
 * libffi
-* Qt 5
 * `pkg-config`
+* Qt 5
 
 * The following dependencies are optional:
 
@@ -332,7 +332,7 @@ The following commands illustrates how to prepare the build environment by packa
 ```sh
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5-base mingw-w64-x86_64-qt5-declarative
+pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative}
 # Arch Linux
 sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative
 yay -S llvm70 # Or some other AUR frontend command.

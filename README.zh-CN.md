@@ -316,8 +316,8 @@
 	* Clang++ 和兼容的链接器
 		* **注释** 使用的版本一般应能兼容最低的 GCC 版本。
 * libffi
-* Qt 5
 * `pkg-config`
+* Qt 5
 
 　　可选依赖：
 
@@ -329,7 +329,7 @@
 ```sh
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-x86_64-libffi mingw-w64-x86_64-llvm mingw-w64-x86_64-pkgconf mingw-w64-x86_64-qt5-base mingw-w64-x86_64-qt5-declarative
+pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative}
 # Arch Linux
 sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative
 yay -S llvm70 # Or some other AUR frontend command.
