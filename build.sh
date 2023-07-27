@@ -27,19 +27,49 @@ else
 '-Wno-dangling-reference -Wno-ignored-attributes -Wno-uninitialized'
 fi
 
+INCLUDES=(-Iinclude "-I$YSLib_BaseDir/YBase/include" \
+"-I$YSLib_BaseDir/YFramework/include")
+
+SRCS=("$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/cassert.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/concurrency.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/cstdio.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/exception.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/memory_resource.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/node_base.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/tree.cpp" \
+"$YSLib_BaseDir/YBase/source/ystdex/hash_table.cpp" \
+"$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp" \
+"$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/Debug.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/FileIO.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/FileSystem.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/MemoryMapping.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/NativeAPI.cpp" \
+"$YSLib_BaseDir/YFramework/source/YCLib/YCommon.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Core/YCoreUtilities.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Service/FileSystem.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
+"$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp")
+
 case $(uname) in
 *MSYS* | *MINGW*)
-	EXTRA_OPT="-I$YSLib_BaseDir/YFramework/Win32/include \
-$YSLib_BaseDir/YFramework/source/YCLib/Host.cpp \
-$YSLib_BaseDir/YFramework/Win32/source/YCLib/MinGW32.cpp \
-$YSLib_BaseDir/YFramework/Win32/source/YCLib/NLS.cpp \
-$YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp \
-$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
+	INCLUDES=("${INCLUDES[@]}" "-I$YSLib_BaseDir/YFramework/Win32/include")
+	SRCS=("${SRCS[@]}" "$YSLib_BaseDir/YFramework/source/YCLib/Host.cpp" \
+"$YSLib_BaseDir/YFramework/Win32/source/YCLib/MinGW32.cpp" \
+"$YSLib_BaseDir/YFramework/Win32/source/YCLib/NLS.cpp" \
+"$YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp" \
+"$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp")
+	EXTRA_OPT=
 	;;
 *)
-	EXTRA_OPT="-fPIC -pthread \
-$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp -ldl"
+	SRCS=("${SRCS[@]}" "$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp")
+	EXTRA_OPT="-fPIC -pthread -ldl"
 esac
+
+SRCS=("$Unilang_BaseDir/src"/*.cpp "${SRCS[@]}")
 
 echo 'Configuring Done.'
 
@@ -60,34 +90,9 @@ Call_()
 }
 
 # shellcheck disable=2086
-Call_ "$CXX" $CXXFLAGS -o"$Unilang_Output" $Unilang_BaseDir/src/*.cpp \
-$CXXFLAGS_EXTRA $CXXFLAGS_WKRD \
--Iinclude -I$YSLib_BaseDir/YBase/include \
-"$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/cassert.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/concurrency.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/cstdio.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/exception.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/memory_resource.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/node_base.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/tree.cpp" \
-"$YSLib_BaseDir/YBase/source/ystdex/hash_table.cpp" \
--I$YSLib_BaseDir/YFramework/include \
-"$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp" \
-"$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp" \
-"$YSLib_BaseDir/YFramework/source/YCLib/Debug.cpp" \
-"$YSLib_BaseDir/YFramework/source/YCLib/FileIO.cpp" \
-"$YSLib_BaseDir/YFramework/source/YCLib/FileSystem.cpp" \
-"$YSLib_BaseDir/YFramework/source/YCLib/MemoryMapping.cpp" \
-"$YSLib_BaseDir/YFramework/source/YCLib/NativeAPI.cpp" \
-"$YSLib_BaseDir/YFramework/source/YCLib/YCommon.cpp" \
-"$YSLib_BaseDir/YFramework/source/YSLib/Core/YCoreUtilities.cpp" \
-"$YSLib_BaseDir/YFramework/source/YSLib/Core/YException.cpp" \
-"$YSLib_BaseDir/YFramework/source/YSLib/Core/YObject.cpp" \
-"$YSLib_BaseDir/YFramework/source/YSLib/Service/FileSystem.cpp" \
-"$YSLib_BaseDir/YFramework/source/YSLib/Service/File.cpp" \
-"$YSLib_BaseDir/YFramework/source/YSLib/Service/TextFile.cpp" \
-$CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT $LIBS_EXTRA
+Call_ "$CXX" -o"$Unilang_Output" $CXXFLAGS \
+	$CXXFLAGS_EXTRA $CXXFLAGS_WKRD $CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT \
+	"${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
 
 echo 'Done.'
 
