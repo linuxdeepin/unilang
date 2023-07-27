@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
+# SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
 # shellcheck disable=2016
 
 set -e
@@ -12,7 +12,7 @@ touch "$ERR"
 
 : "${UNILANG:=./unilang}"
 
-if [[ -d "$UNILANG" || ! -x "$UNILANG" ]]; then
+if test -d "$UNILANG" || test ! -x "$UNILANG"; then
 	echo "ERROR: Wrong '$UNILANG' found as the interpreter."
 	exit 1
 fi
@@ -30,7 +30,7 @@ call_intp()
 run_case()
 {
 	echo "Running case:" "$1"
-	if ! (call_intp "$1") || [ -s "$ERR" ]; then
+	if ! (call_intp "$1") || test -s "$ERR"; then
 		echo "FAIL."
 		echo "Error:"
 		cat "$ERR"
@@ -39,7 +39,7 @@ run_case()
 	fi
 }
 
-if [[ "$PTC" != '' ]]; then
+if test -n "$PTC"; then
 # NOTE: Test cases should print no errors.
 	echo "The following case are expected to be non-terminating."
 	echo "However, the maximum memory consumption is expected constant."

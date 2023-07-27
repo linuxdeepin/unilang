@@ -446,6 +446,12 @@ Cons(TermNode&);
 ReductionStatus
 ConsRef(TermNode&);
 
+void
+SetRest(TermNode&);
+
+void
+SetRestRef(TermNode&);
+
 
 ReductionStatus
 Eval(TermNode&, Context&);
@@ -455,6 +461,12 @@ EvalAt(TermNode&, Context&);
 
 ReductionStatus
 EvalRef(TermNode&, Context&);
+
+ReductionStatus
+EvalString(TermNode&, Context&);
+
+ReductionStatus
+EvalStringRef(TermNode&, Context&);
 
 
 void

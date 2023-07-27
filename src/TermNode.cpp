@@ -59,9 +59,10 @@ TermNode::ClearContainer() noexcept
 	{
 		const auto i(container.begin());
 
-		container.splice(i, std::move(Unilang::Deref(i).container));
+		Unilang::TransferSubterms(*this, i, Unilang::Deref(i));
 		container.erase(i);
 	}
+	assert(IsLeaf(*this) && "Failed clearing the container of a term.");
 }
 
 } // namespace Unilang;

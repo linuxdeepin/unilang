@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2022 UnionTech Software Technology Co.,Ltd.
+# SPDX-FileCopyrightText: 2022-2023 UnionTech Software Technology Co.,Ltd.
 # Requires: valgrind.
 # Test script for running the interpreter in release mode using valgrind.
 # The default tool is callgrind.
@@ -12,8 +12,8 @@
 : "${UNILANG:="build/.$CONF/unilang.exe"}"
 
 echo 'Ready to run the command for Unilang interpreter "'"$UNILANG"'".'
-echo 'Using valgrind options: '$LOGOPT $TOOLOPT'.'
-echo 'Using interpreter options: '"$@"'.'
+echo "Using valgrind options: '$LOGOPT $TOOLOPT'."
+echo "Using interpreter options: '$*'."
 
 # XXX: Value of several variables may contain whitespaces.
 # shellcheck disable=2086

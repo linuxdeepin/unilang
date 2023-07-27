@@ -67,7 +67,7 @@
 
 ## 规约
 
-　　本设计中的求值被映射为一个 TRS（term reduction system，项求值系统）模型。作为一类主要的重写系统(rewrite system) ，这可直接用来表达程序的形式语义(foraml semantics) （更具体地，使用[操作语义(operational semantics)](https://en.wikipedia.org/wiki/Operational_semantics) 的方法，表达小步语义(small-step semantics) ）；同时，表达语言的实现时，它高度同构于 AST 解释器。
+　　本设计中的求值被映射为一个 TRS（term reduction system ，项求值系统）模型。作为一类主要的重写系统(rewrite system) ，这可直接用来表达程序的形式语义(foraml semantics) （更具体地，使用[操作语义(operational semantics)](https://en.wikipedia.org/wiki/Operational_semantics) 的方法，表达小步语义(small-step semantics) ）；同时，表达语言的实现时，它高度同构于 AST 解释器。
 
 　　TRS 中的*规约(reduction)* 是输入到输出的有向的变换。一系列规约的步骤(step) 经过一定的组合可替换 IR 的某个*项(term)* 的节点，实现 TRS 重写(rewrting) 。这种重写以解释器中的原生本机代码实现，或调用被解释的对象语言（在此为 Unilang 基础语言）的程序片段实现功能。
 
@@ -86,6 +86,16 @@
 **注释** 未来扩展可支持一等续延(first-class continuation) ，允许对象语言编写的用户程序直接操作异步规约动作。非异步规约的实现难以实现这些扩展（需要全程序变换，不适合一般解释器）。
 
 　　上下文和宿主环境中的 C++ 线程一一对应。上下文之间相互隔离，不同的上下文允许多线程并发执行，一个宿主线程至多同时执行一个上下文的程序。
+
+　　TRS 在上下文中实现。上下文同时保存具有 AST 数据结构的当前被规约项，在被实现的对象语言意义上是当前线程中作为原始输入被求值的表达式的值或其中的中间表示。
+
+　　上下文引用跨上下文的全局状态(global state) 。全局状态包含所有上下文默认都可能使用的公共资源，并提供规约表达式的公共例程。其中，可变状态被最小化。
+
+**原理**
+
+　　最小化可变状态允许提升多线程执行环境中的数据局域性，减小数据争用和锁定的必要性，便于使用细粒度锁(fine-grained lock) 而不是 GIL（global interpreter lock ，全局解释器锁）避免可变共享数据的修改引起数据竞争。
+
+　　这对多线程执行环境的支持至关重要。因为 GIL 极大地影响程序中不同上下文上的表达式并行求值性能，一旦被引入，即难以通过不破坏 API 兼容性的重构消除。因此，从头避免 GIL 是比从现有设计中移除 GIL 更可行的做法。
 
 ### 数据结构
 
@@ -185,7 +195,7 @@
 
 ### PTC（proper tail call，真尾调用）
 
-**注释** PTC 不仅仅在对象语言中的函数调用使用，而且在 `eval` 等直接求值的情形下也被使用，这不一定对应程序语法上的递归重入。PTC 的 [[Cl98]](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) 中以 Scheme 的子集为对象语言定义的 PTR(proper tail recursion) 更广，但其形式上本质相同，除了本设计因为支持链式环境（因为语言规范要求一等环境对象支持父环境）而无法实现比一般 PTC 更强的 SFS(safe for space) 保证。
+**注释** PTC 不仅仅在对象语言中的函数调用使用，而且在 `eval` 等直接求值的情形下也被使用，这不一定对应程序语法上的递归重入。[\[Cl98\]](https://www.researchgate.net/profile/William_Clinger/publication/2728133_Proper_Tail_Recursion_and_Space_Efficiency/links/02e7e53624927461c8000000/Proper-Tail-Recursion-and-Space-Efficiency.pdf) 中以 Scheme 的子集为对象语言定义的 PTR(proper tail recursion) 更广，但其形式上本质相同，除了本设计因为支持链式环境（因为语言规范要求一等环境对象支持父环境）而无法实现比一般 PTC 更强的 SFS(safe for space) 保证。
 
 　　为支持 PTC 要求，基础语言中的函数调用一般包含 TCO（tail call optimization，尾调用优化）。这不需要全程序表示的重写（典型地，CPS 变换）。本设计中，这通过使用特殊的 TCO 异步规约动作作为抽象机中存储的当前上下文实现。
 
@@ -228,7 +238,7 @@
 * 当前处理的尾环境的守卫。
 * 保存当前活动记录帧（环境）的记录列表。
 
-　　[Cl98] 指出被分析的对象语言中，非尾调用的上下文只有参数的求值。Unilang 基础语言没有增加此种分析方法不适用的构造，因此结论相同。不过，为了减少 TCO 动作的创建开销，本机实现可以直接跳过判断，而不依赖 TCO 动作。PTC 转而以本机实现保证。
+　　\[Cl98] 指出被分析的对象语言中，非尾调用的上下文只有参数的求值。Unilang 基础语言没有增加此种分析方法不适用的构造，因此结论相同。不过，为了减少 TCO 动作的创建开销，本机实现可以直接跳过判断，而不依赖 TCO 动作。PTC 转而以本机实现保证。
 
 **注释** 因为 C++ 自身不支持 PTC 保证，这里通常使用循环而不能使用 C++ 递归调用。
 	

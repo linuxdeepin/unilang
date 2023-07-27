@@ -583,13 +583,13 @@ GlobalState::GlobalState(TermNode::allocator_type a)
 {}
 
 TermNode
-GlobalState::Read(string_view unit, Context& ctx)
+GlobalState::Read(string_view unit, Context& ctx) const
 {
 	LexicalAnalyzer lexer;
 
 	if(UseSourceLocation)
 	{
-		SourcedByteParser parse(lexer, Allocator);
+		SourcedByteParser parse(lexer, ctx.get_allocator());
 
 		return Prepare(ctx, unit.begin(), unit.end(), ystdex::ref(parse));
 	}
@@ -604,7 +604,7 @@ GlobalState::ReadFrom(std::streambuf& buf, Context& ctx) const
 
 	if(UseSourceLocation)
 	{
-		SourcedByteParser parse(lexer, Allocator);
+		SourcedByteParser parse(lexer, ctx.get_allocator());
 
 		return Prepare(ctx, s_it_t(&buf), s_it_t(), ystdex::ref(parse));
 	}

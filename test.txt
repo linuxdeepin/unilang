@@ -99,22 +99,25 @@ $let ((a 2))
 	$check-not equal? (cons 2 2) (cons% 2 3);
 	$check-not equal? (cons% 2 2) (cons% 2 3)
 );
-subinfo "fwd?";
-$let ()
-(
-	$def! fwd? $vau% (&x) d
-		($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d);
+subinfo "condition of lvalues";
+$let ((lv? $vau% (&x) d
+	($lambda% (%v) bound-lvalue? ($resolve-identifier v)) (eval% x d)))
 	$expect (list% #f #f #t #t #f)
-		list% (fwd? 1) (fwd? ()) (fwd? fwd?) (fwd? (id fwd?))
-			(fwd? (idv fwd?))
-);
+		list% (lv? 1) (lv? ()) (lv? lv?) (lv? (id lv?)) (lv? (idv lv?));
 
 info "reference and assignment operations";
+subinfo "$expire-rvalue";
+$check eq? id ($expire-rvalue id);
+$let* ((id2 id) (&id3 move! id))
+(
+	$check eq? id ($expire-rvalue id2);
+	$check eq? expire ($expire-rvalue id3)
+);
 $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 (
 	subinfo "expecting different results for 'first&' and 'first@'";
 	$check-not eq? (first& li) (first@ li);
-	subinfo "collapsing test";
+	subinfo "reference collapsing";
 	$let ((lic list% (as-const a) 2))
 	(
 		$check reference? (first@ li);
@@ -178,25 +181,34 @@ $let* (((a b) list 1 2) (li list% a 2) (lie list% (expire a) 2))
 	$def! li list% a 2;
 	assign@! b (first@ li);
 	$check-not uncollapsed? (move! b);
-	subinfo "preventing non-first-class temporary objects";
-	$let ()
+	subinfo "subpair reference assignment";
+	$let* ((pr cons% 1 2) ((#ignore .&y) pr))
 	(
-		$defl! test-nt (&f)
-			$let ((&t (idv unit)) (&u (idv unit)) (&v (idv unit)))
-			(
-				$def! x f t;
-				forward! x;
-				$expect unit x;
-				assign@! x (f u);
-				forward! x;
-				$expect unit x;
-				assign%! x (f v);
-				forward! x;
-				$expect unit x
-			);
-		test-nt move!;
-		test-nt forward!
+		assign! y 3;
+		$expect 3 $let (((#ignore .&y) pr)) y;
+		assign! y (list 4);
+		$expect (list 4) $let (((#ignore .&y) pr)) y;
+		$expect (list 1 4) pr
 	)
+);
+subinfo "preventing non-first-class temporary objects";
+$let ()
+(
+	$defl! test-nt (&f)
+		$let ((&t (idv unit)) (&u (idv unit)) (&v (idv unit)))
+		(
+			$def! x f t;
+			forward! x;
+			$expect unit x;
+			assign@! x (f u);
+			forward! x;
+			$expect unit x;
+			assign%! x (f v);
+			forward! x;
+			$expect unit x
+		);
+	test-nt move!;
+	test-nt forward!
 );
 
 info "environment operations";
@@ -221,7 +233,7 @@ $let ()
 	$check eqv? (unwrap idv) $quote;
 	$check eqv? (unwrap (idv idv)) $quote;
 	$check eqv? (unwrap idv) (unwrap (idv idv));
-	$check eqv? (wrap (unwrap idv)) idv;
+	$check eqv? (wrap (unwrap idv)) idv
 );
 subinfo "unwrap propagation of nonmodifiable references of irregular"
 	" representation;" "fixed derivation since V0.12.77";
@@ -374,7 +386,7 @@ $let ((ca cons 1 2)) $expect 2 idv (rest& ca);
 subinfo "subpair reference referent";
 $let* ((pr cons 1 2) ((#ignore .&xs) pr)) $check-not uncollapsed? xs;
 subinfo "list modification";
-$let* ((a 1) (b 4) (l list% a 2))
+$let* ((a 1) (b 4) (l list% a 2) (l2 list% 3 a) (l4 list l2 3 4 5))
 (
 	set-first! l b;
 	$expect (list b 2) l;
@@ -383,7 +395,18 @@ $let* ((a 1) (b 4) (l list% a 2))
 	set-first! l 5;
 	$expect (list 5 2) l;
 	set-first%! l 7;
-	$expect (list 7 2) l
+	$expect (list 7 2) l;
+	set-rest! l l;
+	$expect (list 7 7 2) l;
+	set-rest%! l (list 3 1);
+	$expect (list 7 3 1) l;
+	set-rest%! l (idv l2);
+	$expect (cons 7 (list 3 1)) l;
+	$expect (list (list 7 3 1) 7 3 1) cons% l (idv l);
+	$expect 3 first& (first& l4);
+	set-first! (first& l4) (list () 2);
+	$expect (list 1) (restv (first& l4));
+	$expect (list (list (list () 2) 1) 3 4 5) l4
 );
 
 info "logical operations";
@@ -401,6 +424,91 @@ $let ()
 	$expect 2 $or #f 2 #f 3
 );
 
+info "list utilities";
+subinfo "accr";
+accr (list (list "2") (list "3")) null? () first% rest%
+	($lambda% (&x &y) accr (forward! x) null? y first% rest% cons%);
+subinfo "foldr1";
+$expect (list "2" "3") foldr1 list-concat () (list (list "2") (list "3"));
+subinfo "map1";
+$expect (list% id 2 3) map1 id (list% id 2 3);
+$expect (list "afx" "bfx" "cfx")
+	map1 ($lambda (&s) ++ s "fx") (list "a" "b" "c");
+$let* ((&x 1) (li list% x))
+(
+	$expect (list 1) (map1 forward! li);
+	$expect-moved first li
+);
+subinfo "list-concat";
+$expect (list "2" "3") list-concat (list "2") (list "3");
+$check-not $let ((e)) reference? (list-concat () e);
+subinfo "append";
+$expect (list% "2" id) append (list "2") (list% id);
+subinfo "list extraction";
+() $let (($list unwrap list))
+(
+	$def! rlist $lambda ((.&x)) forward! (check-list-reference x);
+	$defl! test-lextr (list-extract%)
+	(
+		$defl%! list-extract-first! (&l)
+			list-extract% (map1 expire (rlist l)) first;
+		$defl%! list-extract-rest%! (&l)
+			list-extract% (map1 expire (rlist l)) rest%;
+		$defl! make-test-list () $list (x + 1 2) (y idv) (z id id);
+		$def! li () make-test-list;
+		$expect ($list x y z) list-extract-first! li;
+		$expect ($list (() + 1 2) (() idv) (() id id)) li;
+		$def! li () make-test-list;
+		$expect ($list (+ 1 2) (idv) (id id)) list-extract-rest%! li;
+		$expect ($list (x) (y) (z)) li;
+		$expect ($list x y z) list-extract-first! (() make-test-list);
+		$expect ($list (+ 1 2) (idv) (id id))
+			list-extract-rest%! (() make-test-list);
+		subinfo "list-extract-first";
+		$expect ($list x y z) list-extract-first (() make-test-list);
+		subinfo "list-extract-rest%";
+		$expect ($list (+ 1 2) (idv) (id id))
+			list-extract-rest% (() make-test-list)
+	);
+	subinfo "list extraction #1";
+	$defw%! list-extract% (&l &extr) d
+		foldr1 ($if ($lvalue-identifier? l)
+			($lambda% (&x &xs) cons% (apply extr (list% x) d)
+				(move! xs))
+			($lambda% (&x &xs) cons% (apply extr (list% (expire x)) d)
+				(move! xs))) () l;
+	test-lextr list-extract%;
+	subinfo "list extraction #2";
+	$defw%! list-extract% (&l &extr) d
+		accr l null? () ($lambda% (&l)
+			apply forward-first% (list% extr (expire l)) d) rest% cons%;
+	test-lextr list-extract%;
+	subinfo "list extraction #3";
+	$defl! list-extract% (&l &extr) map1 extr (forward! l);
+	test-lextr list-extract%
+);
+subinfo "list-extract-first value";
+$let* ((i 1) (l0 list% i 2) (li list% (as-const l0) (list 3 4)))
+	$check-not modifiable? (first% (list-extract-first li));
+$let ((li list (list 3 4)))
+(
+	subinfo "list-extract-first unexpected move";
+	$expect (list 3) (list-extract-first li);
+	$check-not moved? (first (first li));
+	subinfo "list-extract-rest% unexpected move";
+	$expect (list (list 4)) (list-extract-rest% li);
+	$check-not null? (rest% (first li))
+);
+subinfo "assq";
+$let ((a 1)) $expect (list a "l")
+	assq a (list (list 9 2) (list 1 "m") (list% a "l") (list 3 4) (list% a 3));
+subinfo "assv";
+$expect (list 1 "l")
+	assv 1 (list (list 9 2) (list 1 "l") (list 3 4) (list 1 3));
+subinfo "map-reverse and for-each-ltr tail calls";
+$expect #inert for-each-ltr ($lambda .) (list ());
+$expect (list ()) map-reverse ($lambda .) (list ());
+
 info "bindings operations";
 () $let ()
 (
@@ -417,7 +525,7 @@ info "bindings operations";
 	$let ((a 2)) $check reference? ($letrec% () a)
 );
 $let ((n 42) (e () get-current-environment) (test-lets $lambda (&test)
-	map1 test (list $let $let% $let* $let*% $letrec $letrec%)))
+	for-each-ltr test (list $let $let% $let* $let*% $letrec $letrec%)))
 (
 	subinfo "let single lvalue preservation";
 	test-lets ($lambda ($l)
@@ -478,7 +586,7 @@ $let ()
 	$let ((a unit))
 	(
 		$def! p $lazy a;
-		$expect (force p) force p;
+		$expect (force p) force p
 	);
 	subinfo "lifting safety";
 	$let ()
@@ -514,7 +622,7 @@ $let ()
 			($def! pb box% p);
 		$expect 5 () get-count;
 		$expect 0 force (unbox pb);
-		$expect 10 () get-count;
+		$expect 10 () get-count
 	);
 	subinfo "resolved referencing shared state move;" " fixed since V0.8.57";
 	$let ()

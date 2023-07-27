@@ -27,7 +27,7 @@ private:
 
 public:
 	SourceNameRecoverer() = default;
-	SourceNameRecoverer(SourceName& cur, SourceName name)
+	SourceNameRecoverer(SourceName& cur, SourceName name) noexcept
 		: p_current(&cur), Saved(name)
 	{}
 	SourceNameRecoverer(const SourceNameRecoverer&) = default;

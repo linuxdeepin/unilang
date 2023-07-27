@@ -5,7 +5,9 @@
 //	YSLib::istringstream, pmr::new_delete_resource_t;
 #include <cstdlib> // for std::getenv;
 #include "Evaluation.h" // for Unilang::GetModuleFor, RetainN, ValueToken,
+//	AssertSubobjectReferenceTerm, IsTyped, SubpairMetadata, BindParameterObject,
 //	RegisterStrict;
+#include "BasicReduction.h" // for ReductionStatus, LiftToReturn, LiftOther;
 #include "Forms.h" // for RetainN, Forms::CallRawUnary, Forms::CallBinaryFold
 //	and other form implementations
 #include "Context.h" // for BindingMap, Context, Environment,
@@ -15,8 +17,6 @@
 //	ComposeReferencedTermOp, IsReferenceTerm, IsBoundLValueTerm,
 //	IsUncollapsedTerm, IsUniqueTerm, EnvironmentReference, TermNode,
 //	IsBranchedList, ThrowInsufficientTermsError;
-#include "BasicReduction.h" // for ReductionStatus, LiftOther;
-//	NameTypedContextHandler;
 #include <iterator> // for std::next, std::iterator_traits;
 #include "Exception.h" // for ThrowNonmodifiableErrorForAssignee,
 //	UnilangException, Unilang::GuardExceptionsForAllocator;
@@ -28,15 +28,23 @@
 #include <YSLib/Core/YModules.h>
 #include "Math.h" // for NumberLeaf, NumberNode and other math functions;
 #include <ystdex/functional.hpp> // for ystdex::bind1;
-#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists,
-//	YSLib::FetchEnvironmentVariable;
 #include YFM_YSLib_Core_YShellDefinition // for std::to_string,
 //	YSLib::make_string_view, YSLib::to_std::string;
 #include <iostream> // for std::ios_base, std::cout, std::endl, std::cin;
+#include YFM_YSLib_Adaptor_YAdaptor // for YSLib::ufexists, IO::UniqueFile,
+//	uopen, IO::use_openmode_t, YSLib::IO, YSLib::FetchEnvironmentVariable,
+//	YSLib::uremove;
 #include <ystdex/string.hpp> // for ystdex::sfmt;
 #include <sstream> // for complete istringstream;
 #include <string> // for std::getline;
 #include "TCO.h" // for RefTCOAction;
+#include <YSLib/Service/YModules.h>
+#include YFM_YSLib_Service_FileSystem // for IO::CreateDirectory,
+//	EnsureDirectory, IO::Path, IO::IsAbsolute;
+#include YFM_YSLib_Core_YCoreUtilities // for YSLib::RandomizeTemplateString;
+#include <ystdex/cstdio.h> // for ystdex::fexists;
+#include <cerrno> // for errno, EEXIST, EPERM;
+#include <ystdex/exception.h> // for ystdex::throw_error;
 #include <ystdex/base.h> // for ystdex::noncopyable;
 #include <random> // for std::random_device, std::mt19937,
 //	std::uniform_int_distribution;
@@ -129,11 +137,49 @@ CheckForAssignment(TermNode& nd, ResolvedTermReferencePtr p_ref)
 
 template<typename _func>
 YB_ATTR_nodiscard ValueToken
-DoAssign(_func f, TermNode& x)
+DoAssign(_func f, bool collapse, bool lift, TermNode& x, TermNode& y)
 {
 	ResolveTerm([&](TermNode& nd, ResolvedTermReferencePtr p_ref){
 		CheckForAssignment(nd, p_ref);
-		f(nd);
+		if(p_ref && IsBranch(x))
+		{
+			AssertSubobjectReferenceTerm(x);
+			if(x.size() == 2)
+			{
+				auto i(x.begin());
+				auto& mterm(*++i);
+
+				assert(IsTyped<SubpairMetadata>(mterm)
+					&& "Invalid metadata subterm found.");
+
+				auto& mdata(mterm.Value.GetObject<SubpairMetadata>());
+				auto& o(mdata.TermRef.get());
+				auto& vo(o.Value);
+				auto& j(mdata.First);
+				auto& tcon(nd.GetContainerRef());
+
+				i = j;
+				if(lift)
+					LiftToReturn(y);
+				tcon.clear();
+				BindParameterObject(p_ref->GetEnvironmentReference(),
+					mdata.Sigil).BindSubpairPrefix(tcon, y, y.begin(),
+					p_ref->GetTags());
+				o.erase(i, o.end());
+				Unilang::TransferSubtermsAfter(o, y);
+				vo = [&]() -> ValueObject{
+					if(collapse)
+					{
+						if(const auto p = TryAccessLeafAtom<TermReference>(y))
+							return Collapse(std::move(*p)).first;
+					}
+					return std::move(y.Value);
+				}();
+				nd.Value = vo ? vo.MakeIndirect() : ValueObject();
+				return;
+			}
+		}
+		f(nd, y);
 	}, x);
 	return ValueToken::Unspecified;
 }
@@ -295,6 +341,10 @@ LoadModule_std_strings(Interpreter& intp)
 	});
 	RegisterBinary<Strict, const string, const string>(m, "string=?",
 		ystdex::equal_to<>());
+	RegisterBinary<Strict, const string, const string>(m, "string-contains?",
+		[](const string& x, const string& y) noexcept{
+		return x.find(y) != string::npos;
+	});
 	RegisterStrict(m, "string-split", [](TermNode& term){
 		return CallBinaryAs<string, const string>(
 			[&](string& x, const string& y) -> ReductionStatus{
@@ -471,6 +521,19 @@ LoadModule_std_io(Interpreter& intp)
 		[](const string& str) noexcept{
 		return YSLib::ufexists(str.c_str());
 	});
+	RegisterUnary<Strict, const string>(m, "readable-nonempty-file?",
+		[](const string& str) -> bool{
+		using namespace YSLib;
+
+		if(IO::UniqueFile file{uopen(str.c_str(), IO::use_openmode_t(),
+			std::ios_base::in)})
+			return file->GetSize() > 0;
+		return {};
+	});
+	RegisterUnary<Strict, const string>(m, "writable-file?",
+		[](const string& str) noexcept{
+		return YSLib::ufexists(str.c_str(), "r+b");
+	});
 	RegisterUnary<Strict, const string>(m, "open-input-file",
 		[](const string& path){
 		if(ifstream ifs{path, std::ios_base::in | std::ios_base::binary})
@@ -544,13 +607,67 @@ void
 LoadModule_std_system(Interpreter& intp)
 {
 	using namespace Forms;
+	namespace IO = YSLib::IO;
 	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
+	RegisterStrict(m, "eval-string", EvalString);
+	RegisterStrict(m, "eval-string%", EvalStringRef);
 	RegisterUnary<Strict, const string>(m, "env-get", [](const string& var){
 		string res(var.get_allocator());
 
 		YSLib::FetchEnvironmentVariable(res, var.c_str());
 		return res;
+	});
+	RegisterUnary<Strict, const string>(m, "remove-file",
+		[](const string& filename){
+		return YSLib::uremove(filename.c_str());
+	});
+	RegisterUnary<Strict, const string>(m, "create-directory",
+		[](const string& path){
+		return IO::CreateDirectory(path);
+	});
+	RegisterUnary<Strict, const string>(m, "create-directory*",
+		[](const string& path){
+		return EnsureDirectory(IO::Path(path));
+	});
+	RegisterUnary<Strict, const string>(m, "create-parent-directory*",
+		[](const string& path) -> bool{
+		IO::Path pth(path);
+
+		if(!pth.empty())
+		{
+			pth.pop_back();
+			return EnsureDirectory(pth);
+		}
+		return {};
+	});
+	RegisterUnary<Strict, const string>(m, "absolute-path?",
+		[](const string& path){
+		return IO::IsAbsolute(path);
+	});
+	RegisterBinary<Strict, const string, const string>(m,
+		"make-temporary-filename", [](const string& pfx, const string& sfx){
+		const string_view tmpl("0123456789abcdef");
+
+		for(size_t n(16); n != 0; --n)
+		{
+			string str("%%%%%%", pfx.get_allocator());
+
+			str = YSLib::RandomizeTemplateString(str, '%', tmpl);
+			str = pfx + std::move(str) + sfx;
+			if(ystdex::fexists(str.c_str(), "w+b"))
+				return str;
+
+			const int err(errno);
+
+			if(err != EEXIST && err != EPERM)
+				continue;
+		}
+
+		int err(errno);
+
+		ystdex::throw_error(err, "Failed opening temporary file with the"
+			" prefix '" + YSLib::to_std_string(pfx) + '\'');
 	});
 }
 
@@ -646,7 +763,7 @@ PreloadExternal(Interpreter& intp, const char* filename)
 	}
 }
 
-struct NoCopy : ystdex::noncopyable
+struct NoCopy final : ystdex::noncopyable
 {};
 
 #define Unilang_Default_Init_File "init.txt"
@@ -691,11 +808,13 @@ LoadFunctions(Interpreter& intp, bool jit, int& argc, char* argv[])
 		term.Value = NoCopy();
 	});
 	RegisterBinary(m, "assign@!", [](TermNode& x, TermNode& y){
-		return DoAssign(ystdex::bind1(static_cast<void(&)(TermNode&,
-			TermNode&)>(LiftOther), std::ref(y)), x);
+		return DoAssign(static_cast<void(&)(TermNode&, TermNode&)>(LiftOther),
+			{}, {}, x, y);
 	});
 	RegisterStrict(m, "cons", Cons);
 	RegisterStrict(m, "cons%", ConsRef);
+	RegisterStrict(m, "set-rest!", SetRest);
+	RegisterStrict(m, "set-rest%!", SetRestRef);
 	RegisterUnary<Strict, const TokenValue>(m, "desigil", [](TokenValue s){
 		return TokenValue(!s.empty() && (s.front() == '&' || s.front() == '%')
 			? s.substr(1) : std::move(s));
@@ -919,6 +1038,11 @@ $defl%! or &x $sequence
 		($let% ((&c forward! (first% l)))
 			or-aux (forward! ($if c c h)) (forward! (rest% l))))
 	(or-aux #f (forward! x));
+$defw%! accl (&l &pred? &base &head &tail &sum) d
+	$if (apply pred? (list% l) d) (forward! base)
+		(apply accl (list% (apply tail (list% l) d) pred?
+			(apply sum (list% (apply head (list% l) d)
+			(forward! base)) d) head tail sum) d);
 $defw%! accr (&l &pred? &base &head &tail &sum) d
 	$if (apply pred? (list% l) d) (forward! base)
 		(apply sum (list% (apply head (list% l) d)
@@ -1020,6 +1144,19 @@ $defv! $import! (&e .&symbols) d
 $defv! $import&! (&e .&symbols) d
 	eval% (list $set! d (append (map1 ensigil symbols)
 		((unwrap list%) .)) (symbols->imports symbols)) (eval e d);
+$defl! nonfoldable? (&l)
+	$if (null? l) #f ($if (null? (first l)) #t (nonfoldable? (rest& l)));
+$defl%! assq (&x &alist) $cond ((null? alist))
+	((eq? x (first& (first& alist))) first% alist)
+	(#t assq (forward! x) (rest% alist));
+$defl%! assv (&x &alist) $cond ((null? alist))
+	((eqv? x (first& (first& alist))) first% alist)
+	(#t assv (forward! x) (rest% alist));
+$defw%! map-reverse (&appv .&ls) d
+	accl (forward! (check-list-reference ls)) nonfoldable? () list-extract-first
+		list-extract-rest%
+		($lambda (&x &xs) cons% (apply appv (forward! x) d) (forward! xs));
+$defw! for-each-ltr &ls d $sequence (apply map-reverse (forward! ls) d) #inert;
 	)Unilang");
 	LoadStandardDerived(intp);
 	// NOTE: Supplementary functions.
@@ -1152,7 +1289,7 @@ PrintHelpMessage(const string& prog)
 		"\tThe source specified by SRCPATH shall have Unilang source tokens"
 		" encoded in a text stream with optional UTF-8 BOM (byte-order mark),"
 		" which are to be read and evaluated in the initial environment of the"
-		" interpreter. Otherwise, errors are raise to reject the source.\n\n"
+		" interpreter. Otherwise, errors are raised to reject the source.\n\n"
 		"OPTIONS ...\nOPTIONS ... -- [[SRCPATH] ARGS ...]\n"
 		"\tThe options and arguments for the program execution. After '--',"
 		" options parsing is turned off and every remained command line"
@@ -1178,7 +1315,7 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.370"
+#define APP_VER "0.12.415"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);

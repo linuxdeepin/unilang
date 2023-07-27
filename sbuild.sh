@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# SPDX-FileCopyrightText: 2020-2022 UnionTech Software Technology Co.,Ltd.
-# Requires: YSLib sysroot >= b904, having bin in $PATH.
+# SPDX-FileCopyrightText: 2020-2023 UnionTech Software Technology Co.,Ltd.
+# Requires: YSLib sysroot from up-to-date 3rdparty, having bin in $PATH.
 # Usage: sbuild.sh CONF [SHBOPT_BASE ...].
 # See https://frankhb.github.io/YSLib-book/Tools/Scripts.zh-CN.html.
 
 set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 
-[[ "$1" != '' ]] || (echo \
-	"ERROR: The configuration name should not be empty." >& 2; exit 1)
+test -n "$1" \
+	|| (echo "ERROR: The configuration name should not be empty." >& 2; exit 1)
 
 . "$Unilang_BaseDir/detect-llvm.sh"
 

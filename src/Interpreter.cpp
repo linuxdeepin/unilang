@@ -14,6 +14,7 @@
 //	Text::BOM_UTF_8, YSLib::share_move;
 #include <exception> // for std::throw_with_nested, std::rethrow_exception;
 #include <ystdex/scope_guard.hpp> // for ystdex::make_guard;
+#include "Evaluation.h" // for Unilang::NameTypedReducerHandler;
 #include <iostream> // for std::cout, std::endl, std::cin;
 
 namespace Unilang
@@ -279,10 +280,10 @@ Interpreter::PrepareExecution(Context& ctx)
 		HandleWithTrace(std::move(p), ctx, i);
 	});
 	if(Echo)
-		RelaySwitched(ctx, [&]{
+		RelaySwitched(ctx, Unilang::NameTypedReducerHandler([&]{
 			Print(Term);
 			return ReductionStatus::Neutral;
-		});
+		}, "repl-print"));
 }
 
 void

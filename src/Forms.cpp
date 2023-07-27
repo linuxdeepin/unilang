@@ -7,15 +7,16 @@
 //	Unilang::Deref, ParentList, TryAccessLeaf, assert, IsList, AssertValueTags,
 //	GuardFreshEnvironment, ystdex::size_t_, IsLeaf, FormContextHandler,
 //	ReferenceLeaf, IsAtom, ystdex::ref_eq, ReferenceTerm,
-//	Forms::CallResolvedUnary, LiftTerm, Unilang::EmplaceCallResultOrReturn;
+//	Unilang::TransferSubtermsBefore, Forms::CallResolvedUnary, LiftTerm,
+//	Unilang::EmplaceCallResultOrReturn, RemoveHead;
 #include "Exception.h" // for InvalidSyntax, ThrowTypeErrorForInvalidType,
 //	TypeError, ArityMismatch, ThrowListTypeErrorForNonList, UnilangException,
 //	ThrowValueCategoryError;
 #include <ystdex/optional.h> // for ystdex::optional;
 #include <exception> // for std::throw_with_nested;
-#include "Evaluation.h" // for IsIgnore, RetainN, BindParameterWellFormed,
-//	Unilang::MakeForm, CheckVariadicArity, Form, RetainList,
-//	ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
+#include "Evaluation.h" // for IsIgnore, RetainN, std::next,
+//	BindParameterWellFormed, Unilang::MakeForm, CheckVariadicArity, Form,
+//	RetainList, ReduceForCombinerRef, Strict, Unilang::NameTypedContextHandler;
 #include "Context.h" // for ResolveEnvironment, ResolveEnvironmentValue,
 //	Unilang::AssignParent, EnvironmentParent;
 #include "TermNode.h" // for TNIter, IsTypedRegular, Unilang::AsTermNode,
@@ -111,12 +112,12 @@ ThrowInvalidEnvironmentType(const TermNode& term, bool has_ref)
 
 
 ReductionStatus
-EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
+EvalImplUnchecked(TermNode& term, Context& ctx, bool no_lift, bool at = {})
 {
-	RetainN(term, 2);
+	AssertNextTerm(ctx, term);
 
 	const auto i(std::next(term.begin()));
-	auto p_env(ResolveEnvironment(*std::next(i)).first);
+	auto p_env(ResolveEnvironment(Unilang::Deref(std::next(i))).first);
 	auto& tm(*i);
 
 	if(at)
@@ -126,9 +127,39 @@ EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
 			LiftOtherOrCopy(term, nd, Unilang::IsMovable(p_ref));
 		}, tm);
 	ClearCombiningTags(term);
-	return TailCall::RelayNextGuardedProbe(ctx, term, EnvironmentGuard(ctx,
-		ctx.SwitchEnvironment(std::move(p_env))), !no_lift,
-		std::ref(ctx.ReduceOnce));
+	return RelayForCall(ctx, term, EnvironmentGuard(ctx,
+		ctx.SwitchEnvironment(std::move(p_env))), no_lift);
+}
+
+ReductionStatus
+EvalImpl(TermNode& term, Context& ctx, bool no_lift, bool at = {})
+{
+	RetainN(term, 2);
+	return EvalImplUnchecked(term, ctx, no_lift, at);
+}
+
+template<typename _func>
+ReductionStatus
+RelayWithSavedSourceName(Context& ctx, _func f)
+{
+	RefTCOAction(ctx).SaveTailSourceName(ctx.CurrentSource,
+		std::move(ctx.CurrentSource));
+	return f();
+}
+
+ReductionStatus
+EvalStringImpl(TermNode& term, Context& ctx, bool no_lift)
+{
+	RetainN(term, 2);
+
+	auto& expr(*std::next(term.begin()));
+	auto& global(ctx.Global.get());
+
+	return RelayWithSavedSourceName(ctx, [&]{
+		expr = global.Read(Unilang::ResolveRegular<const string>(expr), ctx);
+		global.Preprocess(expr);
+		return EvalImplUnchecked(term, ctx, no_lift);
+	});
 }
 
 YB_ATTR_nodiscard YB_PURE inline EnvironmentParent
@@ -722,48 +753,78 @@ EqualSubterm(bool& r, Action& act, TermNode::allocator_type a, TNCIter first1,
 }
 
 
-template<typename... _tParams>
 void
-ConsSplice(TermNode t, TermNode& nd, _tParams&&... args)
+ConsSplice(TermNode& t, TermNode& nd)
 {
-	auto& tcon(t.GetContainerRef());
-	auto& con(nd.GetContainerRef());
-
-	assert(!ystdex::ref_eq<>()(con, tcon) && "Invalid self move found.");
-	tcon.splice(tcon.begin(), con, con.begin(), yforward(args)...),
-	tcon.swap(con);
-	nd.Value = std::move(t.Value);
+	Unilang::TransferSubtermsBefore(t, nd, nd.begin());
 }
 
-YB_ATTR_nodiscard TermNode
-ConsItem(TermNode& y)
-{
-	return ResolveTerm([&](TermNode& nd_y, ResolvedTermReferencePtr p_ref_y){
-		return MakeValueOrMove(p_ref_y, [&]{
-			return nd_y;
-		}, [&]{
-			return std::move(nd_y);
-		});
-	}, y);
-}
-
-YB_ATTR_nodiscard inline TermNode
-ConsItemRef(TermNode& y)
-{
-	return std::move(y);
-}
-
-void
-ConsImpl(TermNode& term, TermNode(&cons_item)(TermNode& y))
+YB_ATTR_nodiscard TNIter
+ConsHead(TermNode& term)
 {
 	RetainN(term, 2);
 	RemoveHead(term);
+	return term.begin();
+}
+
+ReductionStatus
+ConsTail(TermNode& term, TermNode& t)
+{
+	ConsSplice(t, term);
+	LiftOtherValue(term, t);
+	return ReductionStatus::Retained;
+}
+
+void
+LiftNoOp(TermNode&)
+#if !(YB_IMPL_GNUCPP < 110200 && YB_HAS_NOEXCEPT && __cplusplus >= 201703L)
+	noexcept
+#endif
+{}
+
+void
+CheckResolvedListReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(!IsList(nd)))
+			ThrowListTypeErrorForNonList(nd, true);
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
+void
+CheckResolvedPairReference(TermNode& nd, bool has_ref)
+{
+	if(has_ref)
+	{
+		if(YB_UNLIKELY(IsAtom(nd)))
+			ThrowListTypeErrorForAtom(nd, true);
+	}
+	else
+		ThrowValueCategoryError(nd);
+}
+
+template<void(&_rLift)(TermNode&)>
+void
+DoSetRest(TermNode& term)
+{
+	RetainN(term, 2);
 
 	auto i(term.begin());
 
-	if(cons_item == ConsItem)
-		LiftToReturn(*i);
-	ConsSplice(cons_item(*++i), term);
+	ResolveTerm([&](TermNode& nd_x, bool has_ref_x){
+		CheckResolvedPairReference(nd_x, has_ref_x);
+
+		TermNode& y(*++i);
+
+		_rLift(y);
+		ConsSplice(y, nd_x);
+		y.GetContainerRef().swap(nd_x.GetContainerRef());
+		nd_x.Value = std::move(y.Value);
+	}, *++i);
+	term.Value = ValueToken::Unspecified;
 }
 
 
@@ -807,30 +868,6 @@ CheckReference(TermNode& term, void(&f)(TermNode&, bool))
 		LiftTerm(term, *std::next(term.begin()));
 		return ReductionStatus::Regular;
 	}, term);
-}
-
-void
-CheckResolvedListReference(TermNode& nd, bool has_ref)
-{
-	if(has_ref)
-	{
-		if(YB_UNLIKELY(!IsList(nd)))
-			ThrowListTypeErrorForNonList(nd, true);
-	}
-	else
-		ThrowValueCategoryError(nd);
-}
-
-void
-CheckResolvedPairReference(TermNode& nd, bool has_ref)
-{
-	if(has_ref)
-	{
-		if(YB_UNLIKELY(IsAtom(nd)))
-			ThrowListTypeErrorForAtom(nd, true);
-	}
-	else
-		ThrowValueCategoryError(nd);
 }
 
 } // unnamed namespace;
@@ -966,15 +1003,31 @@ If(TermNode& term, Context& ctx)
 ReductionStatus
 Cons(TermNode& term)
 {
-	ConsImpl(term, ConsItem);
-	return ReductionStatus::Retained;
+	auto i(ConsHead(term));
+
+	LiftToReturn(*i);
+	LiftToReturn(*++i);
+	return ConsTail(term, *i);
 }
 
 ReductionStatus
 ConsRef(TermNode& term)
 {
-	ConsImpl(term, ConsItemRef);
-	return ReductionStatus::Retained;
+	auto i(ConsHead(term));
+
+	return ConsTail(term, *++i);
+}
+
+void
+SetRest(TermNode& term)
+{
+	DoSetRest<LiftToReturn>(term);
+}
+
+void
+SetRestRef(TermNode& term)
+{
+	DoSetRest<LiftNoOp>(term);
 }
 
 
@@ -994,6 +1047,18 @@ ReductionStatus
 EvalRef(TermNode& term, Context& ctx)
 {
 	return EvalImpl(term, ctx, true);
+}
+
+ReductionStatus
+EvalString(TermNode& term, Context& ctx)
+{
+	return EvalStringImpl(term, ctx, {});
+}
+
+ReductionStatus
+EvalStringRef(TermNode& term, Context& ctx)
+{
+	return EvalStringImpl(term, ctx, true);
 }
 
 
@@ -1017,7 +1082,7 @@ ReductionStatus
 Define(TermNode& term, Context& ctx)
 {
 	Retain(term);
-	if(term.size() > 2)
+	if(term.size() >= 2)
 	{
 		RemoveHead(term);
 		ClearCombiningTags(term);
