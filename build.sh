@@ -21,9 +21,9 @@ CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
 # NOTE: These are known redundant or false positives.
 if echo "$CXX" --version | grep -q clang; then
-	CXXFLAGS_WKRD=-Wno-mismatched-tags
+	CXXFLAGS_WKRD_=-Wno-mismatched-tags
 else
-	CXXFLAGS_WKRD=\
+	CXXFLAGS_WKRD_=\
 '-Wno-dangling-reference -Wno-ignored-attributes -Wno-uninitialized'
 fi
 
@@ -62,11 +62,13 @@ case $(uname) in
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/NLS.cpp" \
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp" \
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp")
-	EXTRA_OPT=
+	CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -mthreads"
+	LIB_EXTRA="$LIB_EXTRA -mthreads"
 	;;
 *)
 	SRCS=("${SRCS[@]}" "$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp")
-	EXTRA_OPT="-fPIC -pthread -ldl"
+	CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -fPIC -pthread"
+	LIB_EXTRA="$LIB_EXTRA -pthread -ldl"
 esac
 
 SRCS=("$Unilang_BaseDir/src"/*.cpp "${SRCS[@]}")
@@ -90,9 +92,8 @@ Call_()
 }
 
 # shellcheck disable=2086
-Call_ "$CXX" -o"$Unilang_Output" $CXXFLAGS \
-	$CXXFLAGS_EXTRA $CXXFLAGS_WKRD $CXXFLAGS_Qt $LIBS_Qt $EXTRA_OPT \
-	"${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
+Call_ "$CXX" -o"$Unilang_Output" $CXXFLAGS $CXXFLAGS_EXTRA $CXXFLAGS_WKRD_ \
+	$CXXFLAGS_Qt $LIBS_Qt "${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
 
 echo 'Done.'
 
