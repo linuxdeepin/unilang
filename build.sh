@@ -5,10 +5,10 @@ set -e
 Unilang_BaseDir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd)"
 YSLib_BaseDir="$Unilang_BaseDir/3rdparty/YSLib"
 
+echo 'Configuring ...'
+
 : "${CXX:=g++}"
 : "${CXXFLAGS=-std=c++11 -Wall -Wextra -g}"
-
-echo 'Configuring ...'
 
 . "$Unilang_BaseDir/detect-llvm.sh"
 
