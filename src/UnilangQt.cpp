@@ -20,7 +20,11 @@
 #endif
 #if __clang__
 #	pragma clang diagnostic push
-#	pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#	if __clang_major__ >= 13
+#		pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#	else
+#		pragma clang diagnostic ignored "-Wdeprecated"
+#	endif
 #endif
 #include <QtGlobal> // for QT_VERSION, QT_VERSION_CHECK;
 #include <QHash> // for QHash;
