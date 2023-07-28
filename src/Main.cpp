@@ -51,6 +51,7 @@
 #include <cstdlib> // for std::exit;
 #include "UnilangFFI.h"
 #include "JIT.h"
+#include <ydef.h> // for YPP_Stringize;
 #include <ystdex/string.hpp> // for ystdex::quote, ystdex::write_ntcts;
 #include <vector> // for std::vector;
 #include <array> // for std::array;
@@ -602,6 +603,12 @@ $defl! get-module (&filename .&opt)
 		$sequence (eval% (list load filename) env) env;
 	)Unilang");
 }
+
+#define APP_VER_MAJOR 0
+#define APP_VER_MINOR 12
+#define APP_VER_PATCHLEVEL 421
+#define APP_VER YPP_Stringize(APP_VER_MAJOR) "." YPP_Stringize(APP_VER_MINOR) \
+	"." YPP_Stringize(APP_VER_PATCHLEVEL)
 
 void
 LoadModule_std_system(Interpreter& intp)
@@ -1315,7 +1322,6 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_VER "0.12.415"
 #define APP_PLATFORM "[C++11] + YSLib"
 constexpr auto
 	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
