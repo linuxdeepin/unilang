@@ -71,6 +71,10 @@ else
 "$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
 	sed -i 's/-flto//g' \
 "$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
+	# NOTE: Workaround for requiring LLD with Clang++. LLD may not work on
+	#	certain configurations.
+	sed -i 's/use_lld_ \#t/use_lld_ \#f/g' \
+"$YSLib_BaseDir/Tools/Scripts/SHBuild-YSLib-common.txt"
 	# NOTE: Use debug library to work around the bogus LTO information in the
 	#	release library.
 	cp "$YSLib_BaseDir/YFramework/Linux/lib/libFreeImaged.a" \
