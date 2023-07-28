@@ -323,18 +323,19 @@
 
 * LLVM 7
 	* `llvm-config`
+* [GNU parallel](https://www.gnu.org/software/parallel/)
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```sh
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative}
+pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative} parallel
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative parallel
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev parallel
 ```
 
 　　LLVM 是可选的。使用非空的环境变量 `UNILANG_NO_LLVM` 指定构建解释器时不使用 LLVM 。基于 LLVM 的 JIT 实现会被禁用。
@@ -389,7 +390,7 @@ env CXX=clang++ ./build.sh
 
 　　默认使用 `-std=c++11 -Wall -Wextra -g` 编译器选项。类似地，使用环境变量 `CXXFLAGS` 可替代默认值。
 
-　　这个脚本使用 shell 命令行调用 `$CXX` 指定的编译器驱动，不支持并行构建，可能较慢。
+　　这个脚本使用 shell 命令行调用 `$CXX` 指定的编译器驱动。默认脚本会测试 GNU parallel 是否可用。若可用，则调用 `parallel` 命令并行构建解释器。
 
 　　脚本使用以下可选的环境变量指定输出文件的位置：
 
@@ -398,6 +399,7 @@ env CXX=clang++ ./build.sh
 
 　　此外，脚本支持设置以下环境变量为非空值以调整行为：
 
+* `NoParallel` ：跳过 `parallel` 命令测试并禁用并行构建。
 * `Verbose` ：启用详细输出。
 
 　　优点是不需要进一步配置环境即可使用。适合一次性测试和部署。

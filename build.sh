@@ -91,9 +91,35 @@ Call_()
 	"$@"
 }
 
-# shellcheck disable=2086
-Call_ "$CXX" -o"$Unilang_Output" $CXXFLAGS $CXXFLAGS_EXTRA $CXXFLAGS_WKRD_ \
-	$CXXFLAGS_Qt $LIBS_Qt "${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
+# XXX: Assume GNU parallel, not parallel from moreutils, if '--version' is
+#	supported.
+# XXX: %NoParallel is external.
+# shellcheck disable=2154
+if test -z "$NoParallel" && hash parallel 2> /dev/null && hash grep 2> \
+	/dev/null && parallel --will-cite --version > /dev/null 2> /dev/null; \
+	then
+	echo 'Using parallel.'
+	if test -n "$Verbose"; then
+		Verbose_t_=-t
+	fi
+
+	# XXX: Value of several variables may contain whitespaces.
+	# shellcheck disable=2086
+	parallel --will-cite -q $Verbose_t_ "$CXX" -c {} \
+-o"$Unilang_BuildDir/{#}.o" $CXXFLAGS $CXXFLAGS_EXTRA $CXXFLAGS_WKRD_ \
+$CXXFLAGS_Qt "${INCLUDES[@]}" ::: "${SRCS[@]}"
+
+	OFILES_=("$Unilang_BuildDir"/*.o)
+
+	# shellcheck disable=2086
+	Call_ "$CXX" -o"$Unilang_Output" "${OFILES_[@]}" $LIBS $LIBS_Qt $LIBS_EXTRA
+else
+	echo 'Not using parallel.'
+
+	# shellcheck disable=2086
+	Call_ "$CXX" -o"$Unilang_Output" $CXXFLAGS $CXXFLAGS_EXTRA $CXXFLAGS_WKRD_ \
+$CXXFLAGS_Qt $LIBS_Qt "${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
+fi
 
 echo 'Done.'
 

@@ -326,18 +326,19 @@ The building environment relies on the following tools:
 
 * LLVM 7
 	* `llvm-config`
+* [GNU parallel](https://www.gnu.org/software/parallel/)
 
 The following commands illustrates how to prepare the build environment by package managers:
 
 ```sh
 # Some dependencies may have been preinstalled.
 # MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative}
+pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative} parallel
 # Arch Linux
-sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative
+sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative parallel
 yay -S llvm70 # Or some other AUR frontend command.
 # Debian (buster/bullseye)/Ubuntu (bionic-updates/focal)/Deepin
-sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev
+sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5-dev qtdeclarative5-dev parallel
 ```
 
 LLVM is optional. Use non-empty environment variable `UNILANG_NO_LLVM` to avoid using of LLVM in building the interpreter. LLVM-based JIT is then disabled.
@@ -393,7 +394,7 @@ env CXX=clang++ ./build.sh
 
 The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use the environment variable `CXXFLAGS` can override the default value.
 
-The script uses shell command lines to call the compiler driver specified by `$CXX` directly, and no parallel builds are supported. It may be slow.
+The script uses shell command lines to call the compiler driver specified by `$CXX` directly. By default, the script will test whether GNU parallel is available. If so, `parallel` command is used to build the interpreter in parallel.
 
 The following optional environment variables are used in the script to specify the location of output files:
 
@@ -402,6 +403,7 @@ The following optional environment variables are used in the script to specify t
 
 This script also supports setting the following non-empty environment variables to tweak the behavior:
 
+* `NoParallel`: Skip test for the `parallel` command and disable the parallel build.
 * `Verbose`: Enable the verbose output.
 
 The advantage of this script is the ease to use without further configurations. It may be suitable for one-time testing and deployment.
