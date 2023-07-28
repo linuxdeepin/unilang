@@ -236,7 +236,7 @@ $let ()
 	$check eqv? (wrap (unwrap idv)) idv
 );
 subinfo "unwrap propagation of nonmodifiable references of irregular"
-	" representation;" "fixed derivation since V0.12.77";
+	" representation;" " fixed derivation since V0.12.77";
 $check-not modifiable? (unwrap id);
 subinfo "self-evaluation on nested one-element list of irregular"
 	" representations;" " fixed since V0.11.97";
