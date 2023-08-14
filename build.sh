@@ -41,6 +41,7 @@ SRCS=("$YSLib_BaseDir/YBase/source/ystdex/any.cpp" \
 "$YSLib_BaseDir/YBase/source/ystdex/hash_table.cpp" \
 "$YSLib_BaseDir/YFramework/source/CHRLib/CharacterProcessing.cpp" \
 "$YSLib_BaseDir/YFramework/source/CHRLib/MappingEx.cpp" \
+"$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/Debug.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/FileIO.cpp" \
 "$YSLib_BaseDir/YFramework/source/YCLib/FileSystem.cpp" \
@@ -61,12 +62,12 @@ case $(uname) in
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/MinGW32.cpp" \
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/NLS.cpp" \
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp" \
-"$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp")
+"$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
+"$YSLib_BaseDir/YFramework/source/YSLib/Core/YConsole.cpp")
 	CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -mthreads"
 	LIB_EXTRA="$LIB_EXTRA -mthreads"
 	;;
 *)
-	SRCS=("${SRCS[@]}" "$YSLib_BaseDir/YFramework/source/CHRLib/chrmap.cpp")
 	CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -fPIC -pthread"
 	LIB_EXTRA="$LIB_EXTRA -pthread -ldl"
 esac
