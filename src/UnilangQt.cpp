@@ -55,6 +55,14 @@
 #ifdef __GNUC__
 #	pragma GCC diagnostic pop
 #endif
+#ifdef GetObject
+// XXX: On Windows, OpenGL header requires <windows.h>, which may be actually
+//	included indirectly by <QtGui/qopengl.h> used in <QQuickView>. This pulls
+//	massive macro pollutions and at least 'GetObject' will clash with
+//	'ValueObject' members on some MSYS2 environments. To keep it sane, do
+//	include the YCLib native API here to do '#undef' stuff properly.
+#	include YFM_YCLib_NativeAPI
+#endif
 #include "Forms.h" // for Forms;
 #include <ystdex/bind.hpp> // for ystdex::bind1, std::placeholders;
 #include YFM_YSLib_Core_YException // for YSLib::FilterExceptions;
