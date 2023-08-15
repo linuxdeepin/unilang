@@ -606,7 +606,7 @@ $defl! get-module (&filename .&opt)
 
 #define APP_VER_MAJOR 0
 #define APP_VER_MINOR 12
-#define APP_VER_PATCHLEVEL 421
+#define APP_VER_PATCHLEVEL 422
 #define APP_VER YPP_Stringize(APP_VER_MAJOR) "." YPP_Stringize(APP_VER_MINOR) \
 	"." YPP_Stringize(APP_VER_PATCHLEVEL)
 
@@ -617,6 +617,7 @@ LoadModule_std_system(Interpreter& intp)
 	namespace IO = YSLib::IO;
 	auto& m(intp.Main.GetRecordRef().GetMapRef());
 
+	Environment::DefineChecked(m, "version-string", string(APP_VER));
 	RegisterStrict(m, "eval-string", EvalString);
 	RegisterStrict(m, "eval-string%", EvalStringRef);
 	RegisterUnary<Strict, const string>(m, "env-get", [](const string& var){

@@ -4235,7 +4235,17 @@
 
 ## 系统库
 
-　　系统库的操作加载为基础环境下的 `std.system` 环境。
+　　系统库的实体加载为基础环境下的 `std.system` 环境。
+
+**对象：**
+
+`version-string`
+
+　　当前实现的版本字符串。
+
+　　类型为 `<string>` 。
+
+**操作：**
 
 `eval-string <string> <environment>`
 
