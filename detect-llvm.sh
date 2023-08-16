@@ -30,6 +30,7 @@ if test -d "$LLVM_PREFIX"; then
 else
 	echo 'ERROR: Failed to find LLVM 7.'
 	echo 'Please specify the installation prefix in $USE_LLVM_PREFIX.'
+	echo 'Alternatively, consider disable LLVM by "UNILANG_NO_LLVM".'
 	exit 1
 fi
 echo 'LLVM version:' "$("$LLVM_BINDIR/llvm-config" --version)"
