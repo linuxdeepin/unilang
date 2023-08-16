@@ -113,13 +113,14 @@ $CXXFLAGS_Qt "${INCLUDES[@]}" ::: "${SRCS[@]}"
 	OFILES_=("$Unilang_BuildDir"/*.o)
 
 	# shellcheck disable=2086
-	Call_ "$CXX" -o"$Unilang_Output" "${OFILES_[@]}" $LIBS $LIBS_Qt $LIBS_EXTRA
+	Call_ "$CXX" -o"$Unilang_Output" "${OFILES_[@]}" $LDFLAGS $LIBS $LIBS_Qt \
+$LIBS_EXTRA
 else
 	echo 'Not using parallel.'
 
 	# shellcheck disable=2086
 	Call_ "$CXX" -o"$Unilang_Output" $CXXFLAGS $CXXFLAGS_EXTRA $CXXFLAGS_WKRD_ \
-$CXXFLAGS_Qt $LIBS_Qt "${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
+$CXXFLAGS_Qt $LDFLAGS $LIBS_Qt "${INCLUDES[@]}" "${SRCS[@]}" $LIBS_EXTRA
 fi
 
 echo 'Done.'
