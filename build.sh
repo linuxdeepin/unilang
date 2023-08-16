@@ -21,7 +21,7 @@ CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
 # NOTE: These are known redundant or false positives.
 if echo "$CXX" --version | grep -q clang; then
-	CXXFLAGS_WKRD_=-Wno-mismatched-tags
+	CXXFLAGS_WKRD_='-Wno-ignored-attributes -Wno-mismatched-tags'
 else
 	CXXFLAGS_WKRD_=\
 '-Wno-dangling-reference -Wno-ignored-attributes -Wno-uninitialized'
