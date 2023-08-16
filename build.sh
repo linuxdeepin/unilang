@@ -21,8 +21,10 @@ CXXFLAGS_Qt="$(pkg-config --cflags Qt5Widgets Qt5Quick)"
 LIBS_Qt="$(pkg-config --libs Qt5Widgets Qt5Quick)"
 # NOTE: These are known redundant or false positives.
 if echo "$CXX" --version | grep -q clang; then
+	CXX_Name_=Clang++
 	CXXFLAGS_WKRD_='-Wno-ignored-attributes -Wno-mismatched-tags'
 else
+	CXX_Name_=G++
 	CXXFLAGS_WKRD_=\
 '-Wno-dangling-reference -Wno-ignored-attributes -Wno-uninitialized'
 fi
@@ -64,7 +66,11 @@ case $(uname) in
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/Registry.cpp" \
 "$YSLib_BaseDir/YFramework/Win32/source/YCLib/Consoles.cpp"
 "$YSLib_BaseDir/YFramework/source/YSLib/Core/YConsole.cpp")
-	CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -mthreads"
+	if test "$CXX_Name_" = G++; then
+		CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -mthreads"
+	else
+		CXXFLAGS_EXTRA="$CXXFLAGS_EXTRA -D_MT"
+	fi
 	LIB_EXTRA="$LIB_EXTRA -mthreads"
 	;;
 *)
