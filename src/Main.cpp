@@ -606,7 +606,7 @@ $defl! get-module (&filename .&opt)
 
 #define APP_VER_MAJOR 0
 #define APP_VER_MINOR 12
-#define APP_VER_PATCHLEVEL 422
+#define APP_VER_PATCHLEVEL 423
 #define APP_VER YPP_Stringize(APP_VER_MAJOR) "." YPP_Stringize(APP_VER_MINOR) \
 	"." YPP_Stringize(APP_VER_PATCHLEVEL)
 
@@ -1323,9 +1323,27 @@ PrintHelpMessage(const string& prog)
 
 
 #define APP_NAME "Unilang interpreter"
-#define APP_PLATFORM "[C++11] + YSLib"
-constexpr auto
-	title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") " APP_PLATFORM);
+#if YCL_Win32
+#	define APP_PLATFORM "[MinGW32]"
+#elif YCL_Linux
+#	define APP_PLATFORM "[Linux]"
+#else
+#	define APP_PLATFORM "[unspecified platform]"
+#endif
+constexpr auto title(APP_NAME " " APP_VER " @ (" __DATE__ ", " __TIME__ ") "
+	APP_PLATFORM "[C++"
+#if __cplusplus > 202002L
+	"2b"
+#elif __cplusplus >= 202002L
+	"20"
+#elif __cplusplus >= 201703L
+	"17"
+#elif __cplusplus >= 201402L
+	"14"
+#else
+	"11"
+#endif
+	"] + YSLib");
 
 template<typename _fCallable, typename... _tParams>
 inline void
