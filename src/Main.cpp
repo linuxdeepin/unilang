@@ -373,7 +373,7 @@ LoadModule_std_strings(Interpreter& intp)
 			return ReductionStatus::Clean;
 		}, term);
 	});
-	RegisterBinary<Strict, string, string>(m, "string-contains?",
+	RegisterBinary<Strict, const string, const string>(m, "string-contains?",
 		[](const string& x, const string& y){
 		return x.find(y) != string::npos;
 	});
@@ -606,7 +606,7 @@ $defl! get-module (&filename .&opt)
 
 #define APP_VER_MAJOR 0
 #define APP_VER_MINOR 12
-#define APP_VER_PATCHLEVEL 423
+#define APP_VER_PATCHLEVEL 424
 #define APP_VER YPP_Stringize(APP_VER_MAJOR) "." YPP_Stringize(APP_VER_MINOR) \
 	"." YPP_Stringize(APP_VER_PATCHLEVEL)
 
