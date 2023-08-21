@@ -316,6 +316,7 @@ The building environment relies on the following tools:
 * C++ toolchain supporting `std=c++11`, any of:
 	* G++ and a linker compatible with (defaulted to GNU ld)
 		* **NOTE** The current minimal tested G++ version is GCC 8.
+		* For MSYS2 x86_64, LLD is required with GCC, see below.
 	* Clang++ and a linker compatible with
 		* **NOTE** The minimal version should be compatible to the minimal version of G++ in general.
 * libffi
@@ -327,13 +328,14 @@ The building environment relies on the following tools:
 * LLVM 7
 	* `llvm-config`
 * [GNU parallel](https://www.gnu.org/software/parallel/)
+* LLD
 
 The following commands illustrates how to prepare the build environment by package managers:
 
 ```sh
 # Some dependencies may have been preinstalled.
-# MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative} parallel
+# MSYS2 (no LLVM 7)
+pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,lld,pkgconf,qt5-base,qt5-declarative} parallel
 # Arch Linux
 sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative parallel
 yay -S llvm70 # Or some other AUR frontend command.
@@ -346,6 +348,14 @@ LLVM is optional. Use non-empty environment variable `UNILANG_NO_LLVM` to avoid 
 **NOTE** There may be different version of LLVM provided by the system, which would clash with LLVM 7 on loading. Currently mixing different version of LLVM is not supported. Thus, `UNILANG_NO_LLVM` is needed in such case.
 
 If there is no LLVM 7 provided by the system, you may need to build it by yourself. In this project, the environment variable `USE_LLVM_PREFIX` specifies the custom path prefix of the LLVM installation, and it will be used by the scripts when needed.
+
+There are several caveats for MSYS2 x86_64 toolchain:
+
+* GCC will fail with the default GNU ld.
+	* Use LLD instead (by specifying `-fuse-ld=lld` in the linker command line).
+* Clang works with both GNU ld (by default or `-fuse-ld=bfd`) and LLD.
+	* LLD is still recommend in this case because it can be significantly faster (more than 20 times) in linking.
+* See also the documents of the scripts below.
 
 See also the [environment configuration](#environment-configuration) below for some optional additional dependencies.
 
@@ -393,6 +403,8 @@ env CXX=clang++ ./build.sh
 ```
 
 The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use the environment variable `CXXFLAGS` can override the default value.
+
+The script supports `LDFLAGS` to specify extra linker options (like `-fuse-ld=lld`). The default value is empty.
 
 The script uses shell command lines to call the compiler driver specified by `$CXX` directly. By default, the script will test whether GNU parallel is available. If so, `parallel` command is used to build the interpreter in parallel.
 

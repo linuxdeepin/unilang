@@ -313,6 +313,7 @@
 * 支持 `-std=c++11` 的 G++ 兼容工具链，可选以下任意：
 	* G++ 和与之兼容的链接器（如 GNU ld ）
 		* **注释** 当前测试的 G++ 最低版本是 GCC 8 。
+		* 对 MSYS2 x86_64 ，使用 GCC 时 LLD 是必要的，参见以下说明。
 	* Clang++ 和兼容的链接器
 		* **注释** 使用的版本一般应能兼容最低的 GCC 版本。
 * libffi
@@ -324,13 +325,14 @@
 * LLVM 7
 	* `llvm-config`
 * [GNU parallel](https://www.gnu.org/software/parallel/)
+* LLD
 
 　　安装构建环境依赖的包管理器命令行举例：
 
 ```sh
 # Some dependencies may have been preinstalled.
-# MSYS2
-pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,llvm,pkgconf,qt5-base,qt5-declarative} parallel
+# MSYS2 (no LLVM 7)
+pacman -S --needed bash coreutils git mingw-w64-x86_64-{gcc,binutils,libffi,lld,pkgconf,qt5-base,qt5-declarative} parallel
 # Arch Linux
 sudo pacman -S --needed bash coreutils git gcc binutils libffi pkgconf qt5-base qt5-declarative parallel
 yay -S llvm70 # Or some other AUR frontend command.
@@ -343,6 +345,14 @@ sudo apt install bash coreutils git g++ libffi-dev llvm-7-dev pkg-config qtbase5
 **注释** 系统可能提供的不同版本的 LLVM ，被动态加载时可能会和 LLVM 7 冲突。当前不支持混用不同版本的 LLVM 。这种情形需要指定 `UNILANG_NO_LLVM` 。
 
 　　若系统不提供 LLVM 7 包，可能需要自行构建。本项目中，环境变量 `USE_LLVM_PREFIX` 指定自定义的 LLVM 的安装路径前缀，被脚本按需使用。
+
+　　使用 MSYS2 工具链需注意：
+
+* GCC 使用默认的 GNU ld 会链接失败。
+	* 此时需要使用 LLD（在链接器命令行指定 `-fuse-ld=lld` ）。
+* Clang 可使用 GNU ld（默认或 `-fuse-ld=bfd` ）和 LLD 。
+	* 这种情形仍推荐 LLD ，因为链接时显著更快（超过 20 倍）。
+* 另见以下脚本的文档。
 
 　　另见以下的[环境配置](#环境配置)安装更多可选的依赖。
 
@@ -389,6 +399,8 @@ env CXX=clang++ ./build.sh
 ```
 
 　　默认使用 `-std=c++11 -Wall -Wextra -g` 编译器选项。类似地，使用环境变量 `CXXFLAGS` 可替代默认值。
+
+　　脚本支持 `LDFLAGS` 指定附加的链接器选项（如 `-fuse-ld=lld` ），默认为空。
 
 　　这个脚本使用 shell 命令行调用 `$CXX` 指定的编译器驱动。默认脚本会测试 GNU parallel 是否可用。若可用，则调用 `parallel` 命令并行构建解释器。
 
