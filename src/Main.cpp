@@ -605,8 +605,8 @@ $defl! get-module (&filename .&opt)
 }
 
 #define APP_VER_MAJOR 0
-#define APP_VER_MINOR 12
-#define APP_VER_PATCHLEVEL 424
+#define APP_VER_MINOR 13
+#define APP_VER_PATCHLEVEL 0
 #define APP_VER YPP_Stringize(APP_VER_MAJOR) "." YPP_Stringize(APP_VER_MINOR) \
 	"." YPP_Stringize(APP_VER_PATCHLEVEL)
 
