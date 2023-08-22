@@ -402,7 +402,7 @@ This uses `g++` by default. The environment variable `CXX` can override the defa
 env CXX=clang++ ./build.sh
 ```
 
-The default compiler options are `-std=c++11 -Wall -Wextra -g`. Similarly, use the environment variable `CXXFLAGS` can override the default value.
+The default compiler options are `-std=c++11 -Wall -Wextra -O3 -DNDEBUG` if the name of the output directory (see below) does not contain `debug`, or `-std=c++11 -Wall -Wextra -g` otherwise. Similarly, use the environment variable `CXXFLAGS` can override the default value.
 
 The script supports `LDFLAGS` to specify extra linker options (like `-fuse-ld=lld`). The default value is empty.
 

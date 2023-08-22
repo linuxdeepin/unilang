@@ -398,7 +398,7 @@ git clean -f -X 3rdparty
 env CXX=clang++ ./build.sh
 ```
 
-　　默认使用 `-std=c++11 -Wall -Wextra -g` 编译器选项。类似地，使用环境变量 `CXXFLAGS` 可替代默认值。
+　　若输出目录名称（参见下文）不包含 `debug` 则默认使用编译器选项 `-std=c++11 -Wall -Wextra -O3 -DNDEBUG` ，否则使用 `-std=c++11 -Wall -Wextra -g` 。类似地，使用环境变量 `CXXFLAGS` 可替代默认值。
 
 　　脚本支持 `LDFLAGS` 指定附加的链接器选项（如 `-fuse-ld=lld` ），默认为空。
 

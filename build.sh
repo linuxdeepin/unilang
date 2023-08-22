@@ -13,7 +13,12 @@ echo "Output path is \"$Unilang_Output\"."
 echo "Build directory is \"$Unilang_BuildDir\"."
 
 : "${CXX:=g++}"
-: "${CXXFLAGS=-std=c++11 -Wall -Wextra -g}"
+if [[ "$Unilang_BuildDir" =~ .*debug.* ]]; then
+	echo 'Debug mode turned on by configuration.'
+	: "${CXXFLAGS=-std=c++11 -Wall -Wextra -g}"
+else
+	: "${CXXFLAGS=-std=c++11 -Wall -Wextra -O3 -DNDEBUG}"
+fi
 
 . "$Unilang_BaseDir/detect-llvm.sh"
 
