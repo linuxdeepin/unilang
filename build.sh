@@ -107,6 +107,7 @@ Call_()
 #	supported.
 # XXX: %NoParallel is external.
 # shellcheck disable=2154
+LDFLAGS="${LDFLAGS} -pthread -ldl"
 if test -z "$NoParallel" && hash parallel 2> /dev/null && hash grep 2> \
 	/dev/null && parallel --will-cite --version > /dev/null 2> /dev/null; \
 	then
